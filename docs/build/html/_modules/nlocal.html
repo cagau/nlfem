@@ -1,0 +1,456 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>nlocal &mdash; Nonlocal Assembly  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Nonlocal Assembly
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Nonlocal Assembly</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>nlocal</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for nlocal</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">cvxopt</span> <span class="k">import</span> <span class="n">matrix</span><span class="p">,</span> <span class="n">solvers</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">solvers</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;show_progress&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="S"><a class="viewcode-back" href="../index.html#nlocal.S">[docs]</a><span class="k">def</span> <span class="nf">S</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the corners of the :math:`\delta - L_{\infty}`-Box around a Triangle.</span>
+
+<span class="sd">    :param E: nd.array, real, shape (2,3) Vertices of the triangle</span>
+<span class="sd">    :param delta: real, Size of the L-infinity box</span>
+
+<span class="sd">    :return: nd.array, real, shape (2,12) Corners of $B$</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span><span class="o">*</span><span class="n">delta</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">D</span><span class="o">.</span><span class="n">transpose</span><span class="p">(),</span> <span class="mi">3</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="p_in_nbhd"><a class="viewcode-back" href="../index.html#nlocal.p_in_nbhd">[docs]</a><span class="k">def</span> <span class="nf">p_in_nbhd</span><span class="p">(</span><span class="n">refPoint</span><span class="p">,</span> <span class="n">aT</span><span class="p">,</span> <span class="n">bT</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Tests whether a reference point p in Triangle a interacts</span>
+<span class="sd">    with triangle b w.r.t. :math:`L_2`-ball of radius delta.</span>
+
+<span class="sd">    :param refPoint: ndarray, real, shape (2,) Point in the reference triangle.</span>
+<span class="sd">    :param aT: clsTriangle Triangle a</span>
+<span class="sd">    :param bT: clsTriangle Triangle b</span>
+<span class="sd">    :param delta: real Radius of L2-Ball</span>
+<span class="sd">    :return: bool True if the triangles interact.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">refPoint</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;p_in_nbhd() only accepts a single refPoint.&quot;</span><span class="p">)</span>
+    <span class="n">a_elPoint</span> <span class="o">=</span> <span class="n">aT</span><span class="o">.</span><span class="n">toPhys</span><span class="p">(</span><span class="n">refPoint</span><span class="p">)</span>
+    <span class="n">b_baryC</span> <span class="o">=</span> <span class="n">bT</span><span class="o">.</span><span class="n">baryCenter</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="c1"># In order to make this work for a refPoints of shape (2,m) do</span>
+    <span class="c1"># is_inNbhd = np.linalg.norm(a_elPoint - b_baryC, axis=0) &lt;= delta</span>
+    <span class="n">is_inNbhd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">a_elPoint</span> <span class="o">-</span> <span class="n">b_baryC</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">delta</span>
+    <span class="c1">#Pdx_inNbhd = np.flatnonzero(is_inNbhd)</span>
+    <span class="k">return</span> <span class="n">is_inNbhd</span></div>
+
+<div class="viewcode-block" id="in_nbhd"><a class="viewcode-back" href="../index.html#nlocal.in_nbhd">[docs]</a><span class="k">def</span> <span class="nf">in_nbhd</span><span class="p">(</span><span class="n">Ea</span><span class="p">,</span> <span class="n">Eb</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check whether two triangles interact w.r.t :math:`L_{\infty}`-ball of size delta.</span>
+
+<span class="sd">    :param Ea: nd.array, real, shape (2,3)  Vertices of the triangle a</span>
+<span class="sd">    :param Eb: nd.array, real, shape (2,3)  Vertices of the triangle b</span>
+<span class="sd">    :param delta: Size of L-infinity ball</span>
+<span class="sd">    :param v: Verbose mode.</span>
+<span class="sd">    :return: bool True if Ea and Eb interact.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check whether the triangles share a point</span>
+    <span class="n">intersection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">Ea</span><span class="p">,</span> <span class="n">Eb</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">intersection</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="c1"># Determine extreme points of infty-norm ball around Ea</span>
+    <span class="n">SEa</span> <span class="o">=</span> <span class="n">S</span><span class="p">(</span><span class="n">Ea</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">SEa</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">SEa</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">Eb</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Eb</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        
+    <span class="n">low_a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">SEa</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">upp_a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">SEa</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">low_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">Eb</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">upp_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">Eb</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Check whether the triangles are very far away from each other</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">low_a</span> <span class="o">&gt;=</span> <span class="n">upp_b</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">upp_a</span> <span class="o">&lt;=</span> <span class="n">low_b</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;no lp solve required because: &quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Low_a&quot;</span><span class="p">,</span> <span class="n">low_a</span><span class="p">,</span> <span class="s2">&quot;Upp_b&quot;</span><span class="p">,</span> <span class="n">upp_b</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Low_b&quot;</span><span class="p">,</span> <span class="n">low_b</span><span class="p">,</span> <span class="s2">&quot;Upp_a&quot;</span><span class="p">,</span> <span class="n">upp_a</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># If not solve an LP</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="o">-</span><span class="n">SEa</span><span class="p">,</span> <span class="n">Eb</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">bias</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">12</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="n">bias</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="c1"># Solve full problem</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">solvers</span><span class="o">.</span><span class="n">lp</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;optimal&quot;</span></div>
+
+
+<div class="viewcode-block" id="clsMesh"><a class="viewcode-back" href="../index.html#nlocal.clsMesh">[docs]</a><span class="k">class</span> <span class="nc">clsMesh</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Mesh Class</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Verts</span><span class="p">,</span> <span class="n">Lines</span><span class="p">,</span> <span class="n">Triangles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor Method</span>
+
+<span class="sd">        Takes Verts, Lines and Triangles from readmesh and executes prepare.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">Verts</span><span class="p">,</span> <span class="n">Lines</span><span class="p">,</span> <span class="n">Triangles</span><span class="p">)</span>
+        <span class="c1"># args = Verts, Triangles, K, K_Omega, J, J_Omega</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">K_Omega</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">J_Omega</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+
+<div class="viewcode-block" id="clsMesh.prepare"><a class="viewcode-back" href="../index.html#nlocal.clsMesh.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Verts</span><span class="p">,</span> <span class="n">Lines</span><span class="p">,</span> <span class="n">Triangles</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Prepare mesh from Verts, Lines and Triangles.</span>
+
+<span class="sd">        :param Verts: List of Vertices</span>
+<span class="sd">        :param Lines: List of Lines</span>
+<span class="sd">        :param Triangles: List of Triangles</span>
+<span class="sd">        :return: Verts, Triangles, K, K_Omega, J, J_Omega</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Sortiere Triangles so, das die Omega-Dreieck am Anfang des Array liegen --------------------------------------</span>
+        <span class="n">Triangles</span> <span class="o">=</span> <span class="n">Triangles</span><span class="p">[</span><span class="n">Triangles</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">argsort</span><span class="p">()]</span>
+
+        <span class="c1"># Sortiere die Verts, sodass die Indizes der Nodes in Omega am Anfang des Arrays Verts liegen ---------------------------------</span>
+        <span class="n">Verts</span> <span class="o">=</span> <span class="n">Verts</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># Wir machen 2D, deshalb ist eine Spalte hier unnütz.</span>
+        <span class="c1"># T heißt Triangle, dx index</span>
+        <span class="n">Tdx_Omega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Triangles</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># V heißt Vertex, is bedeutet er nimmt die Kategorialen Werte 0,1,2 an.</span>
+        <span class="n">Vis_inOmega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">Verts</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+
+        <span class="c1"># Wähle die Indizes heraus, die an Dreiecken in Omega.</span>
+        <span class="n">Vdx_inOmega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">Triangles</span><span class="p">[</span><span class="n">Tdx_Omega</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+        <span class="n">Vis_inOmega</span><span class="p">[</span><span class="n">Vdx_inOmega</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Sie werden auf 2 gesetzt.</span>
+        <span class="n">Vdx_Boundary</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">Lines</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Lines</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">9</span><span class="p">)][:,</span> <span class="mi">1</span><span class="p">:])</span>
+        <span class="n">Vis_inOmega</span><span class="p">[</span><span class="n">Vdx_Boundary</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># Die Punkte auf dem Rand allerdings werden auf 1 gesetzt.</span>
+
+        <span class="n">piVdx_argsort</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">Vis_inOmega</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;mergesort&quot;</span><span class="p">)</span>  <span class="c1"># Permutation der der Vertex indizes</span>
+
+        <span class="c1"># Auf Triangles und Lines müssen wir die inverse Permutation anwenden.</span>
+        <span class="c1"># Der Code wäre mit np.argsort kurz und für Node-Zahl unter 1000 auch schnell, allerdings ist</span>
+        <span class="c1"># sortieren nicht in der richtigen Effizienzklasse. (Eigentlich muss ja nur eine Matrix transponiert werden)</span>
+        <span class="c1"># siehe https://stackoverflow.com/questions/11649577/how-to-invert-a-permutation-array-in-numpy</span>
+        <span class="k">def</span> <span class="nf">invert_permutation</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            The function inverts a given permutation.</span>
+<span class="sd">            :param p: nd.array, shape (m,) The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1.</span>
+<span class="sd">            :return: nd.array, shape (m,) Returns an array s, where s[i] gives the index of i in p.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">s</span>
+
+        <span class="n">piVdx_invargsort</span> <span class="o">=</span> <span class="n">invert_permutation</span><span class="p">(</span><span class="n">piVdx_argsort</span><span class="p">)</span>
+        <span class="n">piVdx</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">dx</span><span class="p">:</span> <span class="n">piVdx_invargsort</span><span class="p">[</span><span class="n">dx</span><span class="p">]</span>  <span class="c1"># Permutation definieren</span>
+
+        <span class="c1"># Wende die Permutation auf Verts, Lines und Triangles an</span>
+        <span class="n">Verts</span> <span class="o">=</span> <span class="n">Verts</span><span class="p">[</span><span class="n">piVdx_argsort</span><span class="p">]</span>
+        <span class="n">Triangles</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">piVdx</span><span class="p">(</span><span class="n">Triangles</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:])</span>
+        <span class="n">Lines</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">piVdx</span><span class="p">(</span><span class="n">Lines</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:])</span>
+
+        <span class="c1"># Setze K_Omega und K</span>
+        <span class="c1"># Das ist die Anzahl der finiten Elemente (in Omega und insgesamt).</span>
+        <span class="c1"># Diese Zahlen dienen als Dimensionen für die diskreten Matrizen und Vektoren.</span>
+        <span class="n">K_Omega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Vis_inOmega</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">K_dOmega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Vis_inOmega</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Verts</span><span class="p">)</span>
+
+        <span class="c1">## TEST PLOT ###</span>
+        <span class="c1"># plt.scatter(Verts.T[0], Verts.T[1])</span>
+        <span class="c1"># plt.scatter(Verts.T[0, :K_Omega], Verts.T[1, :K_Omega])</span>
+        <span class="c1"># plt.show()</span>
+
+        <span class="c1"># Setze J_Omega und J</span>
+        <span class="c1"># Das ist die Anzahl der Dreiecke. Diese Zahlen sind für die Schleifendurchläufe wichtig.</span>
+        <span class="n">J_Omega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Triangles</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Triangles</span><span class="p">)</span>
+
+        <span class="c1">## TEST PLOT ###</span>
+        <span class="c1"># V = Verts[Triangles[:J_Omega, 1:]]</span>
+        <span class="c1"># plt.scatter(Verts.T[0], Verts.T[1])</span>
+        <span class="c1"># for v in V:</span>
+        <span class="c1">#    plt.scatter(v.T[0], v.T[1], c=&quot;r&quot;)</span>
+        <span class="c1"># plt.show()</span>
+        <span class="k">return</span> <span class="n">Verts</span><span class="p">,</span> <span class="n">Triangles</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">K_Omega</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">J_Omega</span></div>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">):</span>
+        <span class="n">Vdx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="n">Vdx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">clsTriangle</span><span class="p">(</span><span class="n">E</span><span class="p">)</span>
+
+<div class="viewcode-block" id="clsMesh.Vdx_inOmega"><a class="viewcode-back" href="../index.html#nlocal.clsMesh.Vdx_inOmega">[docs]</a>    <span class="k">def</span> <span class="nf">Vdx_inOmega</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the indices of the nodes of Triangle with index Tdx</span>
+<span class="sd">        as index w.r.t the triangle (dx_inOmega) and as index w.r.t to</span>
+<span class="sd">        the array Verts (Vdx)</span>
+
+<span class="sd">        :param: Tdx</span>
+<span class="sd">        :return: dx_inOmega, nd.array, int, shape (3,) The indices of the nodes w.r.t T.E which lie in Omega.</span>
+<span class="sd">        :return: Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts which lie in Omega.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Vdx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
+        <span class="c1"># The following replaces np.where (see https://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html)</span>
+        <span class="n">dx_inOmega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">Vdx</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">K_Omega</span><span class="p">)</span>
+        <span class="n">Vdx</span> <span class="o">=</span> <span class="n">Vdx</span><span class="p">[</span><span class="n">dx_inOmega</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dx_inOmega</span><span class="p">,</span> <span class="n">Vdx</span></div>
+
+<div class="viewcode-block" id="clsMesh.Vdx"><a class="viewcode-back" href="../index.html#nlocal.clsMesh.Vdx">[docs]</a>    <span class="k">def</span> <span class="nf">Vdx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the indices of the nodes of Triangle with index Tdx as index w.r.t to</span>
+<span class="sd">        the array Verts (Vdx)</span>
+
+<span class="sd">        :param Tdx:</span>
+<span class="sd">        :return: Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Vdx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Vdx</span></div>
+
+<div class="viewcode-block" id="clsMesh.plot"><a class="viewcode-back" href="../index.html#nlocal.clsMesh.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">,</span> <span class="n">is_plotmsh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot triangle with index Tdx.</span>
+
+<span class="sd">          *  Link to matplotlib markers: https://matplotlib.org/3.1.0/api/markers_api.html</span>
+<span class="sd">          *  Link to plt.scatter snippet: https://stackoverflow.com/questions/14827650/pyplot-scatter-plot-marker-size</span>
+
+<span class="sd">        :param Tdx: int Index of Triangle.</span>
+<span class="sd">        :param is_plotmsh: bool, default=False Switch for surrounding FEM-Mesh.</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
+        <span class="n">dx_inOmega</span><span class="p">,</span> <span class="n">Vdx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Vdx_inOmega</span><span class="p">(</span><span class="n">Tdx</span><span class="p">)</span>
+        <span class="n">E_O</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="n">Vdx</span><span class="p">]</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_plotmsh</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">triplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">7</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">E</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">T</span><span class="o">.</span><span class="n">E</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;E&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">E_O</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">E_O</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;E in Omega (Vdx)&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">E</span><span class="p">[</span><span class="n">dx_inOmega</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">T</span><span class="o">.</span><span class="n">E</span><span class="p">[</span><span class="n">dx_inOmega</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;E in Omega (dx_inOmega)&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Tdx &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">Tdx</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">Tdx</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="clsTriangle"><a class="viewcode-back" href="../index.html#nlocal.clsTriangle">[docs]</a><span class="k">class</span> <span class="nc">clsTriangle</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">E</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">E</span> <span class="o">=</span> <span class="n">E</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">E</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">M_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span> <span class="o">-</span> <span class="n">a</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a_</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baryCenter_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">absDet_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">toPhys_</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="viewcode-block" id="clsTriangle.baryCenter"><a class="viewcode-back" href="../index.html#nlocal.clsTriangle.baryCenter">[docs]</a>    <span class="k">def</span> <span class="nf">baryCenter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">baryCenter_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">baryCenter_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">E</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="mi">3</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">baryCenter_</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">baryCenter_</span></div>
+<div class="viewcode-block" id="clsTriangle.absDet"><a class="viewcode-back" href="../index.html#nlocal.clsTriangle.absDet">[docs]</a>    <span class="k">def</span> <span class="nf">absDet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">absDet_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">M_</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">absDet_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">M</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">M</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">M</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">M</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">absDet_</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">absDet_</span></div>
+<div class="viewcode-block" id="clsTriangle.toPhys"><a class="viewcode-back" href="../index.html#nlocal.clsTriangle.toPhys">[docs]</a>    <span class="k">def</span> <span class="nf">toPhys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">P</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Push reference points P to physical domain.</span>
+
+<span class="sd">        :param P: nd.array, real, shape (2, n). Reference points, e.g. quadrature points of the reference element.</span>
+<span class="sd">        :return: nd.array, real, shape (2, n). Physical points.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">toPhys_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">M_</span> <span class="o">@</span> <span class="n">P</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">toPhys_</span></div>
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">E</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Christian Vollmann, Manuel Klar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

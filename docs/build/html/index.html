@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Nonlocal Assembly’s doc &mdash; Nonlocal Assembly  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> Nonlocal Assembly
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Nonlocal Assembly’s doc</a><ul>
+<li><a class="reference internal" href="#module-solve_nonlocal_fullsearch">Functions on physical domain</a></li>
+<li><a class="reference internal" href="#module-aux">Helper modules</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Nonlocal Assembly</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>Nonlocal Assembly’s doc</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="nonlocal-assembly-s-doc">
+<h1>Nonlocal Assembly’s doc<a class="headerlink" href="#nonlocal-assembly-s-doc" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="module-solve_nonlocal_fullsearch">
+<span id="functions-on-physical-domain"></span><h2>Functions on physical domain<a class="headerlink" href="#module-solve_nonlocal_fullsearch" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="solve_nonlocal_fullsearch.fPhys">
+<code class="sig-prename descclassname">solve_nonlocal_fullsearch.</code><code class="sig-name descname">fPhys</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solve_nonlocal_fullsearch.html#fPhys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solve_nonlocal_fullsearch.fPhys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Right side of the equation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> – nd.array, real, shape (2,). Physical point in the 2D plane</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>real</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="solve_nonlocal_fullsearch.kernelPhys">
+<code class="sig-prename descclassname">solve_nonlocal_fullsearch.</code><code class="sig-name descname">kernelPhys</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solve_nonlocal_fullsearch.html#kernelPhys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solve_nonlocal_fullsearch.kernelPhys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integration kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – nd.array, real, shape (2,). Physical point in the 2D plane</p></li>
+<li><p><strong>y</strong> – nd.array, real, shape (2,). Physical point in the 2D plane</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>real</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aux">
+<span id="helper-modules"></span><h2>Helper modules<a class="headerlink" href="#module-aux" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="aux.timestamp">
+<code class="sig-prename descclassname">aux.</code><code class="sig-name descname">timestamp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/aux.html#timestamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aux.timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns current timestamp as string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>string, format %m%d_%H_%M%S</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-readmesh"></span><dl class="function">
+<dt id="readmesh.read_mesh">
+<code class="sig-prename descclassname">readmesh.</code><code class="sig-name descname">read_mesh</code><span class="sig-paren">(</span><em class="sig-param">mshfile</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/readmesh.html#read_mesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#readmesh.read_mesh" title="Permalink to this definition">¶</a></dt>
+<dd><p>meshfile = .msh - file genrated by gmsh</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mshfile</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Verts, Lines, Triangles</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-nlocal"></span><dl class="function">
+<dt id="nlocal.S">
+<code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">S</code><span class="sig-paren">(</span><em class="sig-param">E</em>, <em class="sig-param">delta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#S"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.S" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the corners of the <img class="math" src="_images/math/3591460d5534594833a7a89083b7f250f2320a77.png" alt="\delta - L_{\infty}"/>-Box around a Triangle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>E</strong> – nd.array, real, shape (2,3) Vertices of the triangle</p></li>
+<li><p><strong>delta</strong> – real, Size of the L-infinity box</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>nd.array, real, shape (2,12) Corners of $B$</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="nlocal.in_nbhd">
+<code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">in_nbhd</code><span class="sig-paren">(</span><em class="sig-param">Ea</em>, <em class="sig-param">Eb</em>, <em class="sig-param">delta</em>, <em class="sig-param">v=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#in_nbhd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.in_nbhd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether two triangles interact w.r.t <img class="math" src="_images/math/211d6c557bea42799dc4b0299581e58ce47cc54f.png" alt="L_{\infty}"/>-ball of size delta.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Ea</strong> – nd.array, real, shape (2,3)  Vertices of the triangle a</p></li>
+<li><p><strong>Eb</strong> – nd.array, real, shape (2,3)  Vertices of the triangle b</p></li>
+<li><p><strong>delta</strong> – Size of L-infinity ball</p></li>
+<li><p><strong>v</strong> – Verbose mode.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>bool True if Ea and Eb interact.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="nlocal.p_in_nbhd">
+<code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">p_in_nbhd</code><span class="sig-paren">(</span><em class="sig-param">refPoint</em>, <em class="sig-param">aT</em>, <em class="sig-param">bT</em>, <em class="sig-param">delta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#p_in_nbhd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.p_in_nbhd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tests whether a reference point p in Triangle a interacts
+with triangle b w.r.t. <img class="math" src="_images/math/fcd0c45a70da7d2399b3fb666759b02c5edd251e.png" alt="L_2"/>-ball of radius delta.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>refPoint</strong> – ndarray, real, shape (2,) Point in the reference triangle.</p></li>
+<li><p><strong>aT</strong> – clsTriangle Triangle a</p></li>
+<li><p><strong>bT</strong> – clsTriangle Triangle b</p></li>
+<li><p><strong>delta</strong> – real Radius of L2-Ball</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>bool True if the triangles interact.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="nlocal.clsMesh">
+<em class="property">class </em><code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">clsMesh</code><span class="sig-paren">(</span><em class="sig-param">Verts</em>, <em class="sig-param">Lines</em>, <em class="sig-param">Triangles</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsMesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsMesh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mesh Class</p>
+<dl class="method">
+<dt id="nlocal.clsMesh.Vdx">
+<code class="sig-name descname">Vdx</code><span class="sig-paren">(</span><em class="sig-param">Tdx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsMesh.Vdx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsMesh.Vdx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the indices of the nodes of Triangle with index Tdx as index w.r.t to
+the array Verts (Vdx)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>Tdx</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nlocal.clsMesh.Vdx_inOmega">
+<code class="sig-name descname">Vdx_inOmega</code><span class="sig-paren">(</span><em class="sig-param">Tdx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsMesh.Vdx_inOmega"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsMesh.Vdx_inOmega" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the indices of the nodes of Triangle with index Tdx
+as index w.r.t the triangle (dx_inOmega) and as index w.r.t to
+the array Verts (Vdx)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Param</dt>
+<dd class="field-odd"><p>Tdx</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dx_inOmega, nd.array, int, shape (3,) The indices of the nodes w.r.t T.E which lie in Omega.</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts which lie in Omega.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nlocal.clsMesh.plot">
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">Tdx</em>, <em class="sig-param">is_plotmsh=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsMesh.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsMesh.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot triangle with index Tdx.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Link to matplotlib markers: <a class="reference external" href="https://matplotlib.org/3.1.0/api/markers_api.html">https://matplotlib.org/3.1.0/api/markers_api.html</a></p></li>
+<li><p>Link to plt.scatter snippet: <a class="reference external" href="https://stackoverflow.com/questions/14827650/pyplot-scatter-plot-marker-size">https://stackoverflow.com/questions/14827650/pyplot-scatter-plot-marker-size</a></p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Tdx</strong> – int Index of Triangle.</p></li>
+<li><p><strong>is_plotmsh</strong> – bool, default=False Switch for surrounding FEM-Mesh.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nlocal.clsMesh.prepare">
+<code class="sig-name descname">prepare</code><span class="sig-paren">(</span><em class="sig-param">Verts</em>, <em class="sig-param">Lines</em>, <em class="sig-param">Triangles</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsMesh.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsMesh.prepare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare mesh from Verts, Lines and Triangles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Verts</strong> – List of Vertices</p></li>
+<li><p><strong>Lines</strong> – List of Lines</p></li>
+<li><p><strong>Triangles</strong> – List of Triangles</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Verts, Triangles, K, K_Omega, J, J_Omega</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nlocal.clsTriangle">
+<em class="property">class </em><code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">clsTriangle</code><span class="sig-paren">(</span><em class="sig-param">E</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsTriangle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsTriangle" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="nlocal.clsTriangle.absDet">
+<code class="sig-name descname">absDet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsTriangle.absDet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsTriangle.absDet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nlocal.clsTriangle.baryCenter">
+<code class="sig-name descname">baryCenter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsTriangle.baryCenter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsTriangle.baryCenter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nlocal.clsTriangle.toPhys">
+<code class="sig-name descname">toPhys</code><span class="sig-paren">(</span><em class="sig-param">P</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsTriangle.toPhys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsTriangle.toPhys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Push reference points P to physical domain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>P</strong> – nd.array, real, shape (2, n). Reference points, e.g. quadrature points of the reference element.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>nd.array, real, shape (2, n). Physical points.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Christian Vollmann, Manuel Klar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
