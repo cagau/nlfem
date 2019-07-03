@@ -1,7 +1,4 @@
-image: docker
-
-services:
-  - docker:dind
+image: python
 
 pages:
   script:
