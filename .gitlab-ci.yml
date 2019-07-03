@@ -1,8 +1,12 @@
-image: python3.6:alpine
+image: docker
+
+services:
+  - docker:dind
 
 pages:
   script:
-  - pip install sphinx
+  - apk add --update python3-pip
+  - pip3 install sphinx
   - ls
   
   artifacts:
