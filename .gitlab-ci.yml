@@ -2,7 +2,7 @@ image: python
 
 pages:
   script:
-  - pip3 install sphinx numpy cvxopt
+  - pip3 install sphinx numpy cvxopt datetime matplotlib
   - pip3 install sphinx_rtd_theme
   - cd docs
   - make html
