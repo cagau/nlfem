@@ -5,9 +5,9 @@ services:
 
 pages:
   script:
-  - apk --no-cache add py2-pip python-dev
-  - pip install sphinx
-  - pip install sphinx_rtd_theme
+  - apk --no-cache add py3-pip python3-dev
+  - pip3 install sphinx numpy cvxopt
+  - pip3 install sphinx_rtd_theme
   - apk --no-cache add make
   - cd docs
   - make html
