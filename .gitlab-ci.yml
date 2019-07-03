@@ -5,6 +5,6 @@ pages:
   - pip install sphinx
   - ls
   
-artifacts:
-  paths:
-  - public
+  artifacts:
+    paths:
+    - public
