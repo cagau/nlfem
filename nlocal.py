@@ -39,17 +39,49 @@ def p_in_nbhd(refPoint, aT, bT, delta):
     #Pdx_inNbhd = np.flatnonzero(is_inNbhd)
     return is_inNbhd
 
-def in_nbhd(Ea, Eb, delta, v=True):
+def inNbhd(aT, bT, delta, norm="inf", v=False):
+    """
+    Checks whether two triangles interact. If they do it returns True. That means this function
+    only allows a very coarse information hand hence a very coarse approximation of the integrals.
+
+    :param aT: clsTriangle, Triangle a
+    :param bT: clsTriangle, Triangle b
+    :param delta: real, Interaction Radius
+    :param norm: str, default="l2". Norm w.r.t which the Ball is constructed. Options l2, inf
+    :param v: bool, Verbose switch
+    :return:
+    """
+    if norm == "inf":
+        return inNbhd_inf(aT, bT, delta, v)
+    elif norm == "l2":
+        return inNbhd_l2(aT, bT, delta, v)
+    return None
+
+def inNbhd_l2(aT, bT, delta, v=False):
+    """
+    Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
+
+    :param aT: clsTriangle, Triangle a
+    :param bT: clsTriangle, Triangle b
+    :param delta: Size of L-2 ball
+    :param v: Verbose mode.
+    :return: bool True if Ea and Eb interact.
+    """
+    return np.linalg.norm(aT.baryCenter() - bT.baryCenter) <= delta
+
+def inNbhd_inf(Ea, Eb, delta, v=True):
     """
     Check whether two triangles interact w.r.t :math:`L_{\infty}`-ball of size delta.
 
-    :param Ea: nd.array, real, shape (2,3)  Vertices of the triangle a
-    :param Eb: nd.array, real, shape (2,3)  Vertices of the triangle b
+    :param aT: clsTriangle, Triangle a
+    :param bT: clsTriangle, Triangle b
     :param delta: Size of L-infinity ball
     :param v: Verbose mode.
     :return: bool True if Ea and Eb interact.
     """
     # Check whether the triangles share a point
+    Ea = aT.E.T
+    Eb = bT.E.T
     intersection = np.intersect1d(Ea, Eb)
     if intersection.size > 0:
         return True
@@ -193,7 +225,7 @@ class clsMesh:
         as index w.r.t the triangle (dx_inOmega) and as index w.r.t to
         the array Verts (Vdx)
 
-        :param: Tdx
+        :param Tdx:
         :return: dx_inOmega, nd.array, int, shape (3,) The indices of the nodes w.r.t T.E which lie in Omega.
         :return: Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts which lie in Omega.
         """
@@ -214,21 +246,23 @@ class clsMesh:
         Vdx = self.T[Tdx]
         return Vdx
 
-    def plot(self, Tdx, is_plotmsh=False, pdfname="meshplot"):
+    def plot(self, Tdx, is_plotmsh=False, pdfname="meshplot", delta=None):
         """
         Plot triangle with index Tdx.
 
           *  Link to matplotlib markers: https://matplotlib.org/3.1.0/api/markers_api.html
           *  Link to plt.scatter snippet: https://stackoverflow.com/questions/14827650/pyplot-scatter-plot-marker-size
 
-        :param Tdx: int Index of Triangle.
+        :param Tdx: int or list of int, Index of Triangle or list of indices of Triangle.
         :param is_plotmsh: bool, default=False Switch for surrounding FEM-Mesh.
         :param pdfname: str Name of output pdf.
+        :param delta: optional, Interaction radius. A :math:`\ell_2`-circle will be drawn to show its size.
         :return: None
         """
 
         pp = PdfPages(pdfname+".pdf")
 
+        fig, ax = plt.subplots()
         plt.gca().set_aspect('equal')
         if is_plotmsh:
             plt.triplot(self.V[:, 0], self.V[:, 1], self.T, lw=0.5, color='blue', alpha=.7)
@@ -241,6 +275,9 @@ class clsMesh:
             dx_inOmega, Vdx = self.Vdx_inOmega(tdx)
             E_O = self.V[Vdx]
 
+            if delta is not None:
+                circle = plt.Circle(T.baryCenter(), delta, color='b', fill=False, lw=0.5)
+                ax.add_artist(circle)
             plt.scatter(T.E[:, 0], T.E[:, 1], s=50, c="b", marker="o", label="E")
             plt.scatter(E_O[:, 0], E_O[:, 1], s=50, c="r", marker="X", label="E in Omega (Vdx)")
             plt.scatter(T.E[dx_inOmega, 0], T.E[dx_inOmega, 1], s=50, c="w", marker="+",
@@ -248,6 +285,7 @@ class clsMesh:
             plt.legend()
         plt.savefig(pp, format='pdf')
         plt.close()
+
         pp.close()
         return
 

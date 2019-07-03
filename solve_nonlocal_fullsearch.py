@@ -5,7 +5,7 @@ from quadpoints import P, weights
 import numpy as np
 import time
 # Help Functions to check whether two elements interact
-from nlocal import p_in_nbhd, clsMesh
+from nlocal import p_in_nbhd, clsMesh, inNbhd
 from aux import timestamp
 # Necessary definitions for intersection -------------------------------------------------------------------------------
 
@@ -16,9 +16,10 @@ def fPhys(x):
     :param x: nd.array, real, shape (2,). Physical point in the 2D plane
     :return: real
     """
+    # f = 1
     return 1
 
-delta = .1
+delta = .2
 def kernelPhys(x,y):
     """ Integration kernel.
 
@@ -31,6 +32,8 @@ def kernelPhys(x,y):
     if not n == (2,) and m == (2,):
         raise ValueError('kernelPhys(x,y) only accepts 2D input for x and y.')
     else:
+        # $\gamma(x,y) = 4 / (pi * \delta**4)$
+        # Wir erwarten $u(x) = 1/4 (1 - ||x||^2)$
         return 4 / (np.pi * delta**4)
 
 
@@ -47,7 +50,8 @@ if __name__ == "__main__":
     # Allocate Matrix A and right side f
     # Mesh construction --------------------
 
-    args = rm.read_mesh("circle.msh")
+    msh_name = "tiny"
+    args = rm.read_mesh("circle_" + msh_name + ".msh")
     mesh = clsMesh(*args)
     Ad = np.zeros((mesh.K_Omega, mesh.K))
     fd = np.zeros(mesh.K_Omega)
@@ -80,17 +84,14 @@ if __name__ == "__main__":
             Y = bT.toPhys(P)
 
             for k in range(n_P):
-                if p_in_nbhd(P[:, k], aT, bT, delta):
+                 if p_in_nbhd(P[:, k], aT, bT, delta):
                     for j in range(n_P):
-                        #product = np.zeros(3)
                         for psi_j in range(3):
-                            ker = kernelPhys(X[:, k], Y[:, j])
+                            ker = kernelPhys(Y[:, j], X[:, k])
                             product = psi[psi_j, j]*ker
-                            term2[psi_j, k] += product*weights[j]
-                        term2[:, k] *= bT.absDet()
+                            term2[psi_j, k] += product*weights[j]*bT.absDet()
 
             if not (term2 == 0).all():
-                mesh.plot([aTdx, bTdx], is_plotmsh=True)
                 #term2_ = term2[np.newaxis]
                 #psi_ = psi[aBdx_O, np.newaxis, :]
                 bVdx = mesh.Vdx(bTdx) #Get the indices of the nodes wrt. Verts (bK) which lie in Omega or OmegaI.
@@ -114,6 +115,6 @@ if __name__ == "__main__":
     ud_Ext[:mesh.K_Omega] = ud
 
     tmstp = timestamp()
-    np.savez(tmstp+"Ad_O", Ad_O, fd, ud_Ext, fd_Ext)
+    np.savez(tmstp + "_" + msh_name + str(round(delta*10)), Ad_O, fd, ud_Ext, fd_Ext)
 
     print("Time needed", total_time)
