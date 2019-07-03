@@ -1,12 +1,10 @@
-image: docker:latest
-
-services:
-- docker:dind
+image: python3.6:alpine
 
 pages:
   script:
-  - apk --no-cache add py2-pip python-dev
   - pip install sphinx
-  - apk --no-cache add make
-  - make html
-  - mv _build/html/ public/
+  - ls
+  
+artifacts:
+  paths:
+  - public
