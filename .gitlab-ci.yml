@@ -6,7 +6,8 @@ pages:
   - pip3 install sphinx_rtd_theme
   - cd docs
   - make html
+  - mv build/html ../public
   
   artifacts:
     paths:
-    - docs/build/html
+    - public
