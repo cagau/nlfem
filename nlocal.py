@@ -1,3 +1,5 @@
+#-*- coding:utf-8 -*-
+
 import numpy as np
 from cvxopt import matrix, solvers
 import matplotlib.pyplot as plt
