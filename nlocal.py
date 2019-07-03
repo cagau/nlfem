@@ -5,7 +5,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 solvers.options['show_progress'] = False
 
 
-def S(E, delta):
+def S_infty(E, delta):
     """
     Returns the corners of the :math:`\delta - L_{\infty}`-Box around a Triangle.
 
@@ -53,7 +53,7 @@ def in_nbhd(Ea, Eb, delta, v=True):
         return True
 
     # Determine extreme points of infty-norm ball around Ea
-    SEa = S(Ea, delta=delta)
+    SEa = S_infty(Ea, delta=delta)
     
     if v:
         plt.scatter(SEa[0], SEa[1], c="r", alpha=.2)

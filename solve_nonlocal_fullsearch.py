@@ -1,3 +1,5 @@
+#-*- coding:utf-8 -*-
+
 import readmesh as rm
 from quadpoints import P, weights
 import numpy as np
