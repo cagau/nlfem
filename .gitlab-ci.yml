@@ -9,4 +9,4 @@ pages:
   
   artifacts:
     paths:
-    - build/html
+    - docs/build/html
