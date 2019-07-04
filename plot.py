@@ -7,7 +7,7 @@ import numpy as np
 
 mesh = clsMesh(*rm.read_mesh("circle_medium.msh"))
 # arg = Ad_O, fd, ud_Ext, fd_Ext
-file_name = "0704_12-17-56_medium2"
+file_name = "_medium2"
 arg = np.load(file_name + ".npz")
 Ad_O = arg["arr_0"]
 ud_Ext = arg["arr_2"]
