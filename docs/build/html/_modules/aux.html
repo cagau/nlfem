@@ -141,18 +141,20 @@
            <div itemprop="articleBody">
             
   <h1>Source code for aux</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">datetime</span>
+<span></span><span class="c1">#-*- coding:utf-8 -*-</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
 <span class="c1">#from time import strftime</span>
 
 <div class="viewcode-block" id="timestamp"><a class="viewcode-back" href="../index.html#aux.timestamp">[docs]</a><span class="k">def</span> <span class="nf">timestamp</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns current timestamp as string.</span>
 
-<span class="sd">    :return: string, format %m%d_%H_%M%S</span>
+<span class="sd">    :return: string, format %m%d_%H-%M-%S</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Link to strftime Doc</span>
     <span class="c1"># http://strftime.org/</span>
-    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%m</span><span class="si">%d</span><span class="s2">_%H_%M%S&quot;</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%m</span><span class="si">%d</span><span class="s2">_%H-%M-%S&quot;</span><span class="p">)</span></div>
 </pre></div>
 
            </div>

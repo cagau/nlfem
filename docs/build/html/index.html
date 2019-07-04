@@ -196,7 +196,7 @@
 <dd><p>Returns current timestamp as string.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>string, format %m%d_%H_%M%S</p>
+<dd class="field-odd"><p>string, format %m%d_%H-%M-%S</p>
 </dd>
 </dl>
 </dd></dl>
@@ -216,42 +216,6 @@
 </dd></dl>
 
 <span class="target" id="module-nlocal"></span><dl class="function">
-<dt id="nlocal.S">
-<code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">S</code><span class="sig-paren">(</span><em class="sig-param">E</em>, <em class="sig-param">delta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#S"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.S" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the corners of the <img class="math" src="_images/math/3591460d5534594833a7a89083b7f250f2320a77.png" alt="\delta - L_{\infty}"/>-Box around a Triangle.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>E</strong> – nd.array, real, shape (2,3) Vertices of the triangle</p></li>
-<li><p><strong>delta</strong> – real, Size of the L-infinity box</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>nd.array, real, shape (2,12) Corners of $B$</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="nlocal.in_nbhd">
-<code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">in_nbhd</code><span class="sig-paren">(</span><em class="sig-param">Ea</em>, <em class="sig-param">Eb</em>, <em class="sig-param">delta</em>, <em class="sig-param">v=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#in_nbhd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.in_nbhd" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check whether two triangles interact w.r.t <img class="math" src="_images/math/211d6c557bea42799dc4b0299581e58ce47cc54f.png" alt="L_{\infty}"/>-ball of size delta.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>Ea</strong> – nd.array, real, shape (2,3)  Vertices of the triangle a</p></li>
-<li><p><strong>Eb</strong> – nd.array, real, shape (2,3)  Vertices of the triangle b</p></li>
-<li><p><strong>delta</strong> – Size of L-infinity ball</p></li>
-<li><p><strong>v</strong> – Verbose mode.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>bool True if Ea and Eb interact.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
 <dt id="nlocal.p_in_nbhd">
 <code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">p_in_nbhd</code><span class="sig-paren">(</span><em class="sig-param">refPoint</em>, <em class="sig-param">aT</em>, <em class="sig-param">bT</em>, <em class="sig-param">delta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#p_in_nbhd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.p_in_nbhd" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tests whether a reference point p in Triangle a interacts
@@ -297,8 +261,8 @@ the array Verts (Vdx)</p>
 as index w.r.t the triangle (dx_inOmega) and as index w.r.t to
 the array Verts (Vdx)</p>
 <dl class="field-list simple">
-<dt class="field-odd">Param</dt>
-<dd class="field-odd"><p>Tdx</p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>Tdx</strong> – </p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>dx_inOmega, nd.array, int, shape (3,) The indices of the nodes w.r.t T.E which lie in Omega.</p>
@@ -311,7 +275,7 @@ the array Verts (Vdx)</p>
 
 <dl class="method">
 <dt id="nlocal.clsMesh.plot">
-<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">Tdx</em>, <em class="sig-param">is_plotmsh=False</em>, <em class="sig-param">pdfname='meshplot'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsMesh.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsMesh.plot" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param">Tdx</em>, <em class="sig-param">is_plotmsh=False</em>, <em class="sig-param">pdfname='meshplot'</em>, <em class="sig-param">delta=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsMesh.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsMesh.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot triangle with index Tdx.</p>
 <blockquote>
 <div><ul class="simple">
@@ -322,9 +286,10 @@ the array Verts (Vdx)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Tdx</strong> – int Index of Triangle.</p></li>
+<li><p><strong>Tdx</strong> – int or list of int, Index of Triangle or list of indices of Triangle.</p></li>
 <li><p><strong>is_plotmsh</strong> – bool, default=False Switch for surrounding FEM-Mesh.</p></li>
 <li><p><strong>pdfname</strong> – str Name of output pdf.</p></li>
+<li><p><strong>delta</strong> – optional, Interaction radius. A <img class="math" src="_images/math/dc087f78b39c7a4b25b63ee0c21729bc4cb4f54c.png" alt="\ell_2"/>-circle will be drawn to show its size.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

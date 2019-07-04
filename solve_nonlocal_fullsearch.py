@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # Allocate Matrix A and right side f
     # Mesh construction --------------------
 
-    msh_name = "tiny"
+    msh_name = "medium"
     args = rm.read_mesh("circle_" + msh_name + ".msh")
     mesh = clsMesh(*args)
     Ad = np.zeros((mesh.K_Omega, mesh.K))
@@ -67,43 +67,21 @@ if __name__ == "__main__":
         # Compute the integral and save to result to fd
         fd[aVdx_O] = (psi[aBdx_O] * fPhys(aT.toPhys(P))) @ weights * aT.absDet()
 
-        # Set local term
-        term1 = np.zeros((len(aBdx_O), 3))
-        for j, abdx_O in enumerate(aBdx_O):
-            for k in range(3):
-                #term1[j, k] = (psi[abdx_O]*psi[k]) @ weights * aT.absDet() / delta**2 * 4
-                Ad[aVdx_O[j], aVdx[k]] += (psi[abdx_O]*psi[k]) @ weights * aT.absDet() / delta**2 * 4
-        #T1, T2 = np.meshgrid(aVdx_O, aVdx, indexing="ij")
-        #test1 = Ad[T1, T2]
         for bTdx in range(0, mesh.J):
             bT = mesh[bTdx]
-            # Term2 berechnen
             n_P = P.shape[1]
             term2 = np.zeros((3, n_P))
             X = aT.toPhys(P)
             Y = bT.toPhys(P)
 
-            for k in range(n_P):
-                 if p_in_nbhd(P[:, k], aT, bT, delta):
-                    for j in range(n_P):
-                        for psi_j in range(3):
-                            ker = kernelPhys(Y[:, j], X[:, k])
-                            product = psi[psi_j, j]*ker
-                            term2[psi_j, k] += product*weights[j]*bT.absDet()
-
-            if not (term2 == 0).all():
-                #term2_ = term2[np.newaxis]
-                #psi_ = psi[aBdx_O, np.newaxis, :]
-                bVdx = mesh.Vdx(bTdx) #Get the indices of the nodes wrt. Verts (bK) which lie in Omega or OmegaI.
-                #a = np.zeros((len(aBdx_O),3))
-                for j, abdx_O in enumerate(aBdx_O):
-                    for k in range(3):
-                        Ad[aVdx_O[j], bVdx[k]] -= (psi[abdx_O] * term2[k]) @ weights * aT.absDet()
-                #T1, T2 = np.meshgrid(aVdx_O, bVdx, indexing="ij")
-                #Ad[T1, T2] += (psi_*term2_) @ weights * aT.absDet()
-                #c = b-a
-                #print(c)
-
+            if inNbhd(aT, bT, delta, norm="l2"):
+                bVdx = mesh.Vdx(bTdx)
+                for i, avdx in enumerate(aVdx_O):
+                    a = aBdx_O[i]
+                    for b in range(3):
+                        g = kernelPhys(np.zeros(1), np.zeros(1))
+                        Ad[avdx, bVdx[b]] -= aT.absDet()*bT.absDet() * (psi[a] @ weights) * (psi[b] @ weights * g)
+                        Ad[avdx, aVdx[b]] += aT.absDet()*bT.absDet() * (psi[a] * psi[b]) @ weights * g
     total_time = time.time() - start
 
     Ad_O = Ad[:, :mesh.K_Omega]

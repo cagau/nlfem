@@ -67,7 +67,9 @@ def inNbhd_l2(aT, bT, delta, v=False):
     :param v: Verbose mode.
     :return: bool True if Ea and Eb interact.
     """
-    return np.linalg.norm(aT.baryCenter() - bT.baryCenter) <= delta
+    difference = aT.baryCenter() - bT.baryCenter()
+    norm = np.linalg.norm(difference)
+    return np.all(norm <= delta)
 
 def inNbhd_inf(Ea, Eb, delta, v=True):
     """
@@ -282,7 +284,7 @@ class clsMesh:
             plt.scatter(E_O[:, 0], E_O[:, 1], s=50, c="r", marker="X", label="E in Omega (Vdx)")
             plt.scatter(T.E[dx_inOmega, 0], T.E[dx_inOmega, 1], s=50, c="w", marker="+",
                         label="E in Omega (dx_inOmega)")
-            plt.legend()
+            #plt.legend()
         plt.savefig(pp, format='pdf')
         plt.close()
 
