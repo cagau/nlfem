@@ -1,28 +1,28 @@
 #-*- coding:utf-8 -*-
 
-import readmesh as rm
+from conf import P, weights, mesh_name, delta
+
 import numpy as np
 import time
-from quadpoints import P, weights
-# Help Functions to check whether two elements interact
-from nlocal import clsMesh, inNbhd, xinNbhd, clsInt
-from aux import timestamp
-# Necessary definitions for intersection -------------------------------------------------------------------------------
+import pickle as pkl
 
+from nlocal import clsMesh, clsInt # Mesh, Triangle and Integrator class
+from nbhd import inNbhd, xinNbhd # Check interaction
+from aux import filename
+from plot import plot
+
+# Necessary definitions for intersection -------------------------------------------------------------------------------
 if __name__ == "__main__":
     # Nodes and Function values on nodes
     # Die Reihenfolge der phis muss zu der Reihenfolge
     # aus readmesh passen!
 
     # Mesh construction --------------------
-    msh_name = "medium"
-    args = rm.read_mesh("circle_" + msh_name + ".msh")
-    mesh = clsMesh(*args)
+    mesh = clsMesh("circle_" + mesh_name + ".msh")
 
     # Allocate Matrix A and right side f
     Ad = np.zeros((mesh.K_Omega, mesh.K))
     fd = np.zeros(mesh.K_Omega)
-    delta = .2
     integrate = clsInt(P, weights, delta)
 
     # Loop over triangles --------------------------------------------------------------------------------------------------
@@ -46,9 +46,9 @@ if __name__ == "__main__":
             for bTdx in NTdx:
                 if not visited[bTdx]:
                     bT = mesh[bTdx]
-                    Mis_interact = inNbhd(aT, bT, delta, method="Ml2")
+                    Mis_interact = inNbhd(aT, bT, delta, method="Ml2Bary")
 
-                    if Mis_interact.any():
+                    if Mis_interact.all():
                         queue.append(bTdx)
                         bVdx = mesh.Vdx(bTdx)
 
@@ -70,7 +70,11 @@ if __name__ == "__main__":
     ud_Ext = np.zeros(mesh.K)
     ud_Ext[:mesh.K_Omega] = ud
 
-    tmstp = timestamp()
-    np.savez(tmstp + "_" + msh_name + str(round(delta*10)), Ad_O, fd, ud_Ext, fd_Ext)
+    Tstmp, fnm = filename(mesh_name, delta)
+    fileObject = open(Tstmp + fnm, 'wb')
+    pkl.dump({"Ad_O": Ad_O, "fd": fd, "ud_Ext": ud_Ext, "fd_Ext": fd_Ext, "mesh": mesh}, fileObject)
+    fileObject.close()
 
     print("Time needed", total_time)
+
+    plot(mesh_name, delta, Tstmp=Tstmp)

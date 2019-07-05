@@ -1,160 +1,8 @@
 #-*- coding:utf-8 -*-
 
 import numpy as np
-from cvxopt import matrix, solvers
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-solvers.options['show_progress'] = False
-
-
-def S_infty(E, delta):
-    """
-    Returns the corners of the :math:`\delta - L_{\infty}`-Box around a Triangle.
-
-    :param E: nd.array, real, shape (2,3) Vertices of the triangle
-    :param delta: real, Size of the L-infinity box
-
-    :return: nd.array, real, shape (2,12) Corners of $B$
-    """
-    D = np.array([[1,1], [1,-1], [-1,1], [-1,-1]])*delta
-    return np.repeat(E, 4, axis =1) + np.tile(D.transpose(), 3)
-
-def inNbhd(aT, bT, delta, method="Ml2", v=False):
-    """
-    Checks whether two triangles interact. If they do it returns True. That means this function
-    only allows a very coarse information hand hence a very coarse approximation of the integrals.
-
-    :param aT: clsTriangle, Triangle a
-    :param bT: clsTriangle, Triangle b
-    :param delta: real, Interaction Radius
-    :param method: str, default="l2". Norm w.r.t which the Ball is constructed. Options l2, inf
-    :param v: bool, Verbose switch
-    :return:
-    """
-    if method == "inf":
-        return inNbhd_inf(aT, bT, delta, v)
-    elif method == "l2Bary":
-        return inNbhd_l2_bary(aT, bT, delta, v)
-    elif method == "Ml2":
-        return MinNbhd_l2(aT, bT, delta, v)
-    elif method == "Mfulll2":
-        return MinNbhdfull_l2(aT, bT, delta, v)
-    return None
-
-def xinNbhd(P, aT, bT, delta):
-    """ Tests whether a reference point p in Triangle a interacts
-    with triangle b w.r.t. :math:`L_2`-ball of radius delta.
-
-    :param P: ndarray, real, shape (2,m) Point in the reference triangle.
-    :param aT: clsTriangle Triangle a
-    :param bT: clsTriangle Triangle b
-    :param delta: real Radius of L2-Ball
-    :return: bool True if the triangles interact.
-    """
-    a_elPoints = aT.toPhys(P)
-    b_baryC = bT.baryCenter()[:, np.newaxis]
-    # In order to make this work for a refPoints of shape (2,m) do
-    # is_inNbhd = np.linalg.norm(a_elPoint - b_baryC, axis=0) <= delta
-    is_inNbhd = np.sum((a_elPoints - b_baryC)**2, axis=0) <= delta**2
-    Pdx_inNbhd = np.flatnonzero(is_inNbhd)
-    return Pdx_inNbhd
-
-def MinNbhd_l2(aT, bT, delta, v=False):
-    """
-    Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
-    Returns an array of boolen values. If all are True Eb lies in a subset of the
-    interaction set S(Ea)
-
-    :param aT: clsTriangle, Triangle a
-    :param bT: clsTriangle, Triangle b
-    :param delta: Size of L-2 ball
-    :param v: Verbose mode.
-    :return: ndarray, bool, shape (3,) Entry i is True if Ea[i] and the barycenter of Eb interact.
-    """
-    M =  np.sum((aT.E - bT.baryCenter()[np.newaxis])**2, axis=1)
-    M = M <= delta**2
-    return M
-
-def MinNbhdfull_l2(aT, bT, delta, v=False):
-    """
-    Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
-    Returns an array of boolen values. If all are True Eb lies in a subset of the
-    interaction set S(Ea)
-
-    :param aT: clsTriangle, Triangle a
-    :param bT: clsTriangle, Triangle b
-    :param delta: Size of L-2 ball
-    :param v: Verbose mode.
-    :return: ndarray, bool, shape (3,3) Entry i,j is True if Ea[i] and Eb[j] interact.
-    """
-    M = np.sqrt(np.sum((aT.E[np.newaxis] - bT.E[:, np.newaxis])**2, axis=2))
-    M = M <= delta
-    return M
-
-def inNbhd_l2_bary(aT, bT, delta, v=False):
-    """
-    Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
-
-    :param aT: clsTriangle, Triangle a
-    :param bT: clsTriangle, Triangle b
-    :param delta: Size of L-2 ball
-    :param v: Verbose mode.
-    :return: bool True if Ea and Eb interact.
-    """
-    difference = aT.baryCenter() - bT.baryCenter()
-    norm = np.linalg.norm(difference)
-    return np.all(norm <= delta)
-
-def inNbhd_inf(Ea, Eb, delta, v=True):
-    """
-    Check whether two triangles interact w.r.t :math:`L_{\infty}`-ball of size delta.
-
-    :param aT: clsTriangle, Triangle a
-    :param bT: clsTriangle, Triangle b
-    :param delta: Size of L-infinity ball
-    :param v: Verbose mode.
-    :return: bool True if Ea and Eb interact.
-    """
-    # Check whether the triangles share a point
-    Ea = aT.E.T
-    Eb = bT.E.T
-    intersection = np.intersect1d(Ea, Eb)
-    if intersection.size > 0:
-        return True
-
-    # Determine extreme points of infty-norm ball around Ea
-    SEa = S_infty(Ea, delta=delta)
-    
-    if v:
-        plt.scatter(SEa[0], SEa[1], c="r", alpha=.2)
-        plt.scatter(Eb[0], Eb[1], c="b", alpha=.2)
-        plt.show()
-        
-    low_a = np.amin(SEa, axis=1)
-    upp_a = np.amax(SEa, axis=1)
-    low_b = np.amin(Eb, axis=1)
-    upp_b = np.amax(Eb, axis=1)
-
-    # Check whether the triangles are very far away from each other
-    if any(low_a >= upp_b) or any(upp_a <= low_b):
-        if v:
-            print("no lp solve required because: ")
-            print("Low_a", low_a, "Upp_b", upp_b)
-            print("Low_b", low_b, "Upp_a", upp_a)
-        return False
-
-    # If not solve an LP
-    data = np.concatenate((-SEa, Eb), axis=1)
-    bias = np.array([[-1] * 12 + [1] * 3])
-    data = np.concatenate((data, bias), axis=0).T
-
-    # Solve full problem
-    G = matrix(data, size=(15, 3))
-    c = matrix(0., size=(3, 1))
-    h = matrix(-1., size=(15, 1))
-
-    x = solvers.lp(c, G, h)
-    return x["status"] != "optimal"
 
 
 class clsMesh:
@@ -163,12 +11,14 @@ class clsMesh:
 
 
     """
-    def __init__(self, Verts, Lines, Triangles):
+    def __init__(self, mshfile):
         """Constructor Method
 
         Takes Verts, Lines and Triangles from readmesh and executes prepare.
         """
-        args = self.prepare(Verts, Lines, Triangles)
+
+
+        args = self.prepare(*self.read_mesh(mshfile))
         # args = Verts, Triangles, K, K_Omega, J, J_Omega
         self.V = args[0]
         self.T = args[1][:, 1:]
@@ -176,6 +26,79 @@ class clsMesh:
         self.K_Omega = args[3]
         self.J = args[4]
         self.J_Omega = args[5]
+
+    def read_mesh(self, mshfile):
+        """meshfile = .msh - file genrated by gmsh
+
+
+        :param mshfile:
+        :return: Verts, Lines, Triangles
+        """
+
+        fid = open(mshfile, "r")
+
+        for line in fid:
+
+            if line.find('$Nodes') == 0:
+                # falls in der Zeile 'Nodes' steht, dann steht in der...
+                line = fid.readline()  # ...naechsten Zeile...
+                npts = int(line.split()[0])  # ..die anzahl an nodes
+
+                Verts = np.zeros((npts, 3), dtype=float)  # lege array for nodes an anzahl x dim
+
+                for i in range(0, npts):
+                    # run through all nodes
+                    line = fid.readline()  # put current line to be the one next
+                    data = line.split()  # split line into its atomic characters
+                    Verts[i, :] = list(map(float, data[
+                                                  1:]))  # read out the coordinates of the node by applying the function float() to the characters in data
+
+            if line.find('$Elements') == 0:
+                line = fid.readline()
+                nelmts = int(line.split()[0])  # number of elements
+
+                Lines = []
+                Triangles = []
+                # Squares = np.array([])
+
+                for i in range(0, nelmts):
+                    line = fid.readline()
+                    data = line.split()
+                    if int(data[1]) == 1:
+                        """ 
+                        we store [physical group, node1, node2, node3], 
+                        -1 comes from python starting to count from 0
+                        """
+                        # see ordering:
+
+                        #                   0----------1 --> x
+
+                        Lines += [int(data[3]), int(data[-2]) - 1, int(data[-1]) - 1]
+
+                    if int(data[1]) == 2:
+                        """
+                        we store [physical group, node1, node2, node3]
+                        """
+                        # see ordering:
+
+                        #                    y
+                        #                    ^
+                        #                    |
+                        #                    2
+                        #                    |`\
+                        #                    |  `\
+                        #                    |    `\
+                        #                    |      `\
+                        #                    |        `\
+                        #                    0----------1 --> x
+
+                        Triangles += [int(data[3]), int(int(data[-3]) - 1), int(int(data[-2]) - 1),
+                                      int(int(data[-1]) - 1)]
+
+        Triangles = np.array(Triangles).reshape(-1, 4)
+        Lines = np.array(Lines).reshape(-1, 3)
+
+        return Verts, Lines, Triangles
 
     def prepare(self, Verts, Lines, Triangles):
         """Prepare mesh from Verts, Lines and Triangles.
@@ -391,10 +314,6 @@ class clsInt:
         self.psi = psi
         self.P = P
         self.weights = weights
-        self.log_xinNbhd = 0
-        self.log_xnotinNbhd = 0
-        self.counter = 0
-
     def A(self, a, b, aT, bT, is_allInteract=True):
         if is_allInteract:
             # P, weights and psi are just views. The data is not copied. See
@@ -405,11 +324,8 @@ class clsInt:
 
         else:
             dx_sInteract = []
-
+            # The following line increases the computation time by x2.
             dx_sInteract = xinNbhd(self.P, aT, bT, self.delta)
-            self.log_xinNbhd += int(len(dx_sInteract) == 7)
-            self.log_xnotinNbhd += int(len(dx_sInteract) == 0)
-            self.counter += 1
             # Advanced indexing!
             # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
             # This will copy the data to P and weights every time!
