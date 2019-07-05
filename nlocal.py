@@ -37,29 +37,45 @@ def inNbhd(aT, bT, delta, method="Ml2", v=False):
         return inNbhd_l2_bary(aT, bT, delta, v)
     elif method == "Ml2":
         return MinNbhd_l2(aT, bT, delta, v)
+    elif method == "Mfulll2":
+        return MinNbhdfull_l2(aT, bT, delta, v)
     return None
 
-def xinNbhd(refPoint, aT, bT, delta):
+def xinNbhd(P, aT, bT, delta):
     """ Tests whether a reference point p in Triangle a interacts
     with triangle b w.r.t. :math:`L_2`-ball of radius delta.
 
-    :param refPoint: ndarray, real, shape (2,) Point in the reference triangle.
+    :param P: ndarray, real, shape (2,m) Point in the reference triangle.
     :param aT: clsTriangle Triangle a
     :param bT: clsTriangle Triangle b
     :param delta: real Radius of L2-Ball
     :return: bool True if the triangles interact.
     """
-    if refPoint.shape != (2,):
-        raise ValueError("p_in_nbhd() only accepts a single refPoint.")
-    a_elPoint = aT.toPhys(refPoint)
-    b_baryC = bT.baryCenter().reshape((-1, 1))
+    a_elPoints = aT.toPhys(P)
+    b_baryC = bT.baryCenter()[:, np.newaxis]
     # In order to make this work for a refPoints of shape (2,m) do
     # is_inNbhd = np.linalg.norm(a_elPoint - b_baryC, axis=0) <= delta
-    is_inNbhd = np.linalg.norm(a_elPoint - b_baryC) <= delta
-    #Pdx_inNbhd = np.flatnonzero(is_inNbhd)
-    return is_inNbhd
+    is_inNbhd = np.sum((a_elPoints - b_baryC)**2, axis=0) <= delta**2
+    Pdx_inNbhd = np.flatnonzero(is_inNbhd)
+    return Pdx_inNbhd
 
 def MinNbhd_l2(aT, bT, delta, v=False):
+    """
+    Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
+    Returns an array of boolen values. If all are True Eb lies in a subset of the
+    interaction set S(Ea)
+
+    :param aT: clsTriangle, Triangle a
+    :param bT: clsTriangle, Triangle b
+    :param delta: Size of L-2 ball
+    :param v: Verbose mode.
+    :return: ndarray, bool, shape (3,) Entry i is True if Ea[i] and the barycenter of Eb interact.
+    """
+    M =  np.sum((aT.E - bT.baryCenter()[np.newaxis])**2, axis=1)
+    M = M <= delta**2
+    return M
+
+def MinNbhdfull_l2(aT, bT, delta, v=False):
     """
     Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
     Returns an array of boolen values. If all are True Eb lies in a subset of the
@@ -327,6 +343,11 @@ class clsMesh:
         return
 
 class clsTriangle:
+    """
+    Triangle Classe
+
+    :ivar E: nd.array, real, shape (3,2). Physical nodes of Triangle.
+    """
     def __init__(self, E):
         self.E = E
         a, b, c = self.E
@@ -361,22 +382,7 @@ class clsTriangle:
 
 
 class clsInt:
-    def __init__(self, mesh, delta):
-        P = np.array([[0.33333333333333, 0.33333333333333],
-                      [0.47014206410511, 0.47014206410511],
-                      [0.47014206410511, 0.05971587178977],
-                      [0.05971587178977, 0.47014206410511],
-                      [0.10128650732346, 0.10128650732346],
-                      [0.10128650732346, 0.79742698535309],
-                      [0.79742698535309, 0.10128650732346]]).transpose()
-
-        self.weights = np.array([0.22500000000000,
-                            0.13239415278851,
-                            0.13239415278851,
-                            0.13239415278851,
-                            0.12593918054483,
-                            0.12593918054483,
-                            0.12593918054483]) / 2
+    def __init__(self, P, weights, delta):
         self.delta = delta
         psi0 = 1 - P[0, :] - P[1, :]
         psi1 = P[0, :]
@@ -384,62 +390,40 @@ class clsInt:
         psi = np.array([psi0, psi1, psi2])
         self.psi = psi
         self.P = P
+        self.weights = weights
+        self.log_xinNbhd = 0
+        self.log_xnotinNbhd = 0
+        self.counter = 0
 
-        self.mesh = mesh
-
-        self.Ad = np.zeros((mesh.K_Omega, mesh.K))
-        self.fd = np.zeros(mesh.K_Omega)
-
-    def A(self, aTdx, bTdx, is_allInteract=True):
-        psi = self.psi
-        mesh = self.mesh
-        aT = mesh[aTdx]
-        bT = mesh[bTdx]
-
-        # Get the indices of the nodes wrt. T.E (ak) and Verts (aK) which lie in Omega.
-        aBdx_O, aVdx_O = mesh.Vdx_inOmega(aTdx)
-        aVdx = mesh.Vdx(aTdx)  # Index for both Omega or OmegaI
-        bVdx = mesh.Vdx(bTdx)
-
+    def A(self, a, b, aT, bT, is_allInteract=True):
         if is_allInteract:
+            # P, weights and psi are just views. The data is not copied. See
+            # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
             P = self.P
             weights = self.weights
+            psi = self.psi
+
         else:
-            P = self.P
-            n_P = P.shape[1]
-            delta = self.delta
+            dx_sInteract = []
 
-            Mis_sInteract = np.zeros(n_P, dtype=bool)
+            dx_sInteract = xinNbhd(self.P, aT, bT, self.delta)
+            self.log_xinNbhd += int(len(dx_sInteract) == 7)
+            self.log_xnotinNbhd += int(len(dx_sInteract) == 0)
+            self.counter += 1
+            # Advanced indexing!
+            # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
+            # This will copy the data to P and weights every time!
+            P = self.P[:, dx_sInteract]
+            weights = self.weights[dx_sInteract]
+            psi = self.psi[:, dx_sInteract]
 
-            for j, p in enumerate(P.T):
-                if xinNbhd(p, aT, bT, delta):
-                    Mis_sInteract[j] = True
+        kerd = self.kernelPhys(P, aT, bT)
+        termLocal = aT.absDet() * bT.absDet() * (psi[a] * psi[b] * (kerd @ weights)) @ weights
+        termNonloc = aT.absDet() * bT.absDet() * psi[a] * ((psi[b] * kerd) @ weights) @ weights
+        return termLocal, termNonloc
 
-            P = self.P[:, Mis_sInteract]
-            weights = self.weights[Mis_sInteract]
-            psi = self.psi[:, Mis_sInteract]
-
-        X = aT.toPhys(P)
-        Y = bT.toPhys(P)
-        kerd = self.kernelPhys(X, Y)
-
-        for i, avdx in enumerate(aVdx_O):
-            a = aBdx_O[i]
-            for b in range(3):
-                self.Ad[avdx, bVdx[b]] -= aT.absDet() * bT.absDet() * psi[a] * (
-                        (psi[b] * kerd) @ weights) @ weights
-                self.Ad[avdx, aVdx[b]] += aT.absDet() * bT.absDet() * (
-                        psi[a] * psi[b] * (kerd @ weights)) @ weights
-    def f(self, aTdx):
-        mesh = self.mesh
-        psi = self.psi
-        aT = mesh[aTdx]
-        weights = self.weights
-        P = self.P
-
-        # Get the indices of the nodes wrt. T.E (ak) and Verts (aK) which lie in Omega.
-        aBdx_O, aVdx_O = mesh.Vdx_inOmega(aTdx)
-        self.fd[aVdx_O] = (psi[aBdx_O] * self.fPhys(aT.toPhys(P))) @ weights * aT.absDet()
+    def f(self, aBdx_O, aT):
+        return (self.psi[aBdx_O] * self.fPhys(aT.toPhys(self.P))) @ self.weights * aT.absDet()
 
     # Define Right side f
     def fPhys(self, x):
@@ -451,16 +435,17 @@ class clsInt:
         # f = 1
         return 1
 
-    def kernelPhys(self, x, y):
-        """ Integration kernel.
+    def kernelPhys(self, P, Tx, Ty):
+        """ Constant integration kernel.
 
-        :param x: nd.array, real, shape (2, n). Physical point in the 2D plane
-        :param y: nd.array, real, shape (2, m). Physical point in the 2D plane
-        :return: nd.array, real, shape (n,m). Evaluates the kernel on the full grid.
+        :param P: ndarray, real, shape (2, n). Reference points for integration.
+        :param Tx: Triangle. Triangle of x-Component.
+        :param Ty: Triangle. Triangle of y-Component.
+        :return: real. Evaluates the kernel on the full grid.
         """
-        n = x.shape
-        m = y.shape
 
         # $\gamma(x,y) = 4 / (pi * \delta**4)$
         # Wir erwarten $u(x) = 1/4 (1 - ||x||^2)$
-        return np.ones((n[1], m[1])) * 4 / (np.pi * self.delta ** 4)
+
+        n_P = P.shape[1]
+        return 4 / (np.pi * self.delta ** 4) * np.ones((n_P, n_P))

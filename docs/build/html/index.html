@@ -156,37 +156,6 @@
 </div>
 <div class="section" id="module-solve_nonlocal_fullsearch">
 <span id="functions-on-physical-domain"></span><h2>Functions on physical domain<a class="headerlink" href="#module-solve_nonlocal_fullsearch" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
-<dt id="solve_nonlocal_fullsearch.fPhys">
-<code class="sig-prename descclassname">solve_nonlocal_fullsearch.</code><code class="sig-name descname">fPhys</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solve_nonlocal_fullsearch.html#fPhys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solve_nonlocal_fullsearch.fPhys" title="Permalink to this definition">¶</a></dt>
-<dd><p>Right side of the equation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> – nd.array, real, shape (2,). Physical point in the 2D plane</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>real</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="solve_nonlocal_fullsearch.kernelPhys">
-<code class="sig-prename descclassname">solve_nonlocal_fullsearch.</code><code class="sig-name descname">kernelPhys</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/solve_nonlocal_fullsearch.html#kernelPhys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#solve_nonlocal_fullsearch.kernelPhys" title="Permalink to this definition">¶</a></dt>
-<dd><p>Integration kernel.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> – nd.array, real, shape (2,). Physical point in the 2D plane</p></li>
-<li><p><strong>y</strong> – nd.array, real, shape (2,). Physical point in the 2D plane</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>real</p>
-</dd>
-</dl>
-</dd></dl>
-
 </div>
 <div class="section" id="module-aux">
 <span id="helper-modules"></span><h2>Helper modules<a class="headerlink" href="#module-aux" title="Permalink to this headline">¶</a></h2>
@@ -215,27 +184,7 @@
 </dl>
 </dd></dl>
 
-<span class="target" id="module-nlocal"></span><dl class="function">
-<dt id="nlocal.p_in_nbhd">
-<code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">p_in_nbhd</code><span class="sig-paren">(</span><em class="sig-param">refPoint</em>, <em class="sig-param">aT</em>, <em class="sig-param">bT</em>, <em class="sig-param">delta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#p_in_nbhd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.p_in_nbhd" title="Permalink to this definition">¶</a></dt>
-<dd><p>Tests whether a reference point p in Triangle a interacts
-with triangle b w.r.t. <img class="math" src="_images/math/fcd0c45a70da7d2399b3fb666759b02c5edd251e.png" alt="L_2"/>-ball of radius delta.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>refPoint</strong> – ndarray, real, shape (2,) Point in the reference triangle.</p></li>
-<li><p><strong>aT</strong> – clsTriangle Triangle a</p></li>
-<li><p><strong>bT</strong> – clsTriangle Triangle b</p></li>
-<li><p><strong>delta</strong> – real Radius of L2-Ball</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>bool True if the triangles interact.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="class">
+<span class="target" id="module-nlocal"></span><dl class="class">
 <dt id="nlocal.clsMesh">
 <em class="property">class </em><code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">clsMesh</code><span class="sig-paren">(</span><em class="sig-param">Verts</em>, <em class="sig-param">Lines</em>, <em class="sig-param">Triangles</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsMesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsMesh" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mesh Class</p>
@@ -269,6 +218,20 @@ the array Verts (Vdx)</p>
 </dd>
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts which lie in Omega.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="nlocal.clsMesh.neighbor">
+<code class="sig-name descname">neighbor</code><span class="sig-paren">(</span><em class="sig-param">Tdx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsMesh.neighbor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsMesh.neighbor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of indices of neighbours of Tdx.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>Tdx</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
 </dd>
 </dl>
 </dd></dl>
@@ -321,7 +284,13 @@ the array Verts (Vdx)</p>
 <dl class="class">
 <dt id="nlocal.clsTriangle">
 <em class="property">class </em><code class="sig-prename descclassname">nlocal.</code><code class="sig-name descname">clsTriangle</code><span class="sig-paren">(</span><em class="sig-param">E</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsTriangle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsTriangle" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Triangle Classe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><p><strong>E</strong> – nd.array, real, shape (3,2). Physical nodes of Triangle.</p>
+</dd>
+</dl>
+<dl class="method">
 <dt id="nlocal.clsTriangle.absDet">
 <code class="sig-name descname">absDet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nlocal.html#clsTriangle.absDet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nlocal.clsTriangle.absDet" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
