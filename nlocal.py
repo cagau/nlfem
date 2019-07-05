@@ -6,18 +6,23 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 
 class clsMesh:
-    """
-    Mesh Class
+    """ **Mesh Class**
 
+    Let :math:`K` be the number of basis functions and :math:`J` the number of finite elements. The ordering of the vertices
+    V is such that the first :math:`K_{\Omega}` vertices lie in the interior of :math:`\Omega`.
 
+    :ivar V: nd.array, real, shape (K, 2) List of vertices in the 2D plane
+    :ivar T: nd.array, int, shape (J, 3) List of indices mapping an index Tdx to 3 corresponding vertices of V.
+    :ivar K: Number of basis functions.
+    :ivar K_Omega: Number if basis functions in the interior of :math:`\Omega`.
+    :ivar J: Number of finite elements :math:`\Omega`.
+    :ivar J_Omega: Number of finite elements in
     """
     def __init__(self, mshfile):
-        """Constructor Method
+        """Constructor
 
-        Takes Verts, Lines and Triangles from readmesh and executes prepare.
+        Executes read_mesh and prepare.
         """
-
-
         args = self.prepare(*self.read_mesh(mshfile))
         # args = Verts, Triangles, K, K_Omega, J, J_Omega
         self.V = args[0]
@@ -305,6 +310,13 @@ class clsTriangle:
 
 
 class clsInt:
+    """**Integrator Class**
+
+    Contains the formulas, quadrature rule and functions fPhys and kerPhys.
+    The rule P, weights and delta are handed over when the object is constructed.
+
+    :ivar psi: Values of basis functions for given rule P.
+    """
     def __init__(self, P, weights, delta):
         self.delta = delta
         psi0 = 1 - P[0, :] - P[1, :]
@@ -315,6 +327,15 @@ class clsInt:
         self.P = P
         self.weights = weights
     def A(self, a, b, aT, bT, is_allInteract=True):
+        """Compute the local and nonlocal terms of the integral.
+
+        :param a: int. Index of vertex to find the correct reference basis function.
+        :param b: int. Index of vertex to find the correct reference basis function.
+        :param aT: Triangle, Triangle a.
+        :param bT: Triangle, Triangle b.
+        :param is_allInteract: bool. True if all points in aT interact with all points in bT.
+        :return:
+        """
         if is_allInteract:
             # P, weights and psi are just views. The data is not copied. See
             # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
@@ -339,6 +360,13 @@ class clsInt:
         return termLocal, termNonloc
 
     def f(self, aBdx_O, aT):
+        """
+        Assembles the right side f.
+
+        :param aBdx_O: tupel of int, i=0,1,2. Index of reference basis functions which lie in Omega.
+        :param aT: Triangle. Triangle to intgrate over.
+        :return: Integral.
+        """
         return (self.psi[aBdx_O] * self.fPhys(aT.toPhys(self.P))) @ self.weights * aT.absDet()
 
     # Define Right side f

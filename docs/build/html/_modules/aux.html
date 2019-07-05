@@ -143,8 +143,24 @@
   <h1>Source code for aux</h1><div class="highlight"><pre>
 <span></span><span class="c1">#-*- coding:utf-8 -*-</span>
 
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">datetime</span>
 <span class="c1">#from time import strftime</span>
+
+<div class="viewcode-block" id="filename"><a class="viewcode-back" href="../index.html#aux.filename">[docs]</a><span class="k">def</span> <span class="nf">filename</span><span class="p">(</span><span class="n">mesh_name</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">Tstmp</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates filename for given input.</span>
+
+<span class="sd">    :param mesh_name: Name of mesh, e.g. &quot;medium&quot;.</span>
+<span class="sd">    :param delta: Interaction radius.</span>
+<span class="sd">    :param Tstmp: bool, If True a timestamp will computed, otherwise it is set to &quot;&quot;.</span>
+<span class="sd">    :return: list of string. Tstmp, filename</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">Tstmp</span><span class="p">:</span>
+        <span class="n">Tstmp</span> <span class="o">=</span> <span class="n">timestamp</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Tstmp</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Tstmp</span><span class="p">,</span> <span class="n">mesh_name</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">delta</span> <span class="o">*</span> <span class="mi">10</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="timestamp"><a class="viewcode-back" href="../index.html#aux.timestamp">[docs]</a><span class="k">def</span> <span class="nf">timestamp</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>

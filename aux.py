@@ -5,6 +5,14 @@ import datetime
 #from time import strftime
 
 def filename(mesh_name, delta, Tstmp=False):
+    """
+    Generates filename for given input.
+
+    :param mesh_name: Name of mesh, e.g. "medium".
+    :param delta: Interaction radius.
+    :param Tstmp: bool, If True a timestamp will computed, otherwise it is set to "".
+    :return: list of string. Tstmp, filename
+    """
     if Tstmp:
         Tstmp = timestamp()
     else:

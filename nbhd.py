@@ -20,9 +20,10 @@ def S_infty(E, delta):
 
 def inNbhd(aT, bT, delta, method="Ml2Bary", v=False):
     """
-    Checks whether two triangles interact.
-    - The options inf, lsBary return a boolean value.
-    - The options Ml2Bary, Mfulll2 return a matrix of boolean values.
+    Wrapper for the other inNbhd-functions.
+
+     - The options *inf, lsBary* return a boolean value.
+     - The options *Ml2Bary, Mfulll2* return a matrix of boolean values.
 
     :param aT: clsTriangle, Triangle a
     :param bT: clsTriangle, Triangle b

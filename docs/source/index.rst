@@ -9,22 +9,8 @@ Nonlocal Assembly's doc
    :maxdepth: 2
    :caption: Contents:
 
-Functions on physical domain
-============================
-.. automodule:: solve_nonlocal_fullsearch
-   :members:
-
-Helper modules
-==============
-.. automodule:: aux
-   :members: timestamp
-
-.. automodule:: readmesh
-   :members: read_mesh
-
-.. automodule:: nlocal
-   :members: S, in_nbhd, p_in_nbhd
-
+Mesh, Triangle and Integrator Class
+===================================
 .. autoclass:: nlocal.clsMesh
    :members:
    :undoc-members:
@@ -32,6 +18,23 @@ Helper modules
 .. autoclass:: nlocal.clsTriangle
    :members:
    :undoc-members:
+
+.. autoclass:: nlocal.clsInt
+   :members:
+   :undoc-members:
+
+Helper modules
+==============
+.. automodule:: aux
+   :members:
+
+.. automodule:: nbhd
+   :members:
+
+.. automodule:: nlocal
+   :members:
+
+
 
 Indices and tables
 ==================
