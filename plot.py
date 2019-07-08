@@ -31,7 +31,12 @@ def plot(mesh_name, delta, Tstmp= ""):
     pp = PdfPages(fnm + ".pdf")
 
     plt.gca().set_aspect('equal')
-    plt.triplot(mesh.V[:, 0], mesh.V[:, 1], mesh.T, lw=0.5, color='white', alpha=.5)
+    grid = np.arange(-1-delta, 1+delta, delta)
+    plt.yticks(grid)
+    plt.xticks(grid)
+    plt.grid(True, color='white', lw=0.1, alpha=.6)
+
+    plt.triplot(mesh.V[:, 0], mesh.V[:, 1], mesh.T, lw=0.1, color='white', alpha=.3)
     plt.tricontourf(mesh.V[:, 0], mesh.V[:, 1], mesh.T, fd_Ext)
     plt.colorbar(orientation='horizontal', shrink=.7)
     plt.title("Right side f")
@@ -45,7 +50,12 @@ def plot(mesh_name, delta, Tstmp= ""):
     plt.close()
 
     plt.gca().set_aspect('equal')
-    plt.triplot(mesh.V[:, 0], mesh.V[:, 1], mesh.T, lw=0.5, color='white', alpha=.5)
+    grid = np.arange(-1-delta, 1+delta, delta)
+    plt.yticks(grid)
+    plt.xticks(grid)
+    plt.grid(True, color='white', lw=0.1, alpha=.6)
+
+    plt.triplot(mesh.V[:, 0], mesh.V[:, 1], mesh.T, lw=0.1, color='white', alpha=.3)
     plt.tricontourf(mesh.V[:, 0], mesh.V[:, 1], mesh.T, ud_Ext)
     plt.colorbar(orientation='horizontal', shrink=.7)
     plt.title("Solution u")
@@ -65,3 +75,6 @@ def plot(mesh_name, delta, Tstmp= ""):
     plt.close()
 
     pp.close()
+
+if __name__ == "__main__":
+    plot("output/huge", .3, "")

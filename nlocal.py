@@ -32,6 +32,14 @@ class clsMesh:
         self.J = args[4]
         self.J_Omega = args[5]
 
+        self.Neighbours = []
+        self.Triangles = []
+
+        for Tdx in range(self.J):
+            Vdx = self.T[Tdx]
+            self.Triangles.append(clsTriangle(self.V[Vdx]))
+            self.Neighbours.append(self.get_neighbor(Tdx))
+
     def read_mesh(self, mshfile):
         """meshfile = .msh - file genrated by gmsh
 
@@ -179,9 +187,10 @@ class clsMesh:
         return Verts, Triangles, K, K_Omega, J, J_Omega
 
     def __getitem__(self, Tdx):
-        Vdx = self.T[Tdx]
-        E = self.V[Vdx]
-        return clsTriangle(E)
+        #Vdx = self.T[Tdx]
+        #E = self.V[Vdx]
+        #return clsTriangle(E)
+        return self.Triangles[Tdx]
 
     def Vdx_inOmega(self, Tdx):
         """
@@ -210,9 +219,9 @@ class clsMesh:
         Vdx = self.T[Tdx]
         return Vdx
 
-    def neighbor(self, Tdx):
+    def get_neighbor(self, Tdx):
         """
-        Return list of indices of neighbours of Tdx.
+        Find neighbour for index Tdx.
 
         :param Tdx:
         :return:
@@ -226,6 +235,15 @@ class clsMesh:
         idx = idx[np.where(Tdx != idx)]
         # verts = Verts[Triangles[idx, 1:]]
         return idx
+
+    def neighbor(self, Tdx):
+        """
+        Return list of indices of neighbours of Tdx.
+
+        :param Tdx:
+        :return:
+        """
+        return self.Neighbours[Tdx]
 
     def plot(self, Tdx, is_plotmsh=False, pdfname="meshplot", delta=None):
         """
