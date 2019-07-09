@@ -8,6 +8,12 @@ from conf import mesh_name, delta
 from aux import filename
 import pickle as pkl
 
+def uLocaSol(x,y):
+    n = x.shape[0]
+    u =  1/4*(1 - x**2 - y**2)
+    u = np.maximum(u, np.zeros(n))
+    return u
+
 def plot(mesh_name, delta, Tstmp= ""):
     """
     Plot function. Plots the solution and the right side and saves them to a pdf.
@@ -64,9 +70,14 @@ def plot(mesh_name, delta, Tstmp= ""):
 
     fig = plt.figure()
     ax = fig.gca(projection='3d', title="Solution u")
-    ax.plot_trisurf(mesh.V[:, 0], mesh.V[:, 1], ud_Ext)
+    # True Solution
+    u_true = uLocaSol(mesh.V[:, 0], mesh.V[:, 1])
+    ax.plot_trisurf(mesh.V[:, 0], mesh.V[:, 1], u_true, alpha=.2)
+    # Computed Solution
+    ax.plot_trisurf(mesh.V[:, 0], mesh.V[:, 1], ud_Ext, alpha=.9)
     plt.savefig(pp, format='pdf')
     plt.close()
+
 
     plt.imshow(Ad_O)
     plt.colorbar(orientation='horizontal', shrink=.7)
@@ -77,4 +88,4 @@ def plot(mesh_name, delta, Tstmp= ""):
     pp.close()
 
 if __name__ == "__main__":
-    plot("output/huge", .3, "")
+    plot("output/indep_x/large", .3, "")

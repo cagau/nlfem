@@ -1,9 +1,9 @@
 from distutils.core import setup, Extension
 
-modul = Extension("chiffre", sources=["chiffre.c"])
+modul = Extension("bermuda", sources=["bermuda.cpp"])
 setup(
-    name = "PyChiffre",
+    name = "PyBermuda",
     version = "1.0",
-    description = "Module for encryption techniques.",
+    description = "Draw some game.",
     ext_modules = [modul]
 )

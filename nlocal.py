@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from nbhd import xinNbhd
 
 
 class clsMesh:
@@ -245,7 +246,7 @@ class clsMesh:
         """
         return self.Neighbours[Tdx]
 
-    def plot(self, Tdx, is_plotmsh=False, pdfname="meshplot", delta=None):
+    def plot(self, Tdx, is_plotmsh=False, pdfname="meshplot", delta=None, title="", refPoints=None):
         """
         Plot triangle with index Tdx.
 
@@ -256,13 +257,19 @@ class clsMesh:
         :param is_plotmsh: bool, default=False Switch for surrounding FEM-Mesh.
         :param pdfname: str Name of output pdf.
         :param delta: optional, Interaction radius. A :math:`\ell_2`-circle will be drawn to show its size.
+        :param title: optional, Title of the plot.
+        :param refPoints: optional, Reference points for integration. If set to P the physical Points will be plotted
+            into the Triangles given by Tdx.
         :return: None
         """
 
+
+        marker_size = 5
         pp = PdfPages(pdfname+".pdf")
 
         fig, ax = plt.subplots()
         plt.gca().set_aspect('equal')
+        plt.title(title)
         if is_plotmsh:
             plt.triplot(self.V[:, 0], self.V[:, 1], self.T, lw=0.5, color='blue', alpha=.7)
 
@@ -276,11 +283,15 @@ class clsMesh:
 
             if delta is not None:
                 circle = plt.Circle(T.baryCenter(), delta, color='b', fill=False, lw=0.5)
+            if refPoints is not None:
+                PPhsy = T.toPhys(refPoints)
+                plt.scatter(PPhsy[0], PPhsy[1], s=1, c="black")
+
                 ax.add_artist(circle)
-            plt.scatter(T.E[:, 0], T.E[:, 1], s=50, c="b", marker="o", label="E")
-            plt.scatter(E_O[:, 0], E_O[:, 1], s=50, c="r", marker="X", label="E in Omega (Vdx)")
-            plt.scatter(T.E[dx_inOmega, 0], T.E[dx_inOmega, 1], s=50, c="w", marker="+",
-                        label="E in Omega (dx_inOmega)")
+            plt.scatter(T.E[:, 0], T.E[:, 1], s=marker_size, c="black", marker="o", label="E")
+            #plt.scatter(E_O[:, 0], E_O[:, 1], s=marker_size, c="r", marker="X", label="E in Omega (Vdx)")
+            #plt.scatter(T.E[dx_inOmega, 0], T.E[dx_inOmega, 1], s=marker_size, c="w", marker="+",
+            #            label="E in Omega (dx_inOmega)")
             #plt.legend()
         plt.savefig(pp, format='pdf')
         plt.close()
@@ -295,10 +306,10 @@ class clsTriangle:
     :ivar E: nd.array, real, shape (3,2). Physical nodes of Triangle.
     """
     def __init__(self, E):
-        self.E = E
+        self.E = E.copy()
         a, b, c = self.E
-        self.M_ = np.array([b - a, c - a])
-        self.a_ = a.reshape((2, 1))
+        self.M_ = np.array([b - a, c - a]).T
+        self.a_ = a[:, np.newaxis]
         self.baryCenter_ = None
         self.absDet_ = None
         self.toPhys_ = None
@@ -323,6 +334,7 @@ class clsTriangle:
         """
         self.toPhys_ = self.M_ @ P + self.a_
         return self.toPhys_
+
     def __eq__(self, other):
         return (self.E == other.E).all()
 
@@ -354,12 +366,16 @@ class clsInt:
         :param is_allInteract: bool. True if all points in aT interact with all points in bT.
         :return:
         """
+        weights = self.weights
+        psi = self.psi
+        P = self.P
+
         if is_allInteract:
             # P, weights and psi are just views. The data is not copied. See
             # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
-            P = self.P
-            weights = self.weights
-            psi = self.psi
+            P_ = self.P
+            weights_ = weights
+            psi_ = psi
 
         else:
             dx_sInteract = []
@@ -368,13 +384,13 @@ class clsInt:
             # Advanced indexing!
             # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
             # This will copy the data to P and weights every time!
-            P = self.P[:, dx_sInteract]
-            weights = self.weights[dx_sInteract]
-            psi = self.psi[:, dx_sInteract]
+            P_ = self.P[:, dx_sInteract]
+            weights_ = self.weights[dx_sInteract]
+            psi_ = self.psi[:, dx_sInteract]
 
-        kerd = self.kernelPhys(P, aT, bT)
+        kerd = self.kernelPhys(P_, P, aT, bT)
         termLocal = aT.absDet() * bT.absDet() * (psi[a] * psi[b] * (kerd @ weights)) @ weights
-        termNonloc = aT.absDet() * bT.absDet() * psi[a] * ((psi[b] * kerd) @ weights) @ weights
+        termNonloc = aT.absDet() * bT.absDet() * psi_[a] * ((psi[b] * kerd) @ weights) @ weights_
         return termLocal, termNonloc
 
     def f(self, aBdx_O, aT):
@@ -397,10 +413,11 @@ class clsInt:
         # f = 1
         return 1
 
-    def kernelPhys(self, P, Tx, Ty):
+    def kernelPhys(self, Px, Py, Tx, Ty):
         """ Constant integration kernel.
 
-        :param P: ndarray, real, shape (2, n). Reference points for integration.
+        :param Px: ndarray, real, shape (2, n). Reference points for integration in x.
+        :param Py: ndarray, real, shape (2, m). Refenrece points for integration in y.
         :param Tx: Triangle. Triangle of x-Component.
         :param Ty: Triangle. Triangle of y-Component.
         :return: real. Evaluates the kernel on the full grid.
@@ -409,5 +426,7 @@ class clsInt:
         # $\gamma(x,y) = 4 / (pi * \delta**4)$
         # Wir erwarten $u(x) = 1/4 (1 - ||x||^2)$
 
-        n_P = P.shape[1]
-        return 4 / (np.pi * self.delta ** 4) * np.ones((n_P, n_P))
+        n_P = Px.shape[1]
+        m_P = Py.shape[1]
+
+        return 4 / (np.pi * self.delta ** 4) * np.ones((n_P, m_P))

@@ -31,6 +31,7 @@ if __name__ == "__main__":
     for aTdx in range(0, mesh.J_Omega): # Laufe über 0 bis KT_Omega (der Index der Dreiecke in Omega).
         aT = mesh[aTdx]
         # Get the indices of the nodes wrt. T.E (ak) and Verts (aK) which lie in Omega.
+        ## aBdx should be called aPsidx !
         aBdx_O, aVdx_O = mesh.Vdx_inOmega(aTdx)
         aVdx = mesh.Vdx(aTdx)  # Index for both Omega or OmegaI
         fd[aVdx_O] = integrate.f(aBdx_O, aT)
@@ -48,7 +49,7 @@ if __name__ == "__main__":
                     bT = mesh[bTdx]
                     Mis_interact = inNbhd(aT, bT, delta, method="Ml2Bary")
 
-                    if Mis_interact.all():
+                    if Mis_interact.any():
                         queue.append(bTdx)
                         bVdx = mesh.Vdx(bTdx)
 
@@ -61,6 +62,7 @@ if __name__ == "__main__":
             visited[NTdx] = True
 
     total_time = time.time() - start
+    #Ad *= 2
 
     Ad_O = Ad[:, :mesh.K_Omega]
     ud = np.linalg.solve(Ad_O, fd)

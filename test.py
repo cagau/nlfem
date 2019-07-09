@@ -1,5 +1,6 @@
-import chiffre
+import bermuda
+import numpy as np
 
-a = chiffre.caesar("HALLOWELT", 13)
-print(a)
-print(chiffre.caesar(a, 13))
+A = np.array([1, 2, 3], dtype=np.int)
+
+print(bermuda.draw(A[0]))
