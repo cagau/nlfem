@@ -7,7 +7,7 @@ import time
 import pickle as pkl
 
 from nlocal import clsMesh, clsInt # Mesh, Triangle and Integrator class
-from nbhd import inNbhd, xinNbhd # Check interaction
+from nbhd import inNbhd, xnotinNbhd # Check interaction
 from aux import filename
 from plot import plot
 

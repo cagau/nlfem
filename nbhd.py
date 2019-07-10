@@ -139,7 +139,7 @@ def MinNbhdfull_l2(aT, bT, delta, v=False):
     M = M <= delta
     return M
 
-def xinNbhd(P, aT, bT, delta):
+def xnotinNbhd(P, aT, bT, delta):
     """ Tests whether a reference point p in Triangle a interacts
     with triangle b w.r.t. :math:`L_2`-ball of radius delta.
 
@@ -147,30 +147,31 @@ def xinNbhd(P, aT, bT, delta):
     :param aT: clsTriangle Triangle a
     :param bT: clsTriangle Triangle b
     :param delta: real Radius of L2-Ball
-    :return: bool True if the triangles interact.
+    :return: bool False if the physical point xi in Triangle a does interact with the barycenter of Triangle b.
     """
-    b_elPoints = bT.toPhys(P)
-    a_baryC = aT.baryCenter()[:, np.newaxis]
+    a_elPoints = aT.toPhys(P)
+    b_baryC = bT.baryCenter()[:, np.newaxis]
     # In order to make this work for a refPoints of shape (2,m) do
     # is_inNbhd = np.linalg.norm(a_elPoint - b_baryC, axis=0) <= delta
-    is_inNbhd = np.sum((b_elPoints - a_baryC)**2, axis=0) <= delta**2
-    Pdx_inNbhd = np.flatnonzero(is_inNbhd)
-    return Pdx_inNbhd
+    is_notinNbhd = np.logical_not(np.sum((a_elPoints - b_baryC)**2, axis=0) <= delta**2)
+    Pdx_notinNbhd = np.flatnonzero(is_notinNbhd)
+    return Pdx_notinNbhd
 
 if __name__=="__main__":
     from conf import P, weights, mesh_name, delta
     from nlocal import clsMesh
     # Mesh construction --------------------
     mesh = clsMesh("circle_" + mesh_name + ".msh")
-    for i in range(20):
-        for j in range(i):#range(mesh.J):
+    for i in range(15,16,1):
+        for j in range(i):
             aT = mesh.Triangles[i]
             bT = mesh.Triangles[j]
             Mis_interact = inNbhd(aT, bT, delta, method="Ml2Bary")
             if Mis_interact.any() and not Mis_interact.all():
-                print(xinNbhd(P, aT, bT, delta))
-                title = "aTdx "+str(i)+", bTdx " + str(j) + "\n" + str(xinNbhd(P, aT, bT, delta))
-                mesh.plot([i, j], is_plotmsh=True, pdfname="output/xinNbhd/" + str(i)+"_"+str(j), title=title, delta=delta, refPoints=P)
+                Pdx_xnotinNbhd = xnotinNbhd(P, aT, bT, delta)
+                print(Pdx_xnotinNbhd)
+                title = "aTdx "+str(i)+", bTdx " + str(j) + "\n" + str(Pdx_xnotinNbhd)
+                mesh.plot([i, j], is_plotmsh=True, pdfname="output/xinNbhd/" + str(i)+"_"+str(j), title=title, delta=delta, refPoints=P[:, Pdx_xnotinNbhd])
 
-                title = "aTdx "+str(j)+", bTdx " + str(i) + "\n" + str(xinNbhd(P, bT, aT, delta))
-                mesh.plot([j, i], is_plotmsh=True, pdfname="output/xinNbhd/" + str(i)+"_"+str(j)+"_T", title=title, delta=delta, refPoints=P)
+                #title = "aTdx "+str(j)+", bTdx " + str(i) + "\n" + str(xnotinNbhd(P, bT, aT, delta))
+                #mesh.plot([j, i], is_plotmsh=True, pdfname="output/xinNbhd/" + str(i)+"_"+str(j)+"_T", title=title, delta=delta, refPoints=P)

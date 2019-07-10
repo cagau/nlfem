@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from nbhd import xinNbhd
+from nbhd import xnotinNbhd
 
 
 class clsMesh:
@@ -356,6 +356,7 @@ class clsInt:
         self.psi = psi
         self.P = P
         self.weights = weights
+
     def A(self, a, b, aT, bT, is_allInteract=True):
         """Compute the local and nonlocal terms of the integral.
 
@@ -364,33 +365,21 @@ class clsInt:
         :param aT: Triangle, Triangle a.
         :param bT: Triangle, Triangle b.
         :param is_allInteract: bool. True if all points in aT interact with all points in bT.
-        :return:
+        :return  termLocal, termNonloc:
         """
-        weights = self.weights
+        dy = self.weights
+        dx = dy
         psi = self.psi
         P = self.P
+        kerd = self.kernelPhys(P, aT, bT)
 
-        if is_allInteract:
-            # P, weights and psi are just views. The data is not copied. See
-            # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
-            P_ = self.P
-            weights_ = weights
-            psi_ = psi
+        if not is_allInteract:
+            Pdx_notinNbhd = xnotinNbhd(P, aT, bT, self.delta)
+            kerd[Pdx_notinNbhd, :] = 0
 
-        else:
-            dx_sInteract = []
-            # The following line increases the computation time by x2.
-            dx_sInteract = xinNbhd(self.P, aT, bT, self.delta)
-            # Advanced indexing!
-            # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
-            # This will copy the data to P and weights every time!
-            P_ = self.P[:, dx_sInteract]
-            weights_ = self.weights[dx_sInteract]
-            psi_ = self.psi[:, dx_sInteract]
+        termLocal =  aT.absDet() * bT.absDet() * (psi[a] * psi[b] * (kerd @ dy)) @ dx
+        termNonloc = aT.absDet() * bT.absDet() * psi[a] * (kerd @ (psi[b] * dy)) @ dx
 
-        kerd = self.kernelPhys(P_, P, aT, bT)
-        termLocal = aT.absDet() * bT.absDet() * (psi[a] * psi[b] * (kerd @ weights)) @ weights
-        termNonloc = aT.absDet() * bT.absDet() * psi_[a] * ((psi[b] * kerd) @ weights) @ weights_
         return termLocal, termNonloc
 
     def f(self, aBdx_O, aT):
@@ -413,11 +402,10 @@ class clsInt:
         # f = 1
         return 1
 
-    def kernelPhys(self, Px, Py, Tx, Ty):
+    def kernelPhys(self, P, Tx, Ty):
         """ Constant integration kernel.
 
-        :param Px: ndarray, real, shape (2, n). Reference points for integration in x.
-        :param Py: ndarray, real, shape (2, m). Refenrece points for integration in y.
+        :param P: ndarray, real, shape (2, n). Reference points for integration.
         :param Tx: Triangle. Triangle of x-Component.
         :param Ty: Triangle. Triangle of y-Component.
         :return: real. Evaluates the kernel on the full grid.
@@ -426,7 +414,5 @@ class clsInt:
         # $\gamma(x,y) = 4 / (pi * \delta**4)$
         # Wir erwarten $u(x) = 1/4 (1 - ||x||^2)$
 
-        n_P = Px.shape[1]
-        m_P = Py.shape[1]
-
-        return 4 / (np.pi * self.delta ** 4) * np.ones((n_P, m_P))
+        n_P = P.shape[1]
+        return 4 / (np.pi * self.delta ** 4) * np.ones((n_P, n_P))

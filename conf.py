@@ -2,8 +2,8 @@
 
 import numpy as np
 
-mesh_name = "large"
-delta = .1
+mesh_name = "medium"
+delta = .3
 
 P = np.array([[0.33333333333333,    0.33333333333333],
           [0.47014206410511,    0.47014206410511],
