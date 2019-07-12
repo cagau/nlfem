@@ -162,7 +162,8 @@ if __name__=="__main__":
     from nlocal import clsMesh
     # Mesh construction --------------------
     mesh = clsMesh("circle_" + mesh_name + ".msh")
-    for i in range(15,16,1):
+
+    for i in range(mesh.J):
         for j in range(i):
             aT = mesh.Triangles[i]
             bT = mesh.Triangles[j]

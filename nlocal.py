@@ -233,7 +233,7 @@ class clsMesh:
         w3, _ = np.where(T[2] == self.T)
 
         idx = np.unique(np.concatenate((w1, w2, w3)))
-        idx = idx[np.where(Tdx != idx)]
+        #idx = idx[np.where(Tdx != idx)]
         # verts = Verts[Triangles[idx, 1:]]
         return idx
 
@@ -306,19 +306,21 @@ class clsTriangle:
     :ivar E: nd.array, real, shape (3,2). Physical nodes of Triangle.
     """
     def __init__(self, E):
-        self.E = E.copy()
+        self.E = E
         a, b, c = self.E
         self.M_ = np.array([b - a, c - a]).T
         self.a_ = a[:, np.newaxis]
         self.baryCenter_ = None
         self.absDet_ = None
         self.toPhys_ = None
+
     def baryCenter(self):
         if self.baryCenter_ is None:
             self.baryCenter_ = np.sum(self.E, axis=0)/3
             return self.baryCenter_
         else:
             return self.baryCenter_
+
     def absDet(self):
         if self.absDet_ is None:
             M = self.M_
@@ -326,6 +328,7 @@ class clsTriangle:
             return self.absDet_
         else:
             return self.absDet_
+
     def toPhys(self, P):
         """Push reference points P to physical domain.
 
@@ -349,6 +352,7 @@ class clsInt:
     """
     def __init__(self, P, weights, delta):
         self.delta = delta
+        # Changing the order of psi, does not really have an effect in this very simple case!
         psi0 = 1 - P[0, :] - P[1, :]
         psi1 = P[0, :]
         psi2 = P[1, :]
@@ -375,12 +379,34 @@ class clsInt:
 
         if not is_allInteract:
             Pdx_notinNbhd = xnotinNbhd(P, aT, bT, self.delta)
-            kerd[Pdx_notinNbhd, :] = 0
+            if len(Pdx_notinNbhd) != 0:
+                kerd[Pdx_notinNbhd, :] = 0
+        #I  = np.zeros(P.shape[1])
+        #for i in range(P.shape[1]):
+        #    I[i] = self.I(i, aT, bT)
+        #I = np.sum(I)
+            #I_vec =  bT.absDet() * (kerd @ dy)
 
-        termLocal =  aT.absDet() * bT.absDet() * (psi[a] * psi[b] * (kerd @ dy)) @ dx
+        termLocal = aT.absDet() * bT.absDet() * (psi[a] * psi[b] * (kerd @ dy)) @ dx
+        #termLocal = aT.absDet() * (psi[a] * psi[b] * I) @ dx
         termNonloc = aT.absDet() * bT.absDet() * psi[a] * (kerd @ (psi[b] * dy)) @ dx
 
+
+        #termNonloc = aT.absDet() * (psi[a] * I) @ dx
+
         return termLocal, termNonloc
+
+    def I(self, Pdx, aT, bT):
+        P = self.P
+        b_baryC = bT.baryCenter()
+        x = aT.toPhys(P)[:, Pdx]
+        ker = 4 / (np.pi * self.delta ** 4)
+
+        if np.linalg.norm(b_baryC - x) <= self.delta:
+            return ker * bT.absDet() * self.weights[Pdx]
+        else:
+            return 0
+
 
     def f(self, aBdx_O, aT):
         """

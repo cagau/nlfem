@@ -22,7 +22,7 @@ def plot(mesh_name, delta, Tstmp= ""):
     :param delta: Interaction radius (for Filename)
     :param Tstmp: Timestamp (for Filename)
     :return: None
-    """
+        """
     fnm = Tstmp + filename(mesh_name, delta)[1]
 
     fileObject2 = open(fnm, 'rb')

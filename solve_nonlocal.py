@@ -19,7 +19,8 @@ if __name__ == "__main__":
 
     # Mesh construction --------------------
     mesh = clsMesh("circle_" + mesh_name + ".msh")
-
+    print("Delta: ", delta, "\t Mesh: ", mesh_name)
+    print("Number of basis functions: ", mesh.K)
     # Allocate Matrix A and right side f
     Ad = np.zeros((mesh.K_Omega, mesh.K))
     fd = np.zeros(mesh.K_Omega)
@@ -27,8 +28,8 @@ if __name__ == "__main__":
 
     # Loop over triangles --------------------------------------------------------------------------------------------------
     start = time.time()
-
     for aTdx in range(0, mesh.J_Omega): # Laufe über 0 bis KT_Omega (der Index der Dreiecke in Omega).
+
         aT = mesh[aTdx]
         # Get the indices of the nodes wrt. T.E (ak) and Verts (aK) which lie in Omega.
         ## aBdx should be called aPsidx !
@@ -38,7 +39,7 @@ if __name__ == "__main__":
 
         queue = [aTdx]
         visited = np.array([False]*mesh.J)
-        visited[aTdx] = True
+        #visited[aTdx] = True
 
         while queue != []:
             sTdx = queue.pop(0)
@@ -60,7 +61,7 @@ if __name__ == "__main__":
                                 Ad[avdx, aVdx[b]] += termLocal
                                 Ad[avdx, bVdx[b]] -= termNonloc
             visited[NTdx] = True
-
+        print("aTdx: ", aTdx, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / mesh.J_Omega * 100), "%", end="\r", flush=True)
     total_time = time.time() - start
     #Ad *= 2
 
