@@ -431,6 +431,16 @@ class clsInt:
         else:
             return 0
 
+    def evalPsi(self, P):
+        """Evaluate basis function for given reference points.
+
+        :param P: nd.array, real, shape (2, n). Reference points, e.g. quadrature points of the reference element.
+        :return: nd.array, real, shape (3, n). Values of basis function.
+        """
+        psi0 = 1 - P[0, :] - P[1, :]
+        psi1 = P[0, :]
+        psi2 = P[1, :]
+        return np.array([psi0, psi1, psi2])
 
     def f(self, aBdx_O, aT):
         """
