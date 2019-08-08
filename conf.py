@@ -2,7 +2,7 @@
 
 import numpy as np
 
-mesh_name = "large"
+mesh_name = "insane"
 delta = .1
 
 P = np.array([[0.33333333333333,    0.33333333333333],

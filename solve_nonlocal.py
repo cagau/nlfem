@@ -23,6 +23,7 @@ if __name__ == "__main__":
     print("Number of basis functions: ", mesh.K)
     # Allocate Matrix A and right side f
     Ad = np.zeros((mesh.K_Omega, mesh.K))
+    Ad_any = np.zeros((mesh.K_Omega, mesh.K))
     fd = np.zeros(mesh.K_Omega)
     integrate = clsInt(P, weights, delta)
 
@@ -39,6 +40,7 @@ if __name__ == "__main__":
 
         queue = [aTdx]
         visited = np.array([False]*mesh.J)
+        boundary = np.array([False]*mesh.J)
         #visited[aTdx] = True
 
         while queue != []:
@@ -49,22 +51,28 @@ if __name__ == "__main__":
                 if not visited[bTdx]:
                     bT = mesh[bTdx]
                     Mis_interact = inNbhd(aT, bT, delta, method="Ml2Bary")
-
-                    if Mis_interact.any():
+                    if Mis_interact.all():
                         queue.append(bTdx)
                         bVdx = mesh.Vdx(bTdx)
 
                         for i, avdx in enumerate(aVdx_O):
                             a = aBdx_O[i]
                             for b in range(3):
-                                termLocal, termNonloc = integrate.A(a, b, aT, bT, is_allInteract=Mis_interact.all())
-                                Ad[avdx, aVdx[b]] += termLocal
-                                Ad[avdx, bVdx[b]] -= termNonloc
+                                if Mis_interact.all():
+                                    termLocal, termNonloc = integrate.A(a, b, aT, bT, is_allInteract=Mis_interact.all())
+                                    Ad[avdx, aVdx[b]] += termLocal
+                                    Ad[avdx, bVdx[b]] -= termNonloc
+                                else:
+                                    termLocal, termNonloc = integrate.A(a, b, aT, bT, is_allInteract=Mis_interact.all())
+                                    Ad_any[avdx, aVdx[b]] += termLocal
+                                    Ad_any[avdx, bVdx[b]] -= termNonloc
             visited[NTdx] = True
+        #all_NTdx = list(np.flatnonzero(visited))
+        #mesh.plot([aTdx] + all_NTdx, is_plotmsh=True, pdfname="output/breadthTest/"+str(aTdx)+"_all", delta=delta, title=str(aTdx), refPoints=P)
         print("aTdx: ", aTdx, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / mesh.J_Omega * 100), "%", end="\r", flush=True)
     total_time = time.time() - start
     #Ad *= 2
-
+    Ad += Ad_any
     Ad_O = Ad[:, :mesh.K_Omega]
     ud = np.linalg.solve(Ad_O, fd)
 
@@ -74,10 +82,12 @@ if __name__ == "__main__":
     ud_Ext[:mesh.K_Omega] = ud
 
     Tstmp, fnm = filename(mesh_name, delta)
-    fileObject = open(Tstmp + fnm, 'wb')
-    pkl.dump({"Ad_O": Ad_O, "fd": fd, "ud_Ext": ud_Ext, "fd_Ext": fd_Ext, "mesh": mesh}, fileObject)
-    fileObject.close()
+    #fileObject = open(Tstmp + fnm, 'wb')
+    #pkl.dump({"Ad_O": Ad_O, "fd": fd, "ud_Ext": ud_Ext, "fd_Ext": fd_Ext, "mesh": mesh}, fileObject)
+    #fileObject.close()
 
-    print("Time needed", total_time)
+
 
     plot(mesh_name, delta, Tstmp=Tstmp)
+
+    print("Time needed", total_time)

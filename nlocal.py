@@ -228,11 +228,13 @@ class clsMesh:
         :return:
         """
         T = self.T[Tdx]
-        w1, _ = np.where(T[0] == self.T)
-        w2, _ = np.where(T[1] == self.T)
-        w3, _ = np.where(T[2] == self.T)
+        sameVert1 = np.sum(np.array(T[0] == self.T, dtype=int), axis=1)
+        sameVert2 = np.sum(np.array(T[1] == self.T, dtype=int), axis=1)
+        sameVert3 = np.sum(np.array(T[2] == self.T, dtype=int), axis=1)
 
-        idx = np.unique(np.concatenate((w1, w2, w3)))
+        idx = np.where(sameVert1 + sameVert2 + sameVert3 >= 2)[0]
+
+        #idx = np.unique(np.concatenate((w1, w2, w3)))
         #idx = idx[np.where(Tdx != idx)]
         # verts = Verts[Triangles[idx, 1:]]
         return idx
@@ -276,23 +278,32 @@ class clsMesh:
         if len(Tdx) == 1:
             Tdx = [Tdx]
 
+        aTdx = Tdx[0]
+        aT = self[Tdx[0]]
+        # Some extras for the central Triangle
+
+        if delta is not None:
+            circle = plt.Circle(aT.baryCenter(), delta, color='b', fill=False, lw=0.5)
+            ax.add_artist(circle)
+        plt.scatter(aT.baryCenter()[0], aT.baryCenter()[1], s=1, c="black")
+
         for tdx in Tdx:
             T = self[tdx]
             dx_inOmega, Vdx = self.Vdx_inOmega(tdx)
             E_O = self.V[Vdx]
+            if refPoints is not None and delta is not None:
+                P = aT.toPhys(refPoints)
+                Pdx_inNbhd = xnotinNbhd(refPoints, aT, T, delta)
+                plt.scatter(P[0, Pdx_inNbhd], P[1, Pdx_inNbhd], s=.1, c="black")
 
-            if delta is not None:
-                circle = plt.Circle(T.baryCenter(), delta, color='b', fill=False, lw=0.5)
-            if refPoints is not None:
-                PPhsy = T.toPhys(refPoints)
-                plt.scatter(PPhsy[0], PPhsy[1], s=1, c="black")
-
-                ax.add_artist(circle)
-            plt.scatter(T.E[:, 0], T.E[:, 1], s=marker_size, c="black", marker="o", label="E")
+            #plt.scatter(T.E[:, 0], T.E[:, 1], s=marker_size, c="black", marker="o", label="E")
+            plt.fill(T.E[:, 0], T.E[:, 1], "r", alpha=.3)#, s=marker_size, c="black", marker="o", label="E")
             #plt.scatter(E_O[:, 0], E_O[:, 1], s=marker_size, c="r", marker="X", label="E in Omega (Vdx)")
             #plt.scatter(T.E[dx_inOmega, 0], T.E[dx_inOmega, 1], s=marker_size, c="w", marker="+",
             #            label="E in Omega (dx_inOmega)")
             #plt.legend()
+
+
         plt.savefig(pp, format='pdf')
         plt.close()
 
@@ -309,6 +320,7 @@ class clsTriangle:
         self.E = E
         a, b, c = self.E
         self.M_ = np.array([b - a, c - a]).T
+        self.Minv_ = None
         self.a_ = a[:, np.newaxis]
         self.baryCenter_ = None
         self.absDet_ = None
@@ -337,6 +349,15 @@ class clsTriangle:
         """
         self.toPhys_ = self.M_ @ P + self.a_
         return self.toPhys_
+
+    def toRef(self, X):
+        """Pull physical points to reference domain.
+
+        :param X: nd.array, real, shape (2, n). Physical points.
+        :return: nd.array, real, shape (2, n). Reference points, e.g. quadrature points of the reference element.
+        """
+        self.Minv_ = np.linalg.inv(self.M_)
+        return  self.Minv_ @ (X - self.a_)
 
     def __eq__(self, other):
         return (self.E == other.E).all()
@@ -380,6 +401,9 @@ class clsInt:
         if not is_allInteract:
             Pdx_notinNbhd = xnotinNbhd(P, aT, bT, self.delta)
             if len(Pdx_notinNbhd) != 0:
+                # We interpret the double integral as dx.T @ kerd @ dy
+                # Hence, if one value of the inner integral is 0
+                # one row of kerd has to be set to 0.
                 kerd[Pdx_notinNbhd, :] = 0
         #I  = np.zeros(P.shape[1])
         #for i in range(P.shape[1]):
