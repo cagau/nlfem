@@ -365,18 +365,15 @@ class clsInt:
     Contains the formulas, quadrature rule and functions fPhys and kerPhys.
     The rule P, weights and delta are handed over when the object is constructed.
 
-    :ivar psi: Values of basis functions for given rule P.
+    :param P: nd.array, real, shape (2,n). Quadtrature points for the outer, and the inner integral.
+    :param weights: nd.array, real, shape (n,). Weights corresponding to the quadrature rule.
+    :param delta: real. Interaction horizon.
+    :param outerIntMethod: str. Name of integration method for the outer integral. Options are *outerInt_full* (default), *outerInt_retriangulate*.
+    :param innerIntMethod: str. Name of integration method for the inner integral  Options are *innerInt_bary*, *innerInt_retriangulate* (default).
     """
-    def __init__(self, P, weights, delta, outerIntMethod="outerInt_full", innerIntMethod="innerInt_retriangulate"):
-        """
-        Constructor.
 
-        :param P: nd.array, real, shape (2,n). Quadtrature points for the outer, and the inner integral.
-        :param weights: nd.array, real, shape (n,). Weights corresponding to the quadrature rule.
-        :param delta: real. Interaction horizon.
-        :param outerIntMethod: str. Name of integration method for the outer integral. Options are *outerInt_full* (default), *outerInt_retriangulate*.
-        :param innerIntMethod: str. Name of integration method for the inner integral  Options are *innerInt_bary*, *innerInt_retriangulate* (default).
-        """
+    def __init__(self, P, weights, delta, outerIntMethod="outerInt_full", innerIntMethod="innerInt_retriangulate"):
+
         self.delta = delta
         # Changing the order of psi, does not really have an effect in this very simple case!
         psi0 = 1 - P[0, :] - P[1, :]
