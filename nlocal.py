@@ -446,8 +446,7 @@ class clsInt:
         :param x: nd.array, real, shape (2,). Point of evaluation.
         :param T: clsTriangle. Triangle over which we want to integrate.
         :param b: int. Index of reference basis function which we want to integrate.
-        :return: real. The integrals are 0 if x and T do not interact and
-        :math:`\int_T \gamma' \phi' dy` and :math:`\int_T \gamma  dy` otherwise.
+        :return: real. The integrals are 0 if x and T do not interact and :math:`\int_T \gamma' \phi' dy`, :math:`\int_T \gamma  dy` otherwise.
         """
         if np.linalg.norm(x - T.baryCenter()) > self.delta:
             return 0, 0
