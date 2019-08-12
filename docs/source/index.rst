@@ -9,6 +9,11 @@ Nonlocal Assembly's doc
    :maxdepth: 2
    :caption: Contents:
 
+Assembly
+========
+.. automodule:: assemble
+   :members:
+
 Mesh, Triangle and Integrator Class
 ===================================
 .. autoclass:: nlocal.clsMesh
@@ -31,10 +36,8 @@ Helper modules
 .. automodule:: nbhd
    :members:
 
-.. automodule:: nlocal
+.. automodule:: plot
    :members:
-
-
 
 Indices and tables
 ==================

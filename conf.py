@@ -2,8 +2,10 @@
 
 import numpy as np
 
-mesh_name = "insane"
+mesh_name = "large"
 delta = .1
+outerIntMethod = "outerInt_full"
+innerIntMethod = "innerInt_retriangulate"
 
 P = np.array([[0.33333333333333,    0.33333333333333],
           [0.47014206410511,    0.47014206410511],

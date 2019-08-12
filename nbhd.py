@@ -171,7 +171,7 @@ def xinNbhd(P, aT, bT, delta):
     b_baryC = bT.baryCenter()[:, np.newaxis]
     # In order to make this work for a refPoints of shape (2,m) do
     is_inNbhd = (np.sum((a_elPoints - b_baryC)**2, axis=0) <= delta**2)
-    Pdx_inNbhd = np.flatnonzero(is_notinNbhd)
+    Pdx_inNbhd = np.flatnonzero(is_inNbhd)
     return Pdx_inNbhd
 
 if __name__=="__main__":

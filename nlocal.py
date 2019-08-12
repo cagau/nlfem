@@ -265,8 +265,8 @@ class clsMesh:
         :return: None
         """
 
-
-        marker_size = 5
+        if type(Tdx) is int:
+            Tdx = [Tdx]
         pp = PdfPages(pdfname+".pdf")
 
         fig, ax = plt.subplots()
@@ -274,9 +274,6 @@ class clsMesh:
         plt.title(title)
         if is_plotmsh:
             plt.triplot(self.V[:, 0], self.V[:, 1], self.T, lw=0.5, color='blue', alpha=.7)
-
-        if len(Tdx) == 1:
-            Tdx = [Tdx]
 
         aTdx = Tdx[0]
         aT = self[Tdx[0]]
@@ -311,8 +308,7 @@ class clsMesh:
         return
 
 class clsTriangle:
-    """
-    Triangle Classe
+    """**Triangle Class**
 
     :ivar E: nd.array, real, shape (3,2). Physical nodes of Triangle.
     """
@@ -371,7 +367,16 @@ class clsInt:
 
     :ivar psi: Values of basis functions for given rule P.
     """
-    def __init__(self, P, weights, delta):
+    def __init__(self, P, weights, delta, outerIntMethod="outerInt_full", innerIntMethod="innerInt_retriangulate"):
+        """
+        Constructor.
+
+        :param P: nd.array, real, shape (2,n). Quadtrature points for the outer, and the inner integral.
+        :param weights: nd.array, real, shape (n,). Weights corresponding to the quadrature rule.
+        :param delta: real. Interaction horizon.
+        :param outerIntMethod: str. Name of integration method for the outer integral. Options are *outerInt_full* (default), *outerInt_retriangulate*.
+        :param innerIntMethod: str. Name of integration method for the inner integral  Options are *innerInt_bary*, *innerInt_retriangulate* (default).
+        """
         self.delta = delta
         # Changing the order of psi, does not really have an effect in this very simple case!
         psi0 = 1 - P[0, :] - P[1, :]
@@ -381,6 +386,9 @@ class clsInt:
         self.psi = psi
         self.P = P
         self.weights = weights
+        self.outerInt = getattr(self, outerIntMethod)
+        self.innerInt = getattr(self, innerIntMethod)
+
 
     def A(self, a, b, aT, bT, is_allInteract=True):
         """Compute the local and nonlocal terms of the integral.
@@ -396,58 +404,176 @@ class clsInt:
         dx = dy
         psi = self.psi
         P = self.P
-        kerd = self.kernelPhys(P, aT, bT)
 
-        if not is_allInteract:
-            Pdx_notinNbhd = xnotinNbhd(P, aT, bT, self.delta)
-            if len(Pdx_notinNbhd) != 0:
-                # We interpret the double integral as dx.T @ kerd @ dy
-                # Hence, if one value of the inner integral is 0
-                # one row of kerd has to be set to 0.
-                kerd[Pdx_notinNbhd, :] = 0
-        #I  = np.zeros(P.shape[1])
-        #for i in range(P.shape[1]):
-        #    I[i] = self.I(i, aT, bT)
-        #I = np.sum(I)
-            #I_vec =  bT.absDet() * (kerd @ dy)
+        if is_allInteract:
+            kerd = self.kernelPhys(P)
+            termLocal = aT.absDet() * bT.absDet() * (psi[a] * psi[b] * (kerd @ dy)) @ dx
+            termNonloc = aT.absDet() * bT.absDet() * psi[a] * (kerd @ (psi[b] * dy)) @ dx
+            return termLocal, termNonloc
+        else:
+            termLocal, termNonloc = self.outerInt(a, b, aT, bT)
+            return termLocal, termNonloc
 
-        termLocal = aT.absDet() * bT.absDet() * (psi[a] * psi[b] * (kerd @ dy)) @ dx
-        #termLocal = aT.absDet() * (psi[a] * psi[b] * I) @ dx
-        termNonloc = aT.absDet() * bT.absDet() * psi[a] * (kerd @ (psi[b] * dy)) @ dx
+    def innerInt_retriangulate(self, x, T, b):
+        """
+        Computes the inner integral using retriangulation. As the resulting term will be smooth in x this
+        function should work well with outerInt_full()
 
+        :param x: nd.array, real, shape (2,). Point of evaluation.
+        :param T: clsTriangle. Triangle over which we want to integrate.
+        :param b: int. Index of reference basis function which we want to integrate.
+        :return: real. The integral is computed by retriangulating the domain w.r.t. the
+        interaction between x and T.
+        """
+        P = self.P
+        dy = self.weights
+        innerLocal = 0
+        innerNonloc = 0
+        RT = self.retriangulate(x, T)
+        for rT in RT:
+            rX = rT.toPhys(P)
+            psi_r = self.evalPsi(T.toRef(rX), b)
+            ker = self.xkernelPhys(x[:, np.newaxis], rX)
+            innerLocal += (ker @ dy) * rT.absDet()
+            innerNonloc += (psi_r * ker @ dy)*rT.absDet()
+        return innerLocal, innerNonloc
 
-        #termNonloc = aT.absDet() * (psi[a] * I) @ dx
+    def innerInt_bary(self, x, T, b):
+        """
+        Computes the inner integral using the bary center method. As the resulting term will not be smooth in x this
+        function should work well with outerInt_retriangluate()
 
+        :param x: nd.array, real, shape (2,). Point of evaluation.
+        :param T: clsTriangle. Triangle over which we want to integrate.
+        :param b: int. Index of reference basis function which we want to integrate.
+        :return: real. The integrals are 0 if x and T do not interact and
+        :math:`\int_T \gamma' \phi' dy` and :math:`\int_T \gamma  dy` otherwise.
+        """
+        if np.linalg.norm(x - T.baryCenter()) > self.delta:
+            return 0, 0
+        else:
+            dy = self.weights
+            X = T.toPhys(self.P)
+            psi = self.psi[b]
+            ker = self.xkernelPhys(x[:, np.newaxis], X)
+            innerLocal = (ker @ dy) * T.absDet()
+            innerNonloc = (psi * ker @ dy)*T.absDet()
+            return innerLocal, innerNonloc
+
+    def outerInt_retriangulate(self, a, b, aT, bT):
+        """
+        Computes the outer integral using retriangulation.
+
+        :param a: int. Index of the outer reference basis function.
+        :param b: int. Index of the 'inner' reference basis function.
+        :param aT: clsTriangle. Outer Triangle.
+        :param bT: clsTriangle. Inner Triangle.
+        :return: real. The integral is computed by retriangulating the domain aT w.r.t. the
+        interaction between x in aT and bT.
+        """
+        P = self.P
+        dx = self.weights
+        psi = self.psi
+        termLocal = 0
+        termNonloc = 0
+        RT = self.retriangulate(bT.baryCenter(), aT)
+
+        for rT in RT:
+            rX = rT.toPhys(P)
+            psia_r = self.evalPsi(aT.toRef(rX), a)
+            psib_r = self.evalPsi(aT.toRef(rX), b)
+            for k, x in enumerate(rX.T):
+                innerLocal, innerNonloc = self.innerInt(x, bT, b)
+                termLocal += rT.absDet() * psia_r[k] * psib_r[k] * dx[k] * innerLocal
+                termNonloc += rT.absDet() * psia_r[k] * dx[k] * innerNonloc
         return termLocal, termNonloc
 
-    def I(self, Pdx, aT, bT):
+    def outerInt_full(self, a, b, aT, bT):
+        """
+        Computes the outer integral.
+
+        :param a: int. Index of the outer reference basis function.
+        :param b: int. Index of the 'inner' reference basis function.
+        :param aT: clsTriangle. Outer Triangle.
+        :param bT: clsTriangle. Inner Triangle.
+        :return: real. Integral.
+        """
         P = self.P
-        b_baryC = bT.baryCenter()
-        x = aT.toPhys(P)[:, Pdx]
-        ker = 4 / (np.pi * self.delta ** 4)
+        dx = self.weights
+        psi = self.psi
+        termLocal = 0
+        termNonloc = 0
 
-        if np.linalg.norm(b_baryC - x) <= self.delta:
-            return ker * bT.absDet() * self.weights[Pdx]
-        else:
-            return 0
+        for k, p in enumerate(P.T):
+            x = aT.toPhys(p[:, np.newaxis])[:, 0]
+            innerLocal, innerNonloc = self.innerInt(x, bT, b)
+            termLocal += aT.absDet() * psi[a][k] * psi[b][k] * dx[k] * innerLocal
+            termNonloc += aT.absDet() * psi[a][k] * dx[k] * innerNonloc
+        return termLocal, termNonloc
 
-    def evalPsi(self, P):
+    def retriangulate(self, x_center, T):
+        """ Retriangulates a given triangle.
+
+        :param x_center: nd.array, real, shape (2,). Center of normball, e.g. pyhsical quadtrature point.
+        :param T: clsTriangle. Triangle to be retriangulated.
+        :return: list of clsTriangle.
+        """
+        R = []
+        edges = np.array([[0, 1], [1, 2], [2, 0]])
+        for k in range(3):
+            p = T.E[edges[k][0]]
+            q = T.E[edges[k][1]]
+            a = q - x_center
+            b = p - q
+            v = (a@b)**2 - (a@a - self.delta**2)*(b@b)
+
+            if v >= 0:
+                lam1 = -(a@b)/(b@b) + np.sqrt(v)/(b@b)
+                lam2 = -(a@b)/(b@b) - np.sqrt(v)/(b@b)
+                #print("lam1 \t", lam1)
+                #print("lam2 \t", lam2)
+                y1 = lam1*(p-q) + q
+                y2 = lam2*(p-q) + q
+
+                if np.sum((T.E[edges[k][0]] - x_center)**2) <= self.delta**2:
+                    R.append(T.E[edges[k][0]])
+                if 0 <= lam1 <= 1:
+                    R.append(y1)
+                if 0 <= lam2 <= 1 and np.abs(lam1 - lam2) >= 1e-9:
+                    R.append(y2)
+            else:
+                if np.sum((T.E[edges[k][0]] - x_center)**2) <= self.delta**2:
+                    R.append(T.E[edges[k][0]])
+        RE = []
+        while len(R) >= 3:
+            rE = R[0:3]
+            RE.append(np.array(rE))
+            del R[1]
+
+
+        return [clsTriangle(E) for E in RE]
+
+    def evalPsi(self, P, psidx):
         """Evaluate basis function for given reference points.
 
-        :param P: nd.array, real, shape (2, n). Reference points, e.g. quadrature points of the reference element.
+        :param P: nd.array, real, shape (2, n).
+        Reference points, e.g. quadrature points of the reference element.
+        :param psidx: Index of Basis function.
         :return: nd.array, real, shape (3, n). Values of basis function.
         """
-        psi0 = 1 - P[0, :] - P[1, :]
-        psi1 = P[0, :]
-        psi2 = P[1, :]
-        return np.array([psi0, psi1, psi2])
+        if psidx == 0:
+            return 1 - P[0, :] - P[1, :]
+        if psidx == 1:
+            return P[0, :]
+        if psidx == 2:
+            return P[1, :]
 
     def f(self, aBdx_O, aT):
         """
         Assembles the right side f.
 
         :param aBdx_O: tupel of int, i=0,1,2. Index of reference basis functions which lie in Omega.
-        :param aT: Triangle. Triangle to intgrate over.
+        :param aT: Triangle. Triangle to integrate over.
         :return: Integral.
         """
         return (self.psi[aBdx_O] * self.fPhys(aT.toPhys(self.P))) @ self.weights * aT.absDet()
@@ -462,12 +588,10 @@ class clsInt:
         # f = 1
         return 1
 
-    def kernelPhys(self, P, Tx, Ty):
+    def kernelPhys(self, P):
         """ Constant integration kernel.
 
         :param P: ndarray, real, shape (2, n). Reference points for integration.
-        :param Tx: Triangle. Triangle of x-Component.
-        :param Ty: Triangle. Triangle of y-Component.
         :return: real. Evaluates the kernel on the full grid.
         """
 
@@ -476,3 +600,17 @@ class clsInt:
 
         n_P = P.shape[1]
         return 4 / (np.pi * self.delta ** 4) * np.ones((n_P, n_P))
+
+    def xkernelPhys(self, x, y):
+        """ Constant integration kernel.
+
+        :param x: ndarray, real, shape (2, n). Physical points for evaluation.
+        :param y: ndarray, real, shape (2, n). Physical points for evaluation.
+        :return: real. Evaluates the kernel.
+        """
+
+        # $\gamma(x,y) = 4 / (pi * \delta**4)$
+        # Wir erwarten $u(x) = 1/4 (1 - ||x||^2)$
+        n_x = x.shape[1]
+        n_y = y.shape[1]
+        return 4 / (np.pi * self.delta ** 4) * np.ones((n_x, n_y))
