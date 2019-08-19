@@ -16,7 +16,7 @@ Assembly
 
 Mesh, Triangle and Integrator Class
 ===================================
-.. autoclass:: nlocal.clsMesh
+.. autoclass:: nlocal.clsFEM
    :members:
    :undoc-members:
 
