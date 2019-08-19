@@ -4,6 +4,8 @@ import numpy as np
 
 mesh_name = "large"
 delta = .1
+ansatz = "DG"
+
 outerIntMethod = "outerInt_full"
 innerIntMethod = "innerInt_retriangulate"
 

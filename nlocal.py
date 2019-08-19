@@ -6,7 +6,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from nbhd import xnotinNbhd
 
 
-class clsMesh:
+class clsFEM:
     """ **Mesh Class**
 
     Let :math:`K` be the number of basis functions and :math:`J` the number of finite elements. The ordering of the vertices
@@ -19,19 +19,25 @@ class clsMesh:
     :ivar J: Number of finite elements :math:`\Omega`.
     :ivar J_Omega: Number of finite elements in
     """
-    def __init__(self, mshfile):
+    def __init__(self, mshfile, ansatz):
         """Constructor
 
         Executes read_mesh and prepare.
         """
-        args = self.prepare(*self.read_mesh(mshfile))
-        # args = Verts, Triangles, K, K_Omega, J, J_Omega
+        args = self.mesh(*self.read_mesh(mshfile))
+        # args = Verts, Triangles, J, J_Omega, L, L_Omega
         self.V = args[0]
         self.T = args[1][:, 1:]
-        self.K = args[2]
-        self.K_Omega = args[3]
-        self.J = args[4]
-        self.J_Omega = args[5]
+        self.J = args[2]
+        self.J_Omega = args[3]
+        self.L = args[4]
+        self.L_Omega = args[5]
+
+        args = self.basis(ansatz=ansatz)
+        self.K = args[0]
+        self.K_Omega = args[1]
+        self.Adx = args[2]
+        self.Adx_inOmega = args[3]
 
         self.Neighbours = []
         self.Triangles = []
@@ -114,7 +120,7 @@ class clsMesh:
 
         return Verts, Lines, Triangles
 
-    def prepare(self, Verts, Lines, Triangles):
+    def mesh(self, Verts, Lines, Triangles):
         """Prepare mesh from Verts, Lines and Triangles.
 
         :param Verts: List of Vertices
@@ -125,7 +131,7 @@ class clsMesh:
         # Sortiere Triangles so, das die Omega-Dreieck am Anfang des Array liegen --------------------------------------
         Triangles = Triangles[Triangles[:, 0].argsort()]
 
-        # Sortiere die Verts, sodass die Indizes der Nodes in Omega am Anfang des Arrays Verts liegen ---------------------------------
+        # Sortiere die Verts, sodass die Indizes der Nodes in Omega am Anfang des Arrays Verts liegen ------------------
         Verts = Verts[:, :2]  # Wir machen 2D, deshalb ist eine Spalte hier unnütz.
         # T heißt Triangle, dx index
         Tdx_Omega = np.where(Triangles[:, 0] == 1)
@@ -162,13 +168,6 @@ class clsMesh:
         Triangles[:, 1:] = piVdx(Triangles[:, 1:])
         Lines[:, 1:] = piVdx(Lines[:, 1:])
 
-        # Setze K_Omega und K
-        # Das ist die Anzahl der finiten Elemente (in Omega und insgesamt).
-        # Diese Zahlen dienen als Dimensionen für die diskreten Matrizen und Vektoren.
-        K_Omega = np.sum(Vis_inOmega == 0)
-        K_dOmega = np.sum(Vis_inOmega == 1)
-        K = len(Verts)
-
         ## TEST PLOT ###
         # plt.scatter(Verts.T[0], Verts.T[1])
         # plt.scatter(Verts.T[0, :K_Omega], Verts.T[1, :K_Omega])
@@ -179,46 +178,108 @@ class clsMesh:
         J_Omega = np.sum(Triangles[:, 0] == 1)
         J = len(Triangles)
 
+        ## Setze L_Omega und L
+        ## Das ist die Anzahl der finiten Elemente (in Omega und insgesamt).
+        ## Diese Zahlen dienen als Dimensionen für die diskreten Matrizen und Vektoren.
+        L_Omega = np.sum(Vis_inOmega == 0)
+        # L_dOmega = np.sum(Vis_inOmega == 1)
+        L = len(Verts)
+        # Im Falle von "CG" gilt K=L, K_Omega==L_Omega
+
         ## TEST PLOT ###
         # V = Verts[Triangles[:J_Omega, 1:]]
         # plt.scatter(Verts.T[0], Verts.T[1])
         # for v in V:
         #    plt.scatter(v.T[0], v.T[1], c="r")
         # plt.show()
-        return Verts, Triangles, K, K_Omega, J, J_Omega
+        return Verts, Triangles, J, J_Omega, L, L_Omega
+
+    def basis(self, ansatz):
+
+        if ansatz == "CG":
+            ## Setze K_Omega und K
+            ## Das ist die Anzahl der finiten Elemente (in Omega und insgesamt).
+            ## Diese Zahlen dienen als Dimensionen für die diskreten Matrizen und Vektoren.
+            K_Omega = self.L_Omega
+            #K_dOmega = np.sum(Vis_inOmega == 1)
+            K = self.L
+
+        elif ansatz == "DG":
+            # Im Falle der DG-Methode is die Anzahl der Basisfunktionen 3-Mal die Anzahl der Dreiecke.
+            K_Omega = self.J_Omega*3
+            #K_dOmega = np.sum(Vis_inOmega == 1)
+            K = self.J*3
+
+        else:
+            raise ValueError("in clsFEM.basis(). No valid method (str) chosen.")
+
+        Adx = getattr(self, "Adx" + ansatz)
+        Adx_inOmega = getattr(self, "Adx" + ansatz + "_inOmega")
+
+        return K, K_Omega, Adx, Adx_inOmega
 
     def __getitem__(self, Tdx):
-        #Vdx = self.T[Tdx]
-        #E = self.V[Vdx]
+        #Adx = self.T[Tdx]
+        #E = self.V[Adx]
         #return clsTriangle(E)
         return self.Triangles[Tdx]
 
-    def Vdx_inOmega(self, Tdx):
+    def AdxCG_inOmega(self, Tdx):
         """
         Returns the indices of the nodes of Triangle with index Tdx
         as index w.r.t the triangle (dx_inOmega) and as index w.r.t to
-        the array Verts (Vdx)
+        the array Verts (Adx) for the CG-Basis.
 
         :param Tdx:
         :return: dx_inOmega, nd.array, int, shape (3,) The indices of the nodes w.r.t T.E which lie in Omega.
-        :return: Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts which lie in Omega.
+        :return: Adx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts which lie in Omega.
         """
-        Vdx = self.T[Tdx]
+        Adx = self.T[Tdx]
         # The following replaces np.where (see https://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html)
-        dx_inOmega = np.flatnonzero(Vdx < self.K_Omega)
-        Vdx = Vdx[dx_inOmega]
-        return dx_inOmega, Vdx
+        dx_inOmega = np.flatnonzero(Adx < self.L_Omega)
+        Adx = Adx[dx_inOmega]
+        return dx_inOmega, Adx
 
-    def Vdx(self, Tdx):
+    def AdxCG(self, Tdx):
         """
         Returns the indices of the nodes of Triangle with index Tdx as index w.r.t to
-        the array Verts (Vdx)
+        the array Verts (Adx) for the CG-Basis.
 
         :param Tdx:
-        :return: Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts.
+        :return: Adx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts.
         """
-        Vdx = self.T[Tdx]
-        return Vdx
+        Adx = self.T[Tdx]
+        return Adx
+
+    def AdxDG_inOmega(self, Tdx):
+        """
+        Returns the indices of the nodes of Triangle with index Tdx
+        as index w.r.t the triangle (dx_inOmega) and as index w.r.t to
+        the array Verts (Adx) for the DG-Basis.
+
+        :param Tdx:
+        :return: dx_inOmega, nd.array, int, shape (3,) The indices of the nodes w.r.t T.E which lie in Omega.
+        :return: Adx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts which lie in Omega.
+        """
+        # The following replaces np.where (see https://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html)
+        if Tdx < self.J_Omega:
+            dx_inOmega = np.ones((3,), dtype=int)
+            Adx = Tdx * 3 + np.arange(0, 3, dtype=int)
+        else:
+            dx_inOmega = np.zeros((3,), dtype=int)
+            Adx = []
+        return dx_inOmega, Adx
+
+    def AdxDG(self, Tdx):
+        """
+        Returns the indices of the nodes of Triangle with index Tdx as index w.r.t to
+        the array Verts (Adx) for the DG-Basis.
+
+        :param Tdx:
+        :return: Adx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts.
+        """
+        Adx = Tdx * 3 + np.arange(0, 3, dtype=int)
+        return Adx
 
     def get_neighbor(self, Tdx):
         """
@@ -286,7 +347,10 @@ class clsMesh:
 
         for tdx in Tdx:
             T = self[tdx]
-            dx_inOmega, Vdx = self.Vdx_inOmega(tdx)
+            # Here we need to choose AdxCG_inOmega irrespective of the chosen ansatz
+            # as we are interested in the index of the Verticies of some Triangle, which is
+            # exactly what AdxCG provides.
+            dx_inOmega, Vdx = self.AdxCG_inOmega(tdx)
             E_O = self.V[Vdx]
             if refPoints is not None and delta is not None:
                 P = aT.toPhys(refPoints)
@@ -295,7 +359,7 @@ class clsMesh:
 
             #plt.scatter(T.E[:, 0], T.E[:, 1], s=marker_size, c="black", marker="o", label="E")
             plt.fill(T.E[:, 0], T.E[:, 1], "r", alpha=.3)#, s=marker_size, c="black", marker="o", label="E")
-            #plt.scatter(E_O[:, 0], E_O[:, 1], s=marker_size, c="r", marker="X", label="E in Omega (Vdx)")
+            #plt.scatter(E_O[:, 0], E_O[:, 1], s=marker_size, c="r", marker="X", label="E in Omega (Adx)")
             #plt.scatter(T.E[dx_inOmega, 0], T.E[dx_inOmega, 1], s=marker_size, c="w", marker="+",
             #            label="E in Omega (dx_inOmega)")
             #plt.legend()

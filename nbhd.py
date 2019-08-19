@@ -176,9 +176,9 @@ def xinNbhd(P, aT, bT, delta):
 
 if __name__=="__main__":
     from conf import P, weights, mesh_name, delta
-    from nlocal import clsMesh
+    from nlocal import clsFEM
     # Mesh construction --------------------
-    mesh = clsMesh("circle_" + mesh_name + ".msh")
+    mesh = clsFEM("circle_" + mesh_name + ".msh")
 
     for i in range(mesh.J):
         for j in range(i):

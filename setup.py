@@ -1,9 +1,6 @@
-from distutils.core import setup, Extension
+from distutils.core import setup
+from Cython.Build import cythonize
 
-modul = Extension("bermuda", sources=["bermuda.cpp"])
 setup(
-    name = "PyBermuda",
-    version = "1.0",
-    description = "Draw some game.",
-    ext_modules = [modul]
+    ext_modules=cythonize(['assemble.py', 'aux.py', 'conf.py', 'nbhd.py', 'nlocal.py', 'plot.py', 'solve_nonlocal.py'])
 )

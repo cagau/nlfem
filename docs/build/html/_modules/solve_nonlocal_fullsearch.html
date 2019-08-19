@@ -204,9 +204,9 @@
     <span class="k">for</span> <span class="n">aTdx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">mesh</span><span class="o">.</span><span class="n">J_Omega</span><span class="p">):</span> <span class="c1"># Laufe über 0 bis KT_Omega (der Index der Dreiecke in Omega).</span>
         <span class="n">aT</span> <span class="o">=</span> <span class="n">mesh</span><span class="p">[</span><span class="n">aTdx</span><span class="p">]</span>
         <span class="c1"># Get the indices of the nodes wrt. T.E (ak) and Verts (aK) which lie in Omega.</span>
-        <span class="n">aBdx_O</span><span class="p">,</span> <span class="n">aVdx_O</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">Vdx_inOmega</span><span class="p">(</span><span class="n">aTdx</span><span class="p">)</span>
+        <span class="n">aBdx_O</span><span class="p">,</span> <span class="n">aVdx_O</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">Adx_inOmega</span><span class="p">(</span><span class="n">aTdx</span><span class="p">)</span>
 
-        <span class="n">aVdx</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">Vdx</span><span class="p">(</span><span class="n">aTdx</span><span class="p">)</span> <span class="c1"># Index for both Omega or OmegaI</span>
+        <span class="n">aVdx</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">Adx</span><span class="p">(</span><span class="n">aTdx</span><span class="p">)</span> <span class="c1"># Index for both Omega or OmegaI</span>
         <span class="c1"># Compute the integral and save to result to fd</span>
         <span class="n">fd</span><span class="p">[</span><span class="n">aVdx_O</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">psi</span><span class="p">[</span><span class="n">aBdx_O</span><span class="p">]</span> <span class="o">*</span> <span class="n">fPhys</span><span class="p">(</span><span class="n">aT</span><span class="o">.</span><span class="n">toPhys</span><span class="p">(</span><span class="n">P</span><span class="p">)))</span> <span class="o">@</span> <span class="n">weights</span> <span class="o">*</span> <span class="n">aT</span><span class="o">.</span><span class="n">absDet</span><span class="p">()</span>
 
@@ -234,7 +234,7 @@
                 <span class="c1">#            ker = kernelPhys(Y[:, j], X[:, k])</span>
                 <span class="c1">#            product = psi[psi_j, j]*ker</span>
                 <span class="c1">#            term2[psi_j, k] += product*weights[j]*bT.absDet()</span>
-                <span class="n">bVdx</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">Vdx</span><span class="p">(</span><span class="n">bTdx</span><span class="p">)</span>
+                <span class="n">bVdx</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">Adx</span><span class="p">(</span><span class="n">bTdx</span><span class="p">)</span>
 
                 <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
                     <span class="n">kk</span> <span class="o">=</span> <span class="n">aVdx</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
@@ -246,7 +246,7 @@
             <span class="c1">#if not (term2 == 0).all():</span>
             <span class="c1">#    term2_ = term2[np.newaxis]</span>
             <span class="c1">#    psi_ = psi[aBdx_O, np.newaxis, :]</span>
-            <span class="c1">#    bVdx = mesh.Vdx(bTdx) #Get the indices of the nodes wrt. Verts (bK) which lie in Omega or OmegaI.</span>
+            <span class="c1">#    bVdx = mesh.Adx(bTdx) #Get the indices of the nodes wrt. Verts (bK) which lie in Omega or OmegaI.</span>
             <span class="c1">#    T1, T2 = np.meshgrid(aVdx_O, bVdx, indexing=&quot;ij&quot;)</span>
             <span class="c1">#    Ad[T1, T2] -= (psi_*term2_) @ weights * aT.absDet()</span>
 

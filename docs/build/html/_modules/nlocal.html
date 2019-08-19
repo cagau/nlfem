@@ -267,8 +267,8 @@
         <span class="n">Vis_inOmega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">Verts</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
 
         <span class="c1"># Wähle die Indizes heraus, die an Dreiecken in Omega.</span>
-        <span class="n">Vdx_inOmega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">Triangles</span><span class="p">[</span><span class="n">Tdx_Omega</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
-        <span class="n">Vis_inOmega</span><span class="p">[</span><span class="n">Vdx_inOmega</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Sie werden auf 2 gesetzt.</span>
+        <span class="n">Adx_inOmega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">Triangles</span><span class="p">[</span><span class="n">Tdx_Omega</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+        <span class="n">Vis_inOmega</span><span class="p">[</span><span class="n">Adx_inOmega</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Sie werden auf 2 gesetzt.</span>
         <span class="n">Vdx_Boundary</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">Lines</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Lines</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">9</span><span class="p">)][:,</span> <span class="mi">1</span><span class="p">:])</span>
         <span class="n">Vis_inOmega</span><span class="p">[</span><span class="n">Vdx_Boundary</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># Die Punkte auf dem Rand allerdings werden auf 1 gesetzt.</span>
 
@@ -322,36 +322,36 @@
         <span class="k">return</span> <span class="n">Verts</span><span class="p">,</span> <span class="n">Triangles</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">K_Omega</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">J_Omega</span></div>
 
     <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">):</span>
-        <span class="n">Vdx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
-        <span class="n">E</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="n">Vdx</span><span class="p">]</span>
+        <span class="n">Adx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="n">Adx</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">clsTriangle</span><span class="p">(</span><span class="n">E</span><span class="p">)</span>
 
-<div class="viewcode-block" id="clsMesh.Vdx_inOmega"><a class="viewcode-back" href="../index.html#nlocal.clsMesh.Vdx_inOmega">[docs]</a>    <span class="k">def</span> <span class="nf">Vdx_inOmega</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">):</span>
+<div class="viewcode-block" id="clsMesh.Vdx_inOmega"><a class="viewcode-back" href="../index.html#nlocal.clsMesh.Vdx_inOmega">[docs]</a>    <span class="k">def</span> <span class="nf">Adx_inOmega</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the indices of the nodes of Triangle with index Tdx</span>
 <span class="sd">        as index w.r.t the triangle (dx_inOmega) and as index w.r.t to</span>
-<span class="sd">        the array Verts (Vdx)</span>
+<span class="sd">        the array Verts (Adx)</span>
 
 <span class="sd">        :param Tdx:</span>
 <span class="sd">        :return: dx_inOmega, nd.array, int, shape (3,) The indices of the nodes w.r.t T.E which lie in Omega.</span>
-<span class="sd">        :return: Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts which lie in Omega.</span>
+<span class="sd">        :return: Adx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts which lie in Omega.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">Vdx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
+        <span class="n">Adx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
         <span class="c1"># The following replaces np.where (see https://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html)</span>
-        <span class="n">dx_inOmega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">Vdx</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">K_Omega</span><span class="p">)</span>
-        <span class="n">Vdx</span> <span class="o">=</span> <span class="n">Vdx</span><span class="p">[</span><span class="n">dx_inOmega</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">dx_inOmega</span><span class="p">,</span> <span class="n">Vdx</span></div>
+        <span class="n">dx_inOmega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">Adx</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">K_Omega</span><span class="p">)</span>
+        <span class="n">Adx</span> <span class="o">=</span> <span class="n">Adx</span><span class="p">[</span><span class="n">dx_inOmega</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dx_inOmega</span><span class="p">,</span> <span class="n">Adx</span></div>
 
-<div class="viewcode-block" id="clsMesh.Vdx"><a class="viewcode-back" href="../index.html#nlocal.clsMesh.Vdx">[docs]</a>    <span class="k">def</span> <span class="nf">Vdx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">):</span>
+<div class="viewcode-block" id="clsMesh.Vdx"><a class="viewcode-back" href="../index.html#nlocal.clsMesh.Vdx">[docs]</a>    <span class="k">def</span> <span class="nf">Adx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the indices of the nodes of Triangle with index Tdx as index w.r.t to</span>
-<span class="sd">        the array Verts (Vdx)</span>
+<span class="sd">        the array Verts (Adx)</span>
 
 <span class="sd">        :param Tdx:</span>
-<span class="sd">        :return: Vdx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts.</span>
+<span class="sd">        :return: Adx, nd.array, int, shape (3,) The indices of the nodes w.r.t Verts.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">Vdx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">Vdx</span></div>
+        <span class="n">Adx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">Tdx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Adx</span></div>
 
 <div class="viewcode-block" id="clsMesh.neighbor"><a class="viewcode-back" href="../index.html#nlocal.clsMesh.neighbor">[docs]</a>    <span class="k">def</span> <span class="nf">neighbor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tdx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -396,14 +396,14 @@
 
         <span class="k">for</span> <span class="n">tdx</span> <span class="ow">in</span> <span class="n">Tdx</span><span class="p">:</span>
             <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">tdx</span><span class="p">]</span>
-            <span class="n">dx_inOmega</span><span class="p">,</span> <span class="n">Vdx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Vdx_inOmega</span><span class="p">(</span><span class="n">tdx</span><span class="p">)</span>
-            <span class="n">E_O</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="n">Vdx</span><span class="p">]</span>
+            <span class="n">dx_inOmega</span><span class="p">,</span> <span class="n">Adx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Adx_inOmega</span><span class="p">(</span><span class="n">tdx</span><span class="p">)</span>
+            <span class="n">E_O</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="n">Adx</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">delta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">circle</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">baryCenter</span><span class="p">(),</span> <span class="n">delta</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">add_artist</span><span class="p">(</span><span class="n">circle</span><span class="p">)</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">E</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">T</span><span class="o">.</span><span class="n">E</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;E&quot;</span><span class="p">)</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">E_O</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">E_O</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;E in Omega (Vdx)&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">E_O</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">E_O</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;E in Omega (Adx)&quot;</span><span class="p">)</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">E</span><span class="p">[</span><span class="n">dx_inOmega</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">T</span><span class="o">.</span><span class="n">E</span><span class="p">[</span><span class="n">dx_inOmega</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
                         <span class="n">label</span><span class="o">=</span><span class="s2">&quot;E in Omega (dx_inOmega)&quot;</span><span class="p">)</span>
             <span class="c1">#plt.legend()</span>
