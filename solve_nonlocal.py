@@ -21,8 +21,7 @@ if __name__ == "__main__":
 
     Ad, fd  = assemble.assemble(mesh)
     Ad_O = Ad[:, :mesh.K_Omega]
-    ud = np.zeros(mesh.K_Omega)
-    #ud = np.linalg.solve(Ad_O, fd)
+    ud = np.linalg.solve(Ad_O, fd)
 
     fd_Ext = np.zeros(mesh.K)
     fd_Ext[:mesh.K_Omega] = fd
@@ -32,6 +31,7 @@ if __name__ == "__main__":
     Tstmp, fnm = filename(mesh_name, delta, Tstmp=False)
     fileObject = open(Tstmp + fnm, 'wb')
     pkl.dump({"Ad_O": Ad_O, "fd": fd, "ud_Ext": ud_Ext, "fd_Ext": fd_Ext, "mesh": mesh}, fileObject)
+    np.save(Tstmp+"Ad_O", Ad_O)
     fileObject.close()
 
     plot(mesh_name, delta, Tstmp=Tstmp)

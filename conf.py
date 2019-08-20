@@ -1,7 +1,6 @@
 #-*- coding:utf-8 -*-
 
 import numpy as np
-
 mesh_name = "large"
 delta = .1
 ansatz = "CG"

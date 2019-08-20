@@ -30,7 +30,6 @@ def assemble(mesh):
 
         queue = [aTdx]
         visited = np.array([False]*mesh.J)
-
         while queue != []:
             sTdx = queue.pop(0)
             NTdx = mesh.neighbor(sTdx)
@@ -53,7 +52,7 @@ def assemble(mesh):
         print("aTdx: ", aTdx, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / mesh.J_Omega * 100), "%", end="\r", flush=True)
     print("aTdx: ", aTdx, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / mesh.J_Omega * 100), "%\n")
     total_time = time.time() - start
-    print("Time needed", total_time)
+    print("Time needed", "{:1.2e}".format(total_time), " Sec")
     Ad = 2*Ad
 
     return Ad, fd
