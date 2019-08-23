@@ -47,11 +47,6 @@ class clsFEM:
         self.Neighbours = []
         self.Triangles = []
 
-        for Tdx in range(self.J):
-            Vdx = self.T[Tdx]
-            self.Triangles.append(clsTriangle(self.V[Vdx]))
-            self.Neighbours.append(self.get_neighbor(Tdx))
-
     def read_mesh(self, mshfile):
         """meshfile = .msh - file genrated by gmsh
 
@@ -376,6 +371,25 @@ class clsFEM:
         pp.close()
         return
 
+def set_neighbour(Triangles, Vdx):
+    """
+    Find neighbour for index Tdx.
+
+    :param Triangles:
+    :param Vdx:
+    :return:
+    """
+    sameVert1 = np.sum(np.array(Vdx[0] == Triangles, dtype=int), axis=1)
+    sameVert2 = np.sum(np.array(Vdx[1] == Triangles, dtype=int), axis=1)
+    sameVert3 = np.sum(np.array(Vdx[2] == Triangles, dtype=int), axis=1)
+
+    idx = np.where(sameVert1 + sameVert2 + sameVert3 >= 2)[0]
+
+    #idx = np.unique(np.concatenate((w1, w2, w3)))
+    #idx = idx[np.where(Tdx != idx)]
+    # verts = Verts[Triangles[idx, 1:]]
+    return idx
+
 class clsTriangle:
     """**Triangle Class**
 
@@ -426,105 +440,57 @@ class clsTriangle:
 
     def __eq__(self, other):
         return (self.E == other.E).all()
-
-class clsInt:
-    """**Integrator Class**
-
-    Contains the formulas, quadrature rule and functions fPhys and kerPhys.
-    The rule P, weights and delta are handed over when the object is constructed.
-
-    :param P: nd.array, real, shape (2,n). Quadtrature points for the outer, and the inner integral.
-    :param weights: nd.array, real, shape (n,). Weights corresponding to the quadrature rule.
-    :param delta: real. Interaction horizon.
-    :param outerIntMethod: str. Name of integration method for the outer integral. Options are *outerInt_full* (default), *outerInt_retriangulate*.
-    :param innerIntMethod: str. Name of integration method for the inner integral  Options are *innerInt_bary*, *innerInt_retriangulate* (default).
+#
+def f(double[:,:] aTE, double [:,:] P, int nP, double [:] dx, double [:,:] psi, double [:] termf):
     """
+    Assembles the right side f.
 
-    def __init__(self, P, weights, delta, outerIntMethod="outerInt_full", innerIntMethod="innerInt_retriangulate"):
+    :param aBdx_O: tupel of int, i=0,1,2. Index of reference basis functions which lie in Omega.
+    :param aT: Triangle. Triangle to integrate over.
+    :return: Integral.
+    """
+    cdef:
+        int i,a
+        double x[2]
+        py_f = np.zeros((3,))
+        double [:] cy_f = py_f
+        double absDet = cy_absDet(aTE)
 
-        self.delta = delta
-        # Changing the order of psi, does not really have an effect in this very simple case!
-        psi0 = 1 - P[0, :] - P[1, :]
-        psi1 = P[0, :]
-        psi2 = P[1, :]
-        psi = np.array([psi0, psi1, psi2])
-        self.psi = psi
-        self.P = P
-        self.weights = weights
-        #self.outerInt = getattr(self, outerIntMethod)
-        #self.innerInt = getattr(self, innerIntMethod)
+    for a in range(3):
+        for i in range(nP):
+            cy_toPhys(aTE, P[:, i], x)
+            termf[a] += psi[a, i] * c_fPhys(&x[0] ) * absDet * dx[i]
 
-    def f(self, aBdx_O, aT):
-        """
-        Assembles the right side f.
+def A(double[:,:] aTE, double [:,:] bTE, double [:,:] P, int nP,
+      double [:] dx, double [:] dy, double [:,:] psi, double sqdelta, bint is_allInteract,
+      double [:, :] cy_termLocal, double [:,:] cy_termNonloc):
+    """Compute the local and nonlocal terms of the integral.
 
-        :param aBdx_O: tupel of int, i=0,1,2. Index of reference basis functions which lie in Omega.
-        :param aT: Triangle. Triangle to integrate over.
-        :return: Integral.
-        """
-        cdef:
-            int i,k,a
-            int nB=aBdx_O.shape[0]
-            double [:,:] P = self.P
-            int nP=P.shape[1]
-            double [:,:] psi = self.psi
-            double [:] dx = self.weights
-            double x[2]
-            py_f = np.zeros((3,))
-            double [:] cy_f = py_f
+    :param py_a: int. Index of vertex to find the correct reference basis function.
+    :param py_b: int. Index of vertex to find the correct reference basis function.
+    :param aT: Triangle, Triangle a.
+    :param bT: Triangle, Triangle b.
+    :param is_allInteract: bool. True if all points in aT interact with all points in bT.
+    :return  termLocal, termNonloc:
+    """
+    cdef:
+        int i=0, j=0, a, b
+        double kerd, innerIntLocal, innerIntNonloc
+        double aTdet = cy_absDet(aTE), bTdet = cy_absDet(bTE)
 
-        for k in range(nB):
-            a = aBdx_O[k]
-            for i in range(nP):
-                cy_toPhys(aT.E, P[:, i], x)
-                cy_f[k] += psi[a, i] * c_fPhys(&x[0] ) * aT.absDet() * dx[i]
-        return py_f[:nB]#(self.psi[aBdx_O] * self.fPhys(aT.toPhys(self.P))) @ dx * aT.absDet()
-
-    def fPhys(self, x):
-        return 1
-
-    def A(self, double [:,:] aTE, double [:,:] bTE, is_allInteract=True):
-        """Compute the local and nonlocal terms of the integral.
-
-        :param py_a: int. Index of vertex to find the correct reference basis function.
-        :param py_b: int. Index of vertex to find the correct reference basis function.
-        :param aT: Triangle, Triangle a.
-        :param bT: Triangle, Triangle b.
-        :param is_allInteract: bool. True if all points in aT interact with all points in bT.
-        :return  termLocal, termNonloc:
-        """
-        cdef:
-            int i=0, j=0, a, b
-            double kerd, innerIntLocal, innerIntNonloc
-            double sqdelta = self.delta**2
-            double [:] dy = self.weights
-            double [:] dx = dy
-            double outerInt[2]
-            double [:,:] psi = self.psi
-            double [:,:] P = self.P
-            double aTdet = cy_absDet(aTE), bTdet = cy_absDet(bTE)
-            int nP=P.shape[1]
-            termLocal = np.zeros((3,3))
-            termNonloc = np.zeros((3,3))
-            double [:,:] cy_termLocal = termLocal
-            double [:,:] cy_termNonloc = termNonloc
-
-        if is_allInteract:
-            for a in range(3):
-                for b in range(3):
-                    for i in range(nP):
-                        innerIntLocal=0
-                        innerIntNonloc=0
-                        for j in range(nP):
-                            innerIntLocal += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j]
-                            innerIntNonloc += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j] * psi[b, j]
-                        cy_termLocal[a][b] += psi[a, i] * psi[b, i] * innerIntLocal * dx[i] * aTdet*bTdet
-                        cy_termNonloc[a][b] += psi[a,i] * innerIntNonloc * dx[i] * aTdet*bTdet
-            return termLocal, termNonloc
-        else:
-            cy_outerInt_full(aTdet, bTdet, aTE, bTE, P, nP, dx, dy, psi, sqdelta, cy_termLocal, cy_termNonloc)
-
-            return termLocal, termNonloc
+    if is_allInteract:
+        for a in range(3):
+            for b in range(3):
+                for i in range(nP):
+                    innerIntLocal=0
+                    innerIntNonloc=0
+                    for j in range(nP):
+                        innerIntLocal += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j]
+                        innerIntNonloc += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j] * psi[b, j]
+                    cy_termLocal[a][b] += psi[a, i] * psi[b, i] * innerIntLocal * dx[i] * aTdet*bTdet
+                    cy_termNonloc[a][b] += psi[a,i] * innerIntNonloc * dx[i] * aTdet*bTdet
+    else:
+        cy_outerInt_full(aTdet, bTdet, aTE, bTE, P, nP, dx, dy, psi, sqdelta, cy_termLocal, cy_termNonloc)
 
 cdef void cy_outerInt_full(double aTdet, double bTdet, double[:,:] aTE, double [:,:] bTE,
                            double [:,:] P, int nP, double [:] dx, double [:] dy, double [:,:] psi,
@@ -532,7 +498,8 @@ cdef void cy_outerInt_full(double aTdet, double bTdet, double[:,:] aTE, double [
                            double [:, :] cy_termLocal, double [:,:] cy_termNonloc):
     cdef:
         int i=0, k=0, Rdx=0
-        double x[2], innerLocal=0
+        double x[2]
+        double innerLocal=0
         double innerNonloc[3]
         double [:,:] RT = np.zeros((9*3, 2))
 

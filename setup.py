@@ -2,5 +2,5 @@ from distutils.core import setup
 from Cython.Build import cythonize
 
 setup(
-    ext_modules=cythonize(['nlocal.pyx'])
+    ext_modules=cythonize(['nlocal.pyx', 'assemble.pyx'])
 )
