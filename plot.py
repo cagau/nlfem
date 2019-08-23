@@ -72,9 +72,9 @@ def plot(mesh_name, delta, Tstmp= ""):
     ax = fig.gca(projection='3d', title="Solution u")
     # True Solution
     u_true = uLocaSol(mesh.V[:, 0], mesh.V[:, 1])
-    ax.plot_trisurf(mesh.V[:, 0], mesh.V[:, 1], u_true, alpha=.2)
+    ax.plot_trisurf(mesh.V[:, 0], mesh.V[:, 1], u_true, alpha=.4)
     # Computed Solution
-    ax.plot_trisurf(mesh.V[:, 0], mesh.V[:, 1], ud_Ext, alpha=.9)
+    ax.plot_trisurf(mesh.V[:, 0], mesh.V[:, 1], ud_Ext, alpha=.6)
     plt.savefig(pp, format='pdf')
     plt.close()
 

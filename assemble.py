@@ -2,7 +2,7 @@ import numpy as np
 
 from conf import P, weights, delta, outerIntMethod, innerIntMethod
 from nlocal import clsInt # Mesh, Triangle and Integrator class
-from nbhd import inNbhd # Check interaction
+from nlocal import inNbhd # Check interaction
 import time
 
 def assemble(mesh):
@@ -16,6 +16,7 @@ def assemble(mesh):
     Ad = np.zeros((mesh.K_Omega, mesh.K))
     fd = np.zeros(mesh.K_Omega)
     integrate = clsInt(P, weights, delta, outerIntMethod=outerIntMethod, innerIntMethod=innerIntMethod)
+    Mis_interact = np.zeros(3)
 
     # Loop over triangles --------------------------------------------------------------------------------------------------
     start = time.time()
@@ -37,17 +38,17 @@ def assemble(mesh):
             for bTdx in NTdx:
                 if not visited[bTdx]:
                     bT = mesh[bTdx]
-                    Mis_interact = inNbhd(aT, bT, delta, method="Ml2Bary")
+
+                    inNbhd(aT.E, bT.E, delta**2, Mis_interact)
                     if Mis_interact.any():
                         queue.append(bTdx)
                         bAdx = mesh.Adx(bTdx)
-
+                        termLocal, termNonloc = integrate.A(aT.E, bT.E, is_allInteract=Mis_interact.all())
                         for i, aAdxi in enumerate(aAdx_O):
                             a = aPsidx[i]
                             for b in range(3):
-                                termLocal, termNonloc = integrate.A(a, b, aT, bT, is_allInteract=Mis_interact.all())
-                                Ad[aAdxi, aAdx[b]] += termLocal
-                                Ad[aAdxi, bAdx[b]] -= termNonloc
+                                Ad[aAdxi, aAdx[b]] += termLocal[a][b]
+                                Ad[aAdxi, bAdx[b]] -= termNonloc[a][b]
             visited[NTdx] = True
         print("aTdx: ", aTdx, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / mesh.J_Omega * 100), "%", end="\r", flush=True)
     print("aTdx: ", aTdx, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / mesh.J_Omega * 100), "%\n")

@@ -4,7 +4,7 @@ import numpy as np
 import pickle as pkl
 
 from conf import mesh_name, delta, ansatz
-from nlocal import clsFEM # Mesh class
+from nlocal import clsFEM#, assemble # Mesh class
 from aux import filename
 from plot import plot
 import assemble

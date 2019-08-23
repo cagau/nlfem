@@ -16,5 +16,6 @@ Setting
 |---                    |---                |----           |
 |Pure Python (PP)       | 1.05e+03          |     x1        |
 |PP Compiled            | 1.07e+03          |     x1        |
-|cy clsInt.retriangulate| 4.69e+02          |     x2.2      |
-|cy clsInt.A            | 1.42e+02          |     x7.4      |
+|+ cy clsInt.retriangulate| 4.69e+02          |     x2.2      |
+|+ cy clsInt.A (i. e. inner and outer Int) | 2.17e+01          |     x48.4      |
+|+ cy inNbhd | 1.84e+01          |     x57.1      |

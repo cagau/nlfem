@@ -1,12 +1,15 @@
 #-*- coding:utf-8 -*-
+#cython: language_level=3
+# #cython: boundscheck=False, cdivision=True
+# Setting this compiler directive will given a minor increase of speed.
 
+cimport cython
 import numpy as np
 from numpy.linalg import LinAlgError
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from nbhd import xnotinNbhd
 from libc.math cimport sqrt, pow, pi, floor
-
 
 class clsFEM:
     """ **Mesh Class**
@@ -451,8 +454,36 @@ class clsInt:
         #self.outerInt = getattr(self, outerIntMethod)
         #self.innerInt = getattr(self, innerIntMethod)
 
+    def f(self, aBdx_O, aT):
+        """
+        Assembles the right side f.
 
-    def A(self, py_a, py_b, aT, bT, is_allInteract=True):
+        :param aBdx_O: tupel of int, i=0,1,2. Index of reference basis functions which lie in Omega.
+        :param aT: Triangle. Triangle to integrate over.
+        :return: Integral.
+        """
+        cdef:
+            int i,k,a
+            int nB=aBdx_O.shape[0]
+            double [:,:] P = self.P
+            int nP=P.shape[1]
+            double [:,:] psi = self.psi
+            double [:] dx = self.weights
+            double x[2]
+            py_f = np.zeros((3,))
+            double [:] cy_f = py_f
+
+        for k in range(nB):
+            a = aBdx_O[k]
+            for i in range(nP):
+                cy_toPhys(aT.E, P[:, i], x)
+                cy_f[k] += psi[a, i] * c_fPhys(&x[0] ) * aT.absDet() * dx[i]
+        return py_f[:nB]#(self.psi[aBdx_O] * self.fPhys(aT.toPhys(self.P))) @ dx * aT.absDet()
+
+    def fPhys(self, x):
+        return 1
+
+    def A(self, double [:,:] aTE, double [:,:] bTE, is_allInteract=True):
         """Compute the local and nonlocal terms of the integral.
 
         :param py_a: int. Index of vertex to find the correct reference basis function.
@@ -463,312 +494,87 @@ class clsInt:
         :return  termLocal, termNonloc:
         """
         cdef:
-            int i=0, j=0, a=py_a, b=py_b
-            double kerd, termLocal, termNonloc, innerIntLocal, innerIntNonloc
+            int i=0, j=0, a, b
+            double kerd, innerIntLocal, innerIntNonloc
             double sqdelta = self.delta**2
             double [:] dy = self.weights
             double [:] dx = dy
-            double outInt[2]
+            double outerInt[2]
             double [:,:] psi = self.psi
             double [:,:] P = self.P
-            double [:,:] aTE = aT.E
-            double [:,:] bTE = bT.E
             double aTdet = cy_absDet(aTE), bTdet = cy_absDet(bTE)
             int nP=P.shape[1]
+            termLocal = np.zeros((3,3))
+            termNonloc = np.zeros((3,3))
+            double [:,:] cy_termLocal = termLocal
+            double [:,:] cy_termNonloc = termNonloc
 
         if is_allInteract:
-            termLocal=0
-            termNonloc=0
-            for i in range(nP):
-                innerIntLocal=0
-                innerIntNonloc=0
-                for j in range(nP):
-                    innerIntLocal += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j]
-                    innerIntNonloc += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j] * psi[b, j]
-                termLocal += psi[a, i] * psi[b, i] * innerIntLocal * dx[i]
-                termNonloc += psi[a,i] * innerIntNonloc * dx[i]
-            termLocal *= aTdet*bTdet
-            termNonloc *= aTdet*bTdet
-
+            for a in range(3):
+                for b in range(3):
+                    for i in range(nP):
+                        innerIntLocal=0
+                        innerIntNonloc=0
+                        for j in range(nP):
+                            innerIntLocal += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j]
+                            innerIntNonloc += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j] * psi[b, j]
+                        cy_termLocal[a][b] += psi[a, i] * psi[b, i] * innerIntLocal * dx[i] * aTdet*bTdet
+                        cy_termNonloc[a][b] += psi[a,i] * innerIntNonloc * dx[i] * aTdet*bTdet
             return termLocal, termNonloc
         else:
-            cy_outerInt_full(a, b, aTdet, bTdet, aTE, bTE, P, nP, dx, dy, psi, sqdelta, outInt)
-            termLocal = outInt[0]
-            termNonloc = outInt[1]
+            cy_outerInt_full(aTdet, bTdet, aTE, bTE, P, nP, dx, dy, psi, sqdelta, cy_termLocal, cy_termNonloc)
 
             return termLocal, termNonloc
 
-    def innerInt_retriangulate(self, x, T, b):
-        """
-        Computes the inner integral using retriangulation. As the resulting term will be smooth in x this
-        function should work well with outerInt_full()
-
-        :param x: nd.array, real, shape (2,). Point of evaluation.
-        :param T: clsTriangle. Triangle over which we want to integrate.
-        :param b: int. Index of reference basis function which we want to integrate.
-        :return: real. The integral is computed by retriangulating the domain w.r.t. the
-        interaction between x and T.
-        """
-        P = self.P
-        dy = self.weights
-        innerLocal = 0
-        innerNonloc = 0
-        RT = self.retriangulate(x, T)
-        for rT in RT:
-            rX = rT.toPhys(P)
-            psi_r = self.evalPsi(T.toRef(rX), b)
-            ker = self.xkernelPhys(x[:, np.newaxis], rX)
-            innerLocal += (ker @ dy) * rT.absDet()
-            innerNonloc += (psi_r * ker @ dy)*rT.absDet()
-        return innerLocal, innerNonloc
-
-    def innerInt_bary(self, x, T, b):
-        """
-        Computes the inner integral using the bary center method. As the resulting term will not be smooth in x this
-        function should work well with outerInt_retriangluate()
-
-        :param x: nd.array, real, shape (2,). Point of evaluation.
-        :param T: clsTriangle. Triangle over which we want to integrate.
-        :param b: int. Index of reference basis function which we want to integrate.
-        :return: real. The integrals are 0 if x and T do not interact and :math:`\int_T \gamma' \phi' dy`, :math:`\int_T \gamma  dy` otherwise.
-        """
-        if np.linalg.norm(x - T.baryCenter()) > self.delta:
-            return 0, 0
-        else:
-            dy = self.weights
-            X = T.toPhys(self.P)
-            psi = self.psi[b]
-            ker = self.xkernelPhys(x[:, np.newaxis], X)
-            innerLocal = (ker @ dy) * T.absDet()
-            innerNonloc = (psi * ker @ dy)*T.absDet()
-            return innerLocal, innerNonloc
-
-    def outerInt_retriangulate(self, a, b, aT, bT):
-        """
-        Computes the outer integral using retriangulation.
-
-        :param a: int. Index of the outer reference basis function.
-        :param b: int. Index of the 'inner' reference basis function.
-        :param aT: clsTriangle. Outer Triangle.
-        :param bT: clsTriangle. Inner Triangle.
-        :return: real. The integral is computed by retriangulating the domain aT w.r.t. the
-        interaction between x in aT and bT.
-        """
-        P = self.P
-        dx = self.weights
-        psi = self.psi
-        termLocal = 0
-        termNonloc = 0
-        RT = self.retriangulate(bT.baryCenter(), aT)
-
-        for rT in RT:
-            rX = rT.toPhys(P)
-            psia_r = self.evalPsi(aT.toRef(rX), a)
-            psib_r = self.evalPsi(aT.toRef(rX), b)
-            for k, x in enumerate(rX.T):
-                innerLocal, innerNonloc = self.innerInt(x, bT, b)
-                termLocal += rT.absDet() * psia_r[k] * psib_r[k] * dx[k] * innerLocal
-                termNonloc += rT.absDet() * psia_r[k] * dx[k] * innerNonloc
-        return termLocal, termNonloc
-
-    def retriangulate(self, py_x_center, py_T):
-        """ Retriangulates a given triangle.
-
-        :param x_center: nd.array, real, shape (2,). Center of normball, e.g. pyhsical quadtrature point.
-        :param T: clsTriangle. Triangle to be retriangulated.
-        :return: list of clsTriangle.
-        """
-        #py_R = np.zeros((9,2))
-
-        # Python Objects to allocate space which is accessible from Python.
-        py_E = np.zeros((3,2))
-        py_edges = np.array([[0, 1], [1, 2], [2, 0]], dtype=np.int32)
-
-        # C Variables and Arrays.
-        cdef:
-            int i=0, k=0, Rdx=0
-            double sqdelta = self.delta**2
-            double v=0, lam1=0, lam2=0, t=0, term1=0, term2=0
-            double c_p[2]
-            double c_q[2]
-            double c_a[2]
-            double c_b[2]
-            double c_y1[2]
-            double c_y2[2]
-            double c_R[9][2]
-        # Memory Views.
-        cdef:
-            int [:,:] edges = py_edges
-            double [:] x_center=py_x_center
-            double [:, :] TE=py_T.E, E=py_E
-        for k in range(3):
-            for i in range(2):
-                c_p[i] = TE[edges[k,0], i]
-                c_q[i] = TE[edges[k,1], i]
-                c_a[i] = c_q[i] - x_center[i]
-                c_b[i] = c_p[i] - c_q[i]
-            v = pow(c_vecdot(c_a, c_b, 2),2) - (c_vecdot(c_a, c_a, 2) - sqdelta)*c_vecdot(c_b,c_b, 2)
-
-            if v >= 0:
-                term1 = -c_vecdot(c_a,c_b, 2)/c_vecdot(c_b,c_b, 2)
-                term2 = sqrt(v)/c_vecdot(c_b,c_b, 2)
-                lam1 = term1 + term2
-                lam2 = term1 - term2
-                for i in range(2):
-                    c_y1[i] = lam1*(c_p[i]-c_q[i]) + c_q[i]
-                    c_y2[i] = lam2*(c_p[i]-c_q[i]) + c_q[i]
-
-                if c_vecdist_sql2(c_p, &x_center[0], 2) <= sqdelta:
-                    for i in range(2):
-                        c_R[Rdx][i] = c_p[i]
-                    Rdx += 1
-                if 0 <= lam1 <= 1:
-                    for i in range(2):
-                        c_R[Rdx][i] = c_y1[i]
-                    Rdx += 1
-                if (0 <= lam2 <= 1) and (scaldist_sql2(lam1, lam2) >= 1e-9):
-                    for i in range(2):
-                        c_R[Rdx][i] = c_y2[i]
-                    Rdx += 1
-            else:
-                if c_vecdist_sql2(c_p, &x_center[0], 2)  <= sqdelta:
-                    for i in range(2):
-                        c_R[Rdx][i] = c_p[i]
-                    Rdx += 1
-        if Rdx < 3:
-            return []
-        else:
-            reTriangles = []
-            for k in range(Rdx - 2):
-                for i in range(2):
-                    E[0, i] = c_R[0][i]
-                    E[1, i] = c_R[k+1][i]
-                    E[2, i] = c_R[k+2][i]
-                reTriangles.append(clsTriangle(py_E))
-            return reTriangles
-
-    def evalPsi(self, P, psidx):
-        """Evaluate basis function for given reference points.
-
-        :param P: nd.array, real, shape (2, n).
-        Reference points, e.g. quadrature points of the reference element.
-        :param psidx: Index of Basis function.
-        :return: nd.array, real, shape (3, n). Values of basis function.
-        """
-        if psidx == 0:
-            return 1 - P[0, :] - P[1, :]
-        if psidx == 1:
-            return P[0, :]
-        if psidx == 2:
-            return P[1, :]
-
-    def f(self, aBdx_O, aT):
-        """
-        Assembles the right side f.
-
-        :param aBdx_O: tupel of int, i=0,1,2. Index of reference basis functions which lie in Omega.
-        :param aT: Triangle. Triangle to integrate over.
-        :return: Integral.
-        """
-        return (self.psi[aBdx_O] * self.fPhys(aT.toPhys(self.P))) @ self.weights * aT.absDet()
-
-    # Define Right side f
-    def fPhys(self, x):
-        """ Right side of the equation.
-
-        :param x: nd.array, real, shape (2,). Physical point in the 2D plane
-        :return: real
-        """
-        # f = 1
-        return 1
-
-    def kernelPhys(self, P):
-        """ Constant integration kernel.
-
-        :param P: ndarray, real, shape (2, n). Reference points for integration.
-        :return: real. Evaluates the kernel on the full grid.
-        """
-
-        # $\gamma(x,y) = 4 / (pi * \delta**4)$
-        # Wir erwarten $u(x) = 1/4 (1 - ||x||^2)$
-
-        n_P = P.shape[1]
-        return 4 / (np.pi * self.delta ** 4) * np.ones((n_P, n_P))
-
-    def xkernelPhys(self, x, y):
-        """ Constant integration kernel.
-
-        :param x: ndarray, real, shape (2, n). Physical points for evaluation.
-        :param y: ndarray, real, shape (2, n). Physical points for evaluation.
-        :return: real. Evaluates the kernel.
-        """
-
-        # $\gamma(x,y) = 4 / (pi * \delta**4)$
-        # Wir erwarten $u(x) = 1/4 (1 - ||x||^2)$
-        n_x = x.shape[1]
-        n_y = y.shape[1]
-        return 4 / (np.pi * self.delta ** 4) * np.ones((n_x, n_y))
-
-cdef void cy_outerInt_full(int a, int b,
-                           double aTdet, double bTdet, double[:,:] aTE, double [:,:] bTE,
+cdef void cy_outerInt_full(double aTdet, double bTdet, double[:,:] aTE, double [:,:] bTE,
                            double [:,:] P, int nP, double [:] dx, double [:] dy, double [:,:] psi,
                            double sqdelta,
-                           double [:] outInt):
+                           double [:, :] cy_termLocal, double [:,:] cy_termNonloc):
     cdef:
-        int i=0, k=0
-        double x[2]
-        double innerInt[2]
-        double termLocal = 0, termNonloc = 0
+        int i=0, k=0, Rdx=0
+        double x[2], innerLocal=0
+        double innerNonloc[3]
+        double [:,:] RT = np.zeros((9*3, 2))
 
     for k in range(nP):
         cy_toPhys(aTE, P[:,k], x)
-        cy_innerInt_retriangulate(x, b, bTdet, bTE, P, nP, dy, sqdelta, innerInt)
-        termLocal += aTdet * psi[a][k] * psi[b][k] * dx[k] * innerInt[0] #innerLocal
-        termNonloc += aTdet * psi[a][k] * dx[k] * innerInt[1] #innerNonloc
-    outInt[0] = termLocal
-    outInt[1] = termNonloc
+        Rdx = cy_retriangulate(x, bTE, sqdelta, RT)
+        cy_innerInt_retriangulate(x, bTdet, bTE, P, nP, dy, sqdelta, Rdx, RT, &innerLocal, innerNonloc)
+        for b in range(3):
+            for a in range(3):
+                cy_termLocal[a][b] += aTdet * psi[a][k] * psi[b][k] * dx[k] * innerLocal #innerLocal
+                cy_termNonloc[a][b] += aTdet * psi[a][k] * dx[k] * innerNonloc[b] #innerNonloc
 
-cdef void cy_innerInt_retriangulate(double [:] x, int b,
+cdef cy_innerInt_retriangulate(double [:] x,
                                     double Tdet, double [:,:] TE,
                                     double [:,:] P, int nP, double [:] dy,
                                     double sqdelta,
-                                    double [:] outInt):
-
+                                    int Rdx, double[:,:] RT,
+                                    double * innerLocal,
+                                    double [:] innerNonloc):
     cdef:
-        int nRT = 0, i=0, k=0, rTdx=0
-        double innerLocal = 0, innerNonloc = 0, psi_rp=0, ker=0, rTdet=0
+        int nRT = 0, i=0, k=0, rTdx=0, b=0
+        double psi_rp=0, ker=0, rTdet=0
         double [:] p
         double ry[2]
         double rp[2]
-        double [:,:] RT = cy_retriangulate(x, TE, sqdelta)
 
-    # Try to work with pointers, to avoid this type problem here in future!
-    # We cannot really know how large the Array RT has to be before the retriangulation.
-    # Hence, the function needs to allocate memory and hand over a pointer. If there is nothing to do,
-    # it should pass a NULL pointer.
-
-    nRT = len(RT)
-    for i in range(2):
-        outInt[i] = 0
-    if nRT == 1:
-        # If at least one triangle lies in the interesction nRT will be >= 3.
-        # Otherwise RT = np.zeros((1,1))
+    innerLocal[0] = 0
+    for b in range(3):
+        innerNonloc[b] = 0
+    if Rdx == 0:
         return
-    nTriangles = <int> floor(nRT/3)
-    if nTriangles != nRT/3:
-        raise ValueError("in cy_innerInt_retriangulate. Something is wrong with the triangle list RT.")
-    for rTdx in range(nTriangles):
+
+    for rTdx in range(Rdx):
         for i in range(nP):
             cy_toPhys(RT[rTdx*3:rTdx*3+3, :], P[:, i], ry)
             cy_toRef(TE, ry, rp)
-            psi_rp = cy_evalPsi(rp, b)
             ker = c_kernelPhys(&x[0], &ry[0], sqdelta)
             rTdet = cy_absDet(RT[rTdx*3:rTdx*3+3, :])
-            innerLocal += (ker * dy[i]) * rTdet # Local Term
-            innerNonloc += (psi_rp * ker * dy[i]) * rTdet # Nonlocal Term
-    outInt[0] = innerLocal
-    outInt[1] = innerNonloc
-    return
+            innerLocal[0] += (ker * dy[i]) * rTdet # Local Term
+            for b in range(3):
+                psi_rp = cy_evalPsi(rp, b)
+                innerNonloc[b] += (psi_rp * ker * dy[i]) * rTdet # Nonlocal Term
 
 cdef double cy_evalPsi(double * p, int psidx):
     if psidx == 0:
@@ -780,7 +586,7 @@ cdef double cy_evalPsi(double * p, int psidx):
     else:
         raise ValueError("in cy_evalPsi. Invalid psi index.")
 
-cdef double [:,:] cy_retriangulate(double [:] x_center, double [:,:] TE, double sqdelta):
+cdef int cy_retriangulate(double [:] x_center, double [:,:] TE, double sqdelta, double [:,:] out_RE):
         """ Retriangulates a given triangle.
 
         :param x_center: nd.array, real, shape (2,). Center of normball, e.g. pyhsical quadtrature point.
@@ -793,11 +599,12 @@ cdef double [:,:] cy_retriangulate(double [:] x_center, double [:,:] TE, double 
         #py_E = np.zeros((3,2))
 
         # Please hardcode via some modulo operation in future!!
-        py_edges = np.array([[0, 1], [1, 2], [2, 0]], dtype=np.int32)
+        #py_edges = np.array([[0, 1], [1, 2], [2, 0]], dtype=np.int32)
+        # see eddx0, edgdx1
 
         # C Variables and Arrays.
         cdef:
-            int i=0, k=0, Rdx=0
+            int i=0, k=0, edgdx0=0, edgdx1=0
             double v=0, lam1=0, lam2=0, t=0, term1=0, term2=0
             double c_p[2]
             double c_q[2]
@@ -805,30 +612,42 @@ cdef double [:,:] cy_retriangulate(double [:] x_center, double [:,:] TE, double 
             double c_b[2]
             double c_y1[2]
             double c_y2[2]
+            # An upper bound for the number of intersections between a circle and a triangle is 9
+            # Hence we can hardcode how much space needs to bee allocated
             double c_R[9][2]
+            # Hence 9*3 is an upper bound to encode all resulting triangles
+            #double c_RE[9*3][2]
         # Memory Views.
-        cdef:
-            int [:,:] edges = py_edges
+        #cdef:
+            #int [:,:] edges = py_edges
             #double [:] x_center=py_x_center
-            #double [:, :] E=py_E#TE=py_T.E,
+            #double [:, :] RE=c_RE
+        Rdx=0
+        for i in range(9):
+            for k in range(2):
+                c_R[i][k] = 0.0
+
         for k in range(3):
+            edgdx0 = k
+            edgdx1 = (k+1) % 3
+
             for i in range(2):
-                c_p[i] = TE[edges[k,0], i]
-                c_q[i] = TE[edges[k,1], i]
+                c_p[i] = TE[edgdx0, i]
+                c_q[i] = TE[edgdx1, i]
                 c_a[i] = c_q[i] - x_center[i]
                 c_b[i] = c_p[i] - c_q[i]
-            v = pow(c_vecdot(c_a, c_b, 2),2) - (c_vecdot(c_a, c_a, 2) - sqdelta)*c_vecdot(c_b,c_b, 2)
+            v = pow(c_vecdot(&c_a[0], &c_b[0], 2),2) - (c_vecdot(&c_a[0], &c_a[0], 2) - sqdelta)*c_vecdot(&c_b[0],&c_b[0], 2)
 
             if v >= 0:
-                term1 = -c_vecdot(c_a,c_b, 2)/c_vecdot(c_b,c_b, 2)
-                term2 = sqrt(v)/c_vecdot(c_b,c_b, 2)
+                term1 = -c_vecdot(&c_a[0], &c_b[0], 2)/c_vecdot(&c_b[0], &c_b[0], 2)
+                term2 = sqrt(v)/c_vecdot(&c_b[0], &c_b[0], 2)
                 lam1 = term1 + term2
                 lam2 = term1 - term2
                 for i in range(2):
                     c_y1[i] = lam1*(c_p[i]-c_q[i]) + c_q[i]
                     c_y2[i] = lam2*(c_p[i]-c_q[i]) + c_q[i]
 
-                if c_vecdist_sql2(c_p, &x_center[0], 2) <= sqdelta:
+                if c_vecdist_sql2(&c_p[0], &x_center[0], 2) <= sqdelta:
                     for i in range(2):
                         c_R[Rdx][i] = c_p[i]
                     Rdx += 1
@@ -847,15 +666,26 @@ cdef double [:,:] cy_retriangulate(double [:] x_center, double [:,:] TE, double 
                     Rdx += 1
         # Construct List of Triangles from intersection points
         if Rdx < 3:
-            return np.zeros((1,1)) # Allows to type function with output double [:]
+            # In this case the content of the array out_RE will not be touched.
+            return 0
         else:
-            arr_E = np.zeros(((Rdx-2)*3, 2))
             for k in range(Rdx - 2):
                 for i in range(2):
-                    arr_E[3*k + 0, i] = c_R[0][i]
-                    arr_E[3*k + 1, i] = c_R[k+1][i]
-                    arr_E[3*k + 2, i] = c_R[k+2][i]
-            return arr_E
+                    out_RE[3*k + 0, i] = c_R[0][i]
+                    out_RE[3*k + 1, i] = c_R[k+1][i]
+                    out_RE[3*k + 2, i] = c_R[k+2][i]
+            # Excessing the bound out_Rdx will not lead to an error but simply to corrupted data!
+
+            return Rdx - 2 # So that, it acutally contains the number of triangles in the retriangulation
+# Define Right side f
+cdef double c_fPhys(double * x):
+        """ Right side of the equation.
+
+        :param x: nd.array, real, shape (2,). Physical point in the 2D plane
+        :return: real
+        """
+        # f = 1
+        return 1.0
 
 cdef void cy_toPhys(double [:,:] E, double [:] p, double [:] out_x):
     cdef:
@@ -956,3 +786,34 @@ cdef double cy_absDet(double [:,:] E):
         M[i][0] = E[1][i] - E[0][i]
         M[i][1] = E[2][i] - E[0][i]
     return abs(M[0][0]*M[1][1] - M[0][1]*M[1][0])
+
+cdef double baryCenter(double [:,:] E, double [:] bary):
+    cdef:
+        int i
+    bary[0] = 0
+    bary[1] = 0
+    for i in range(3):
+        bary[0] += E[i, 0]
+        bary[1] += E[i, 1]
+    bary[0] = bary[0]/3
+    bary[1] = bary[1]/3
+
+def inNbhd(double [:,:] aTE, double [:,:] bTE, double sqdelta, double [:] M):
+    """
+    Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
+    Returns an array of boolen values. Compares the barycenter of bT with the vertices of Ea.
+
+    :param aT: clsTriangle, Triangle a
+    :param bT: clsTriangle, Triangle b
+    :param delta: Size of L-2 ball
+    :param v: Verbose mode.
+    :return: ndarray, bool, shape (3,) Entry i is True if Ea[i] and the barycenter of Eb interact.
+    """
+
+    cdef:
+        int i=0
+        double bary[2]
+    baryCenter(bTE, bary)
+
+    for i in range(3):
+        M[i] = (c_vecdist_sql2(&(aTE[i,:])[0], &bary[0], 2) <= sqdelta)
