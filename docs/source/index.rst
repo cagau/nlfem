@@ -14,30 +14,11 @@ Assembly
 .. automodule:: assemble
    :members:
 
-Mesh, Triangle and Integrator Class
+Triangle Class
 ===================================
-.. autoclass:: nlocal.clsFEM
+.. autoclass:: assemble.cy_clsTriangle
    :members:
    :undoc-members:
-
-.. autoclass:: nlocal.clsTriangle
-   :members:
-   :undoc-members:
-
-.. autoclass:: nlocal.clsInt
-   :members:
-   :undoc-members:
-
-Helper modules
-==============
-.. automodule:: aux
-   :members:
-
-.. automodule:: nbhd
-   :members:
-
-.. automodule:: plot
-   :members:
 
 Indices and tables
 ==================

@@ -7,7 +7,7 @@ from conf import mesh_name, delta, ansatz
 from nlocal import clsFEM#, assemble # Mesh class
 from aux import filename
 from plot import plot
-import assemble
+from assemble import assemble
 
 # Necessary definitions for intersection -------------------------------------------------------------------------------
 if __name__ == "__main__":
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     print("Delta: ", delta, "\t Mesh: ", mesh_name)
     print("Number of basis functions: ", mesh.K)
 
-    Ad, fd  = assemble.assemble(mesh)
+    Ad, fd  = assemble(mesh)
     Ad_O = Ad[:, :mesh.K_Omega]
     ud = np.linalg.solve(Ad_O, fd)
 
