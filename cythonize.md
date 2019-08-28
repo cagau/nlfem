@@ -19,7 +19,7 @@ Large Mesh
 |+ cy clsInt.retriangulate| 4.69e+02          |     x2.2      |
 |+ cy clsInt.A (i. e. inner and outer Int) | 2.17e+01   |     x48.4   |
 |+ cy inNbhd | 1.84e+01          |     x57.1    |
-|+ cy assemble | 8.7e+00 | x120,69|
+|+ cy assemble | 4.9e+00 | x214,29|
 Huge Mesh 
 ------
 |Name  |Value |

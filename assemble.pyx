@@ -32,14 +32,14 @@ def assemble(mesh):
     py_Mis_interact = np.zeros(3, dtype=np.int32)
 
     # Define Basis
-    psi0 = 1 - py_P[0, :] - py_P[1, :]
-    psi1 = py_P[0, :]
-    psi2 = py_P[1, :]
+    psi0 = (1 - py_P[:, 0] - py_P[:, 1])
+    psi1 = py_P[:, 0]
+    psi2 = py_P[:, 1]
 
     cdef:
         int J = mesh.J, J_Omega = mesh.J_Omega, L = mesh.L, L_Omega = mesh.L_Omega, a=0, b=0, aAdxj =0
         queue[int] c_queue
-        int nP = py_P.shape[1]
+        int nP = py_P.shape[0]
         int aTdx=0, bTdx=0, sTdx=0, i=0, k=0, j=0, h=0
 
         int [:] visited = py_visited
@@ -54,7 +54,9 @@ def assemble(mesh):
         double * test_ptr
         double test
         double sqdelta = delta**2
-        double [:] fd = py_fd
+        np.ndarray[double, ndim=1, mode="c"] dx = weights
+        np.ndarray[double, ndim=1, mode="c"] dy = weights
+        np.ndarray[double, ndim=1, mode="c"] fd = py_fd
         double termf[3]
         np.ndarray[double, ndim=2, mode="c"] Ad = py_Ad
         np.ndarray[double, ndim=2, mode="c"] c_Verts = mesh.V
@@ -65,9 +67,8 @@ def assemble(mesh):
         cy_clsTriangle aT, bT
 
 
-    dx = weights
-    dy = weights
 
+    #print(psi)
     #raise KeyboardInterrupt
 
 
@@ -89,7 +90,7 @@ def assemble(mesh):
 
         # integrate over all elements
         c_doublevec_tozero(&termf[0], 3)
-        f(aT, P, nP, dx, psi, termf)
+        f(aT, &P[0,0], nP, &dx[0], &psi[0,0], &termf[0])
 
         # then assign to fd
         for a in range(3):
@@ -113,13 +114,13 @@ def assemble(mesh):
                     bT.setup(&c_Verts[c_Triangles[bTdx,0], 0], &c_Verts[c_Triangles[bTdx,1], 0], &c_Verts[c_Triangles[bTdx,2], 0])
 
                     if visited[bTdx]==0:
-                        inNbhd(aT, bT, sqdelta, Mis_interact)
+                        inNbhd(aT, bT, sqdelta, &Mis_interact[0])
                         if c_intvec_any(&Mis_interact[0], 3):
                             c_queue.push(bTdx)
                             bAdx = &c_Triangles[bTdx,0]
                             c_doublevec_tozero(&termLocal[0], 3*3)
                             c_doublevec_tozero(&termNonloc[0], 3*3)
-                            A(aT, bT, P, nP, dx, dy, psi, sqdelta, c_intvec_all(&Mis_interact[0], 3), termLocal, termNonloc)
+                            A(aT, bT, &P[0,0], nP, &dx[0], &dy[0], &psi[0,0], sqdelta, c_intvec_all(&Mis_interact[0], 3), termLocal, termNonloc)
 
                             for a in range(3):
                                 if c_Triangles[aTdx, a] < L_Omega:
@@ -158,7 +159,12 @@ cdef list set_neighbour(int rows, npint32_t * Triangles, npint32_t * Vdx):
 
     return idx
 
-cdef void f(cy_clsTriangle aT, np.ndarray[double, ndim=2, mode="c"] P, int nP, double [:] dx, np.ndarray[double, ndim=2, mode="c"] psi, double [:] termf):
+cdef void f(cy_clsTriangle aT,
+            double * P,
+            int nP,
+            double * dx,
+            double * psi,
+            double * termf):
     cdef:
         int i,a
         double x[2]
@@ -166,11 +172,16 @@ cdef void f(cy_clsTriangle aT, np.ndarray[double, ndim=2, mode="c"] P, int nP, d
 
     for a in range(3):
         for i in range(nP):
-            aT.cy_toPhys(P[:, i], x)
-            termf[a] += psi[a, i] * c_fPhys(&x[0] ) * absDet * dx[i]
+            aT.cy_toPhys(&P[2*i], &x[0])
+            termf[a] += psi[7*a + i] * c_fPhys(&x[0] ) * absDet * dx[i]
 
-cdef void A(cy_clsTriangle aT, cy_clsTriangle bT, double [:,:] P, int nP,
-      double [:] dx, double [:] dy, double [:,:] psi, double sqdelta, bint is_allInteract,
+cdef void A(cy_clsTriangle aT, cy_clsTriangle bT,
+            double * P,
+            int nP,
+            double * dx,
+            double * dy,
+            double * psi,
+            double sqdelta, bint is_allInteract,
       double * cy_termLocal, double * cy_termNonloc):
     cdef:
         int i=0, j=0, a, b
@@ -183,45 +194,48 @@ cdef void A(cy_clsTriangle aT, cy_clsTriangle bT, double [:,:] P, int nP,
                     innerIntLocal=0
                     innerIntNonloc=0
                     for j in range(nP):
-                        innerIntLocal += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j]
-                        innerIntNonloc += c_kernelPhys(&(P[:, i])[0], &(P[:, j])[0], sqdelta) * dy[j] * psi[b, j]
-                    cy_termLocal[3*a+b] += psi[a, i] * psi[b, i] * innerIntLocal * dx[i] * aT.absDet()*bT.absDet()
-                    cy_termNonloc[3*a+b] += psi[a,i] * innerIntNonloc * dx[i] * aT.absDet()*bT.absDet()
+                        innerIntLocal += c_kernelPhys(&P[2*i], &P[2*j], sqdelta) * dy[j]
+                        innerIntNonloc += c_kernelPhys(&P[2*i], &P[2*j], sqdelta) * dy[j] * psi[7*b+j]
+                    cy_termLocal[3*a+b] += psi[7*a+i] * psi[7*b+i] * innerIntLocal * dx[i] * aT.absDet()*bT.absDet()
+                    cy_termNonloc[3*a+b] += psi[7*a+i] * innerIntNonloc * dx[i] * aT.absDet()*bT.absDet()
     else:
         cy_outerInt_full(aT, bT, P, nP, dx, dy, psi, sqdelta, cy_termLocal, cy_termNonloc)
 
 cdef void cy_outerInt_full(cy_clsTriangle aT, cy_clsTriangle bT,
-                           double [:,:] P, int nP, double [:] dx, double [:] dy, double [:,:] psi,
+                           double * P,
+                           int nP,
+                           double * dx,
+                           double * dy,
+                           double * psi,
                            double sqdelta,
-                           double * cy_termLocal, double * cy_termNonloc):
+                           double * cy_termLocal,
+                           double * cy_termNonloc):
     cdef:
         int i=0, k=0, Rdx=0, a=0, b=0
         double x[2]
         double innerLocal=0
         double innerNonloc[3]
-        double [:,:] RT = np.zeros((9*3, 2))
+        double RT[9*3*2]
 
     for k in range(nP):
         #cy_toPhys(aTE, P[:,k], x)
-        aT.cy_toPhys( P[:,k], x)
-        Rdx = cy_retriangulate(x, bT, sqdelta, RT)
-        cy_innerInt_retriangulate(x, bT, P, nP, dy, sqdelta, Rdx, RT, &innerLocal, innerNonloc)
+        aT.cy_toPhys( &P[2*k], &x[0])
+        Rdx = cy_retriangulate(&x[0], bT, sqdelta, &RT[0])
+        cy_innerInt_retriangulate(x, bT,
+                                  P, nP, &dy[0], sqdelta, Rdx, &RT[0], &innerLocal, &innerNonloc[0])
         for b in range(3):
             for a in range(3):
-                cy_termLocal[3*a+b] += aT.absDet() * psi[a][k] * psi[b][k] * dx[k] * innerLocal #innerLocal
-                cy_termNonloc[3*a+b] += aT.absDet() * psi[a][k] * dx[k] * innerNonloc[b] #innerNonloc
+                cy_termLocal[3*a+b] += aT.absDet() * psi[7*a+k] * psi[7*b+k] * dx[k] * innerLocal #innerLocal
+                cy_termNonloc[3*a+b] += aT.absDet() * psi[7*a+k] * dx[k] * innerNonloc[b] #innerNonloc
 
-cdef cy_innerInt_retriangulate(double [:] x,
-                                    cy_clsTriangle T,
-                                    double [:,:] P, int nP, double [:] dy,
-                                    double sqdelta,
-                                    int Rdx, double[:,:] RT,
-                                    double * innerLocal,
-                                    double [:] innerNonloc):
+cdef cy_innerInt_retriangulate(double * x,
+                               cy_clsTriangle T,
+                               double * P,
+                               int nP, double * dy, double sqdelta, int Rdx,
+                               double * RT, double * innerLocal, double * innerNonloc):
     cdef:
         int nRT = 0, i=0, k=0, rTdx=0, b=0
         double psi_rp=0, ker=0, rTdet=0
-        double [:] p
         double ry[2]
         double rp[2]
 
@@ -233,10 +247,11 @@ cdef cy_innerInt_retriangulate(double [:] x,
 
     for rTdx in range(Rdx):
         for i in range(nP):
-            cy_toPhys(RT[rTdx*3:rTdx*3+3, :], P[:, i], ry)
+            #cy_toPhys(RT[rTdx*3:rTdx*3+3, :], &P[2*i], &ry[0])
+            cy_toPhys(&RT[2*3*rTdx], &P[2*i], &ry[0])
             T.cy_toRef(ry, rp)
             ker = c_kernelPhys(&x[0], &ry[0], sqdelta)
-            rTdet = cy_absDet(RT[rTdx*3:rTdx*3+3, :])
+            rTdet = cy_absDet(&RT[2*3*rTdx])
             innerLocal[0] += (ker * dy[i]) * rTdet # Local Term
             for b in range(3):
                 psi_rp = cy_evalPsi(rp, b)
@@ -252,7 +267,7 @@ cdef double cy_evalPsi(double * p, int psidx):
     else:
         raise ValueError("in cy_evalPsi. Invalid psi index.")
 
-cdef int cy_retriangulate(double [:] x_center, cy_clsTriangle T, double sqdelta, double [:,:] out_RE):
+cdef int cy_retriangulate(double * x_center, cy_clsTriangle T, double sqdelta, double * out_RT):
         """ Retriangulates a given triangle.
 
         :param x_center: nd.array, real, shape (2,). Center of normball, e.g. pyhsical quadtrature point.
@@ -323,9 +338,12 @@ cdef int cy_retriangulate(double [:] x_center, cy_clsTriangle T, double sqdelta,
         else:
             for k in range(Rdx - 2):
                 for i in range(2):
-                    out_RE[3*k + 0, i] = c_R[0][i]
-                    out_RE[3*k + 1, i] = c_R[k+1][i]
-                    out_RE[3*k + 2, i] = c_R[k+2][i]
+                    # i is the index which runs first, then h (which does not exist here), then k
+                    # hence if we increase i, the *-index (of the pointer) inreases in the same way.
+                    # if we increase k, there is quite a 'jump'
+                    out_RT[2 * (3 * k + 0) + i] = c_R[0][i]
+                    out_RT[2 * (3 * k + 1) + i] = c_R[k + 1][i]
+                    out_RT[2 * (3 * k + 2) + i] = c_R[k + 2][i]
             # Excessing the bound out_Rdx will not lead to an error but simply to corrupted data!
 
             return Rdx - 2 # So that, it acutally contains the number of triangles in the retriangulation
@@ -340,11 +358,11 @@ cdef double c_fPhys(double * x):
         # f = 1
         return 1.0
 
-cdef void cy_toPhys(double [:,:] E, double [:] p, double [:] out_x):
+cdef void cy_toPhys(double * E, double * p, double * out_x):
     cdef:
         int i=0
     for i in range(2):
-        out_x[i] = (E[1][i] - E[0][i])*p[0] + (E[2][i] - E[0][i])*p[1] + E[0][i]
+        out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i]
 
 cdef double c_kernelPhys(double * x, double * y, double sqdelta):
     return 4 / (pi * pow(sqdelta, 2))
@@ -418,39 +436,39 @@ cdef void cy_solve2x2(double * A, double * b, double * x):
     x[0] = (b[dx0] - A[2*dx0+1]*x[1])/A[2*dx0]
     return
 
-cdef void cy_toRef(double [:,:] E, double [:] phys_x, double [:] ref_p):
-    cdef:
-        double M[2*2]
-        double b[2]
-        int i=0, j=0
-
-    for i in range(2):
-        M[2*i] = E[1][i] - E[0][i]
-        M[2*i+1] = E[2][i] - E[0][i]
-        b[i] = phys_x[i] - E[0][i]
-
-    cy_solve2x2(&M[0], &b[0], &ref_p[0])
-    return
-
-cdef double cy_absDet(double [:,:] E):
+#cdef void cy_toRef(double [:,:] E, double [:] phys_x, double [:] ref_p):
+#    cdef:
+#        double M[2*2]
+#        double b[2]
+#        int i=0, j=0
+#
+#    for i in range(2):
+#        M[2*i] = E[1][i] - E[0][i]
+#        M[2*i+1] = E[2][i] - E[0][i]
+#        b[i] = phys_x[i] - E[0][i]
+#
+#    cy_solve2x2(&M[0], &b[0], &ref_p[0])
+#    return
+#
+cdef double cy_absDet(double * E):
     cdef:
         double M[2][2]
     for i in range(2):
-        M[i][0] = E[1][i] - E[0][i]
-        M[i][1] = E[2][i] - E[0][i]
+        M[i][0] = E[2*1+i] - E[2*0+i]
+        M[i][1] = E[2*2+i] - E[2*0+i]
     return abs(M[0][0]*M[1][1] - M[0][1]*M[1][0])
-
-cdef void baryCenter(double [:,:] E, double [:] bary):
-    cdef:
-        int i
-    bary[0] = 0
-    bary[1] = 0
-    for i in range(3):
-        bary[0] += E[i, 0]
-        bary[1] += E[i, 1]
-    bary[0] = bary[0]/3
-    bary[1] = bary[1]/3
-
+#
+#cdef void baryCenter(double [:,:] E, double [:] bary):
+#    cdef:
+#        int i
+#    bary[0] = 0
+#    bary[1] = 0
+#    for i in range(3):
+#        bary[0] += E[i, 0]
+#        bary[1] += E[i, 1]
+#    bary[0] = bary[0]/3
+#    bary[1] = bary[1]/3
+#
 cdef class cy_clsTriangle:
     """ Triangle Class
 
@@ -478,7 +496,7 @@ cdef class cy_clsTriangle:
             self.absDet_ = abs(self.M[0]*self.M[3] - self.M[1]*self.M[2])
             return self.absDet_
 
-    cdef void cy_toPhys(self, double [:] p, double [:] out_x):
+    cdef void cy_toPhys(self, double * p, double * out_x):
         """
         Push reference point p to physical triangle x
         :param p: double [:], shape (2,). Input reference point.
@@ -533,7 +551,7 @@ cdef class cy_clsTriangle:
         self.is_baryCenter_ = 1
         return
 
-cdef void inNbhd(cy_clsTriangle aT, cy_clsTriangle bT, double sqdelta, int [:] M):
+cdef void inNbhd(cy_clsTriangle aT, cy_clsTriangle bT, double sqdelta, npint32_t * M):
     """
     Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
     Returns an array of boolen values. Compares the barycenter of bT with the vertices of Ea.
@@ -563,12 +581,6 @@ cdef void c_intvec_tozero(int * vec, int len) nogil:
     cdef int i=0
     for i in range(len):
         vec[i]  = 0
-
-cdef void cy_doublearr_tozero(double [:,:] arr, int rows, int cols):
-    cdef int i=0, j=0
-    for i in range(rows):
-        for j in range(cols):
-            arr[i, j]  = 0.
 
 cdef int c_intvec_any(npint32_t * vec, int len):
     cdef int i=0
