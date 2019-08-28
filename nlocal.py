@@ -182,7 +182,7 @@ class clsFEM:
         # for v in V:
         #    plt.scatter(v.T[0], v.T[1], c="r")
         # plt.show()
-        return Verts, np.array(Triangles, dtype=np.int32), J, J_Omega, L, L_Omega
+        return Verts, Triangles, J, J_Omega, L, L_Omega
 
     def basis(self, ansatz):
 

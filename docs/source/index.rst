@@ -13,6 +13,7 @@ Assembly
 ========
 .. automodule:: assemble
    :members:
+   :undoc-members:
 
 Triangle Class
 ===================================

@@ -9,32 +9,17 @@ Nonlocal Assembly's doc
    :maxdepth: 2
    :caption: Contents:
 
-Mesh, Triangle and Integrator Class
+Assembly
+========
+.. automodule:: assemble
+   :members:
+   :undoc-members:
+
+Triangle Class
 ===================================
-.. autoclass:: nlocal.clsMesh
+.. autoclass:: assemble.cy_clsTriangle
    :members:
    :undoc-members:
-
-.. autoclass:: nlocal.clsTriangle
-   :members:
-   :undoc-members:
-
-.. autoclass:: nlocal.clsInt
-   :members:
-   :undoc-members:
-
-Helper modules
-==============
-.. automodule:: aux
-   :members:
-
-.. automodule:: nbhd
-   :members:
-
-.. automodule:: nlocal
-   :members:
-
-
 
 Indices and tables
 ==================
