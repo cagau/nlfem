@@ -12,7 +12,7 @@ from numpy.linalg import LinAlgError
 from libc.math cimport sqrt, pow, pi
 from conf import py_P, weights, delta, outerIntMethod, innerIntMethod
 import time
-from libc.stdlib cimport malloc, free#, new, delete
+from libc.stdlib cimport malloc, free, abort#, new, delete
 
 ctypedef np.int32_t npint32_t
 
@@ -22,16 +22,20 @@ def assemble(mesh):
     :param mesh: clsFEM. Mesh containing the data. All other data is read from *conf.py*.
     :return: list of nd.array. Returns discretized matrix A and right side f.
     """
+
+    ## Data Matrix ----------------------------------------
     # Allocate Matrix A and right side f
     py_Ad = np.zeros((mesh.K_Omega, mesh.K))
     py_fd = np.zeros(mesh.K_Omega)
 
-    # Allocat Graph of Neighbours
+    ## BFS ------------------------------------------------
+    # Allocate Graph of Neighbours
     py_Neighbours = np.ones((mesh.J, 4), dtype=np.int32)*mesh.J
+    # Further definitions
     py_visited = np.zeros(mesh.J, dtype=np.int32)
     py_Mis_interact = np.zeros(3, dtype=np.int32)
 
-    # Define Basis
+    # Define Basis-----------------------------------------
     psi0 = (1 - py_P[:, 0] - py_P[:, 1])
     psi1 = py_P[:, 0]
     psi2 = py_P[:, 1]
@@ -42,7 +46,7 @@ def assemble(mesh):
         int nP = py_P.shape[0]
         int aTdx=0, bTdx=0, sTdx=0, i=0, k=0, j=0, h=0
 
-        int [:] visited = py_visited
+        np.ndarray[int, ndim=1, mode="c"] visited = py_visited
         np.ndarray[npint32_t, ndim=1, mode="c"] Mis_interact = py_Mis_interact
         np.ndarray[npint32_t, ndim=2, mode="c"] Neighbours = py_Neighbours
         np.ndarray[npint32_t, ndim=2, mode="c"] c_Triangles = np.ascontiguousarray(mesh.T, np.int32)
@@ -51,27 +55,23 @@ def assemble(mesh):
         npint32_t * aAdx
         npint32_t * bAdx
 
-        double * test_ptr
-        double test
         double sqdelta = delta**2
+        double aTdet, bTdet
+        double termf[3]
+        double bTE[2*3]
+        double termLocal[3*3]
+        double termNonloc[3*3]
+
         np.ndarray[double, ndim=1, mode="c"] dx = weights
         np.ndarray[double, ndim=1, mode="c"] dy = weights
         np.ndarray[double, ndim=1, mode="c"] fd = py_fd
-        double termf[3]
+        np.ndarray[double, ndim=1, mode="c"] aTE = np.zeros(2*3)
         np.ndarray[double, ndim=2, mode="c"] Ad = py_Ad
         np.ndarray[double, ndim=2, mode="c"] c_Verts = mesh.V
         np.ndarray[double, ndim=2, mode="c"] P = np.ascontiguousarray(py_P)
         np.ndarray[double, ndim=2, mode="c"] psi = np.ascontiguousarray(np.array([psi0, psi1, psi2]))
-        double termLocal[3*3]
-        double termNonloc[3*3]
-        cy_clsTriangle aT, bT
 
-
-
-    #print(psi)
-    #raise KeyboardInterrupt
-
-
+    # Setup adjaciency graph of the mesh --------------------------
     neigs = []
     for aTdx in range(J):
         neigs = set_neighbour(J, &c_Triangles[0,0], &c_Triangles[aTdx,0])
@@ -79,18 +79,28 @@ def assemble(mesh):
         for i in range(n):
             Neighbours[aTdx, i] = neigs[i]
 
-    # Loop over triangles --------------------------------------------------------------------------------------------------
+
     start = time.time()
 
-    for aTdx in range(J_Omega): # Laufe über 0 bis KT_Omega (der Index der Dreiecke in Omega).
+    # Loop over triangles ----------------------------------------------------------------------------------------------
+    for aTdx in range(J_Omega):
 
-        aAdx = &c_Triangles[aTdx,0]# Index for both Omega or OmegaI
-        aT = cy_clsTriangle()
-        aT.setup(&c_Verts[c_Triangles[aTdx,0], 0], &c_Verts[c_Triangles[aTdx,1], 0], &c_Verts[c_Triangles[aTdx,2], 0])
+        # Get index of ansatz functions in matrix A.-------------------
+        # Continuous Galerkin
+        aAdx = &c_Triangles[aTdx,0]
+        # Discontinuous Galerkin
+        # - Not implemented -
+
+        # Copy coordinates of
+        for j in range(2):
+            aTE[2*0+j] = c_Verts[c_Triangles[aTdx,0], j]
+            aTE[2*1+j] = c_Verts[c_Triangles[aTdx,1], j]
+            aTE[2*2+j] = c_Verts[c_Triangles[aTdx,2], j]
+        aTdet = cy_absDet(&aTE[0])
 
         # integrate over all elements
         c_doublevec_tozero(&termf[0], 3)
-        f(aT, &P[0,0], nP, &dx[0], &psi[0,0], &termf[0])
+        f(&aTE[0], aTdet, &P[0,0], nP, &dx[0], &psi[0,0], &termf[0])
 
         # then assign to fd
         for a in range(3):
@@ -110,17 +120,21 @@ def assemble(mesh):
             for j in range(4):
                 bTdx = NTdx[j]
                 if bTdx < J:
-                    bT = cy_clsTriangle()
-                    bT.setup(&c_Verts[c_Triangles[bTdx,0], 0], &c_Verts[c_Triangles[bTdx,1], 0], &c_Verts[c_Triangles[bTdx,2], 0])
+                    for j in range(2):
+                        bTE[2*0+j] = c_Verts[c_Triangles[bTdx,0], j]
+                        bTE[2*1+j] = c_Verts[c_Triangles[bTdx,1], j]
+                        bTE[2*2+j] = c_Verts[c_Triangles[bTdx,2], j]
+                    bTdet = cy_absDet(&bTE[0])
 
                     if visited[bTdx]==0:
-                        inNbhd(aT, bT, sqdelta, &Mis_interact[0])
+                        inNbhd(&aTE[0], &bTE[0], sqdelta, &Mis_interact[0])
                         if c_intvec_any(&Mis_interact[0], 3):
                             c_queue.push(bTdx)
                             bAdx = &c_Triangles[bTdx,0]
                             c_doublevec_tozero(&termLocal[0], 3*3)
                             c_doublevec_tozero(&termNonloc[0], 3*3)
-                            A(aT, bT, &P[0,0], nP, &dx[0], &dy[0], &psi[0,0], sqdelta, c_intvec_all(&Mis_interact[0], 3), termLocal, termNonloc)
+                            A(&aTE[0], aTdet, &bTE[0], bTdet, &P[0,0], nP, &dx[0], &dy[0], &psi[0,0], sqdelta,
+                              c_intvec_all(&Mis_interact[0], 3), termLocal, termNonloc)
 
                             for a in range(3):
                                 if c_Triangles[aTdx, a] < L_Omega:
@@ -159,7 +173,8 @@ cdef list set_neighbour(int rows, npint32_t * Triangles, npint32_t * Vdx):
 
     return idx
 
-cdef void f(cy_clsTriangle aT,
+cdef void f(double * aTE,
+            double aTdet,
             double * P,
             int nP,
             double * dx,
@@ -168,14 +183,13 @@ cdef void f(cy_clsTriangle aT,
     cdef:
         int i,a
         double x[2]
-        double absDet = aT.absDet()
 
     for a in range(3):
         for i in range(nP):
-            aT.cy_toPhys(&P[2*i], &x[0])
-            termf[a] += psi[7*a + i] * c_fPhys(&x[0] ) * absDet * dx[i]
+            cy_toPhys(aTE, &P[2*i], &x[0])
+            termf[a] += psi[7*a + i] * c_fPhys(&x[0]) * aTdet * dx[i]
 
-cdef void A(cy_clsTriangle aT, cy_clsTriangle bT,
+cdef void A(double * aTE, double aTdet, double * bTE, double bTdet,
             double * P,
             int nP,
             double * dx,
@@ -196,12 +210,13 @@ cdef void A(cy_clsTriangle aT, cy_clsTriangle bT,
                     for j in range(nP):
                         innerIntLocal += c_kernelPhys(&P[2*i], &P[2*j], sqdelta) * dy[j]
                         innerIntNonloc += c_kernelPhys(&P[2*i], &P[2*j], sqdelta) * dy[j] * psi[7*b+j]
-                    cy_termLocal[3*a+b] += psi[7*a+i] * psi[7*b+i] * innerIntLocal * dx[i] * aT.absDet()*bT.absDet()
-                    cy_termNonloc[3*a+b] += psi[7*a+i] * innerIntNonloc * dx[i] * aT.absDet()*bT.absDet()
+                    cy_termLocal[3*a+b] += psi[7*a+i] * psi[7*b+i] * innerIntLocal * dx[i] * aTdet*bTdet
+                    cy_termNonloc[3*a+b] += psi[7*a+i] * innerIntNonloc * dx[i] * aTdet*bTdet
     else:
-        cy_outerInt_full(aT, bT, P, nP, dx, dy, psi, sqdelta, cy_termLocal, cy_termNonloc)
+        cy_outerInt_full(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, cy_termLocal, cy_termNonloc)
 
-cdef void cy_outerInt_full(cy_clsTriangle aT, cy_clsTriangle bT,
+cdef void cy_outerInt_full(double * aTE, double aTdet,
+                           double * bTE, double bTdet,
                            double * P,
                            int nP,
                            double * dx,
@@ -218,18 +233,16 @@ cdef void cy_outerInt_full(cy_clsTriangle aT, cy_clsTriangle bT,
         double RT[9*3*2]
 
     for k in range(nP):
-        #cy_toPhys(aTE, P[:,k], x)
-        aT.cy_toPhys( &P[2*k], &x[0])
-        Rdx = cy_retriangulate(&x[0], bT, sqdelta, &RT[0])
-        cy_innerInt_retriangulate(x, bT,
-                                  P, nP, &dy[0], sqdelta, Rdx, &RT[0], &innerLocal, &innerNonloc[0])
+        cy_toPhys(&aTE[0], &P[2*k], &x[0])
+        Rdx = cy_retriangulate(&x[0], bTE, sqdelta, &RT[0])
+        cy_innerInt_retriangulate(x, bTE, P, nP, dy, sqdelta, Rdx, &RT[0], &innerLocal, &innerNonloc[0])
         for b in range(3):
             for a in range(3):
-                cy_termLocal[3*a+b] += aT.absDet() * psi[7*a+k] * psi[7*b+k] * dx[k] * innerLocal #innerLocal
-                cy_termNonloc[3*a+b] += aT.absDet() * psi[7*a+k] * dx[k] * innerNonloc[b] #innerNonloc
+                cy_termLocal[3*a+b] += aTdet * psi[7*a+k] * psi[7*b+k] * dx[k] * innerLocal #innerLocal
+                cy_termNonloc[3*a+b] += aTdet * psi[7*a+k] * dx[k] * innerNonloc[b] #innerNonloc
 
 cdef cy_innerInt_retriangulate(double * x,
-                               cy_clsTriangle T,
+                               double * T,
                                double * P,
                                int nP, double * dy, double sqdelta, int Rdx,
                                double * RT, double * innerLocal, double * innerNonloc):
@@ -249,7 +262,7 @@ cdef cy_innerInt_retriangulate(double * x,
         for i in range(nP):
             #cy_toPhys(RT[rTdx*3:rTdx*3+3, :], &P[2*i], &ry[0])
             cy_toPhys(&RT[2*3*rTdx], &P[2*i], &ry[0])
-            T.cy_toRef(ry, rp)
+            cy_toRef(T, ry, rp)
             ker = c_kernelPhys(&x[0], &ry[0], sqdelta)
             rTdet = cy_absDet(&RT[2*3*rTdx])
             innerLocal[0] += (ker * dy[i]) * rTdet # Local Term
@@ -265,9 +278,10 @@ cdef double cy_evalPsi(double * p, int psidx):
     elif psidx == 2:
         return p[1]
     else:
-        raise ValueError("in cy_evalPsi. Invalid psi index.")
+        abort()
+        #raise ValueError("in cy_evalPsi. Invalid psi index.")
 
-cdef int cy_retriangulate(double * x_center, cy_clsTriangle T, double sqdelta, double * out_RT):
+cdef int cy_retriangulate(double * x_center, double * TE, double sqdelta, double * out_RT):
         """ Retriangulates a given triangle.
 
         :param x_center: nd.array, real, shape (2,). Center of normball, e.g. pyhsical quadtrature point.
@@ -298,8 +312,8 @@ cdef int cy_retriangulate(double * x_center, cy_clsTriangle T, double sqdelta, d
             edgdx1 = (k+1) % 3
 
             for i in range(2):
-                c_p[i] = T.E[edgdx0][i]
-                c_q[i] = T.E[edgdx1][i]
+                c_p[i] = TE[2*edgdx0+i]
+                c_q[i] = TE[2*edgdx1+i]
                 c_a[i] = c_q[i] - x_center[i]
                 c_b[i] = c_p[i] - c_q[i]
             v = pow(c_vecdot(&c_a[0], &c_b[0], 2),2) - (c_vecdot(&c_a[0], &c_a[0], 2) - sqdelta)*c_vecdot(&c_b[0],&c_b[0], 2)
@@ -421,7 +435,8 @@ cdef void cy_solve2x2(double * A, double * b, double * x):
 
     # Check invertibility
     if A[2*dx0] == 0:
-        raise LinAlgError("in cy_solve2x2. Matrix not invertible.")
+        abort()
+        #raise LinAlgError("in cy_solve2x2. Matrix not invertible.")
 
     # LU Decomposition
     l = A[2*dx1]/A[2*dx0]
@@ -429,129 +444,49 @@ cdef void cy_solve2x2(double * A, double * b, double * x):
 
     # Check invertibility
     if u == 0:
-        raise LinAlgError("in cy_solve2x2. Matrix not invertible.")
+        abort()
+        #raise LinAlgError("in cy_solve2x2. Matrix not invertible.")
 
     # LU Solve
     x[1] = (b[dx1] - l*b[dx0])/u
     x[0] = (b[dx0] - A[2*dx0+1]*x[1])/A[2*dx0]
     return
 
-#cdef void cy_toRef(double [:,:] E, double [:] phys_x, double [:] ref_p):
-#    cdef:
-#        double M[2*2]
-#        double b[2]
-#        int i=0, j=0
-#
-#    for i in range(2):
-#        M[2*i] = E[1][i] - E[0][i]
-#        M[2*i+1] = E[2][i] - E[0][i]
-#        b[i] = phys_x[i] - E[0][i]
-#
-#    cy_solve2x2(&M[0], &b[0], &ref_p[0])
-#    return
-#
+cdef void cy_toRef(double * E, double * phys_x, double * ref_p):
+    cdef:
+        double M[2*2]
+        double b[2]
+        int i=0, j=0
+
+    for i in range(2):
+        M[2*i] = E[2*1+i] - E[2*0+i]
+        M[2*i+1] = E[2*2+i] - E[2*0+i]
+        b[i] = phys_x[i] - E[2*0+i]
+
+    cy_solve2x2(&M[0], &b[0], &ref_p[0])
+    return
+
 cdef double cy_absDet(double * E):
     cdef:
         double M[2][2]
+        int i=0
     for i in range(2):
         M[i][0] = E[2*1+i] - E[2*0+i]
         M[i][1] = E[2*2+i] - E[2*0+i]
     return abs(M[0][0]*M[1][1] - M[0][1]*M[1][0])
-#
-#cdef void baryCenter(double [:,:] E, double [:] bary):
-#    cdef:
-#        int i
-#    bary[0] = 0
-#    bary[1] = 0
-#    for i in range(3):
-#        bary[0] += E[i, 0]
-#        bary[1] += E[i, 1]
-#    bary[0] = bary[0]/3
-#    bary[1] = bary[1]/3
-#
-cdef class cy_clsTriangle:
-    """ Triangle Class
 
-    """
+cdef void baryCenter(double * E, double * bary):
     cdef:
-        double E[3][2]
-        double M[2*2]
-        double b[2]
-        double baryCenter_[2]
-        bint is_baryCenter_
-        double absDet_
+        int i
+    bary[0] = 0
+    bary[1] = 0
+    for i in range(3):
+        bary[0] += E[2*i+0]
+        bary[1] += E[2*i+1]
+    bary[0] = bary[0]/3
+    bary[1] = bary[1]/3
 
-    cdef double absDet(self):
-        """
-        Returns absolute determiant of triangle.
-        :return: double
-        """
-        cdef int i=0
-        if self.absDet_!=0:
-            return self.absDet_
-        else:
-            for i in range(2):
-                self.M[2*i+0] = self.E[1][i] - self.E[0][i]
-                self.M[2*i+1] = self.E[2][i] - self.E[0][i]
-            self.absDet_ = abs(self.M[0]*self.M[3] - self.M[1]*self.M[2])
-            return self.absDet_
-
-    cdef void cy_toPhys(self, double * p, double * out_x):
-        """
-        Push reference point p to physical triangle x
-        :param p: double [:], shape (2,). Input reference point.
-        :param out_x:  double [:], shape (2,) Output physical point.
-        :return: void
-        """
-        cdef:
-            int i=0
-        for i in range(2):
-            out_x[i] = (self.E[1][i] - self.E[0][i])*p[0] + (self.E[2][i] - self.E[0][i])*p[1] + self.E[0][i]
-        return
-
-    #def __init__(self, E0, E1, E2):
-    #    self.absDet_ = 0
-    #    self.is_baryCenter_ = 0
-    #    for i in range(2):
-    #        self.E[0][i] = E0[i]
-    #        self.E[1][i] = E1[i]
-    #        self.E[2][i] = E2[i]
-    cdef setup(self, double * E0, double * E1, double * E2):
-        self.absDet_ = 0
-        self.is_baryCenter_ = 0
-        for i in range(2):
-            self.E[0][i] = E0[i]
-            self.E[1][i] = E1[i]
-            self.E[2][i] = E2[i]
-
-    cdef void cy_toRef(self, double [:] phys_x, double [:] ref_p):
-        cdef:
-            double b[2]
-            int i=0, j=0
-
-        for i in range(2):
-            self.M[2*i+0] = self.E[1][i] - self.E[0][i]
-            self.M[2*i+1] = self.E[2][i] - self.E[0][i]
-            self.b[i] = phys_x[i] - self.E[0][i]
-
-        cy_solve2x2(&self.M[0], &self.b[0], &ref_p[0])
-        return
-
-    cdef void baryCenter(self, double [:] bary):
-        cdef:
-            int i
-        if self.is_baryCenter_:
-            for i in range(2):
-                bary[i] = self.baryCenter_[i]
-            return
-
-        for i in range(2):
-            bary[i] = (self.E[0][i] + self.E[1][i] + self.E[2][i])/3.
-            self.baryCenter_[i] = bary[i]
-        self.is_baryCenter_ = 1
-        return
-
-cdef void inNbhd(cy_clsTriangle aT, cy_clsTriangle bT, double sqdelta, npint32_t * M):
+cdef void inNbhd(double * aTE, double * bTE, double sqdelta, npint32_t * M):
     """
     Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
     Returns an array of boolen values. Compares the barycenter of bT with the vertices of Ea.
@@ -566,9 +501,9 @@ cdef void inNbhd(cy_clsTriangle aT, cy_clsTriangle bT, double sqdelta, npint32_t
     cdef:
         int i=0
         double bary[2]
-    bT.baryCenter(bary)
+    baryCenter(bTE, &bary[0])
     for i in range(3):
-        M[i] = (c_vecdist_sql2(&(aT.E[i])[0], &bary[0], 2) <= sqdelta)
+        M[i] = (c_vecdist_sql2(&aTE[2*i], &bary[0], 2) <= sqdelta)
 
     return
 
