@@ -35,7 +35,7 @@ Huge Mesh
 |Status                 | Time needed (Sec) | Speedup (PP)  |
 |---                    |---                |----           |
 |Pure Python (PP)       | 8.54e+03       |     x1        |
-|Cython Code| 6.59e+00 | x1295,9|
+|Cython Code| 2.48e+00 | x3007|
 
 Insane Mesh 
 ------
@@ -51,4 +51,4 @@ Insane Mesh
 |Status                 | Time needed (Sec) | Speedup (PP)  |
 |---                    |---                |----           |
 |Pure Python (PP)       | -      |     -        |
-|Cython Code| 4.37e+01 | -|
+|Cython Code| 3.32e+01 | -|

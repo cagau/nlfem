@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 
 import numpy as np
-mesh_name = "large"
+mesh_name = "insane"
 delta = .1
 ansatz = "CG"
 

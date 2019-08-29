@@ -41,35 +41,68 @@ def assemble(mesh):
     psi2 = py_P[:, 1]
 
     cdef:
-        int J = mesh.J, J_Omega = mesh.J_Omega, L = mesh.L, L_Omega = mesh.L_Omega, a=0, b=0, aAdxj =0
+        # General Loop Indices ---------------------------------------
+        int i=0, k=0, j=0, h=0
+
+        # Mesh information ------------------------------------
+        # Number of Triangles and number of Triangles in Omega
+        int J = mesh.J, J_Omega = mesh.J_Omega
+        # Number of vertices (in case of CG = K and K_Omega)
+        int L = mesh.L, L_Omega = mesh.L_Omega
+
+        # Breadth First Search --------------------------------------
+        # Loop index of current outer triangle in BFS
+        int sTdx=0
+        # Queue for Breadth first search
         queue[int] c_queue
-        int nP = py_P.shape[0]
-        int aTdx=0, bTdx=0, sTdx=0, i=0, k=0, j=0, h=0
-
+        # List of visited triangles
         np.ndarray[int, ndim=1, mode="c"] visited = py_visited
+        # Matrix telling whether some vertex of Triangle a interactions with the baryCenter of Triangle b
         np.ndarray[npint32_t, ndim=1, mode="c"] Mis_interact = py_Mis_interact
+        # List of neighbours of each triangle, Neighbours[Tdx] returns row with Neighbour indices
         np.ndarray[npint32_t, ndim=2, mode="c"] Neighbours = py_Neighbours
-        np.ndarray[npint32_t, ndim=2, mode="c"] c_Triangles = np.ascontiguousarray(mesh.T, np.int32)
-
+        # (Pointer to) current row in Neighbours
         npint32_t * NTdx
+
+        # Triangles -------------------------------------------------
+        # Loop index of Triangles
+        int aTdx=0, bTdx=0,
+        # Map Triangle index (Tdx) -> index of Vertices in Verts (Vdx = Triangle[Tdx] array of int, shape (3,))
+        np.ndarray[npint32_t, ndim=2, mode="c"] c_Triangles = np.ascontiguousarray(mesh.T, np.int32)
+        # Map Vertex Index (Vdx) -> Coordinate of some Vertex i of some Triangle (E[i])
+        np.ndarray[double, ndim=2, mode="c"] c_Verts = mesh.V
+        # Determinant of Triangle a and b.
+        double aTdet, bTdet
+        # Vector containing the coordinates of the vertices of a Triangle
+        double aTE[2*3]
+        double bTE[2*3]
+
+        # Integration information ------------------------------------
+        # Loop index of basis functions
+        int a=0, b=0, aAdxj =0
+        # Number of integration points
+        int nP = py_P.shape[0] # Does not differ in inner and outer integral!
+        # Cython interface of quadrature points
+        np.ndarray[double, ndim=2, mode="c"] P = np.ascontiguousarray(py_P)
+        # Weights for quadrature rule
+        np.ndarray[double, ndim=1, mode="c"] dx = weights
+        np.ndarray[double, ndim=1, mode="c"] dy = weights
+        # Cython interface of C-aligned arrays of solution and right side
+        np.ndarray[double, ndim=1, mode="c"] fd = py_fd
+        np.ndarray[double, ndim=2, mode="c"] Ad = py_Ad
+        # Cython interface of Ansatzfunctions
+        np.ndarray[double, ndim=2, mode="c"] psi = np.ascontiguousarray(np.array([psi0, psi1, psi2]))
+
+        # (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
         npint32_t * aAdx
         npint32_t * bAdx
-
+        # Squared interaction horizon
         double sqdelta = delta**2
-        double aTdet, bTdet
+        # Buffers for integration solutions
         double termf[3]
-        double bTE[2*3]
         double termLocal[3*3]
         double termNonloc[3*3]
 
-        np.ndarray[double, ndim=1, mode="c"] dx = weights
-        np.ndarray[double, ndim=1, mode="c"] dy = weights
-        np.ndarray[double, ndim=1, mode="c"] fd = py_fd
-        np.ndarray[double, ndim=1, mode="c"] aTE = np.zeros(2*3)
-        np.ndarray[double, ndim=2, mode="c"] Ad = py_Ad
-        np.ndarray[double, ndim=2, mode="c"] c_Verts = mesh.V
-        np.ndarray[double, ndim=2, mode="c"] P = np.ascontiguousarray(py_P)
-        np.ndarray[double, ndim=2, mode="c"] psi = np.ascontiguousarray(np.array([psi0, psi1, psi2]))
 
     # Setup adjaciency graph of the mesh --------------------------
     neigs = []
@@ -91,45 +124,70 @@ def assemble(mesh):
         # Discontinuous Galerkin
         # - Not implemented -
 
-        # Copy coordinates of
+        # Prepare Triangle information aTE and aTdet ------------------
+        # Copy coordinates of Triange a to aTE.
+        # this is done fore convenience only, actually those are unnecessary copies!
         for j in range(2):
             aTE[2*0+j] = c_Verts[c_Triangles[aTdx,0], j]
             aTE[2*1+j] = c_Verts[c_Triangles[aTdx,1], j]
             aTE[2*2+j] = c_Verts[c_Triangles[aTdx,2], j]
+        # compute Determinant
         aTdet = cy_absDet(&aTE[0])
 
-        # integrate over all elements
-        c_doublevec_tozero(&termf[0], 3)
-        f(&aTE[0], aTdet, &P[0,0], nP, &dx[0], &psi[0,0], &termf[0])
+        # Assembly of right side ---------------------------------------
+        # We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
+        c_doublevec_tozero(&termf[0], 3) # Initialize Buffer
+        f(&aTE[0], aTdet, &P[0,0], nP, &dx[0], &psi[0,0], &termf[0]) # Integrate and fill buffer
 
-        # then assign to fd
+        # Add content of buffer to the right side.
         for a in range(3):
-            # Assembly only happens in the interior of Omega only
+            # Assembly happens in the interior of Omega only, so we throw away some values
             if c_Triangles[aTdx, a] < L_Omega:
                 aAdxj = aAdx[a]
                 fd[aAdxj] += termf[a]
+        # Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
+        # on the boundary. This saves us from the pain to carry the information (a) into the integrator f.
 
+        # BFS -------------------------------------------------------------
+        # Intialize search queue with current outer triangle
         c_queue.push(aTdx)
+        # Initialize vector of visited triangles with 0
         c_intvec_tozero(&visited[0], J)
 
+        # Check whether BFS is over.
         while not c_queue.empty():
+            # Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
             sTdx = c_queue.front()
             c_queue.pop()
+            # Get all the neighbours of sTdx.
             NTdx =  &Neighbours[sTdx,0]
-
+            # Run through the list of neighbours. (4 at max)
             for j in range(4):
+                # The next valid neighbour is our candidate for the inner Triangle b.
                 bTdx = NTdx[j]
+
+                # Check how many neighbours sTdx has. It can be 4 at max. (Itself, and the three others)
+                # In order to be able to store the list as contiguous array we fill upp the empty spots with J
+                # i.e. the total number of Triangles, which cannot be an index.
                 if bTdx < J:
+
+                    # Prepare Triangle information bTE and bTdet ------------------
+                    # Copy coordinates of Triange b to bTE.
+                    # again this is done fore convenience only, actually those are unnecessary copies!
                     for j in range(2):
                         bTE[2*0+j] = c_Verts[c_Triangles[bTdx,0], j]
                         bTE[2*1+j] = c_Verts[c_Triangles[bTdx,1], j]
                         bTE[2*2+j] = c_Verts[c_Triangles[bTdx,2], j]
                     bTdet = cy_absDet(&bTE[0])
 
+                    # Check wheter bTdx is already visited.
                     if visited[bTdx]==0:
+
+                        # Check whether the verts of aT interact with (bary Center of) bT
                         inNbhd(&aTE[0], &bTE[0], sqdelta, &Mis_interact[0])
+                        # If any of the verts interact we enter the retriangulation and integration
                         if c_intvec_any(&Mis_interact[0], 3):
-                            c_queue.push(bTdx)
+                            # Retriangulation and integration ------------------------
                             bAdx = &c_Triangles[bTdx,0]
                             c_doublevec_tozero(&termLocal[0], 3*3)
                             c_doublevec_tozero(&termNonloc[0], 3*3)
@@ -142,6 +200,16 @@ def assemble(mesh):
                                     for b in range(3):
                                         Ad[aAdxj, aAdx[b]] += termLocal[3*a+b]
                                         Ad[aAdxj, bAdx[b]] -= termNonloc[3*a+b]
+
+                            # If bT interacts it will be a candidate for our BFS, so it is added to the queue
+                            if c_doublevec_any(termNonloc, 3*3) or c_doublevec_any(termLocal, 3*3):
+                                c_queue.push(bTdx)
+                                # In order to further speed up the integration we only check whether the integral
+                                # (termLocal, termNonloc) are 0. In that case we could avoid adding bTdx to the queue.
+                                # However this works only if we can guarantee that interacting triangles do actually
+                                # also contribute a non-zero entry, i.e. the Kernel as to be > 0 everywhere for example.
+                                # This works for constant kernels, or franctional kernels
+
                     visited[bTdx] = 1
         #print("aTdx: ", aTdx, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / J_Omega * 100), "%", end="\r", flush=True)
     print("aTdx: ", aTdx, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / J_Omega * 100), "%\n")
@@ -518,6 +586,13 @@ cdef void c_intvec_tozero(int * vec, int len) nogil:
         vec[i]  = 0
 
 cdef int c_intvec_any(npint32_t * vec, int len):
+    cdef int i=0
+    for i in range(len):
+            if vec[i] != 0:
+                return 1
+    return 0
+
+cdef int c_doublevec_any(double * vec, int len):
     cdef int i=0
     for i in range(len):
             if vec[i] != 0:
