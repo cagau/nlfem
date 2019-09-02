@@ -10,8 +10,8 @@ ext_modules = [
     Extension(
         name="assemble",
         sources=["assemble.pyx"],
-        extra_compile_args=["-Wno-cpp", "-Wno-unused-function", "-O2", "-march=native",  '-std=c++11'],
-        extra_link_args=["-O2", "-march=native"],
+        extra_compile_args=["-Wno-cpp", "-Wno-unused-function", "-O2", "-march=native",  '-std=c++11', '-fopenmp'],
+        extra_link_args=["-O2", "-march=native", '-fopenmp'],
         language="c++",
         include_dirs=["."],
     )
@@ -20,3 +20,4 @@ ext_modules = [
 setup(
     name="assemble", ext_modules=ext_modules, cmdclass={"build_ext": build_ext}
 )
+

@@ -19,7 +19,7 @@ Large Mesh
 |+ cy clsInt.retriangulate| 4.69e+02          |     x2.2      |
 |+ cy clsInt.A (i. e. inner and outer Int) | 2.17e+01   |     x48.4   |
 |+ cy inNbhd | 1.84e+01          |     x57.1    |
-|+ cy assemble | 6.67e-01 | x1574,21|
+|+ cy assemble (full Cython) | 2.90e-01 | x3620|
 
 Huge Mesh 
 ------
@@ -35,7 +35,7 @@ Huge Mesh
 |Status                 | Time needed (Sec) | Speedup (PP)  |
 |---                    |---                |----           |
 |Pure Python (PP)       | 8.54e+03       |     x1        |
-|Cython Code| 2.48e+00 | x3007|
+|full Cython| 4.09e+00 | x2088|
 
 Insane Mesh 
 ------
@@ -51,4 +51,4 @@ Insane Mesh
 |Status                 | Time needed (Sec) | Speedup (PP)  |
 |---                    |---                |----           |
 |Pure Python (PP)       | -      |     -        |
-|Cython Code| 3.32e+01 | -|
+|full Cython| 3.32e+01 | -|
