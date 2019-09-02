@@ -152,14 +152,14 @@
 <span class="kn">from</span> <span class="nn">aux</span> <span class="k">import</span> <span class="n">timestamp</span>
 <span class="c1"># Necessary definitions for intersection -------------------------------------------------------------------------------</span>
 
-<span class="c1"># Define Right side f</span>
+<span class="c1"># Define Right side compute_f</span>
 <div class="viewcode-block" id="fPhys"><a class="viewcode-back" href="../index.html#solve_nonlocal_fullsearch.fPhys">[docs]</a><span class="k">def</span> <span class="nf">fPhys</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Right side of the equation.</span>
 
 <span class="sd">    :param x: nd.array, real, shape (2,). Physical point in the 2D plane</span>
 <span class="sd">    :return: real</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># f = 1</span>
+    <span class="c1"># compute_f = 1</span>
     <span class="k">return</span> <span class="mi">1</span></div>
 
 <span class="n">delta</span> <span class="o">=</span> <span class="o">.</span><span class="mi">2</span>
@@ -190,7 +190,7 @@
     <span class="n">psi2</span> <span class="o">=</span> <span class="n">P</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
     <span class="n">psi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">psi0</span><span class="p">,</span> <span class="n">psi1</span><span class="p">,</span> <span class="n">psi2</span><span class="p">])</span>
 
-    <span class="c1"># Allocate Matrix A and right side f</span>
+    <span class="c1"># Allocate Matrix compute_A and right side compute_f</span>
     <span class="c1"># Mesh construction --------------------</span>
 
     <span class="n">msh_name</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
@@ -213,7 +213,7 @@
         <span class="c1"># Set local term</span>
         <span class="c1">##term1 = np.zeros((len(aBdx_O), 3))</span>
         <span class="c1">##term1 = (psi[aBdx_O, np.newaxis, :] * psi[np.newaxis, :]) @ weights * aT.absDet() / delta ** 2 * 4</span>
-        <span class="c1"># indexing=&quot;ij&quot; yields an indexing such that the matrix A[T1,T2].shape = (len(aVdx_O), len(aVdx))</span>
+        <span class="c1"># indexing=&quot;ij&quot; yields an indexing such that the matrix compute_A[T1,T2].shape = (len(aVdx_O), len(aVdx))</span>
         <span class="c1"># The default value (indexing=&quot;xy&quot;) yields the transpose.</span>
         <span class="c1">##T1, T2 = np.meshgrid(aVdx_O, aVdx, indexing=&quot;ij&quot;)</span>
         <span class="c1">##Ad[T1, T2] += term1</span>

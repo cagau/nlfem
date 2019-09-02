@@ -380,7 +380,7 @@
 <span class="sd">        :param Tdx: int or list of int, Index of Triangle or list of indices of Triangle.</span>
 <span class="sd">        :param is_plotmsh: bool, default=False Switch for surrounding FEM-Mesh.</span>
 <span class="sd">        :param pdfname: str Name of output pdf.</span>
-<span class="sd">        :param delta: optional, Interaction radius. A :math:`\ell_2`-circle will be drawn to show its size.</span>
+<span class="sd">        :param delta: optional, Interaction radius. compute_A :math:`\ell_2`-circle will be drawn to show its size.</span>
 <span class="sd">        :return: None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -469,7 +469,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">psi</span> <span class="o">=</span> <span class="n">psi</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">P</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
-<div class="viewcode-block" id="clsInt.A"><a class="viewcode-back" href="../index.html#nlocal.clsInt.A">[docs]</a>    <span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">aT</span><span class="p">,</span> <span class="n">bT</span><span class="p">,</span> <span class="n">is_allInteract</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="clsInt.A"><a class="viewcode-back" href="../index.html#nlocal.clsInt.A">[docs]</a>    <span class="k">def</span> <span class="nf">compute_A</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">aT</span><span class="p">,</span> <span class="n">bT</span><span class="p">,</span> <span class="n">is_allInteract</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute the local and nonlocal terms of the integral.</span>
 
 <span class="sd">        :param a: int. Index of vertex to find the correct reference basis function.</span>
@@ -502,9 +502,9 @@
         <span class="n">termNonloc</span> <span class="o">=</span> <span class="n">aT</span><span class="o">.</span><span class="n">absDet</span><span class="p">()</span> <span class="o">*</span> <span class="n">bT</span><span class="o">.</span><span class="n">absDet</span><span class="p">()</span> <span class="o">*</span> <span class="n">psi</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="o">*</span> <span class="p">((</span><span class="n">psi</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">*</span> <span class="n">kerd</span><span class="p">)</span> <span class="o">@</span> <span class="n">weights</span><span class="p">)</span> <span class="o">@</span> <span class="n">weights</span>
         <span class="k">return</span> <span class="n">termLocal</span><span class="p">,</span> <span class="n">termNonloc</span></div>
 
-<div class="viewcode-block" id="clsInt.f"><a class="viewcode-back" href="../index.html#nlocal.clsInt.f">[docs]</a>    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aBdx_O</span><span class="p">,</span> <span class="n">aT</span><span class="p">):</span>
+<div class="viewcode-block" id="clsInt.f"><a class="viewcode-back" href="../index.html#nlocal.clsInt.f">[docs]</a>    <span class="k">def</span> <span class="nf">compute_f</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aBdx_O</span><span class="p">,</span> <span class="n">aT</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Assembles the right side f.</span>
+<span class="sd">        Assembles the right side compute_f.</span>
 
 <span class="sd">        :param aBdx_O: tupel of int, i=0,1,2. Index of reference basis functions which lie in Omega.</span>
 <span class="sd">        :param aT: Triangle. Triangle to intgrate over.</span>
@@ -512,14 +512,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psi</span><span class="p">[</span><span class="n">aBdx_O</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fPhys</span><span class="p">(</span><span class="n">aT</span><span class="o">.</span><span class="n">toPhys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">)))</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">*</span> <span class="n">aT</span><span class="o">.</span><span class="n">absDet</span><span class="p">()</span></div>
 
-    <span class="c1"># Define Right side f</span>
+    <span class="c1"># Define Right side compute_f</span>
 <div class="viewcode-block" id="clsInt.fPhys"><a class="viewcode-back" href="../index.html#nlocal.clsInt.fPhys">[docs]</a>    <span class="k">def</span> <span class="nf">fPhys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Right side of the equation.</span>
 
 <span class="sd">        :param x: nd.array, real, shape (2,). Physical point in the 2D plane</span>
 <span class="sd">        :return: real</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># f = 1</span>
+        <span class="c1"># compute_f = 1</span>
         <span class="k">return</span> <span class="mi">1</span></div>
 
 <div class="viewcode-block" id="clsInt.kernelPhys"><a class="viewcode-back" href="../index.html#nlocal.clsInt.kernelPhys">[docs]</a>    <span class="k">def</span> <span class="nf">kernelPhys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">Tx</span><span class="p">,</span> <span class="n">Ty</span><span class="p">):</span>

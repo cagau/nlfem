@@ -17,10 +17,10 @@ Large Mesh
 |Pure Python (PP)       | 1.05e+03          |     x1        |
 |PP Compiled            | 1.07e+03          |     x1        |
 |+ cy clsInt.retriangulate| 4.69e+02          |     x2.2      |
-|+ cy clsInt.A (i. e. inner and outer Int) | 2.17e+01   |     x48.4   |
+|+ cy clsInt.compute_A (i. e. inner and outer Int) | 2.17e+01   |     x48.4   |
 |+ cy inNbhd | 1.84e+01          |     x57.1    |
-|+ cy assemble (full Cython) | 2.90e-01 | x3620|
-
+|full Cython | 2.90e-01 | x3620|
+|parallel Cython | 9.77e-02 | x10747|
 Huge Mesh 
 ------
 |Name  |Value |
@@ -36,6 +36,7 @@ Huge Mesh
 |---                    |---                |----           |
 |Pure Python (PP)       | 8.54e+03       |     x1        |
 |full Cython| 4.09e+00 | x2088|
+|parallel Cython| 7.15e-01 | x11944|
 
 Insane Mesh 
 ------
@@ -51,4 +52,5 @@ Insane Mesh
 |Status                 | Time needed (Sec) | Speedup (PP)  |
 |---                    |---                |----           |
 |Pure Python (PP)       | -      |     -        |
-|full Cython| 3.32e+01 | -|
+|full Cython| 3.32e+01 | x1|
+|parallel Cython| 8.13e+00 | x4|

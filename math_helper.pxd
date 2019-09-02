@@ -1,0 +1,1 @@
+cpdef double cube(float)

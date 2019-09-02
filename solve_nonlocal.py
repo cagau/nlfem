@@ -3,7 +3,7 @@
 import numpy as np
 import pickle as pkl
 
-from conf import mesh_name, delta, ansatz
+from conf import mesh_name, delta, ansatz, py_P, weights
 from nlocal import clsFEM#, assemble # Mesh class
 from aux import filename
 from plot import plot
@@ -20,7 +20,10 @@ if __name__ == "__main__":
     print("Delta: ", delta, "\t Mesh: ", mesh_name)
     print("Number of basis functions: ", mesh.K)
 
-    Ad, fd  = assemble(mesh)
+    Ad, fd  = assemble(mesh.K, mesh.K_Omega, mesh.J, mesh.J_Omega, mesh.L, mesh.L_Omega,
+                       np.array(mesh.T, np.int32),
+                       mesh.V,
+                       py_P, weights, weights, delta)
     Ad_O = Ad[:, :mesh.K_Omega]
     ud = np.linalg.solve(Ad_O, fd)
 

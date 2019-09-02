@@ -3,106 +3,74 @@
 #cython: boundscheck=False, wraparound=False, cdivision=True
 # Setting this compiler directive will given a minor increase of speed.
 
+# Cython Imports
 cimport cython
 cimport numpy as np
 from cython.parallel import prange, threadid
-from libcpp.queue cimport queue
+# Python Imports
 import numpy as np
 from numpy.linalg import LinAlgError
-from libc.math cimport sqrt, pow, pi, cos
-from conf import py_P, weights, delta, outerIntMethod, innerIntMethod
 import time
-from libc.stdlib cimport malloc, free, abort#, new, delete
+# C Imports
+from libcpp.queue cimport queue
+from libc.math cimport sqrt, pow, pi, cos
+from libc.stdlib cimport malloc, free, abort
 
 ctypedef np.int32_t npint32_t
 
-def assemble(mesh):
-    """**Assembly routine**
-
-    :param mesh: clsFEM. Mesh containing the data. All other data is read from *conf.py*.
-    :return: list of nd.array. Returns discretized matrix A and right side f.
-    """
+def assemble(
+        # Mesh information ------------------------------------
+        int K, int K_Omega,
+        int J, int J_Omega, # Number of Triangles and number of Triangles in Omega
+        int L, int L_Omega, # Number of vertices (in case of CG = K and K_Omega)
+        # Map Triangle index (Tdx) -> index of Vertices in Verts (Vdx = Triangle[Tdx] array of int, shape (3,))
+        npint32_t [:,:] c_Triangles,
+        # Map Vertex Index (Vdx) -> Coordinate of some Vertex i of some Triangle (E[i])
+        double [:,:] c_Verts,
+        # Cython interface of quadrature points
+        double [:,:] P,
+        # Weights for quadrature rule
+        double [:] dx,
+        double [:] dy,
+        double delta
+    ):
 
     ## Data Matrix ----------------------------------------
-    # Allocate Matrix A and right side f
-    py_Ad = np.zeros((mesh.K_Omega, mesh.K))
-    py_fd = np.zeros(mesh.K_Omega)
-
-    ## BFS ------------------------------------------------
-    # Allocate Graph of Neighbours
-    py_Neighbours = np.ones((mesh.J, 4), dtype=np.int32)*mesh.J
-    # Further definitions
-    py_visited = np.zeros(mesh.J, dtype=np.int32)
-    py_Mis_interact = np.zeros(3, dtype=np.int32)
+    # Allocate Matrix compute_A and right side f
+    py_Ad = np.zeros((K_Omega, K))
+    py_fd = np.zeros(K_Omega)
 
     # Define Basis-----------------------------------------
-    psi0 = (1 - py_P[:, 0] - py_P[:, 1])
-    psi1 = py_P[:, 0]
-    psi2 = py_P[:, 1]
+    cdef:
+        int i=0
+        # Number of integration points
+        int nP = P.shape[0] # Does not differ in inner and outer integral!
+
+    psi0 = np.zeros(nP)
+    psi1 = np.zeros(nP)
+    psi2 = np.zeros(nP)
+
+    for i in range(nP):
+        psi0[i] = (1 - P[i, 0] - P[i, 1])
+        psi1[i] = P[i, 0]
+        psi2[i] = P[i, 1]
 
     cdef:
-        # General Loop Indices ---------------------------------------
-        int i=0, k=0, j=0, h=0
-
-        # Mesh information ------------------------------------
-        # Number of Triangles and number of Triangles in Omega
-        int J = mesh.J, J_Omega = mesh.J_Omega
-        # Number of vertices (in case of CG = K and K_Omega)
-        int L = mesh.L, L_Omega = mesh.L_Omega
-
-        # Breadth First Search --------------------------------------
-        # Loop index of current outer triangle in BFS
-        int sTdx=0
-        # Queue for Breadth first search
-        queue[int] c_queue
-        # List of visited triangles
-        np.ndarray[int, ndim=1, mode="c"] visited = py_visited
-        # Matrix telling whether some vertex of Triangle a interactions with the baryCenter of Triangle b
-        np.ndarray[npint32_t, ndim=1, mode="c"] Mis_interact = py_Mis_interact
-        # List of neighbours of each triangle, Neighbours[Tdx] returns row with Neighbour indices
-        np.ndarray[npint32_t, ndim=2, mode="c"] Neighbours = py_Neighbours
-        # (Pointer to) current row in Neighbours
-        npint32_t * NTdx
-
         # Triangles -------------------------------------------------
         # Loop index of Triangles
-        int aTdx=0, bTdx=0,
-        # Map Triangle index (Tdx) -> index of Vertices in Verts (Vdx = Triangle[Tdx] array of int, shape (3,))
-        np.ndarray[npint32_t, ndim=2, mode="c"] c_Triangles = np.ascontiguousarray(mesh.T, np.int32)
-        # Map Vertex Index (Vdx) -> Coordinate of some Vertex i of some Triangle (E[i])
-        np.ndarray[double, ndim=2, mode="c"] c_Verts = mesh.V
-        # Determinant of Triangle a and b.
-        double aTdet, bTdet
-        # Vector containing the coordinates of the vertices of a Triangle
-        double aTE[2*3]
-        double bTE[2*3]
+        int aTdx=0
 
-        # Integration information ------------------------------------
-        # Loop index of basis functions
-        int a=0, b=0, aAdxj =0, id=0
-        # Number of integration points
-        int nP = py_P.shape[0] # Does not differ in inner and outer integral!
-        # Cython interface of quadrature points
-        np.ndarray[double, ndim=2, mode="c"] P = np.ascontiguousarray(py_P)
-        # Weights for quadrature rule
-        np.ndarray[double, ndim=1, mode="c"] dx = weights
-        np.ndarray[double, ndim=1, mode="c"] dy = weights
         # Cython interface of C-aligned arrays of solution and right side
-        np.ndarray[double, ndim=1, mode="c"] fd = py_fd
-        np.ndarray[double, ndim=2, mode="c"] Ad = py_Ad
+        double[:] fd = py_fd
+        double[:,:] Ad = py_Ad
         # Cython interface of Ansatzfunctions
-        np.ndarray[double, ndim=2, mode="c"] psi = np.ascontiguousarray(np.array([psi0, psi1, psi2]))
+        double[:,:] psi = np.ascontiguousarray(np.array([psi0, psi1, psi2]))
 
-        # (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
-        npint32_t * aAdx
-        npint32_t * bAdx
+        # List of neighbours of each triangle, Neighbours[Tdx] returns row with Neighbour indices
+        npint32_t[:,:] Neighbours = np.zeros((J, 4), dtype=np.int32)
+
         # Squared interaction horizon
-        double sqdelta = delta**2
-        # Buffers for integration solutions
-        double termf[3]
-        double termLocal[3*3]
-        double termNonloc[3*3]
-
+        double sqdelta = pow(delta,2)
 
     # Setup adjaciency graph of the mesh --------------------------
     neigs = []
@@ -116,118 +84,175 @@ def assemble(mesh):
     start = time.time()
 
     # Loop over triangles ----------------------------------------------------------------------------------------------
-    for aTdx in range(J_Omega):#, nogil=True):
+    for aTdx in prange(J_Omega, nogil=True):
+        par_assemble(aTdx, Ad, fd, c_Triangles, c_Verts, J , J_Omega, L, L_Omega, nP, P, dx, dy, psi, sqdelta, Neighbours)
 
-        # Get index of ansatz functions in matrix A.-------------------
-        # Continuous Galerkin
-        aAdx = &c_Triangles[aTdx,0]
-        # Discontinuous Galerkin
-        # - Not implemented -
-
-        # Prepare Triangle information aTE and aTdet ------------------
-        # Copy coordinates of Triange a to aTE.
-        # this is done fore convenience only, actually those are unnecessary copies!
-        for j in range(2):
-            aTE[2*0+j] = c_Verts[c_Triangles[aTdx,0], j]
-            aTE[2*1+j] = c_Verts[c_Triangles[aTdx,1], j]
-            aTE[2*2+j] = c_Verts[c_Triangles[aTdx,2], j]
-        # compute Determinant
-        aTdet = cy_absDet(&aTE[0])
-
-        # Assembly of right side ---------------------------------------
-        # We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
-        c_doublevec_tozero(&termf[0], 3) # Initialize Buffer
-        f(&aTE[0], aTdet, &P[0,0], nP, &dx[0], &psi[0,0], &termf[0]) # Integrate and fill buffer
-
-        # Add content of buffer to the right side.
-        for a in range(3):
-            # Assembly happens in the interior of Omega only, so we throw away some values
-            if c_Triangles[aTdx, a] < L_Omega:
-                aAdxj = aAdx[a]
-                fd[aAdxj] += termf[a]
-        # Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
-        # on the boundary. This saves us from the pain to carry the information (a) into the integrator f.
-
-        # BFS -------------------------------------------------------------
-        # Intialize search queue with current outer triangle
-        c_queue.push(aTdx)
-        # Initialize vector of visited triangles with 0
-        c_intvec_tozero(&visited[0], J)
-
-        # Check whether BFS is over.
-        while not c_queue.empty():
-            # Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
-            sTdx = c_queue.front()
-            c_queue.pop()
-            # Get all the neighbours of sTdx.
-            NTdx =  &Neighbours[sTdx,0]
-            # Run through the list of neighbours. (4 at max)
-            for j in range(4):
-                # The next valid neighbour is our candidate for the inner Triangle b.
-                bTdx = NTdx[j]
-
-                # Check how many neighbours sTdx has. It can be 4 at max. (Itself, and the three others)
-                # In order to be able to store the list as contiguous array we fill upp the empty spots with J
-                # i.e. the total number of Triangles, which cannot be an index.
-                if bTdx < J:
-
-                    # Prepare Triangle information bTE and bTdet ------------------
-                    # Copy coordinates of Triange b to bTE.
-                    # again this is done fore convenience only, actually those are unnecessary copies!
-                    for j in range(2):
-                        bTE[2*0+j] = c_Verts[c_Triangles[bTdx,0], j]
-                        bTE[2*1+j] = c_Verts[c_Triangles[bTdx,1], j]
-                        bTE[2*2+j] = c_Verts[c_Triangles[bTdx,2], j]
-                    bTdet = cy_absDet(&bTE[0])
-
-                    # Check wheter bTdx is already visited.
-                    if visited[bTdx]==0:
-
-                        # Check whether the verts of aT interact with (bary Center of) bT
-                        inNbhd(&aTE[0], &bTE[0], sqdelta, &Mis_interact[0])
-                        # If any of the verts interact we enter the retriangulation and integration
-                        if c_intvec_any(&Mis_interact[0], 3):
-                            # Retriangulation and integration ------------------------
-
-                            # Get (pointer to) intex of basis function (in Continuous Galerkin)
-                            bAdx = &c_Triangles[bTdx,0]
-
-                            # Assembly of matrix ---------------------------------------
-                            c_doublevec_tozero(&termLocal[0], 3*3) # Initialize Buffer
-                            c_doublevec_tozero(&termNonloc[0], 3*3) # Initialize Buffer
-                            # Compute integrals and write to buffer
-                            A(&aTE[0], aTdet, &bTE[0], bTdet,
-                              &P[0,0], nP, &dx[0], &dy[0], &psi[0,0], sqdelta,
-                              c_intvec_all(&Mis_interact[0], 3), termLocal, termNonloc)
-                            # Copy buffer into matrix. Again solutions which lie on the boundary are ignored
-                            for a in range(3):
-                                if c_Triangles[aTdx, a] < L_Omega:
-                                    aAdxj = aAdx[a]
-                                    for b in range(3):
-                                        Ad[aAdxj, aAdx[b]] += termLocal[3*a+b]
-                                        Ad[aAdxj, bAdx[b]] -= termNonloc[3*a+b]
-
-                            # If bT interacts it will be a candidate for our BFS, so it is added to the queue
-                            if c_doublevec_any(termNonloc, 3*3) or c_doublevec_any(termLocal, 3*3):
-                                c_queue.push(bTdx)
-                                # In order to further speed up the integration we only check whether the integral
-                                # (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
-                                # However, this works only if we can guarantee that interacting triangles do actually
-                                # also contribute a non-zero entry, i.e. the Kernel as to be > 0 everywhere for example.
-                                # This works for constant kernels, or franctional kernels
-                                # The effect of this more precise criterea depends on delta and meshsize.
-                    # Mark bTdx as visited
-                    visited[bTdx] = 1
-        # Be careful. With gil, will allow to throw python exceptions, but it leads to a breakdown of performance
-        # by a factor of x3, as the code has to jump between gil and nogil!
-        #id = threadid()
-        #with gil:
-        #    print("aTdx: ", aTdx, "id:", id, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / J_Omega * 100), "%", end="\r", flush=True)
-    print("aTdx: ", aTdx, "\t Neigs: ", np.sum(visited), "\t Progress: ", round(aTdx / J_Omega * 100), "%\n")
     total_time = time.time() - start
-    print("Time needed", "{:1.2e}".format(total_time), " Sec")
+    print("\nTime needed", "{:1.2e}".format(total_time), " Sec")
 
     return py_Ad*2, py_fd
+
+cdef void par_assemble(int aTdx,
+                    double [:,:] Ad,
+                    double [:] fd,
+                    npint32_t [:,:] c_Triangles,
+                    double [:,:] c_Verts,
+                    # Number of Triangles and number of Triangles in Omega
+                    int J, int J_Omega,
+                    # Number of vertices (in case of CG = K and K_Omega)
+                    int L, int L_Omega,
+                    int nP, double [:,:] P,
+                    double [:] dx,
+                    double [:] dy,
+                    double [:,:] psi,
+                    double sqdelta,
+                    npint32_t [:,:] Neighbours
+                   ) nogil:
+
+     ## BFS ------------------------------------------------
+    # Allocate Graph of Neighbours
+    # Further definitions
+    cdef int *visited = <int *> malloc(J*sizeof(int))
+    cdef npint32_t *Mis_interact = <npint32_t *> malloc(3*sizeof(npint32_t))
+
+    cdef:
+        # General Loop Indices ---------------------------------------
+        int i=0, k=0, j=0, h=0, bTdx
+       # Breadth First Search --------------------------------------
+        # Loop index of current outer triangle in BFS
+        int sTdx=0
+        # Queue for Breadth first search
+        queue[int] c_queue
+        # List of visited triangles
+        #np.ndarray[int, ndim=1, mode="c"] visited = py_visited
+        # Matrix telling whether some vertex of Triangle a interactions with the baryCenter of Triangle b
+        #np.ndarray[npint32_t, ndim=1, mode="c"] Mis_interact = py_Mis_interact
+
+        npint32_t * NTdx
+        # Determinant of Triangle a and b.
+        double aTdet, bTdet, id=0
+        # Vector containing the coordinates of the vertices of a Triangle
+        double aTE[2*3]
+        double bTE[2*3]
+        # Integration information ------------------------------------
+        # Loop index of basis functions
+        int a=0, b=0, aAdxj =0
+        # (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
+        npint32_t * aAdx
+        npint32_t * bAdx
+
+        # Buffers for integration solutions
+        double termf[3]
+        double termLocal[3*3]
+        double termNonloc[3*3]
+
+    # Get index of ansatz functions in matrix compute_A.-------------------
+    # Continuous Galerkin
+    aAdx = &c_Triangles[aTdx,0]
+    # Discontinuous Galerkin
+    # - Not implemented -
+
+    # Prepare Triangle information aTE and aTdet ------------------
+    # Copy coordinates of Triange a to aTE.
+    # this is done fore convenience only, actually those are unnecessary copies!
+    for j in range(2):
+        aTE[2*0+j] = c_Verts[c_Triangles[aTdx,0], j]
+        aTE[2*1+j] = c_Verts[c_Triangles[aTdx,1], j]
+        aTE[2*2+j] = c_Verts[c_Triangles[aTdx,2], j]
+    # compute Determinant
+    aTdet = absDet(&aTE[0])
+
+    # Assembly of right side ---------------------------------------
+    # We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
+    doubleVec_tozero(&termf[0], 3) # Initialize Buffer
+    f(&aTE[0], aTdet, &P[0,0], nP, &dx[0], &psi[0,0], &termf[0]) # Integrate and fill buffer
+
+    # Add content of buffer to the right side.
+    for a in range(3):
+        # Assembly happens in the interior of Omega only, so we throw away some values
+        if c_Triangles[aTdx, a] < L_Omega:
+            aAdxj = aAdx[a]
+            fd[aAdxj] += termf[a]
+    # Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
+    # on the boundary. This saves us from the pain to carry the information (a) into the integrator f.
+
+    # BFS -------------------------------------------------------------
+    # Intialize search queue with current outer triangle
+    c_queue.push(aTdx)
+    # Initialize vector of visited triangles with 0
+    intVec_tozero(&visited[0], J)
+
+    # Check whether BFS is over.
+    while not c_queue.empty():
+        # Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
+        sTdx = c_queue.front()
+        c_queue.pop()
+        # Get all the neighbours of sTdx.
+        NTdx =  &Neighbours[sTdx,0]
+        # Run through the list of neighbours. (4 at max)
+        for j in range(4):
+            # The next valid neighbour is our candidate for the inner Triangle b.
+            bTdx = NTdx[j]
+
+            # Check how many neighbours sTdx has. It can be 4 at max. (Itself, and the three others)
+            # In order to be able to store the list as contiguous array we fill upp the empty spots with J
+            # i.e. the total number of Triangles, which cannot be an index.
+            if bTdx < J:
+
+                # Prepare Triangle information bTE and bTdet ------------------
+                # Copy coordinates of Triange b to bTE.
+                # again this is done fore convenience only, actually those are unnecessary copies!
+                for j in range(2):
+                    bTE[2*0+j] = c_Verts[c_Triangles[bTdx,0], j]
+                    bTE[2*1+j] = c_Verts[c_Triangles[bTdx,1], j]
+                    bTE[2*2+j] = c_Verts[c_Triangles[bTdx,2], j]
+                bTdet = absDet(&bTE[0])
+
+                # Check wheter bTdx is already visited.
+                if visited[bTdx]==0:
+
+                    # Check whether the verts of aT interact with (bary Center of) bT
+                    inNbhd(&aTE[0], &bTE[0], sqdelta, &Mis_interact[0])
+                    # If any of the verts interact we enter the retriangulation and integration
+                    if npint32Vec_any(&Mis_interact[0], 3):
+                        # Retriangulation and integration ------------------------
+
+                        # Get (pointer to) intex of basis function (in Continuous Galerkin)
+                        bAdx = &c_Triangles[bTdx,0]
+
+                        # Assembly of matrix ---------------------------------------
+                        doubleVec_tozero(&termLocal[0], 3 * 3) # Initialize Buffer
+                        doubleVec_tozero(&termNonloc[0], 3 * 3) # Initialize Buffer
+                        # Compute integrals and write to buffer
+                        compute_A(&aTE[0], aTdet, &bTE[0], bTdet,
+                                  &P[0,0], nP, &dx[0], &dy[0], &psi[0,0], sqdelta,
+                                  intVec_all(&Mis_interact[0], 3), termLocal, termNonloc)
+                        # Copy buffer into matrix. Again solutions which lie on the boundary are ignored
+                        for a in range(3):
+                            if c_Triangles[aTdx, a] < L_Omega:
+                                aAdxj = aAdx[a]
+                                for b in range(3):
+                                    Ad[aAdxj, aAdx[b]] += termLocal[3*a+b]
+                                    Ad[aAdxj, bAdx[b]] -= termNonloc[3*a+b]
+
+                        # If bT interacts it will be a candidate for our BFS, so it is added to the queue
+                        if doubleVec_any(termNonloc, 3 * 3) or doubleVec_any(termLocal, 3 * 3):
+                            c_queue.push(bTdx)
+                            # In order to further speed up the integration we only check whether the integral
+                            # (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
+                            # However, this works only if we can guarantee that interacting triangles do actually
+                            # also contribute a non-zero entry, i.e. the Kernel as to be > 0 everywhere for example.
+                            # This works for constant kernels, or franctional kernels
+                            # The effect of this more precise criterea depends on delta and meshsize.
+                # Mark bTdx as visited
+                visited[bTdx] = 1
+    # Be careful. With gil, will allow to throw python exceptions, but it leads to a breakdown of performance
+    # by a factor of x3, as the code has to jump between gil and nogil!
+    id = threadid()
+    with gil:
+        print("aTdx: ", aTdx, "id:", id, "\t Progress: ", round(aTdx / J_Omega * 100), "%", end="\r", flush=True)
+    free(visited)
+    free(Mis_interact)
 
 cdef list set_neighbour(int rows, npint32_t * Triangles, npint32_t * Vdx):
     """
@@ -265,17 +290,17 @@ cdef void f(double * aTE,
 
     for a in range(3):
         for i in range(nP):
-            cy_toPhys(aTE, &P[2*i], &x[0])
-            termf[a] += psi[7*a + i] * c_fPhys(&x[0]) * aTdet * dx[i]
+            toPhys(aTE, &P[2 * i], &x[0])
+            termf[a] += psi[7*a + i] * fPhys(&x[0]) * aTdet * dx[i]
 
-cdef void A(double * aTE, double aTdet, double * bTE, double bTdet,
-            double * P,
-            int nP,
-            double * dx,
-            double * dy,
-            double * psi,
-            double sqdelta, bint is_allInteract,
-      double * cy_termLocal, double * cy_termNonloc) nogil:
+cdef void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
+                    double * P,
+                    int nP,
+                    double * dx,
+                    double * dy,
+                    double * psi,
+                    double sqdelta, bint is_allInteract,
+                    double * cy_termLocal, double * cy_termNonloc) nogil:
     cdef:
         int i=0, j=0, a, b
         double kerd, innerIntLocal, innerIntNonloc
@@ -292,18 +317,18 @@ cdef void A(double * aTE, double aTdet, double * bTE, double bTdet,
                     cy_termLocal[3*a+b] += psi[7*a+i] * psi[7*b+i] * innerIntLocal * dx[i] * aTdet*bTdet
                     cy_termNonloc[3*a+b] += psi[7*a+i] * innerIntNonloc * dx[i] * aTdet*bTdet
     else:
-        cy_outerInt_full(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, cy_termLocal, cy_termNonloc)
+        outerInt_full(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, cy_termLocal, cy_termNonloc)
 
-cdef void cy_outerInt_full(double * aTE, double aTdet,
-                           double * bTE, double bTdet,
-                           double * P,
-                           int nP,
-                           double * dx,
-                           double * dy,
-                           double * psi,
-                           double sqdelta,
-                           double * cy_termLocal,
-                           double * cy_termNonloc) nogil:
+cdef void outerInt_full(double * aTE, double aTdet,
+                        double * bTE, double bTdet,
+                        double * P,
+                        int nP,
+                        double * dx,
+                        double * dy,
+                        double * psi,
+                        double sqdelta,
+                        double * cy_termLocal,
+                        double * cy_termNonloc) nogil:
     cdef:
         int i=0, k=0, Rdx=0, a=0, b=0
         double x[2]
@@ -312,19 +337,19 @@ cdef void cy_outerInt_full(double * aTE, double aTdet,
         double RT[9*3*2]
 
     for k in range(nP):
-        cy_toPhys(&aTE[0], &P[2*k], &x[0])
-        Rdx = cy_retriangulate(&x[0], bTE, sqdelta, &RT[0])
-        cy_innerInt_retriangulate(x, bTE, P, nP, dy, sqdelta, Rdx, &RT[0], &innerLocal, &innerNonloc[0])
+        toPhys(&aTE[0], &P[2 * k], &x[0])
+        Rdx = retriangulate(&x[0], bTE, sqdelta, &RT[0])
+        innerInt_retriangulate(x, bTE, P, nP, dy, sqdelta, Rdx, &RT[0], &innerLocal, &innerNonloc[0])
         for b in range(3):
             for a in range(3):
                 cy_termLocal[3*a+b] += aTdet * psi[7*a+k] * psi[7*b+k] * dx[k] * innerLocal #innerLocal
                 cy_termNonloc[3*a+b] += aTdet * psi[7*a+k] * dx[k] * innerNonloc[b] #innerNonloc
 
-cdef void cy_innerInt_retriangulate(double * x,
-                               double * T,
-                               double * P,
-                               int nP, double * dy, double sqdelta, int Rdx,
-                               double * RT, double * innerLocal, double * innerNonloc) nogil:
+cdef void innerInt_retriangulate(double * x,
+                                 double * T,
+                                 double * P,
+                                 int nP, double * dy, double sqdelta, int Rdx,
+                                 double * RT, double * innerLocal, double * innerNonloc) nogil:
     cdef:
         int nRT = 0, i=0, k=0, rTdx=0, b=0
         double psi_rp=0, ker=0, rTdet=0
@@ -339,17 +364,17 @@ cdef void cy_innerInt_retriangulate(double * x,
 
     for rTdx in range(Rdx):
         for i in range(nP):
-            #cy_toPhys(RT[rTdx*3:rTdx*3+3, :], &P[2*i], &ry[0])
-            cy_toPhys(&RT[2*3*rTdx], &P[2*i], &ry[0])
-            cy_toRef(T, ry, rp)
+            #toPhys(RT[rTdx*3:rTdx*3+3, :], &P[2*i], &ry[0])
+            toPhys(&RT[2 * 3 * rTdx], &P[2 * i], &ry[0])
+            toRef(T, ry, rp)
             ker = c_kernelPhys(&x[0], &ry[0], sqdelta)
-            rTdet = cy_absDet(&RT[2*3*rTdx])
+            rTdet = absDet(&RT[2 * 3 * rTdx])
             innerLocal[0] += (ker * dy[i]) * rTdet # Local Term
             for b in range(3):
-                psi_rp = cy_evalPsi(rp, b)
+                psi_rp = evalBasisfunction(rp, b)
                 innerNonloc[b] += (psi_rp * ker * dy[i]) * rTdet # Nonlocal Term
 
-cdef double cy_evalPsi(double * p, int psidx) nogil:
+cdef double evalBasisfunction(double * p, int psidx) nogil:
     if psidx == 0:
         return 1 - p[0] - p[1]
     elif psidx == 1:
@@ -358,10 +383,10 @@ cdef double cy_evalPsi(double * p, int psidx) nogil:
         return p[1]
     else:
         #with gil:
-        #    raise ValueError("in cy_evalPsi. Invalid psi index.")
+        #    raise ValueError("in evalBasisfunction. Invalid psi index.")
         abort() # Cython likes to ignore Python Excetions, I hope this line helps.
 
-cdef int cy_retriangulate(double * x_center, double * TE, double sqdelta, double * out_RT) nogil:
+cdef int retriangulate(double * x_center, double * TE, double sqdelta, double * out_RT) nogil:
         """ Retriangulates a given triangle.
 
         :param x_center: nd.array, real, shape (2,). Center of normball, e.g. pyhsical quadtrature point.
@@ -396,18 +421,18 @@ cdef int cy_retriangulate(double * x_center, double * TE, double sqdelta, double
                 c_q[i] = TE[2*edgdx1+i]
                 c_a[i] = c_q[i] - x_center[i]
                 c_b[i] = c_p[i] - c_q[i]
-            v = pow(c_vecdot(&c_a[0], &c_b[0], 2),2) - (c_vecdot(&c_a[0], &c_a[0], 2) - sqdelta)*c_vecdot(&c_b[0],&c_b[0], 2)
+            v = pow(vec_dot(&c_a[0], &c_b[0], 2), 2) - (vec_dot(&c_a[0], &c_a[0], 2) - sqdelta) * vec_dot(&c_b[0], &c_b[0], 2)
 
             if v >= 0:
-                term1 = -c_vecdot(&c_a[0], &c_b[0], 2)/c_vecdot(&c_b[0], &c_b[0], 2)
-                term2 = sqrt(v)/c_vecdot(&c_b[0], &c_b[0], 2)
+                term1 = -vec_dot(&c_a[0], &c_b[0], 2) / vec_dot(&c_b[0], &c_b[0], 2)
+                term2 = sqrt(v) / vec_dot(&c_b[0], &c_b[0], 2)
                 lam1 = term1 + term2
                 lam2 = term1 - term2
                 for i in range(2):
                     c_y1[i] = lam1*(c_p[i]-c_q[i]) + c_q[i]
                     c_y2[i] = lam2*(c_p[i]-c_q[i]) + c_q[i]
 
-                if c_vecdist_sql2(&c_p[0], &x_center[0], 2) <= sqdelta:
+                if vec_sqL2dist(&c_p[0], &x_center[0], 2) <= sqdelta:
                     for i in range(2):
                         c_R[Rdx][i] = c_p[i]
                     Rdx += 1
@@ -415,12 +440,12 @@ cdef int cy_retriangulate(double * x_center, double * TE, double sqdelta, double
                     for i in range(2):
                         c_R[Rdx][i] = c_y1[i]
                     Rdx += 1
-                if (0 <= lam2 <= 1) and (scaldist_sql2(lam1, lam2) >= 1e-9):
+                if (0 <= lam2 <= 1) and (scal_sqL2dist(lam1, lam2) >= 1e-9):
                     for i in range(2):
                         c_R[Rdx][i] = c_y2[i]
                     Rdx += 1
             else:
-                if c_vecdist_sql2(c_p, &x_center[0], 2)  <= sqdelta:
+                if vec_sqL2dist(c_p, &x_center[0], 2)  <= sqdelta:
                     for i in range(2):
                         c_R[Rdx][i] = c_p[i]
                     Rdx += 1
@@ -443,7 +468,7 @@ cdef int cy_retriangulate(double * x_center, double * TE, double sqdelta, double
             return Rdx - 2 # So that, it acutally contains the number of triangles in the retriangulation
 
 # Define Right side f
-cdef double c_fPhys(double * x) nogil:
+cdef double fPhys(double * x) nogil:
         """ Right side of the equation.
 
         :param x: nd.array, real, shape (2,). Physical point in the 2D plane
@@ -452,7 +477,7 @@ cdef double c_fPhys(double * x) nogil:
         # f = 1
         return 1.0
 
-cdef void cy_toPhys(double * E, double * p, double * out_x) nogil:
+cdef void toPhys(double * E, double * p, double * out_x) nogil:
     cdef:
         int i=0
     for i in range(2):
@@ -460,10 +485,10 @@ cdef void cy_toPhys(double * E, double * p, double * out_x) nogil:
 
 cdef double c_kernelPhys(double * x, double * y, double sqdelta) nogil:
     # Nonconstant Kernel does not yet work
-    # pow(1-c_vecdist_sql2(x,y, 2)/sqdelta, 2)
+    # pow(1-vec_sqL2dist(x,y, 2)/sqdelta, 2)
     return 4 / (pi * pow(sqdelta, 2))
 
-cdef double c_vecdist_sql2(double * x, double * y, int length) nogil:
+cdef double vec_sqL2dist(double * x, double * y, int length) nogil:
     """
     Computes squared l2 distance
     
@@ -479,7 +504,7 @@ cdef double c_vecdist_sql2(double * x, double * y, int length) nogil:
         r += pow((x[i] - y[i]), 2)
     return r
 
-cdef double scaldist_sql2(double x, double y) nogil:
+cdef double scal_sqL2dist(double x, double y) nogil:
     """
     Computes squared l2 distance
     
@@ -489,7 +514,7 @@ cdef double scaldist_sql2(double x, double y) nogil:
     """
     return pow((x-y), 2)
 
-cdef double c_vecdot(double * x, double * y, int length) nogil:
+cdef double vec_dot(double * x, double * y, int length) nogil:
     """
     Computes scalar product of two vectors.
     
@@ -505,7 +530,7 @@ cdef double c_vecdot(double * x, double * y, int length) nogil:
         r += x[i]*y[i]
     return r
 
-cdef void cy_solve2x2(double * A, double * b, double * x) nogil:
+cdef void solve2x2(double * A, double * b, double * x) nogil:
     cdef:
         int i=0, dx0 = 0, dx1 = 1
         double l=0, u=0
@@ -518,7 +543,7 @@ cdef void cy_solve2x2(double * A, double * b, double * x) nogil:
     # Check invertibility
     if A[2*dx0] == 0:
         #with gil:
-        #    raise LinAlgError("in cy_solve2x2. Matrix not invertible.")
+        #    raise LinAlgError("in solve2x2. Matrix not invertible.")
         abort() # Cython likes to ignore Python Excetions, I hope this line helps.
 
     # LU Decomposition
@@ -528,7 +553,7 @@ cdef void cy_solve2x2(double * A, double * b, double * x) nogil:
     # Check invertibility
     if u == 0:
         #with gil:
-        #    raise LinAlgError("in cy_solve2x2. Matrix not invertible.")
+        #    raise LinAlgError("in solve2x2. Matrix not invertible.")
         abort() # Cython likes to ignore Python Excetions, I hope this line helps.
 
     # LU Solve
@@ -536,7 +561,7 @@ cdef void cy_solve2x2(double * A, double * b, double * x) nogil:
     x[0] = (b[dx0] - A[2*dx0+1]*x[1])/A[2*dx0]
     return
 
-cdef void cy_toRef(double * E, double * phys_x, double * ref_p) nogil:
+cdef void toRef(double * E, double * phys_x, double * ref_p) nogil:
     cdef:
         double M[2*2]
         double b[2]
@@ -547,10 +572,10 @@ cdef void cy_toRef(double * E, double * phys_x, double * ref_p) nogil:
         M[2*i+1] = E[2*2+i] - E[2*0+i]
         b[i] = phys_x[i] - E[2*0+i]
 
-    cy_solve2x2(&M[0], &b[0], &ref_p[0])
+    solve2x2(&M[0], &b[0], &ref_p[0])
     return
 
-cdef double cy_absDet(double * E) nogil:
+cdef double absDet(double * E) nogil:
     cdef:
         double out
         double M[2][2]
@@ -595,35 +620,35 @@ cdef void inNbhd(double * aTE, double * bTE, double sqdelta, npint32_t * M) nogi
         double bary[2]
     baryCenter(bTE, &bary[0])
     for i in range(3):
-        M[i] = (c_vecdist_sql2(&aTE[2*i], &bary[0], 2) <= sqdelta)
+        M[i] = (vec_sqL2dist(&aTE[2 * i], &bary[0], 2) <= sqdelta)
 
     return
 
-cdef void c_doublevec_tozero(double * vec, int len) nogil:
+cdef void doubleVec_tozero(double * vec, int len) nogil:
     cdef int i=0
     for i in range(len):
         vec[i]  = 0.
 
-cdef void c_intvec_tozero(int * vec, int len) nogil:
+cdef void intVec_tozero(int * vec, int len) nogil:
     cdef int i=0
     for i in range(len):
         vec[i]  = 0
 
-cdef int c_intvec_any(npint32_t * vec, int len) nogil:
+cdef int npint32Vec_any(npint32_t * vec, int len) nogil:
     cdef int i=0
     for i in range(len):
             if vec[i] != 0:
                 return 1
     return 0
 
-cdef int c_doublevec_any(double * vec, int len) nogil:
+cdef int doubleVec_any(double * vec, int len) nogil:
     cdef int i=0
     for i in range(len):
             if vec[i] != 0:
                 return 1
     return 0
 
-cdef int c_intvec_all(npint32_t * vec, int len) nogil:
+cdef int intVec_all(npint32_t * vec, int len) nogil:
     cdef int i=0
     for i in range(len):
             if vec[i] == 0:
