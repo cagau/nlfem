@@ -9,7 +9,7 @@ os.environ['CXX'] = 'g++'
 ext_modules = [
     Extension(
         name="assemble",
-        sources=["assemble.pyx"],
+        sources=["assemble.pyx", "linalg.pxd"],
         extra_compile_args=["-Wno-cpp", "-Wno-unused-function", "-O2", "-march=native",  '-std=c++11', '-fopenmp'],
         extra_link_args=["-O2", "-march=native", '-fopenmp'],
         language="c++",
