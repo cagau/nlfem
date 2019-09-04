@@ -24,7 +24,8 @@ if __name__ == "__main__":
                        mesh.T,
                        mesh.V,
                        py_P, weights, weights, delta)
-"""    Ad_O = Ad[:, :mesh.K_Omega]
+
+    Ad_O = Ad[:, :mesh.K_Omega]
     ud = np.linalg.solve(Ad_O, fd)
 
     fd_Ext = np.zeros(mesh.K)
@@ -38,6 +39,5 @@ if __name__ == "__main__":
     np.save(Tstmp+"Ad_O", Ad_O)
     fileObject.close()
 
-    plot(mesh_name, delta, Tstmp=Tstmp)"""
-
+    plot(mesh_name, delta, Tstmp=Tstmp)
 

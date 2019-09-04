@@ -417,14 +417,10 @@ void par_assemble(  double * Ad,
                     long * Neighbours
                    ) {
     int aTdx;
-    #pragma omp parallel for
-    for (aTdx=0; aTdx<J; aTdx++)
-    {
+
     // BFS ------------------------------------------------
     // Allocate Graph of Neighbours
     // Further definitions
-    int *visited = (int *) malloc(J*sizeof(int));
-    long *Mis_interact = (long *) malloc(3*sizeof(long));
 
     // General Loop Indices ---------------------------------------
     int i=0, j=0, bTdx=0;
@@ -437,8 +433,9 @@ void par_assemble(  double * Ad,
     // np.ndarray[int, ndim=1, mode="c"] visited = py_visited
     // Matrix telling whether some vertex of Triangle a interactions with the baryCenter of Triangle b
     // np.ndarray[long, ndim=1, mode="c"] Mis_interact = py_Mis_interact
-
+    int*visited;
     long * NTdx;
+    long* Mis_interact;
     // Determinant of Triangle a and b.
     double aTdet, bTdet;
     // Vector containing the coordinates of the vertices of a Triangle
@@ -456,6 +453,14 @@ void par_assemble(  double * Ad,
     double termLocal[3*3];
     double termNonloc[3*3];
 
+    #pragma omp parallel private(termf, termLocal, termNonloc, aAdx, bAdx, a, b, aAdxj, aTE, bTE, aTdet, bTdet, NTdx, c_queue, sTdx, i, j, bTdx, visited, Mis_interact)
+    {
+    int *visited = (int *) malloc(J*sizeof(int));
+    long *Mis_interact = (long *) malloc(3*sizeof(long));
+
+    #pragma omp for
+    for (aTdx=0; aTdx<J; aTdx++)
+    {
         // Get index of ansatz functions in matrix compute_A.-------------------
         // Continuous Galerkin
         aAdx = &c_Triangles[3*aTdx];
@@ -479,16 +484,17 @@ void par_assemble(  double * Ad,
         compute_f(&aTE[0], aTdet, &P[0], nP, dx, &psi[0], &termf[0]); // Integrate and fill buffer
 
         // Add content of buffer to the right side.
-        #pragma omp critical
-        {
+        //#pragma omp critical
+        //{
             for (a=0; a<3; a++){
                 // Assembly happens in the interior of Omega only, so we throw away some values
                 if (c_Triangles[3*aTdx + a] < L_Omega){
                     aAdxj = aAdx[a];
+                    #pragma omp atomic update
                     fd[aAdxj] += termf[a];
                 }
             }
-        }
+        //}
         // Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
         // on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
 
@@ -555,18 +561,20 @@ void par_assemble(  double * Ad,
                                 // The effect of this more precise criterea depends on delta and meshsize.
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored
-                                #pragma omp critical
-                                {
+                                //#pragma omp critical
+                                //{
                                     for (a=0; a<3; a++){
                                         if (c_Triangles[3*aTdx + a] < L_Omega){
                                             aAdxj = aAdx[a];
                                             for (b=0; b<3; b++){
+                                                #pragma omp atomic update
                                                 Ad[aAdxj*K + aAdx[b]] += termLocal[3*a+b];
+                                                #pragma omp atomic update
                                                 Ad[aAdxj*K + bAdx[b]] -= termNonloc[3*a+b];
                                             }
                                         }
                                     }
-                                }
+                                //}
                             }
                         }
                     }
@@ -577,6 +585,7 @@ void par_assemble(  double * Ad,
         }
         // I dont know wheter this makes sense i parallel case.
         //cout << aTdx << "\r" << flush;
+    }
     free(visited);
     free(Mis_interact);
     }

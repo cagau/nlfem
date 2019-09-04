@@ -607,7 +607,7 @@ static CYTHON_INLINE float __PYX_NAN() {
 #define __PYX_HAVE__linalg
 #define __PYX_HAVE_API__linalg
 /* Early includes */
-#include "clinalg.c"
+#include "clinalg.cpp"
 #include <string.h>
 #include <stdio.h>
 #include "numpy/arrayobject.h"
@@ -1705,7 +1705,7 @@ static PyObject *__pyx_tuple__8;
 static PyObject *__pyx_codeobj__9;
 /* Late includes */
 
-/* "linalg.pyx":4
+/* "linalg.pyx":10
  * cimport numpy as np
  * 
  * def py_doubleVec_any(np.ndarray[double, ndim=1, mode="c"] a, int len):             # <<<<<<<<<<<<<<
@@ -1744,11 +1744,11 @@ static PyObject *__pyx_pw_6linalg_1py_doubleVec_any(PyObject *__pyx_self, PyObje
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_len)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("py_doubleVec_any", 1, 2, 2, 1); __PYX_ERR(0, 4, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("py_doubleVec_any", 1, 2, 2, 1); __PYX_ERR(0, 10, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "py_doubleVec_any") < 0)) __PYX_ERR(0, 4, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "py_doubleVec_any") < 0)) __PYX_ERR(0, 10, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -1757,17 +1757,17 @@ static PyObject *__pyx_pw_6linalg_1py_doubleVec_any(PyObject *__pyx_self, PyObje
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
     __pyx_v_a = ((PyArrayObject *)values[0]);
-    __pyx_v_len = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_len == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 4, __pyx_L3_error)
+    __pyx_v_len = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_len == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 10, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("py_doubleVec_any", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 4, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("py_doubleVec_any", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 10, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("linalg.py_doubleVec_any", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_a), __pyx_ptype_5numpy_ndarray, 1, "a", 0))) __PYX_ERR(0, 4, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_a), __pyx_ptype_5numpy_ndarray, 1, "a", 0))) __PYX_ERR(0, 10, __pyx_L1_error)
   __pyx_r = __pyx_pf_6linalg_py_doubleVec_any(__pyx_self, __pyx_v_a, __pyx_v_len);
 
   /* function exit code */
@@ -1794,11 +1794,11 @@ static PyObject *__pyx_pf_6linalg_py_doubleVec_any(CYTHON_UNUSED PyObject *__pyx
   __pyx_pybuffernd_a.rcbuffer = &__pyx_pybuffer_a;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_a.rcbuffer->pybuffer, (PyObject*)__pyx_v_a, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 4, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_a.rcbuffer->pybuffer, (PyObject*)__pyx_v_a, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 10, __pyx_L1_error)
   }
   __pyx_pybuffernd_a.diminfo[0].strides = __pyx_pybuffernd_a.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_a.diminfo[0].shape = __pyx_pybuffernd_a.rcbuffer->pybuffer.shape[0];
 
-  /* "linalg.pyx":5
+  /* "linalg.pyx":11
  * 
  * def py_doubleVec_any(np.ndarray[double, ndim=1, mode="c"] a, int len):
  *     return c_doubleVec_any(&a[0], len)             # <<<<<<<<<<<<<<
@@ -1812,15 +1812,15 @@ static PyObject *__pyx_pf_6linalg_py_doubleVec_any(CYTHON_UNUSED PyObject *__pyx
   } else if (unlikely(__pyx_t_1 >= __pyx_pybuffernd_a.diminfo[0].shape)) __pyx_t_2 = 0;
   if (unlikely(__pyx_t_2 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_2);
-    __PYX_ERR(0, 5, __pyx_L1_error)
+    __PYX_ERR(0, 11, __pyx_L1_error)
   }
-  __pyx_t_3 = __Pyx_PyInt_From_int(doubleVec_any((&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_a.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_a.diminfo[0].strides))), __pyx_v_len)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 5, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(doubleVec_any((&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_a.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_a.diminfo[0].strides))), __pyx_v_len)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 11, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "linalg.pyx":4
+  /* "linalg.pyx":10
  * cimport numpy as np
  * 
  * def py_doubleVec_any(np.ndarray[double, ndim=1, mode="c"] a, int len):             # <<<<<<<<<<<<<<
@@ -4425,16 +4425,16 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__7);
   __Pyx_GIVEREF(__pyx_tuple__7);
 
-  /* "linalg.pyx":4
+  /* "linalg.pyx":10
  * cimport numpy as np
  * 
  * def py_doubleVec_any(np.ndarray[double, ndim=1, mode="c"] a, int len):             # <<<<<<<<<<<<<<
  *     return c_doubleVec_any(&a[0], len)
  */
-  __pyx_tuple__8 = PyTuple_Pack(2, __pyx_n_s_a, __pyx_n_s_len); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(0, 4, __pyx_L1_error)
+  __pyx_tuple__8 = PyTuple_Pack(2, __pyx_n_s_a, __pyx_n_s_len); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(0, 10, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__8);
   __Pyx_GIVEREF(__pyx_tuple__8);
-  __pyx_codeobj__9 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__8, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_linalg_pyx, __pyx_n_s_py_doubleVec_any, 4, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__9)) __PYX_ERR(0, 4, __pyx_L1_error)
+  __pyx_codeobj__9 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__8, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_linalg_pyx, __pyx_n_s_py_doubleVec_any, 10, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__9)) __PYX_ERR(0, 10, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -4739,21 +4739,21 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
 
-  /* "linalg.pyx":4
+  /* "linalg.pyx":10
  * cimport numpy as np
  * 
  * def py_doubleVec_any(np.ndarray[double, ndim=1, mode="c"] a, int len):             # <<<<<<<<<<<<<<
  *     return c_doubleVec_any(&a[0], len)
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6linalg_1py_doubleVec_any, NULL, __pyx_n_s_linalg); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 4, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6linalg_1py_doubleVec_any, NULL, __pyx_n_s_linalg); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 10, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_py_doubleVec_any, __pyx_t_1) < 0) __PYX_ERR(0, 4, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_py_doubleVec_any, __pyx_t_1) < 0) __PYX_ERR(0, 10, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "linalg.pyx":1
- * from linalg cimport doubleVec_any as c_doubleVec_any             # <<<<<<<<<<<<<<
- * cimport numpy as np
- * 
+ * # This file cimports the C-Functions from clinalg.c and makes them avaialbe to python via def. This is usually             # <<<<<<<<<<<<<<
+ * # necessary only for few "entrance" functions to the actual C or Cython Code. However, if setup_linalg.py is
+ * # executed (via python setup_linalg.py build_ext --inplace -f) a standalone package is created which also contains
  */
   __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
