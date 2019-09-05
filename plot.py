@@ -29,7 +29,7 @@ def plot(mesh_name, delta, Tstmp= ""):
     arg = pkl.load(fileObject2)
     fileObject2.close()
 
-    Ad_O = arg["Ad_O"]
+    Ad_O = np.load("Ad_O.npy")
     ud_Ext = arg["ud_Ext"]
     fd_Ext = arg["fd_Ext"]
     mesh = arg["mesh"]

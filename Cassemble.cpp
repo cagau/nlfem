@@ -2,75 +2,27 @@
 #include <omp.h>
 #include <queue>
 #include <iostream>
+#include "Cassemble.h"
+
 using namespace std;
 
 // Model ---------------------------------------------------------------------------------------------------------
 
 // Define Right side compute_f
-double fPhys(double * x){
+static double model_f(double * x){
         return 1.0;
 }
 
-static double c_kernelPhys(double * x, double * y, double sqdelta){
+static double model_kernel(double * x, double * y, double sqdelta){
     // Nonconstant Kernel does not yet work
     // pow(1-vec_sqL2dist(x,y, 2)/sqdelta, 2)
     return 4 / (M_PI * pow(sqdelta, 2));
 }
 
-// ----------------------------------------------------------------------------------------------------------------
-
-
-
-// Check whether any, or all elements of a vector are zero --------------
-static int doubleVec_any(double * vec, int len){
-    int i=0;
-    for (i=0; i< len; i++){
-        if (vec[i] != 0){
-            return 1;
-        }
-    }
-    return 0;
-}
-
-static int longVec_all(long * vec, int len){
-    int i=0;
-    for (i=0; i<len; i++){
-        if (vec[i] == 0){
-            return 0;
-        }
-    }
-    return 1;
-}
-
-static int longVec_any(long * vec, int len){
-    int i=0;
-    for (i=0; i<len; i++){
-            if (vec[i] != 0){
-                return 1;
-            }
-    }
-    return 0;
-}
-
-static void baryCenter(double * E, double * bary){
-    int i=0;
-    bary[0] = 0;
-    bary[1] = 0;
-    for  (i=0; i< 3; i++){
-        bary[0] += E[2*i+0];
-        bary[1] += E[2*i+1];
-    }
-    bary[0] = bary[0]/3;
-    bary[1] = bary[1]/3;
-}
-
-static double vec_sqL2dist(double * x, double * y, int len){
-    double r=0;
-    int i=0;
-    for (i=0; i<len; i++){
-        r += pow((x[i] - y[i]), 2);
-    }
-    return r;
+static void model_basisFunction(double * p, double *psi_vals){
+    psi_vals[0] = 1 - p[0] - p[1];
+    psi_vals[1] = p[0];
+    psi_vals[2] = p[1];
 }
 
 static void inNbhd(double * aTE, double * bTE, double sqdelta, long * M){
@@ -89,117 +41,76 @@ static void inNbhd(double * aTE, double * bTE, double sqdelta, long * M){
     return;
 }
 
-// Set Vectors to Zero -------------------------------------------------
-static void intVec_tozero(int * vec, int len){
-    int i=0;
-    for (i=0; i< len; i++){
-        vec[i]  = 0;
+// Integration ---------------------------------------------------------------------------------------------------------
+
+static void outerInt_full(double * aTE, double aTdet,
+                        double * bTE, double bTdet,
+                        double * P,
+                        int nP,
+                        double * dx,
+                        double * dy,
+                        double * psi,
+                        double sqdelta,
+                        double * cy_termLocal,
+                        double * cy_termNonloc){
+    int k=0, Rdx=0, a=0, b=0;
+    double x[2];
+    double innerLocal=0;
+    double innerNonloc[3];
+    double RT[9*3*2];
+
+    for (k=0; k<nP; k++){
+        toPhys(&aTE[0], &P[2 * k], &x[0]);
+        Rdx = retriangulate(&x[0], bTE, sqdelta, &RT[0]);
+        innerInt_retriangulate(x, bTE, P, nP, dy, sqdelta, Rdx, &RT[0], &innerLocal, &innerNonloc[0]);
+        for (b=0; b<3; b++){
+            for (a=0; a<3; a++){
+                cy_termLocal[3*a+b] += aTdet * psi[nP*a+k] * psi[nP*b+k] * dx[k] * innerLocal; //innerLocal
+                cy_termNonloc[3*a+b] += aTdet * psi[nP*a+k] * dx[k] * innerNonloc[b]; //innerNonloc
+            }
+        }
     }
 }
 
-static void doubleVec_tozero(double * vec, int len){
-    int i=0;
-    for (i=0; i< len; i++){
-        vec[i]  = 0;
-    }
+static void innerInt_bary(double * x, double * T, double * P, int nP, double * dy, double sqdelta, int Rdx,
+                                 double * RT, double * innerLocal, double * innerNonloc){
+    // if Barycenter of T is to far away from x -> innerLocal = 0
+
+    // Else
+    // innerLocal = (ker @ dy) * T.absDet()
+    // innerNonloc = (psi * ker @ dy)*T.absDet()
 }
 
-static double absolute(double value){
-    if (value < 0){
-        return - value;
-    } else {
-        return value;
+static void innerInt_retriangulate(double * x, double * T, double * P, int nP, double * dy, double sqdelta, int Rdx,
+                                 double * RT, double * innerLocal, double * innerNonloc){
+    int i=0, rTdx=0, b=0;
+    double ker=0, rTdet=0;
+    double ry[2];
+    double rp[2];
+    double psi_rp[3];
+
+    innerLocal[0] = 0;
+    for (b=0; b<3; b++){
+        innerNonloc[b] = 0;
+    }
+    if (Rdx == 0){
+        return;
+    }
+
+    for (rTdx=0; rTdx < Rdx; rTdx++){
+        for (i=0; i<nP; i++){
+            toPhys(&RT[2 * 3 * rTdx], &P[2 * i], &ry[0]);
+            toRef(T, ry, rp);
+            ker = model_kernel(&x[0], &ry[0], sqdelta);
+            rTdet = absDet(&RT[2 * 3 * rTdx]);
+            innerLocal[0] += (ker * dy[i]) * rTdet; // Local Term
+            model_basisFunction(&rp[0], &psi_rp[0]);
+            for (b=0; b<3; b++){
+                innerNonloc[b] += (psi_rp[b] * ker * dy[i]) * rTdet; // Nonlocal Term
+            }
+        }
     }
 }
-
-static double absDet(double * E){
-    double M[2][2];
-    int i=0;
-    for (i=0; i< 2; i++){
-        M[i][0] = E[2*1+i] - E[2*0+i];
-        M[i][1] = E[2*2+i] - E[2*0+i];
-    }
-    return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
-}
-
-static void solve2x2(double * A, double * b, double * x){
-    int dx0 = 0, dx1 = 1;
-    double l=0, u=0;
-
-    // Column Pivot Strategy
-    if (absolute(A[0]) < absolute(A[2])){
-        dx0 = 1;
-        dx1 = 0;
-    }
-
-    // Check invertibility
-    if (A[2*dx0] == 0){
-        // raise LinAlgError("in solve2x2. Matrix not invertible.")
-        abort();
-    }
-
-    // LU Decomposition
-    l = A[2*dx1]/A[2*dx0];
-    u = A[2*dx1+1] - l*A[2*dx0+1];
-
-    // Check invertibility
-    if (u == 0){
-        // raise LinAlgError("in solve2x2. Matrix not invertible.")
-        abort();
-    }
-
-    // LU Solve
-    x[1] = (b[dx1] - l*b[dx0])/u;
-    x[0] = (b[dx0] - A[2*dx0+1]*x[1])/A[2*dx0];
-    return;
-}
-
-static void toRef(double * E, double * phys_x, double * ref_p){
-    double M[2*2];
-    double b[2];
-    int i=0;
-    for (i=0; i< 2; i++){
-        M[2*i] = E[2*1+i] - E[2*0+i];
-        M[2*i+1] = E[2*2+i] - E[2*0+i];
-        b[i] = phys_x[i] - E[2*0+i];
-    }
-    solve2x2(&M[0], &b[0], &ref_p[0]);
-    return;
-}
-
-static double vec_dot(double * x, double * y, int len){
-    double r=0;
-    int i=0;
-    for (i=0; i<len; i++){
-        r += x[i]*y[i];
-    }
-    return r;
-}
-
-static double scal_sqL2dist(double x, double y){
-    return pow((x-y), 2);
-}
-
-static void toPhys(double * E, double * p, double * out_x){
-    int i=0;
-    for (i=0; i<2;i++){
-        out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i];
-    }
-}
-
-static double evalBasisfunction(double * p, int psidx){
-    if (psidx == 0){
-        return 1 - p[0] - p[1];
-    } else if (psidx == 1) {
-        return p[0];
-    } else if (psidx == 2){
-        return p[1];
-    } else {
-        //    raise ValueError("in evalBasisfunction. Invalid psi index.")
-        abort();
-    }
-}
-
 
 static int retriangulate(double * x_center, double * TE, double sqdelta, double * out_RT){
         // C Variables and Arrays.
@@ -291,66 +202,27 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
         }
 }
 
-static void innerInt_retriangulate(double * x, double * T, double * P, int nP, double * dy, double sqdelta, int Rdx,
-                                 double * RT, double * innerLocal, double * innerNonloc){
-    int i=0, rTdx=0, b=0;
-    double psi_rp=0, ker=0, rTdet=0;
-    double ry[2];
-    double rp[2];
+// Compute A and f -----------------------------------------------------------------------------------------------------
 
-    innerLocal[0] = 0;
-    for (b=0; b<3; b++){
-        innerNonloc[b] = 0;
-    }
-    if (Rdx == 0){
-        return;
-    }
-
-    for (rTdx=0; rTdx < Rdx; rTdx++){
-        for (i=0; i<nP; i++){
-            toPhys(&RT[2 * 3 * rTdx], &P[2 * i], &ry[0]);
-            toRef(T, ry, rp);
-            ker = c_kernelPhys(&x[0], &ry[0], sqdelta);
-            rTdet = absDet(&RT[2 * 3 * rTdx]);
-            innerLocal[0] += (ker * dy[i]) * rTdet; // Local Term
-            for (b=0; b<3; b++){
-                psi_rp = evalBasisfunction(rp, b);
-                innerNonloc[b] += (psi_rp * ker * dy[i]) * rTdet; // Nonlocal Term
-            }
-        }
-    }
-}
-
-void outerInt_full(double * aTE, double aTdet,
-                        double * bTE, double bTdet,
-                        double * P,
-                        int nP,
-                        double * dx,
-                        double * dy,
-                        double * psi,
-                        double sqdelta,
-                        double * cy_termLocal,
-                        double * cy_termNonloc){
-    int k=0, Rdx=0, a=0, b=0;
+static void compute_f(double * aTE,
+                    double aTdet,
+                    double * P,
+                    int nP,
+                    double * dx,
+                    double * psi,
+                    double * termf){
+    int i,a;
     double x[2];
-    double innerLocal=0;
-    double innerNonloc[3];
-    double RT[9*3*2];
 
-    for (k=0; k<nP; k++){
-        toPhys(&aTE[0], &P[2 * k], &x[0]);
-        Rdx = retriangulate(&x[0], bTE, sqdelta, &RT[0]);
-        innerInt_retriangulate(x, bTE, P, nP, dy, sqdelta, Rdx, &RT[0], &innerLocal, &innerNonloc[0]);
-        for (b=0; b<3; b++){
-            for (a=0; a<3; a++){
-                cy_termLocal[3*a+b] += aTdet * psi[7*a+k] * psi[7*b+k] * dx[k] * innerLocal; //innerLocal
-                cy_termNonloc[3*a+b] += aTdet * psi[7*a+k] * dx[k] * innerNonloc[b]; //innerNonloc
-            }
+    for (a=0; a<3; a++){
+        for (i=0; i<nP; i++){
+            toPhys(aTE, &P[2 * i], &x[0]);
+            termf[a] += psi[nP*a + i] * model_f(&x[0]) * aTdet * dx[i];
         }
     }
 }
 
-void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
+static void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
                     double * P,
                     int nP,
                     double * dx,
@@ -369,11 +241,11 @@ void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
                     innerIntLocal=0;
                     innerIntNonloc=0;
                     for (j=0; j<nP; j++){
-                        innerIntLocal += c_kernelPhys(&P[2*i], &P[2*j], sqdelta) * dy[j];
-                        innerIntNonloc += c_kernelPhys(&P[2*i], &P[2*j], sqdelta) * dy[j] * psi[7*b+j];
+                        innerIntLocal += model_kernel(&P[2*i], &P[2*j], sqdelta) * dy[j];
+                        innerIntNonloc += model_kernel(&P[2*i], &P[2*j], sqdelta) * dy[j] * psi[nP*b+j];
                     }
-                    cy_termLocal[3*a+b] += psi[7*a+i] * psi[7*b+i] * innerIntLocal * dx[i] * aTdet*bTdet;
-                    cy_termNonloc[3*a+b] += psi[7*a+i] * innerIntNonloc * dx[i] * aTdet*bTdet;
+                    cy_termLocal[3*a+b] += psi[nP*a+i] * psi[nP*b+i] * innerIntLocal * dx[i] * aTdet*bTdet;
+                    cy_termNonloc[3*a+b] += psi[nP*a+i] * innerIntNonloc * dx[i] * aTdet*bTdet;
                 }
             }
         }
@@ -382,25 +254,9 @@ void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
     }
 }
 
-void compute_f(double * aTE,
-                    double aTdet,
-                    double * P,
-                    int nP,
-                    double * dx,
-                    double * psi,
-                    double * termf){
-    int i,a;
-    double x[2];
+// Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 
-    for (a=0; a<3; a++){
-        for (i=0; i<nP; i++){
-            toPhys(aTE, &P[2 * i], &x[0]);
-            termf[a] += psi[7*a + i] * fPhys(&x[0]) * aTdet * dx[i];
-        }
-    }
-}
-
-void par_assemble(  double * Ad,
+static void par_assemble(  double * Ad,
                     int K,
                     double * fd,
                     long * c_Triangles,
@@ -412,7 +268,6 @@ void par_assemble(  double * Ad,
                     int nP, double * P,
                     double * dx,
                     double * dy,
-                    double * psi,
                     double sqdelta,
                     long * Neighbours
                    ) {
@@ -433,8 +288,8 @@ void par_assemble(  double * Ad,
     // np.ndarray[int, ndim=1, mode="c"] visited = py_visited
     // Matrix telling whether some vertex of Triangle a interactions with the baryCenter of Triangle b
     // np.ndarray[long, ndim=1, mode="c"] Mis_interact = py_Mis_interact
-    int*visited;
-    long * NTdx;
+    int *visited;
+    long *NTdx;
     long* Mis_interact;
     // Determinant of Triangle a and b.
     double aTdet, bTdet;
@@ -450,8 +305,18 @@ void par_assemble(  double * Ad,
 
     // Buffers for integration solutions
     double termf[3];
+    double tmp_psi[3];
     double termLocal[3*3];
     double termNonloc[3*3];
+
+    double *psi = (double *) malloc(nP*sizeof(double));
+
+    for(j=0; j<nP; j++){
+       model_basisFunction(&P[2*j], &tmp_psi[0]);
+       psi[nP*0+j] = tmp_psi[0];
+       psi[nP*1+j] = tmp_psi[1];
+       psi[nP*2+j] = tmp_psi[2];
+    }
 
     #pragma omp parallel private(termf, termLocal, termNonloc, aAdx, bAdx, a, b, aAdxj, aTE, bTE, aTdet, bTdet, NTdx, c_queue, sTdx, i, j, bTdx, visited, Mis_interact)
     {
@@ -588,6 +453,168 @@ void par_assemble(  double * Ad,
     }
     free(visited);
     free(Mis_interact);
+    free(psi);
     }
 
+}
+
+// Math functions ------------------------------------------------------------------------------------------------------
+
+static void solve2x2(double * A, double * b, double * x){
+    int dx0 = 0, dx1 = 1;
+    double l=0, u=0;
+
+    // Column Pivot Strategy
+    if (absolute(A[0]) < absolute(A[2])){
+        dx0 = 1;
+        dx1 = 0;
+    }
+
+    // Check invertibility
+    if (A[2*dx0] == 0){
+        // raise LinAlgError("in solve2x2. Matrix not invertible.")
+        abort();
+    }
+
+    // LU Decomposition
+    l = A[2*dx1]/A[2*dx0];
+    u = A[2*dx1+1] - l*A[2*dx0+1];
+
+    // Check invertibility
+    if (u == 0){
+        // raise LinAlgError("in solve2x2. Matrix not invertible.")
+        abort();
+    }
+
+    // LU Solve
+    x[1] = (b[dx1] - l*b[dx0])/u;
+    x[0] = (b[dx0] - A[2*dx0+1]*x[1])/A[2*dx0];
+    return;
+}
+
+
+// Matrix operations (working with strides only) --------------------------------
+
+static double absDet(double * E){
+    double M[2][2];
+    int i=0;
+    for (i=0; i< 2; i++){
+        M[i][0] = E[2*1+i] - E[2*0+i];
+        M[i][1] = E[2*2+i] - E[2*0+i];
+    }
+    return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
+}
+
+static void baryCenter(double * E, double * bary){
+    int i=0;
+    bary[0] = 0;
+    bary[1] = 0;
+    for  (i=0; i< 3; i++){
+        bary[0] += E[2*i+0];
+        bary[1] += E[2*i+1];
+    }
+    bary[0] = bary[0]/3;
+    bary[1] = bary[1]/3;
+}
+
+static void toPhys(double * E, double * p, double * out_x){
+    int i=0;
+    for (i=0; i<2;i++){
+        out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i];
+    }
+}
+
+static void toRef(double * E, double * phys_x, double * ref_p){
+    double M[2*2];
+    double b[2];
+    int i=0;
+    for (i=0; i< 2; i++){
+        M[2*i] = E[2*1+i] - E[2*0+i];
+        M[2*i+1] = E[2*2+i] - E[2*0+i];
+        b[i] = phys_x[i] - E[2*0+i];
+    }
+    solve2x2(&M[0], &b[0], &ref_p[0]);
+    return;
+}
+// Vector operations ---------------------------------------------
+// Double
+
+// Check whether any, or all elements of a vector are zero --------------
+static int doubleVec_any(double * vec, int len){
+    int i=0;
+    for (i=0; i< len; i++){
+        if (vec[i] != 0){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static double vec_dot(double * x, double * y, int len){
+    double r=0;
+    int i=0;
+    for (i=0; i<len; i++){
+        r += x[i]*y[i];
+    }
+    return r;
+}
+
+static double vec_sqL2dist(double * x, double * y, int len){
+    double r=0;
+    int i=0;
+    for (i=0; i<len; i++){
+        r += pow((x[i] - y[i]), 2);
+    }
+    return r;
+}
+
+static void doubleVec_tozero(double * vec, int len){
+    int i=0;
+    for (i=0; i< len; i++){
+        vec[i]  = 0;
+    }
+}
+// Long
+
+static int longVec_all(long * vec, int len){
+    int i=0;
+    for (i=0; i<len; i++){
+        if (vec[i] == 0){
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static int longVec_any(long * vec, int len){
+    int i=0;
+    for (i=0; i<len; i++){
+            if (vec[i] != 0){
+                return 1;
+            }
+    }
+    return 0;
+}
+
+// Int
+
+// Set Vectors to Zero -------------------------------------------------
+static void intVec_tozero(int * vec, int len){
+    int i=0;
+    for (i=0; i< len; i++){
+        vec[i]  = 0;
+    }
+}
+// Scalar --------------------------------------------------------
+
+static double absolute(double value){
+    if (value < 0){
+        return - value;
+    } else {
+        return value;
+    }
+}
+
+static double scal_sqL2dist(double x, double y){
+    return pow((x-y), 2);
 }

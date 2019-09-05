@@ -1,5 +1,11 @@
 Speedup by Cython and parallel C++
 =================
+
+The assembly is done with **retriangulation of the inner triangle**, hence we can expect a slight speedup
+with a better numerical algorithm. The initial Python code was very inefficient and
+performed 8 unnecessary retriangulations in each step. Hence, the **Speedup factors
+should be divided by 10 to get a realistic assessment** of the speedup by Cython or C++.
+
 Large Mesh 
 ------
 |Name  |Value |
@@ -20,7 +26,7 @@ Large Mesh
 |+ cy clsInt.compute_A (i. e. inner and outer Int) | 2.17e+01   |     x48.4   |
 |+ cy inNbhd | 1.84e+01          |     x57.1    |
 |full Cython | 2.90e-01 | x3620|
-|parallel C | 7.96e-02 | x13190|
+|parallel C++ | 7.96e-02 | x13190|
 Huge Mesh 
 ------
 |Name  |Value |
@@ -36,7 +42,7 @@ Huge Mesh
 |---                    |---                |----           |
 |Pure Python (PP)       | 8.54e+03       |     x1        |
 |full Cython| 4.09e+00 | x2088|
-|parallel C| 9.56e-01 | x8933|
+|parallel C++| 9.56e-01 | x8933|
 
 Insane Mesh 
 ------
@@ -53,4 +59,4 @@ Insane Mesh
 |---                    |---                |----           |
 |Pure Python (PP)       | -      |     -        |
 |full Cython| 3.32e+01 | x1|
-|parallel C| 1.27e+01 | x2,6|
+|parallel C++| 1.27e+01 | x2,6|
