@@ -11,6 +11,7 @@ cdef extern from "Cassemble.cpp":
     double model_basisFunction(double * , int ) nogil
     
     # Integration ---------------------------------------------------------------------------------------------------------
+    void innerInt_bary(double *, double *, double *, int, double *, double, int, double *, double *, double *, double *) nogil
     void innerInt_retriangulate(double *, double *, double *, int , double *, double, int, double *, double *, double *) nogil
     void outerInt_full(double *, double, double * , double , double *, int, double *, double *, double *, double, double *, double *) nogil
     int retriangulate(double *, double *, double, double *) nogil

@@ -26,7 +26,8 @@ Large Mesh
 |+ cy clsInt.compute_A (i. e. inner and outer Int) | 2.17e+01   |     x48.4   |
 |+ cy inNbhd | 1.84e+01          |     x57.1    |
 |full Cython | 2.90e-01 | x3620|
-|parallel C++ | 7.96e-02 | x13190|
+|parallel C++ | 7.96e-02 | x22388|
+
 Huge Mesh 
 ------
 |Name  |Value |
@@ -42,7 +43,7 @@ Huge Mesh
 |---                    |---                |----           |
 |Pure Python (PP)       | 8.54e+03       |     x1        |
 |full Cython| 4.09e+00 | x2088|
-|parallel C++| 9.56e-01 | x8933|
+|parallel C++| 6.18e-01 | x13818|
 
 Insane Mesh 
 ------
@@ -59,4 +60,4 @@ Insane Mesh
 |---                    |---                |----           |
 |Pure Python (PP)       | -      |     -        |
 |full Cython| 3.32e+01 | x1|
-|parallel C++| 1.27e+01 | x2,6|
+|parallel C++| 9.27e+00 | x3,6|

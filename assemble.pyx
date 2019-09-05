@@ -16,7 +16,7 @@ from libcpp.queue cimport queue
 from libc.math cimport sqrt, pow, pi, cos
 from libc.stdlib cimport malloc, free, abort
 
-from Cassemble cimport *
+from Cassemble cimport par_assemble
 
 def assemble(
         # Mesh information ------------------------------------
@@ -39,8 +39,8 @@ def assemble(
 
     ## Data Matrix ----------------------------------------
     # Allocate Matrix compute_A and right side compute_f
-    py_Ad = np.zeros(K_Omega* K)
-    py_fd = np.zeros(K_Omega)
+    py_Ad = np.zeros(K_Omega* K).flatten("C")
+    py_fd = np.zeros(K_Omega).flatten("C")
 
     cdef:
         int nP = py_P.shape[0] # Does not differ in inner and outer integral!

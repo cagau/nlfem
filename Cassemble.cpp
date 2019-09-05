@@ -34,9 +34,9 @@ static void inNbhd(double * aTE, double * bTE, double sqdelta, long * M){
     int i=0;
     double bary[2];
 
-    baryCenter(bTE, &bary[0]);
+    baryCenter(bTE, bary);
     for (i=0; i<3; i++){
-        M[i] = (vec_sqL2dist(&aTE[2 * i], &bary[0], 2) <= sqdelta);
+        M[i] = (vec_sqL2dist(&aTE[2 * i], bary, 2) <= sqdelta);
     }
     return;
 }
@@ -51,84 +51,162 @@ static void outerInt_full(double * aTE, double aTdet,
                         double * dy,
                         double * psi,
                         double sqdelta,
-                        double * cy_termLocal,
-                        double * cy_termNonloc){
-    int k=0, Rdx=0, a=0, b=0;
+                        double * termLocal,
+                        double * termNonloc){
+    int k=0, a=0, b=0;
     double x[2];
     double innerLocal=0;
     double innerNonloc[3];
-    double RT[9*3*2];
 
     for (k=0; k<nP; k++){
-        toPhys(&aTE[0], &P[2 * k], &x[0]);
-        Rdx = retriangulate(&x[0], bTE, sqdelta, &RT[0]);
-        innerInt_retriangulate(x, bTE, P, nP, dy, sqdelta, Rdx, &RT[0], &innerLocal, &innerNonloc[0]);
+        toPhys(aTE, &P[2 * k], x);
+        innerInt_retriangulate(x, bTE, P, nP, dy, sqdelta, &innerLocal, innerNonloc);
         for (b=0; b<3; b++){
             for (a=0; a<3; a++){
-                cy_termLocal[3*a+b] += aTdet * psi[nP*a+k] * psi[nP*b+k] * dx[k] * innerLocal; //innerLocal
-                cy_termNonloc[3*a+b] += aTdet * psi[nP*a+k] * dx[k] * innerNonloc[b]; //innerNonloc
+                termLocal[3*a+b] += aTdet * psi[nP*a+k] * psi[nP*b+k] * dx[k] * innerLocal; //innerLocal
+                termNonloc[3*a+b] += aTdet * psi[nP*a+k] * dx[k] * innerNonloc[b]; //innerNonloc
             }
         }
     }
 }
 
-static void innerInt_bary(double * x, double * T, double * P, int nP, double * dy, double sqdelta, int Rdx,
-                                 double * RT, double * innerLocal, double * innerNonloc){
-    // if Barycenter of T is to far away from x -> innerLocal = 0
+static void outerInt_retriangulate(double * aTE, double aTdet,
+                        double * bTE, double bTdet,
+                        double * P,
+                        int nP,
+                        double * dx,
+                        double * dy,
+                        double * psi,
+                        double sqdelta,
+                        double * termLocal,
+                        double * termNonloc){
 
-    // Else
-    // innerLocal = (ker @ dy) * T.absDet()
-    // innerNonloc = (psi * ker @ dy)*T.absDet()
+
+    int Rdx=0, rTdx=0, i=0, a=0, b=0;
+    double physical_quad[2];
+    double reference_quad[2];
+    double innerLocal=0, rTdet;
+    double innerNonloc[3];
+    double reTriangle_list[9*3*2];
+    double aTbary[2];
+    double psi_value[3];
+
+    doubleVec_tozero(termLocal, 3*3);
+    doubleVec_tozero(termNonloc, 3*3);
+
+    baryCenter(aTE, aTbary);
+    Rdx = retriangulate(aTbary, bTE, sqdelta, reTriangle_list);
+
+    if (Rdx == 0){
+        return;
+    }
+    for (rTdx=0; rTdx < Rdx; rTdx++){
+        for (i=0; i<nP; i++){
+            //Compute Outer Integral weighted with inner Values
+            rTdet = absDet(&reTriangle_list[2 * 3 * rTdx]);
+            // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
+            toPhys(&reTriangle_list[2 * 3 * rTdx], &P[2 * i], physical_quad);
+            // Compute inner Integral depending in physical_quad
+            innerInt_bary(physical_quad, bTE, P, nP, dy, sqdelta, psi, &innerLocal, innerNonloc);
+
+            // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
+            toRef(aTE, physical_quad, reference_quad);
+            // Evaluate basis function on resulting reference quadrature point
+            model_basisFunction(reference_quad, psi_value);
+
+            for (b=0; b<3; b++){
+                for (a=0; a<3; a++){
+                    termLocal[3*a+b] += rTdet * psi_value[a] * psi_value[b] * dx[i] * innerLocal; //innerLocal
+                    termNonloc[3*a+b] +=  rTdet * psi_value[a] * dx[i] * innerNonloc[b]; //innerNonloc
+                }
+            }
+        }
+    }
 }
 
-static void innerInt_retriangulate(double * x, double * T, double * P, int nP, double * dy, double sqdelta, int Rdx,
-                                 double * RT, double * innerLocal, double * innerNonloc){
-    int i=0, rTdx=0, b=0;
-    double ker=0, rTdet=0;
-    double ry[2];
-    double rp[2];
-    double psi_rp[3];
+static void innerInt_bary(double * x, double * bTE, double * P, int nP, double * dy, double sqdelta, double * psi, double * innerLocal, double * innerNonloc){
+    int i=0, a=0;
+    double ker=0, bTdet=0;
+    double baryC[2], y[2];
+    // if Barycenter of bTE is to far away from x -> innerLocal = 0
+
+    baryCenter(bTE, baryC);
+    bTdet=absDet(bTE);
 
     innerLocal[0] = 0;
-    for (b=0; b<3; b++){
-        innerNonloc[b] = 0;
+    doubleVec_tozero(innerNonloc, 3);
+
+    if (vec_sqL2dist(baryC, x, 2) > sqdelta){
+        return;
+    } else {
+        for(i=0;i<nP;i++){
+            toPhys(bTE, &P[2*i], y);
+            innerLocal[0] += model_kernel(y, x, sqdelta)*dy[i];
+            ker = model_kernel(x, y, sqdelta);
+            for(a=0;a<3;a++){
+                innerNonloc[a] += psi[nP*a+i] * ker * dy[i] * bTdet;
+            }
+        }
+        innerLocal[0] *= bTdet;
     }
+}
+
+static void innerInt_retriangulate(double * x, double * bTE, double * P, int nP, double * dy, double sqdelta, double * innerLocal, double * innerNonloc){
+    int i=0, rTdx=0, b=0, Rdx=0;
+    double ker=0, rTdet=0;
+    double physical_quad[2];
+    double reference_quad[2];
+    double psi_value[3];
+    double reTriangle_list[9*3*2];
+
+    innerLocal[0] = 0;
+    doubleVec_tozero(innerNonloc, 3);
+
+    Rdx = retriangulate(x, bTE, sqdelta, reTriangle_list);
+
     if (Rdx == 0){
         return;
     }
 
     for (rTdx=0; rTdx < Rdx; rTdx++){
         for (i=0; i<nP; i++){
-            toPhys(&RT[2 * 3 * rTdx], &P[2 * i], &ry[0]);
-            toRef(T, ry, rp);
-            ker = model_kernel(&x[0], &ry[0], sqdelta);
-            rTdet = absDet(&RT[2 * 3 * rTdx]);
-            innerLocal[0] += (ker * dy[i]) * rTdet; // Local Term
-            model_basisFunction(&rp[0], &psi_rp[0]);
+            // Determinant of Triangle of retriangulation
+            rTdet = absDet(&reTriangle_list[2 * 3 * rTdx]);
+            // inner Local integral with ker'
+            innerLocal[0] += model_kernel(physical_quad, x, sqdelta) * dy[i] * rTdet; // Local Term
+
+            // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
+            toPhys(&reTriangle_list[2 * 3 * rTdx], &P[2 * i], physical_quad);
+            // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
+            toRef(bTE, physical_quad, reference_quad);
+            // Evaluate ker on physical quad (note this is not ker', as above)
+            ker = model_kernel(x, physical_quad, sqdelta);
+            // Evaluate basis function on resulting reference quadrature point
+            model_basisFunction(reference_quad, psi_value);
             for (b=0; b<3; b++){
-                innerNonloc[b] += (psi_rp[b] * ker * dy[i]) * rTdet; // Nonlocal Term
+                innerNonloc[b] += (psi_value[b] * ker * dy[i]) * rTdet; // Nonlocal Term
             }
         }
     }
 }
 
-static int retriangulate(double * x_center, double * TE, double sqdelta, double * out_RT){
+static int retriangulate(double * x_center, double * TE, double sqdelta, double * out_reTriangle_list){
         // C Variables and Arrays.
         int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
         double v=0, lam1=0, lam2=0, term1=0, term2=0;
-        double c_p[2];
-        double c_q[2];
-        double c_a[2];
-        double c_b[2];
-        double c_y1[2];
-        double c_y2[2];
+        double p[2];
+        double q[2];
+        double a[2];
+        double b[2];
+        double y1[2];
+        double y2[2];
         // An upper bound for the number of intersections between a circle and a triangle is 9
         // Hence we can hardcode how much space needs to bee allocated
-        double c_R[9][2];
+        double R[9][2];
         // Hence 9*3 is an upper bound to encode all resulting triangles
         for (i=0; i<9; i++){
             for (k=0; k<2; k++){
-                c_R[i][k] = 0.0;
+                R[i][k] = 0.0;
             }
         }
 
@@ -138,44 +216,44 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
             edgdx1 = (k+1) % 3;
 
             for (i=0; i<2; i++){
-                c_p[i] = TE[2*edgdx0+i];
-                c_q[i] = TE[2*edgdx1+i];
-                c_a[i] = c_q[i] - x_center[i];
-                c_b[i] = c_p[i] - c_q[i];
+                p[i] = TE[2*edgdx0+i];
+                q[i] = TE[2*edgdx1+i];
+                a[i] = q[i] - x_center[i];
+                b[i] = p[i] - q[i];
             }
-            v = pow(vec_dot(&c_a[0], &c_b[0], 2), 2) - (vec_dot(&c_a[0], &c_a[0], 2) - sqdelta) * vec_dot(&c_b[0], &c_b[0], 2);
+            v = pow(vec_dot(&a[0], &b[0], 2), 2) - (vec_dot(&a[0], &a[0], 2) - sqdelta) * vec_dot(&b[0], &b[0], 2);
 
             if (v >= 0){
-                term1 = -vec_dot(&c_a[0], &c_b[0], 2) / vec_dot(&c_b[0], &c_b[0], 2);
-                term2 = sqrt(v) / vec_dot(&c_b[0], &c_b[0], 2);
+                term1 = -vec_dot(&a[0], &b[0], 2) / vec_dot(&b[0], &b[0], 2);
+                term2 = sqrt(v) / vec_dot(&b[0], &b[0], 2);
                 lam1 = term1 + term2;
                 lam2 = term1 - term2;
                 for (i=0; i<2; i++){
-                    c_y1[i] = lam1*(c_p[i]-c_q[i]) + c_q[i];
-                    c_y2[i] = lam2*(c_p[i]-c_q[i]) + c_q[i];
+                    y1[i] = lam1*(p[i]-q[i]) + q[i];
+                    y2[i] = lam2*(p[i]-q[i]) + q[i];
                 }
-                if (vec_sqL2dist(&c_p[0], &x_center[0], 2) <= sqdelta){
+                if (vec_sqL2dist(&p[0], &x_center[0], 2) <= sqdelta){
                     for (i=0;i<2;i++){
-                        c_R[Rdx][i] = c_p[i];
+                        R[Rdx][i] = p[i];
                     }
                     Rdx += 1;
                 }
                 if ((0 <= lam1) && (lam1 <= 1)){
                     for (i=0;i<2;i++){
-                        c_R[Rdx][i] = c_y1[i];
+                        R[Rdx][i] = y1[i];
                     }
                     Rdx += 1;
                 }
                 if ((0 <= lam2) && (lam2 <= 1) && (scal_sqL2dist(lam1, lam2) > 0)){
                     for (i=0; i<2; i++){
-                        c_R[Rdx][i] = c_y2[i];
+                        R[Rdx][i] = y2[i];
                     }
                     Rdx += 1;
                 }
             } else {
-                if (vec_sqL2dist(c_p, &x_center[0], 2)  <= sqdelta){
+                if (vec_sqL2dist(p, &x_center[0], 2)  <= sqdelta){
                     for (i=0; i<2; i++){
-                        c_R[Rdx][i] = c_p[i];
+                        R[Rdx][i] = p[i];
                     }
                     Rdx += 1;
                 }
@@ -191,9 +269,9 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
                     // i is the index which runs first, then h (which does not exist here), then k
                     // hence if we increase i, the *-index (of the pointer) inreases in the same way.
                     // if we increase k, there is quite a 'jump'
-                    out_RT[2 * (3 * k + 0) + i] = c_R[0][i];
-                    out_RT[2 * (3 * k + 1) + i] = c_R[k + 1][i];
-                    out_RT[2 * (3 * k + 2) + i] = c_R[k + 2][i];
+                    out_reTriangle_list[2 * (3 * k + 0) + i] = R[0][i];
+                    out_reTriangle_list[2 * (3 * k + 1) + i] = R[k + 1][i];
+                    out_reTriangle_list[2 * (3 * k + 2) + i] = R[k + 2][i];
                 }
             }
             // Excessing the bound out_Rdx will not lead to an error but simply to corrupted data!
@@ -229,7 +307,7 @@ static void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
                     double * dy,
                     double * psi,
                     double sqdelta, bool is_allInteract,
-                    double * cy_termLocal, double * cy_termNonloc){
+                    double * termLocal, double * termNonloc){
 
     int i=0, j=0, a, b;
     double innerIntLocal, innerIntNonloc;
@@ -244,13 +322,14 @@ static void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
                         innerIntLocal += model_kernel(&P[2*i], &P[2*j], sqdelta) * dy[j];
                         innerIntNonloc += model_kernel(&P[2*i], &P[2*j], sqdelta) * dy[j] * psi[nP*b+j];
                     }
-                    cy_termLocal[3*a+b] += psi[nP*a+i] * psi[nP*b+i] * innerIntLocal * dx[i] * aTdet*bTdet;
-                    cy_termNonloc[3*a+b] += psi[nP*a+i] * innerIntNonloc * dx[i] * aTdet*bTdet;
+                    termLocal[3*a+b] += psi[nP*a+i] * psi[nP*b+i] * innerIntLocal * dx[i] * aTdet*bTdet;
+                    termNonloc[3*a+b] += psi[nP*a+i] * innerIntNonloc * dx[i] * aTdet*bTdet;
                 }
             }
         }
     } else {
-        outerInt_full(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, cy_termLocal, cy_termNonloc);
+        outerInt_full(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
+        //outerInt_retriangulate(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
     }
 }
 
@@ -259,8 +338,8 @@ static void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
 static void par_assemble(  double * Ad,
                     int K,
                     double * fd,
-                    long * c_Triangles,
-                    double * c_Verts,
+                    long * Triangles,
+                    double * Verts,
                     // Number of Triangles and number of Triangles in Omega
                     int J, int J_Omega,
                     // Number of vertices (in case of CG = K and K_Omega)
@@ -283,7 +362,7 @@ static void par_assemble(  double * Ad,
     // Loop index of current outer triangle in BFS
     int sTdx=0;
     // Queue for Breadth first search
-    queue<int> c_queue;
+    queue<int> queue;
     // List of visited triangles
     // np.ndarray[int, ndim=1, mode="c"] visited = py_visited
     // Matrix telling whether some vertex of Triangle a interactions with the baryCenter of Triangle b
@@ -309,7 +388,7 @@ static void par_assemble(  double * Ad,
     double termLocal[3*3];
     double termNonloc[3*3];
 
-    double *psi = (double *) malloc(nP*sizeof(double));
+    double *psi = (double *) malloc(3*nP*sizeof(double));
 
     for(j=0; j<nP; j++){
        model_basisFunction(&P[2*j], &tmp_psi[0]);
@@ -318,7 +397,7 @@ static void par_assemble(  double * Ad,
        psi[nP*2+j] = tmp_psi[2];
     }
 
-    #pragma omp parallel private(termf, termLocal, termNonloc, aAdx, bAdx, a, b, aAdxj, aTE, bTE, aTdet, bTdet, NTdx, c_queue, sTdx, i, j, bTdx, visited, Mis_interact)
+    #pragma omp parallel private(termf, termLocal, termNonloc, aAdx, bAdx, a, b, aAdxj, aTE, bTE, aTdet, bTdet, NTdx, queue, sTdx, i, j, bTdx, visited, Mis_interact)
     {
     int *visited = (int *) malloc(J*sizeof(int));
     long *Mis_interact = (long *) malloc(3*sizeof(long));
@@ -328,7 +407,7 @@ static void par_assemble(  double * Ad,
     {
         // Get index of ansatz functions in matrix compute_A.-------------------
         // Continuous Galerkin
-        aAdx = &c_Triangles[3*aTdx];
+        aAdx = &Triangles[3*aTdx];
         // Discontinuous Galerkin
         // - Not implemented -
 
@@ -336,9 +415,9 @@ static void par_assemble(  double * Ad,
         // Copy coordinates of Triange a to aTE.
         // this is done fore convenience only, actually those are unnecessary copies!
         for (j=0; j<2; j++){
-            aTE[2*0+j] = c_Verts[2*c_Triangles[3*aTdx]   + j];
-            aTE[2*1+j] = c_Verts[2*c_Triangles[3*aTdx+1] + j];
-            aTE[2*2+j] = c_Verts[2*c_Triangles[3*aTdx+2] + j];
+            aTE[2*0+j] = Verts[2*Triangles[3*aTdx]   + j];
+            aTE[2*1+j] = Verts[2*Triangles[3*aTdx+1] + j];
+            aTE[2*2+j] = Verts[2*Triangles[3*aTdx+2] + j];
         }
         // compute Determinant
         aTdet = absDet(&aTE[0]);
@@ -349,31 +428,28 @@ static void par_assemble(  double * Ad,
         compute_f(&aTE[0], aTdet, &P[0], nP, dx, &psi[0], &termf[0]); // Integrate and fill buffer
 
         // Add content of buffer to the right side.
-        //#pragma omp critical
-        //{
-            for (a=0; a<3; a++){
-                // Assembly happens in the interior of Omega only, so we throw away some values
-                if (c_Triangles[3*aTdx + a] < L_Omega){
-                    aAdxj = aAdx[a];
-                    #pragma omp atomic update
-                    fd[aAdxj] += termf[a];
-                }
+        for (a=0; a<3; a++){
+            // Assembly happens in the interior of Omega only, so we throw away some values
+            if (Triangles[3*aTdx + a] < L_Omega){
+                aAdxj = aAdx[a];
+                #pragma omp atomic update
+                fd[aAdxj] += termf[a];
             }
-        //}
+        }
         // Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
         // on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
 
         // BFS -------------------------------------------------------------
         // Intialize search queue with current outer triangle
-        c_queue.push(aTdx);
+        queue.push(aTdx);
         // Initialize vector of visited triangles with 0
         intVec_tozero(&visited[0], J);
 
         // Check whether BFS is over.
-        while (!c_queue.empty()){
+        while (!queue.empty()){
             // Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
-            sTdx = c_queue.front();
-            c_queue.pop();
+            sTdx = queue.front();
+            queue.pop();
             // Get all the neighbours of sTdx.
             NTdx =  &Neighbours[4*sTdx];
             // Run through the list of neighbours. (4 at max)
@@ -390,9 +466,9 @@ static void par_assemble(  double * Ad,
                     // Copy coordinates of Triange b to bTE.
                     // again this is done fore convenience only, actually those are unnecessary copies!
                     for (i=0; i<2;i++){
-                        bTE[2*0+i] = c_Verts[2*c_Triangles[3*bTdx]   + i];
-                        bTE[2*1+i] = c_Verts[2*c_Triangles[3*bTdx+1] + i];
-                        bTE[2*2+i] = c_Verts[2*c_Triangles[3*bTdx+2] + i];
+                        bTE[2*0+i] = Verts[2*Triangles[3*bTdx]   + i];
+                        bTE[2*1+i] = Verts[2*Triangles[3*bTdx+1] + i];
+                        bTE[2*2+i] = Verts[2*Triangles[3*bTdx+2] + i];
                     }
                     bTdet = absDet(&bTE[0]);
 
@@ -406,7 +482,7 @@ static void par_assemble(  double * Ad,
                             // Retriangulation and integration ------------------------
 
                             // Get (pointer to) intex of basis function (in Continuous Galerkin)
-                            bAdx = &c_Triangles[3*bTdx+0];
+                            bAdx = &Triangles[3*bTdx+0];
 
                             // Assembly of matrix ---------------------------------------
                             doubleVec_tozero(&termLocal[0], 3 * 3); // Initialize Buffer
@@ -417,7 +493,7 @@ static void par_assemble(  double * Ad,
                                       longVec_all(&Mis_interact[0], 3), termLocal, termNonloc);
                             // If bT interacts it will be a candidate for our BFS, so it is added to the queue
                             if (doubleVec_any(termNonloc, 3 * 3) || doubleVec_any(termLocal, 3 * 3)){
-                                c_queue.push(bTdx);
+                                queue.push(bTdx);
                                 // In order to further speed up the integration we only check whether the integral
                                 // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
                                 // However, this works only if we can guarantee that interacting triangles do actually
@@ -426,20 +502,17 @@ static void par_assemble(  double * Ad,
                                 // The effect of this more precise criterea depends on delta and meshsize.
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored
-                                //#pragma omp critical
-                                //{
-                                    for (a=0; a<3; a++){
-                                        if (c_Triangles[3*aTdx + a] < L_Omega){
-                                            aAdxj = aAdx[a];
-                                            for (b=0; b<3; b++){
-                                                #pragma omp atomic update
-                                                Ad[aAdxj*K + aAdx[b]] += termLocal[3*a+b];
-                                                #pragma omp atomic update
-                                                Ad[aAdxj*K + bAdx[b]] -= termNonloc[3*a+b];
-                                            }
+                                for (a=0; a<3; a++){
+                                    if (Triangles[3*aTdx + a] < L_Omega){
+                                        aAdxj = aAdx[a];
+                                        for (b=0; b<3; b++){
+                                            #pragma omp atomic update
+                                            Ad[aAdxj*K + aAdx[b]] += termLocal[3*a+b];
+                                            #pragma omp atomic update
+                                            Ad[aAdxj*K + bAdx[b]] -= termNonloc[3*a+b];
                                         }
                                     }
-                                //}
+                                }
                             }
                         }
                     }
@@ -453,9 +526,8 @@ static void par_assemble(  double * Ad,
     }
     free(visited);
     free(Mis_interact);
-    free(psi);
     }
-
+    free(psi);
 }
 
 // Math functions ------------------------------------------------------------------------------------------------------
@@ -473,6 +545,7 @@ static void solve2x2(double * A, double * b, double * x){
     // Check invertibility
     if (A[2*dx0] == 0){
         // raise LinAlgError("in solve2x2. Matrix not invertible.")
+        cout << "in solve2x2. Matrix not invertible." << endl;
         abort();
     }
 
@@ -483,6 +556,7 @@ static void solve2x2(double * A, double * b, double * x){
     // Check invertibility
     if (u == 0){
         // raise LinAlgError("in solve2x2. Matrix not invertible.")
+        cout << "in solve2x2. Matrix not invertible." << endl;
         abort();
     }
 

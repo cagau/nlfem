@@ -9,8 +9,10 @@ static void inNbhd(double *, double *, double, long *);
 static double model_basisFunction(double * , int );
 
 // Integration ---------------------------------------------------------------------------------------------------------
-static void innerInt_retriangulate(double *, double *, double *, int , double *, double, int, double *, double *, double *);
+static void innerInt_bary(double *, double *, double *, int, double *, double, double *, double *, double *);
+static void innerInt_retriangulate(double *, double *, double *, int, double *, double,  double *, double *);
 static void outerInt_full(double *, double, double * , double , double *, int, double *, double *, double *, double, double *, double *);
+static void outerInt_retriangulate(double *, double, double * , double , double *, int, double *, double *, double *, double, double *, double *);
 static int retriangulate(double *, double *, double, double *);
 
 // Compute A and f -----------------------------------------------------------------------------------------------------

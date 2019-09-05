@@ -3,10 +3,8 @@
 import numpy as np
 mesh_name = "large"
 delta = .1
+SOLVE = False
 ansatz = "CG"
-
-outerIntMethod = "outerInt_full"
-innerIntMethod = "innerInt_retriangulate"
 
 py_P = np.array([[0.33333333333333,    0.33333333333333],
           [0.47014206410511,    0.47014206410511],
