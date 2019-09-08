@@ -403,7 +403,7 @@ static void par_assemble(  double * Ad,
     long *Mis_interact = (long *) malloc(3*sizeof(long));
 
     #pragma omp for
-    for (aTdx=0; aTdx<J; aTdx++)
+    for (aTdx=0; aTdx<J_Omega; aTdx++)
     {
         // Get index of ansatz functions in matrix compute_A.-------------------
         // Continuous Galerkin
@@ -510,6 +510,203 @@ static void par_assemble(  double * Ad,
                                             Ad[aAdxj*K + aAdx[b]] += termLocal[3*a+b];
                                             #pragma omp atomic update
                                             Ad[aAdxj*K + bAdx[b]] -= termNonloc[3*a+b];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // Mark bTdx as visited
+                    visited[bTdx] = 1;
+                }
+            }
+        }
+        // I dont know wheter this makes sense i parallel case.
+        //cout << aTdx << "\r" << flush;
+    }
+    free(visited);
+    free(Mis_interact);
+    }
+    free(psi);
+}
+
+// Operator-Evaluation algorithm with BFS -----------------------------------------------------------------------------------------
+
+static void par_evaluate(double * ud, double * vd,
+                    int K,
+                    double * fd,
+                    long * Triangles,
+                    double * Verts,
+                    // Number of Triangles and number of Triangles in Omega
+                    int J, int J_Omega,
+                    // Number of vertices (in case of CG = K and K_Omega)
+                    int L, int L_Omega,
+                    int nP, double * P,
+                    double * dx,
+                    double * dy,
+                    double sqdelta,
+                    long * Neighbours
+                   ) {
+    int aTdx;
+    //doubleVec_tozero(vd, K_Omega);
+    // BFS ------------------------------------------------
+    // Allocate Graph of Neighbours
+    // Further definitions
+
+    // General Loop Indices ---------------------------------------
+    int i=0, j=0, bTdx=0;
+    // Breadth First Search --------------------------------------
+    // Loop index of current outer triangle in BFS
+    int sTdx=0;
+    // Queue for Breadth first search
+    queue<int> queue;
+    // List of visited triangles
+    // np.ndarray[int, ndim=1, mode="c"] visited = py_visited
+    // Matrix telling whether some vertex of Triangle a interactions with the baryCenter of Triangle b
+    // np.ndarray[long, ndim=1, mode="c"] Mis_interact = py_Mis_interact
+    int *visited;
+    long *NTdx;
+    long* Mis_interact;
+    // Determinant of Triangle a and b.
+    double aTdet, bTdet;
+    // Vector containing the coordinates of the vertices of a Triangle
+    double aTE[2*3];
+    double bTE[2*3];
+    // Integration information ------------------------------------
+    // Loop index of basis functions
+    int a=0, b=0, aAdxj =0;
+    // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
+    long * aAdx;
+    long * bAdx;
+
+    // Buffers for integration solutions
+    double termf[3];
+    double tmp_psi[3];
+    double termLocal[3*3];
+    double termNonloc[3*3];
+
+    double *psi = (double *) malloc(3*nP*sizeof(double));
+
+    for(j=0; j<nP; j++){
+       model_basisFunction(&P[2*j], &tmp_psi[0]);
+       psi[nP*0+j] = tmp_psi[0];
+       psi[nP*1+j] = tmp_psi[1];
+       psi[nP*2+j] = tmp_psi[2];
+    }
+
+    #pragma omp parallel private(termf, termLocal, termNonloc, aAdx, bAdx, a, b, aAdxj, aTE, bTE, aTdet, bTdet, NTdx, queue, sTdx, i, j, bTdx, visited, Mis_interact)
+    {
+    int *visited = (int *) malloc(J*sizeof(int));
+    long *Mis_interact = (long *) malloc(3*sizeof(long));
+
+    #pragma omp for
+    for (aTdx=0; aTdx<J_Omega; aTdx++)
+    {
+        // Get index of ansatz functions in matrix compute_A.-------------------
+        // Continuous Galerkin
+        aAdx = &Triangles[3*aTdx];
+        // Discontinuous Galerkin
+        // - Not implemented -
+
+        // Prepare Triangle information aTE and aTdet ------------------
+        // Copy coordinates of Triange a to aTE.
+        // this is done fore convenience only, actually those are unnecessary copies!
+        for (j=0; j<2; j++){
+            aTE[2*0+j] = Verts[2*Triangles[3*aTdx]   + j];
+            aTE[2*1+j] = Verts[2*Triangles[3*aTdx+1] + j];
+            aTE[2*2+j] = Verts[2*Triangles[3*aTdx+2] + j];
+        }
+        // compute Determinant
+        aTdet = absDet(&aTE[0]);
+
+        // Assembly of right side ---------------------------------------
+        // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
+        doubleVec_tozero(&termf[0], 3); // Initialize Buffer
+        compute_f(&aTE[0], aTdet, &P[0], nP, dx, &psi[0], &termf[0]); // Integrate and fill buffer
+
+        // Add content of buffer to the right side.
+        for (a=0; a<3; a++){
+            // Assembly happens in the interior of Omega only, so we throw away some values
+            if (Triangles[3*aTdx + a] < L_Omega){
+                aAdxj = aAdx[a];
+                #pragma omp atomic update
+                fd[aAdxj] += termf[a];
+            }
+        }
+        // Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
+        // on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
+
+        // BFS -------------------------------------------------------------
+        // Intialize search queue with current outer triangle
+        queue.push(aTdx);
+        // Initialize vector of visited triangles with 0
+        intVec_tozero(&visited[0], J);
+
+        // Check whether BFS is over.
+        while (!queue.empty()){
+            // Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
+            sTdx = queue.front();
+            queue.pop();
+            // Get all the neighbours of sTdx.
+            NTdx =  &Neighbours[4*sTdx];
+            // Run through the list of neighbours. (4 at max)
+            for (j=0; j<4; j++){
+                // The next valid neighbour is our candidate for the inner Triangle b.
+                bTdx = NTdx[j];
+
+                // Check how many neighbours sTdx has. It can be 4 at max. (Itself, and the three others)
+                // In order to be able to store the list as contiguous array we fill upp the empty spots with J
+                // i.e. the total number of Triangles, which cannot be an index.
+                if (bTdx < J){
+
+                    // Prepare Triangle information bTE and bTdet ------------------
+                    // Copy coordinates of Triange b to bTE.
+                    // again this is done fore convenience only, actually those are unnecessary copies!
+                    for (i=0; i<2;i++){
+                        bTE[2*0+i] = Verts[2*Triangles[3*bTdx]   + i];
+                        bTE[2*1+i] = Verts[2*Triangles[3*bTdx+1] + i];
+                        bTE[2*2+i] = Verts[2*Triangles[3*bTdx+2] + i];
+                    }
+                    bTdet = absDet(&bTE[0]);
+
+                    // Check wheter bTdx is already visited.
+                    if (visited[bTdx]==0){
+
+                        // Check whether the verts of aT interact with (bary Center of) bT
+                        inNbhd(&aTE[0], &bTE[0], sqdelta, &Mis_interact[0]);
+                        // If any of the verts interact we enter the retriangulation and integration
+                        if (longVec_any(&Mis_interact[0], 3)){
+                            // Retriangulation and integration ------------------------
+
+                            // Get (pointer to) intex of basis function (in Continuous Galerkin)
+                            bAdx = &Triangles[3*bTdx+0];
+
+                            // Assembly of matrix ---------------------------------------
+                            doubleVec_tozero(&termLocal[0], 3 * 3); // Initialize Buffer
+                            doubleVec_tozero(&termNonloc[0], 3 * 3); // Initialize Buffer
+                            // Compute integrals and write to buffer
+                            compute_A(&aTE[0], aTdet, &bTE[0], bTdet,
+                                      &P[0], nP, dx, dy, &psi[0], sqdelta,
+                                      longVec_all(&Mis_interact[0], 3), termLocal, termNonloc);
+                            // If bT interacts it will be a candidate for our BFS, so it is added to the queue
+                            if (doubleVec_any(termNonloc, 3 * 3) || doubleVec_any(termLocal, 3 * 3)){
+                                queue.push(bTdx);
+                                // In order to further speed up the integration we only check whether the integral
+                                // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
+                                // However, this works only if we can guarantee that interacting triangles do actually
+                                // also contribute a non-zero entry, i.e. the Kernel as to be > 0 everywhere for example.
+                                // This works for constant kernels, or franctional kernels
+                                // The effect of this more precise criterea depends on delta and meshsize.
+
+                                // Copy buffer into matrix. Again solutions which lie on the boundary are ignored
+                                for (a=0; a<3; a++){
+                                    if (Triangles[3*aTdx + a] < L_Omega){
+                                        aAdxj = aAdx[a];
+                                        for (b=0; b<3; b++){
+                                            #pragma omp atomic update
+                                            vd[aAdxj] += termLocal[3*a+b]*ud[aAdx[b]];
+                                            #pragma omp atomic update
+                                            vd[aAdxj] -= termNonloc[3*a+b]*ud[bAdx[b]];
                                         }
                                     }
                                 }
