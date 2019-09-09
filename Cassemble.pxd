@@ -22,7 +22,8 @@ cdef extern from "Cassemble.cpp":
 
     # Assembly algorithm with BFS -----------------------------------------------------------------------------------------
     void par_assemble(double *, int, double *, long *, double *,int, int, int, int, int, double *, double *, double *, double, long *) nogil
-    void par_evaluate(double *, double *, int, double *, long *, double *,int, int, int, int, int, double *, double *, double *, double, long *) nogil
+    void par_evaluateA(double *, double *, int, long *, double *,int, int, int, int, int, double *, double *, double *, double, long *) nogil
+    void par_assemblef(double *, long *, double *, int, int, int, double *, double *) nogil
 
     # Math functions ------------------------------------------------------------------------------------------------------
     void solve2x2(double *, double *, double *) nogil        # Solve 2x2 System with LU

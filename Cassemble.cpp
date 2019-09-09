@@ -532,9 +532,8 @@ static void par_assemble(  double * Ad,
 
 // Operator-Evaluation algorithm with BFS -----------------------------------------------------------------------------------------
 
-static void par_evaluate(double * ud, double * vd,
+static void par_evaluateA(double * ud, double * vd,
                     int K,
-                    double * fd,
                     long * Triangles,
                     double * Verts,
                     // Number of Triangles and number of Triangles in Omega
@@ -619,23 +618,6 @@ static void par_evaluate(double * ud, double * vd,
         // compute Determinant
         aTdet = absDet(&aTE[0]);
 
-        // Assembly of right side ---------------------------------------
-        // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
-        doubleVec_tozero(&termf[0], 3); // Initialize Buffer
-        compute_f(&aTE[0], aTdet, &P[0], nP, dx, &psi[0], &termf[0]); // Integrate and fill buffer
-
-        // Add content of buffer to the right side.
-        for (a=0; a<3; a++){
-            // Assembly happens in the interior of Omega only, so we throw away some values
-            if (Triangles[3*aTdx + a] < L_Omega){
-                aAdxj = aAdx[a];
-                #pragma omp atomic update
-                fd[aAdxj] += termf[a];
-            }
-        }
-        // Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
-        // on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
-
         // BFS -------------------------------------------------------------
         // Intialize search queue with current outer triangle
         queue.push(aTdx);
@@ -700,13 +682,17 @@ static void par_evaluate(double * ud, double * vd,
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored
                                 for (a=0; a<3; a++){
-                                    if (Triangles[3*aTdx + a] < L_Omega){
+                                    if (aAdx[a] < L_Omega){
                                         aAdxj = aAdx[a];
                                         for (b=0; b<3; b++){
-                                            #pragma omp atomic update
-                                            vd[aAdxj] += termLocal[3*a+b]*ud[aAdx[b]];
-                                            #pragma omp atomic update
-                                            vd[aAdxj] -= termNonloc[3*a+b]*ud[bAdx[b]];
+                                            if (aAdx[b] < L_Omega){
+                                                #pragma omp atomic update
+                                                vd[aAdxj] += termLocal[3*a+b]*ud[aAdx[b]];
+                                            }
+                                            if (bAdx[b] < L_Omega){
+                                                #pragma omp atomic update
+                                                vd[aAdxj] -= termNonloc[3*a+b]*ud[bAdx[b]];
+                                            }
                                         }
                                     }
                                 }
@@ -727,6 +713,90 @@ static void par_evaluate(double * ud, double * vd,
     free(psi);
 }
 
+// Operator-Evaluation algorithm with BFS -----------------------------------------------------------------------------------------
+
+static void par_assemblef(double * fd,
+                    long * Triangles,
+                    double * Verts,
+                    // Number of Triangles in Omega
+                    int J_Omega,
+                    // Number of vertices (in case of CG = K and K_Omega)
+                    int L_Omega,
+                    int nP, double * P,
+                    double * dx
+                   ) {
+    int aTdx;
+    //doubleVec_tozero(vd, K_Omega);
+    // BFS ------------------------------------------------
+    // Allocate Graph of Neighbours
+    // Further definitions
+
+    // General Loop Indices ---------------------------------------
+    int j=0;
+
+    // Determinant of Triangle a and b.
+    double aTdet;
+    // Vector containing the coordinates of the vertices of a Triangle
+    double aTE[2*3];
+    // Integration information ------------------------------------
+    // Loop index of basis functions
+    int a=0, aAdxj =0;
+    // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
+    long * aAdx;
+
+    // Buffers for integration solutions
+    double termf[3];
+    double tmp_psi[3];
+
+    double *psi = (double *) malloc(3*nP*sizeof(double));
+
+    for(j=0; j<nP; j++){
+       model_basisFunction(&P[2*j], &tmp_psi[0]);
+       psi[nP*0+j] = tmp_psi[0];
+       psi[nP*1+j] = tmp_psi[1];
+       psi[nP*2+j] = tmp_psi[2];
+    }
+
+    #pragma omp parallel private(termf, aAdx, a, aAdxj, aTE, aTdet, j)
+    {
+    #pragma omp for
+    for (aTdx=0; aTdx<J_Omega; aTdx++)
+    {
+        // Get index of ansatz functions in matrix compute_A.-------------------
+        // Continuous Galerkin
+        aAdx = &Triangles[3*aTdx];
+        // Discontinuous Galerkin
+        // - Not implemented -
+
+        // Prepare Triangle information aTE and aTdet ------------------
+        // Copy coordinates of Triange a to aTE.
+        // this is done fore convenience only, actually those are unnecessary copies!
+        for (j=0; j<2; j++){
+            aTE[2*0+j] = Verts[2*Triangles[3*aTdx]   + j];
+            aTE[2*1+j] = Verts[2*Triangles[3*aTdx+1] + j];
+            aTE[2*2+j] = Verts[2*Triangles[3*aTdx+2] + j];
+        }
+        // compute Determinant
+        aTdet = absDet(&aTE[0]);
+
+        // Assembly of right side ---------------------------------------
+        // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
+        doubleVec_tozero(&termf[0], 3); // Initialize Buffer
+        compute_f(&aTE[0], aTdet, &P[0], nP, dx, &psi[0], &termf[0]); // Integrate and fill buffer
+
+        // Add content of buffer to the right side.
+        for (a=0; a<3; a++){
+            // Assembly happens in the interior of Omega only, so we throw away some values
+            if (Triangles[3*aTdx + a] < L_Omega){
+                aAdxj = aAdx[a];
+                #pragma omp atomic update
+                fd[aAdxj] += termf[a];
+            }
+        }
+    }
+    }
+    free(psi);
+}
 // Math functions ------------------------------------------------------------------------------------------------------
 
 static void solve2x2(double * A, double * b, double * x){
