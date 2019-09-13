@@ -16,11 +16,48 @@ from libcpp.queue cimport queue
 from libc.math cimport sqrt, pow, pi, cos
 from libc.stdlib cimport malloc, free, abort
 
-from Cassemble cimport par_assemble, par_evaluateA, par_assemblef
+from Cassemble cimport par_assemble, par_evaluateA, par_assemblef, par_evaluateMass, par_assembleMass
+
+def assembleMass(int K_Omega, int J_Omega, long [:,:] Triangles, double [:,:] Verts, double [:,:] py_P, double [:] dx):
+    py_Ad = np.zeros(K_Omega**2).flatten("C")
+    cdef:
+        int nP = py_P.shape[0] # Does not differ in inner and outer integral!
+        long [:] c_Triangles = (np.array(Triangles, int)).flatten("C")
+        double [:] c_Verts = (np.array(Verts, float)).flatten("C")
+        double[:] P = (np.array(py_P, float)).flatten("C")
+        double[:] Ad = py_Ad
+
+    par_assembleMass(&Ad[0], &c_Triangles[0], &c_Verts[0], K_Omega, J_Omega, nP, &P[0], &dx[0])
+    return np.reshape(py_Ad, (K_Omega, K_Omega))
+
+cdef class clsEvaluateMass:
+    cdef:
+        int K_Omega, J_Omega, nP
+        long[:] c_Triangles
+        double[:] c_Verts
+        double[:] P
+        double [:] dx
+
+    def __init__(self, K_Omega, J_Omega, Triangles, Verts, py_P, dx):
+        self.K_Omega = K_Omega
+        self.J_Omega = J_Omega
+        self.c_Triangles = (np.array(Triangles, int)).flatten("C")
+        self.c_Verts = (np.array(Verts, float)).flatten("C")
+        self.nP = py_P.shape[0] # Does not differ in inner and outer integral!
+        self.P = (np.array(py_P, float)).flatten("C")
+        self.dx = dx
+
+        pass
+    def __call__(self, double [:] ud):
+        py_vd = np.zeros(self.K_Omega).flatten("C")
+        cdef:
+            double[:] vd = py_vd
+        par_evaluateMass(&vd[0], &ud[0], &self.c_Triangles[0], &self.c_Verts[0], self.K_Omega, self.J_Omega, self.nP, &self.P[0], &self.dx[0])
+        return py_vd
 
 def assemble(
         # Mesh information ------------------------------------
-        int K, int K_Omega,
+        long K, long K_Omega,
         int J, int J_Omega, # Number of Triangles and number of Triangles in Omega
         int L, int L_Omega, # Number of vertices (in case of CG = K and K_Omega)
 
@@ -71,7 +108,7 @@ def assemble(
     # Compute Assembly
     par_assemble( &Ad[0], K, &fd[0], &c_Triangles[0], &c_Verts[0], J , J_Omega, L, L_Omega, nP, &P[0], &dx[0], &dy[0], sqdelta, &Neighbours[0])
     total_time = time.time() - start
-    print("Assembly\nTime needed", "{:1.2e}".format(total_time), " Sec")
+    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 
     py_Ad *= 2
     return np.reshape(py_Ad, (K_Omega, K)), py_fd

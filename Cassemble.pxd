@@ -24,6 +24,10 @@ cdef extern from "Cassemble.cpp":
     void par_assemble(double *, int, double *, long *, double *,int, int, int, int, int, double *, double *, double *, double, long *) nogil
     void par_evaluateA(double *, double *, int, long *, double *,int, int, int, int, int, double *, double *, double *, double, long *) nogil
     void par_assemblef(double *, long *, double *, int, int, int, double *, double *) nogil
+    void par_assembleMass(double *, long *, double *, int, int, int, double *, double *) nogil
+
+    # Mass matrix evaluation ----------------------------------------------------------------------------------------------
+    void par_evaluateMass(double *, double *, long *, double *, int, int, int, double *, double *) nogil
 
     # Math functions ------------------------------------------------------------------------------------------------------
     void solve2x2(double *, double *, double *) nogil        # Solve 2x2 System with LU

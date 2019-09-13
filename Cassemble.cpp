@@ -15,7 +15,7 @@ static double model_f(double * x){
 
 static double model_kernel(double * x, double * y, double sqdelta){
     // Nonconstant Kernel does not yet work
-    // pow(1-vec_sqL2dist(x,y, 2)/sqdelta, 2)
+    // pow((1-vec_sqL2dist(x,y, 2))/sqdelta, 2);
     return 4 / (M_PI * pow(sqdelta, 2));
 }
 
@@ -221,6 +221,7 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
                 a[i] = q[i] - x_center[i];
                 b[i] = p[i] - q[i];
             }
+            // PQ-Formula to solve quadratic problem
             v = pow(vec_dot(&a[0], &b[0], 2), 2) - (vec_dot(&a[0], &a[0], 2) - sqdelta) * vec_dot(&b[0], &b[0], 2);
 
             if (v >= 0){
@@ -333,6 +334,113 @@ static void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
     }
 }
 
+static void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx){
+    int aTdx=0, a=0, b=0, j=0;
+    double aTE[2*3];
+    double aTdet;
+    double tmp_psi[3];
+    long * aAdx;
+
+    double *psi = (double *) malloc(3*nP*sizeof(double));
+
+    for(j=0; j<nP; j++){
+       model_basisFunction(&P[2*j], &tmp_psi[0]);
+       psi[nP*0+j] = tmp_psi[0];
+       psi[nP*1+j] = tmp_psi[1];
+       psi[nP*2+j] = tmp_psi[2];
+    }
+
+    #pragma omp parallel for private(aAdx, a, b, aTE, aTdet, j)
+    for (aTdx=0; aTdx < J_Omega; aTdx++){
+        // Get index of ansatz functions in matrix compute_A.-------------------
+        // Continuous Galerkin
+        aAdx = &Triangles[3*aTdx];
+        // Discontinuous Galerkin
+        // - Not implemented -
+
+        // Prepare Triangle information aTE and aTdet ------------------
+        // Copy coordinates of Triange a to aTE.
+        // this is done fore convenience only, actually those are unnecessary copies!
+        for (j=0; j<2; j++){
+            aTE[2*0+j] = Verts[2*Triangles[3*aTdx]   + j];
+            aTE[2*1+j] = Verts[2*Triangles[3*aTdx+1] + j];
+            aTE[2*2+j] = Verts[2*Triangles[3*aTdx+2] + j];
+        }
+        // compute Determinant
+        aTdet = absDet(&aTE[0]);
+
+        for (a=0; a<3; a++){
+            if (aAdx[a] < K_Omega){
+                for (b=0; b<3; b++){
+                    if (aAdx[b] < K_Omega){
+                        for (j=0; j<nP; j++){
+                            // Assembly
+                            #pragma omp atomic update
+                            Ad[aAdx[a]*K_Omega + aAdx[b]] += psi[nP*a+j]*psi[nP*b+j]*aTdet*dx[j];
+                            // Evaluation
+                            //vd[aAdx[a]] += psi[nP*a+j]*psi[nP*b+j]*aTdet*dx[j]*ud[aAdx[b]];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+static void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx){
+    int aTdx=0, a=0, b=0, j=0;
+    double aTE[2*3];
+    double aTdet;
+    double tmp_psi[3];
+    long * aAdx;
+
+    double *psi = (double *) malloc(3*nP*sizeof(double));
+
+    for(j=0; j<nP; j++){
+       model_basisFunction(&P[2*j], &tmp_psi[0]);
+       psi[nP*0+j] = tmp_psi[0];
+       psi[nP*1+j] = tmp_psi[1];
+       psi[nP*2+j] = tmp_psi[2];
+    }
+
+    #pragma omp parallel for private(aAdx, a, b, aTE, aTdet, j)
+    for (aTdx=0; aTdx < J_Omega; aTdx++){
+        // Get index of ansatz functions in matrix compute_A.-------------------
+        // Continuous Galerkin
+        aAdx = &Triangles[3*aTdx];
+        // Discontinuous Galerkin
+        // - Not implemented -
+
+        // Prepare Triangle information aTE and aTdet ------------------
+        // Copy coordinates of Triange a to aTE.
+        // this is done fore convenience only, actually those are unnecessary copies!
+        for (j=0; j<2; j++){
+            aTE[2*0+j] = Verts[2*Triangles[3*aTdx]   + j];
+            aTE[2*1+j] = Verts[2*Triangles[3*aTdx+1] + j];
+            aTE[2*2+j] = Verts[2*Triangles[3*aTdx+2] + j];
+        }
+        // compute Determinant
+        aTdet = absDet(&aTE[0]);
+
+        for (a=0; a<3; a++){
+            if (aAdx[a] < K_Omega){
+                for (b=0; b<3; b++){
+                    if (aAdx[b] < K_Omega){
+                        for (j=0; j<nP; j++){
+                            // Assembly
+                            //vd[aAdx[a]*K_Omega + aAdx[b]] += psi[nP*a+j]*psi[nP*b+j]*aTdet*dx[j];
+                            // Evaluation
+                            #pragma omp atomic update
+                            vd[aAdx[a]] += psi[nP*a+j]*psi[nP*b+j]*aTdet*dx[j]*ud[aAdx[b]];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 
 static void par_assemble(  double * Ad,
@@ -579,7 +687,6 @@ static void par_evaluateA(double * ud, double * vd,
     long * bAdx;
 
     // Buffers for integration solutions
-    double termf[3];
     double tmp_psi[3];
     double termLocal[3*3];
     double termNonloc[3*3];
@@ -593,7 +700,7 @@ static void par_evaluateA(double * ud, double * vd,
        psi[nP*2+j] = tmp_psi[2];
     }
 
-    #pragma omp parallel private(termf, termLocal, termNonloc, aAdx, bAdx, a, b, aAdxj, aTE, bTE, aTdet, bTdet, NTdx, queue, sTdx, i, j, bTdx, visited, Mis_interact)
+    #pragma omp parallel private(termLocal, termNonloc, aAdx, bAdx, a, b, aAdxj, aTE, bTE, aTdet, bTdet, NTdx, queue, sTdx, i, j, bTdx, visited, Mis_interact)
     {
     int *visited = (int *) malloc(J*sizeof(int));
     long *Mis_interact = (long *) malloc(3*sizeof(long));

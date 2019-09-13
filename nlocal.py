@@ -17,12 +17,15 @@ class clsFEM:
     :ivar J: Number of finite elements :math:`\Omega`.
     :ivar J_Omega: Number of finite elements in
     """
-    def __init__(self, mshfile, ansatz):
+    def __init__(self, mesh_data, ansatz):
         """Constructor
 
         Executes read_mesh and prepare.
         """
-        args = self.mesh(*self.read_mesh(mshfile))
+        if type(mesh_data) == str:
+            args = self.mesh(*self.read_mesh(mesh_data))
+        else:
+            args = self.mesh(mesh_data["Verts"], mesh_data["Lines"], mesh_data["Triangles"])
         # args = Verts, Triangles, J, J_Omega, L, L_Omega
         self.V = args[0]
         self.T = args[1][:, 1:]

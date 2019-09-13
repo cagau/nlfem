@@ -16,7 +16,7 @@ if __name__ == "__main__":
     # aus readmesh passen!
 
     # Mesh construction --------------------
-    mesh = clsFEM("circle_" + mesh_name + ".msh", ansatz)
+    mesh = clsFEM(mesh_name + ".msh", ansatz)
     print("Delta: ", delta, "\t Mesh: ", mesh_name)
     print("Number of basis functions: ", mesh.K)
 

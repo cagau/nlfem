@@ -23,6 +23,11 @@ static void compute_A(double *, double, double *, double, double *, int, double 
 static void par_assemble(double *, int, double *, long *, double *,int, int, int, int, int, double *, double *, double *, double, long *);
 static void par_evaluateA(double *, double *, int, long *, double *,int, int, int, int, int, double *, double *, double *, double, long *);
 static void par_assemblef(double *, long *, double *, int, int, int, double *, double *);
+static void par_assembleMass(double *, long *, double *, int, int, int, double *, double *);
+
+// Mass matrix evaluation ----------------------------------------------------------------------------------------------
+static void par_evaluateMass(double *, double *, long *, double *, int, int, int, double *, double *);
+
 // Math functions ------------------------------------------------------------------------------------------------------
 static void solve2x2(double *, double *, double *);        // Solve 2x2 System with LU
 
