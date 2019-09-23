@@ -1,8 +1,8 @@
 #-*- coding:utf-8 -*-
 
 import numpy as np
-mesh_name = "circle_large"
-delta = .2
+mesh_name = "circle_huge"
+delta = .1
 SOLVE = True
 ansatz = "CG"
 

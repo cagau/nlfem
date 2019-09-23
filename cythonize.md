@@ -27,6 +27,7 @@ Large Mesh
 |+ cy inNbhd | 1.84e+01          |     x57.1    |
 |full Cython | 2.90e-01 | x3620|
 |parallel C++ | 4.80e-02 | x21875|
+|kronos|6.88e-02||
 
 Huge Mesh 
 ------
@@ -44,6 +45,7 @@ Huge Mesh
 |Pure Python (PP)       | 8.54e+03       |     x1        |
 |full Cython| 4.09e+00 | x2088|
 |parallel C++| 5.47e-01 | x14680|
+|kronos| 1.76e-01||
 
 Insane Mesh 
 ------
@@ -61,3 +63,4 @@ Insane Mesh
 |Pure Python (PP)       | -      |     -        |
 |full Cython| 3.32e+01 | x1|
 |parallel C++| 6.64e+00 | x5|
+|kronos| 1.20e+00||

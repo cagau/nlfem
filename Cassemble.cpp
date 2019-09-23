@@ -57,12 +57,13 @@ static void outerInt_full(double * aTE, double aTdet,
     double x[2];
     double innerLocal=0;
     double innerNonloc[3];
-
     for (k=0; k<nP; k++){
         toPhys(aTE, &P[2 * k], x);
         innerInt_retriangulate(x, bTE, P, nP, dy, sqdelta, &innerLocal, innerNonloc);
         for (b=0; b<3; b++){
             for (a=0; a<3; a++){
+        	toPhys(aTE, &P[2 * k], x);
+        	innerInt_retriangulate(x, bTE, P, nP, dy, sqdelta, &innerLocal, innerNonloc);
                 termLocal[3*a+b] += aTdet * psi[nP*a+k] * psi[nP*b+k] * dx[k] * innerLocal; //innerLocal
                 termNonloc[3*a+b] += aTdet * psi[nP*a+k] * dx[k] * innerNonloc[b]; //innerNonloc
             }
@@ -661,7 +662,7 @@ static void par_evaluateA(double * ud, double * vd,
     // Further definitions
 
     // General Loop Indices ---------------------------------------
-    int i=0, j=0, bTdx=0;
+    int i=0, j=0, k=0, bTdx=0;
     // Breadth First Search --------------------------------------
     // Loop index of current outer triangle in BFS
     int sTdx=0;
@@ -704,8 +705,10 @@ static void par_evaluateA(double * ud, double * vd,
     {
     int *visited = (int *) malloc(J*sizeof(int));
     long *Mis_interact = (long *) malloc(3*sizeof(long));
+    double *private_vd = (double *) malloc(J_Omega*sizeof(double));
+    doubleVec_tozero(private_vd, J_Omega);
 
-    #pragma omp for
+    #pragma omp for schedule(static) nowait
     for (aTdx=0; aTdx<J_Omega; aTdx++)
     {
         // Get index of ansatz functions in matrix compute_A.-------------------
@@ -793,12 +796,14 @@ static void par_evaluateA(double * ud, double * vd,
                                         aAdxj = aAdx[a];
                                         for (b=0; b<3; b++){
                                             if (aAdx[b] < L_Omega){
-                                                #pragma omp atomic update
-                                                vd[aAdxj] += termLocal[3*a+b]*ud[aAdx[b]];
+                                                // #pragma omp atomic update
+                                                // vd[aAdxj] += termLocal[3*a+b]*ud[aAdx[b]];
+                                                private_vd[aAdxj] += termLocal[3*a+b]*ud[aAdx[b]];
                                             }
                                             if (bAdx[b] < L_Omega){
-                                                #pragma omp atomic update
-                                                vd[aAdxj] -= termNonloc[3*a+b]*ud[bAdx[b]];
+                                                // #pragma omp atomic update
+                                                // vd[aAdxj] -= termNonloc[3*a+b]*ud[bAdx[b]];
+                                                private_vd[aAdxj] -= termNonloc[3*a+b]*ud[bAdx[b]];
                                             }
                                         }
                                     }
@@ -810,12 +815,20 @@ static void par_evaluateA(double * ud, double * vd,
                     visited[bTdx] = 1;
                 }
             }
-        }
+        }/*end while*/
         // I dont know wheter this makes sense i parallel case.
         //cout << aTdx << "\r" << flush;
+
+    }/*end for*/
+    #pragma omp critical
+    {
+        for(k=0; k<J_Omega; k++){
+            vd[k] += private_vd[k];
+        }
     }
     free(visited);
     free(Mis_interact);
+    free(private_vd);
     }
     free(psi);
 }
