@@ -26,8 +26,10 @@ Large Mesh
 |+ cy clsInt.compute_A (i. e. inner and outer Int) | 2.17e+01   |     x48.4   |
 |+ cy inNbhd | 1.84e+01          |     x57.1    |
 |full Cython | 2.90e-01 | x3620|
-|parallel C++ | 4.80e-02 | x21875|
-|kronos|6.88e-02||
+|parallel C++ (mathe191)| 4.80e-02 | x21875|
+|parallel C++ (kronos)|9.09e-02||
+|**Matrix Vector Product** (mathe191) | 8.81e-02 ||
+|**Matrix Vector Product** (kronos) | 3.21e-02 ||
 
 Huge Mesh 
 ------
@@ -44,8 +46,10 @@ Huge Mesh
 |---                    |---                |----           |
 |Pure Python (PP)       | 8.54e+03       |     x1        |
 |full Cython| 4.09e+00 | x2088|
-|parallel C++| 5.47e-01 | x14680|
-|kronos| 5.26e-01||
+|parallel C++ (mathe191)| 5.47e-01 | x14680|
+|parallel C++ (kronos)| 2.18e-01||
+|**Matrix Vector Product** (mathe191) | 5.70e-01 ||
+|**Matrix Vector Product** (kronos) | 1.91e-01 ||
 
 Insane Mesh 
 ------
@@ -62,5 +66,7 @@ Insane Mesh
 |---                    |---                |----           |
 |Pure Python (PP)       | -      |     -        |
 |full Cython| 3.32e+01 | x1|
-|parallel C++| 6.64e+00 | x5|
-|kronos| 3.67e+00||
+|parallel C++ (mathe191)| 6.64e+00 | x5|
+|parallel C++ (kronos)| 1.15e+00||
+|**Matrix Vector Product** (mathe191) | 6.36e+00 ||
+|**Matrix Vector Product** (kronos) | 1.08e+00 ||

@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 
 import numpy as np
-mesh_name = "circle_large"
+mesh_name = "circle_insane"
 delta = .1
 SOLVE = False
 ansatz = "CG"
