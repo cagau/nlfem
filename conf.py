@@ -1,9 +1,9 @@
 #-*- coding:utf-8 -*-
 
 import numpy as np
-mesh_name = "circle_insane"
+mesh_name = "circle_huge"
 delta = .1
-SOLVE = False
+SOLVE = True
 ansatz = "CG"
 
 py_P = np.array([[0.33333333333333,    0.33333333333333],

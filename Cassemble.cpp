@@ -190,76 +190,190 @@ static void innerInt_retriangulate(double * x, double * bTE, double * P, int nP,
     }
 }
 
+// Normal which looks to the right w.r.t the vector from y0 to y1.
+static void rightNormal(double * y0, double * y1, double * normal){
+    normal[0] = y1[1] - y0[1];
+    normal[1] = y0[0] - y1[0];
+}
+
+static double scale_toCircle(double * x_center, double sqdelta, double * s_midpoint, double * s_projectionDirection){
+    double norm_direction, p, q, term1, term2, v, lambda0, lambda1;
+    double x_shiftedCenter[2];
+
+    norm_direction = vec_dot(s_projectionDirection, s_projectionDirection, 2);
+    if (norm_direction == 0){
+        cout << "Error in scale_toCircle: Projection Direction == 0." << endl;
+        abort();
+    }
+    doubleVec_subtract(s_midpoint, x_center, x_shiftedCenter, 2);
+
+    p = 2*(vec_dot(s_projectionDirection, x_shiftedCenter, 2)) / norm_direction;
+    q = (vec_dot(x_center, x_center, 2) - sqdelta + vec_dot(s_midpoint, s_midpoint, 2) - 2*( vec_dot(x_center, s_midpoint, 2)) )/norm_direction;
+    v = pow((p/2), 2)  - q;
+    if (v>=0){
+        term1 = -p/2;
+        term2 = sqrt(v);
+        lambda0 = term1 - term2; // First scaling factor.
+        lambda1 = term1 + term2; // Second scaling factor.
+        if (lambda0 >= 0){
+            return lambda0;
+        } else if (lambda1 >= 0) {
+            return lambda1;
+        } else {
+            // This should not happen because we draw a polygone inside a circle. There should (given the normals
+            // are chose correctly) always be a positive scaling factor for the normal to hit the circle.
+            cout << "Error in scale_toCircle: No nonegative lambda found." << endl;
+            abort();
+        }
+    }
+    else {
+        cout << "Error in scale_toCircle: No intersection with Circle possible." << endl;
+        abort();
+    }
+}
+
+static bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
+    bool a, b, c;
+    double vec[2];
+
+    doubleVec_subtract(y_new, p, vec, 2);
+    a = vec_dot(nu_a, vec , 2) >= 0;
+
+    doubleVec_subtract(y_new, q, vec, 2);
+    b = vec_dot(nu_b, vec , 2) >= 0;
+
+    doubleVec_subtract(y_new, r, vec, 2);
+    c = vec_dot(nu_c, vec , 2) >= 0;
+
+    return a && b && c;
+}
+
+static int placePointOnCap(double * y_predecessor, double * y_current, double * x_center, double sqdelta, double * TE, double * nu_a, double * nu_b, double * nu_c, int Rdx, double * R){
+    // Place a point on the cap.
+    //y_predecessor = &R[2*(Rdx-1)];
+    double y_new[2], s_midpoint[2], s_projectionDirection[2];
+    double lambda;
+
+    doubleVec_midpoint(y_predecessor, y_current, s_midpoint, 2);
+    // Note, this yields the left normal from y_predecessor to y0
+    rightNormal(y_current, y_predecessor, s_projectionDirection);
+    lambda = scale_toCircle(x_center, sqdelta, s_midpoint, s_projectionDirection);
+    doubleVec_scale(lambda, s_projectionDirection, y_new, 2);
+    doubleVec_add(s_midpoint, y_new, y_new, 2);
+
+    if ( inTriangle(y_new, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
+        // Append y_new (Point on the cap)
+        doubleVec_copyTo(y_new, &R[2*Rdx], 2);
+        Rdx += 1;
+        return Rdx;
+    } else {
+        return Rdx;
+    }
+}
+
 static int retriangulate(double * x_center, double * TE, double sqdelta, double * out_reTriangle_list){
         // C Variables and Arrays.
         int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
-        double v=0, lam1=0, lam2=0, term1=0, term2=0;
+        double v=0, lam1=0, lam2=0, term1=0, term2=0, lambda=1;
+        double nu_a[2], nu_b[2], nu_c[2]; // Normals
         double p[2];
         double q[2];
         double a[2];
         double b[2];
         double y1[2];
         double y2[2];
-        // An upper bound for the number of intersections between a circle and a triangle is 9
-        // Hence we can hardcode how much space needs to bee allocated
-        double R[9][2];
+        double * y_predecessor, * y_first;
+        double y_new[2];
+        double s_projectionDirection[2], s_midpoint[2];
+        bool is_onEdge=false, is_firstPointLiesOnVertex=true;
+        // The upper bound for the number of required points is 9
         // Hence 9*3 is an upper bound to encode all resulting triangles
-        for (i=0; i<9; i++){
-            for (k=0; k<2; k++){
-                R[i][k] = 0.0;
-            }
-        }
+        // Hence we can hardcode how much space needs to bee allocated
+        // (This upper bound is thight! Check Christian Vollmann's thesis for more information.)
 
+        double R[9*2]; // Vector containing all intersection points.
+        doubleVec_tozero(R, 9*2);
+
+        // Compute Normals of the Triangle
+        rightNormal(&TE[0], &TE[2], nu_a);
+        rightNormal(&TE[2], &TE[4], nu_b);
+        rightNormal(&TE[4], &TE[0], nu_c);
 
         for (k=0; k<3; k++){
             edgdx0 = k;
             edgdx1 = (k+1) % 3;
 
-            for (i=0; i<2; i++){
+            /*for (i=0; i<2; i++){
                 p[i] = TE[2*edgdx0+i];
                 q[i] = TE[2*edgdx1+i];
                 a[i] = q[i] - x_center[i];
                 b[i] = p[i] - q[i];
-            }
-            // PQ-Formula to solve quadratic problem
-            v = pow(vec_dot(&a[0], &b[0], 2), 2) - (vec_dot(&a[0], &a[0], 2) - sqdelta) * vec_dot(&b[0], &b[0], 2);
+            }*/
+            doubleVec_copyTo(&TE[2*edgdx0], p, 2);
+            doubleVec_copyTo(&TE[2*edgdx1], q, 2);
+            doubleVec_subtract(q, x_center, a, 2);
+            doubleVec_subtract(p, q, b, 2);
 
+            // Check wheter the point p lies in the Circle
+            // Why dont we put this outside of the if-clause?
+            if (vec_sqL2dist(p, x_center, 2) <= sqdelta){
+                doubleVec_copyTo(p, &R[2*Rdx], 2);
+                is_onEdge = false; // This point does not lie on the edge.
+                Rdx += 1;
+            }
+
+            // PQ-Formula to solve quadratic problem
+            v = pow(vec_dot(a, b, 2), 2) - (vec_dot(a, a, 2) - sqdelta) * vec_dot(b, b, 2);
+
+            // If there is no sol to the quadratic problem, there is nothing to do.
             if (v >= 0){
-                term1 = -vec_dot(&a[0], &b[0], 2) / vec_dot(&b[0], &b[0], 2);
-                term2 = sqrt(v) / vec_dot(&b[0], &b[0], 2);
+                term1 = -vec_dot(a, b, 2) / vec_dot(b, b, 2);
+                term2 = sqrt(v) / vec_dot(b, b, 2);
                 lam1 = term1 + term2;
                 lam2 = term1 - term2;
-                for (i=0; i<2; i++){
-                    y1[i] = lam1*(p[i]-q[i]) + q[i];
-                    y2[i] = lam2*(p[i]-q[i]) + q[i];
-                }
-                if (vec_sqL2dist(&p[0], &x_center[0], 2) <= sqdelta){
-                    for (i=0;i<2;i++){
-                        R[Rdx][i] = p[i];
-                    }
-                    Rdx += 1;
-                }
+                // Set Intersection Points
+                doubleVec_scale(lam1, b, y1, 2);
+                doubleVec_add(y1, q, y1, 2);
+                doubleVec_scale(lam2, b, y2, 2);
+                doubleVec_add(y2, q, y2, 2);
+
+
+
+                // Check whether the first lambda "lies on the Triangle".
                 if ((0 <= lam1) && (lam1 <= 1)){
-                    for (i=0;i<2;i++){
-                        R[Rdx][i] = y1[i];
+                    is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
+                    // Check whether the predecessor lied on the edge
+                    if (is_onEdge){
+                        placePointOnCap(&R[2*(Rdx-1)], y1, x_center, sqdelta, TE, nu_a, nu_b, nu_c, Rdx, R);
                     }
+                    // Append y1
+                    doubleVec_copyTo(y1, &R[2*Rdx], 2);
+                    is_onEdge = true; // This point lies on the edge.
                     Rdx += 1;
                 }
+                // Check whether the second lambda "lies on the Triangle".
                 if ((0 <= lam2) && (lam2 <= 1) && (scal_sqL2dist(lam1, lam2) > 0)){
-                    for (i=0; i<2; i++){
-                        R[Rdx][i] = y2[i];
+                    is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
+
+                    // Check whether the predecessor lied on the edge
+                    if (is_onEdge){
+                        placePointOnCap(&R[2*(Rdx-1)], y2, x_center, sqdelta, TE, nu_a, nu_b, nu_c, Rdx, R);
                     }
-                    Rdx += 1;
-                }
-            } else {
-                if (vec_sqL2dist(p, &x_center[0], 2)  <= sqdelta){
-                    for (i=0; i<2; i++){
-                        R[Rdx][i] = p[i];
-                    }
+
+                    // Append y2
+                    doubleVec_copyTo(y2, &R[2*Rdx], 2);
+                    is_onEdge = true; // This point lies on the edge.
                     Rdx += 1;
                 }
             }
         }
+
+        //(len(RD)>1) cares for the case that either the first and the last point lie on an endge
+        // and there is no other point at all.
+        if (is_onEdge && !is_firstPointLiesOnVertex && Rdx > 1){
+            placePointOnCap(&R[2*(Rdx-1)], &R[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, Rdx, R);
+        }
+
         // Construct List of Triangles from intersection points
         if (Rdx < 3){
             // In this case the content of the array out_RE will not be touched.
@@ -270,9 +384,9 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
                     // i is the index which runs first, then h (which does not exist here), then k
                     // hence if we increase i, the *-index (of the pointer) inreases in the same way.
                     // if we increase k, there is quite a 'jump'
-                    out_reTriangle_list[2 * (3 * k + 0) + i] = R[0][i];
-                    out_reTriangle_list[2 * (3 * k + 1) + i] = R[k + 1][i];
-                    out_reTriangle_list[2 * (3 * k + 2) + i] = R[k + 2][i];
+                    out_reTriangle_list[2 * (3 * k + 0) + i] = R[i];
+                    out_reTriangle_list[2 * (3 * k + 1) + i] = R[2*(k + 1) + i];
+                    out_reTriangle_list[2 * (3 * k + 2) + i] = R[2*(k + 2) + i];
                 }
             }
             // Excessing the bound out_Rdx will not lead to an error but simply to corrupted data!
@@ -329,8 +443,8 @@ static void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
             }
         }
     } else {
-        outerInt_full(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
-        //outerInt_retriangulate(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
+        //outerInt_full(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
+        outerInt_retriangulate(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
     }
 }
 
@@ -700,7 +814,7 @@ static void par_evaluateA(double * ud, double * vd,
        psi[nP*2+j] = tmp_psi[2];
     }
 
-    #pragma omp parallel schedule(static) private(termLocal, termNonloc, aAdx, bAdx, a, b, aAdxj, aTE, bTE, aTdet, bTdet, NTdx, queue, sTdx, i, j, bTdx, visited, Mis_interact)
+    #pragma omp parallel private(termLocal, termNonloc, aAdx, bAdx, a, b, aAdxj, aTE, bTE, aTdet, bTdet, NTdx, queue, sTdx, i, j, bTdx, visited, Mis_interact)
     {
     int *visited = (int *) malloc(J*sizeof(int));
     long *Mis_interact = (long *) malloc(3*sizeof(long));
@@ -1032,6 +1146,41 @@ static void doubleVec_tozero(double * vec, int len){
     int i=0;
     for (i=0; i< len; i++){
         vec[i]  = 0;
+    }
+}
+
+static void doubleVec_midpoint(double * vec1, double * vec2, double * midpoint, int len){
+    int i = 0;
+    for (i=0; i < len; i++){
+        midpoint[i]  = (vec1[i] + vec2[i])/2;
+    }
+}
+
+static void doubleVec_subtract(double * vec1, double * vec2, double * out, int len){
+    int i=0;
+    for (i=0; i < len; i++){
+        out[i]  = vec1[i] - vec2[i];
+    }
+}
+
+static void doubleVec_add(double * vec1, double * vec2, double * out, int len){
+    int i=0;
+    for (i=0; i < len; i++){
+        out[i]  = vec1[i] + vec2[i];
+    }
+}
+
+static void doubleVec_scale(double lambda, double * vec, double * out, int len){
+    int i=0;
+    for (i=0; i < len; i++){
+        out[i]  = vec[i]*lambda;
+    }
+}
+
+static void doubleVec_copyTo(double * input, double * output, int len){
+    int i=0;
+    for (i=0; i<len; i++){
+        output[i] = input[i];
     }
 }
 // Long

@@ -14,6 +14,7 @@ static void innerInt_retriangulate(double *, double *, double *, int, double *, 
 static void outerInt_full(double *, double, double * , double , double *, int, double *, double *, double *, double, double *, double *);
 static void outerInt_retriangulate(double *, double, double * , double , double *, int, double *, double *, double *, double, double *, double *);
 static int retriangulate(double *, double *, double, double *);
+static int placePointOnCap(double *, double *, double *, double, double *, double *, double *, double *, int, double *);
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
 static void compute_f(double *, double, double *, int, double *, double *, double *);
@@ -44,6 +45,11 @@ static double vec_sqL2dist(double *, double *, int);       // L2 Distance
 static double vec_dot(double * x, double * y, int len);    // Scalar Product
 static int doubleVec_any(double *, int);                   // Any
 static void doubleVec_tozero(double *, int);               // Reset to zero
+static void doubleVec_subtract(double *, double *, double *, int);
+static void doubleVec_midpoint(double * , double * , double * , int );
+static void doubleVec_scale(double, double *, double *, int);
+static void doubleVec_add(double *, double *, double *, int);
+static void doubleVec_copyTo(double *, double *, int);
 
 // Long
 static int longVec_all(long *, int);                       // All

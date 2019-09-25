@@ -2,7 +2,7 @@
 #-*- coding:utf-8 -*-
 import numpy as np
 import pickle as pkl
-
+import matplotlib.pyplot as plt
 from conf import mesh_name, delta, ansatz, py_P, weights, SOLVE
 from nlocal import clsFEM#, assemble # Mesh class
 from aux import filename
@@ -38,6 +38,4 @@ if __name__ == "__main__":
         pkl.dump({"fd": fd, "ud_Ext": ud_Ext, "fd_Ext": fd_Ext, "mesh": mesh}, fileObject)
         np.save(Tstmp+"Ad_O", Ad_O)
         fileObject.close()
-
         plot(mesh_name, delta, Tstmp=Tstmp)
-        print()

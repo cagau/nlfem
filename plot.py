@@ -100,7 +100,6 @@ def plot(mesh_name, delta, Tstmp= ""):
     fileObject2 = open(fnm, 'rb')
     arg = pkl.load(fileObject2)
     fileObject2.close()
-
     Ad_O = np.load("Ad_O.npy")
     ud_Ext = arg["ud_Ext"]
     fd_Ext = arg["fd_Ext"]
@@ -156,7 +155,6 @@ def plot(mesh_name, delta, Tstmp= ""):
     plt.title(r"$A_{\Omega\Omega}$")
     plt.savefig(pp, format='pdf')
     plt.close()
-
     pp.close()
 
 if __name__ == "__main__":
