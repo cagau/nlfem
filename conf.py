@@ -1,9 +1,10 @@
 #-*- coding:utf-8 -*-
 
 import numpy as np
-mesh_name = "huge"
+mesh_name = "circle_large"
 delta = .1
 ansatz = "CG"
+SOLVE = True
 
 outerIntMethod = "outerInt_full"
 innerIntMethod = "innerInt_retriangulate"

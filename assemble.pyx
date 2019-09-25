@@ -6,7 +6,6 @@
 # Cython Imports
 cimport cython
 cimport numpy as np
-from cython.parallel import prange, threadid
 # Python Imports
 import numpy as np
 from numpy.linalg import LinAlgError
@@ -16,7 +15,7 @@ from libcpp.queue cimport queue
 from libc.math cimport sqrt, pow, pi, cos
 from libc.stdlib cimport malloc, free, abort
 
-ctypedef np.int32_t npint32_t
+#ctypedef long npint32_t
 
 def assemble(
         # Mesh information ------------------------------------
@@ -24,7 +23,7 @@ def assemble(
         int J, int J_Omega, # Number of Triangles and number of Triangles in Omega
         int L, int L_Omega, # Number of vertices (in case of CG = K and K_Omega)
         # Map Triangle index (Tdx) -> index of Vertices in Verts (Vdx = Triangle[Tdx] array of int, shape (3,))
-        npint32_t [:,:] c_Triangles,
+        long [:,:] c_Triangles,
         # Map Vertex Index (Vdx) -> Coordinate of some Vertex i of some Triangle (E[i])
         double [:,:] c_Verts,
         # Cython interface of quadrature points
@@ -67,7 +66,7 @@ def assemble(
         double[:,:] psi = np.ascontiguousarray(np.array([psi0, psi1, psi2]))
 
         # List of neighbours of each triangle, Neighbours[Tdx] returns row with Neighbour indices
-        npint32_t[:,:] Neighbours = np.zeros((J, 4), dtype=np.int32)
+        long[:,:] Neighbours = np.zeros((J, 4), dtype=np.int)
 
         # Squared interaction horizon
         double sqdelta = pow(delta,2)
@@ -84,7 +83,7 @@ def assemble(
     start = time.time()
 
     # Loop over triangles ----------------------------------------------------------------------------------------------
-    for aTdx in prange(J_Omega, nogil=True):
+    for aTdx in range(J_Omega):#, nogil=True):
         par_assemble(aTdx, Ad, fd, c_Triangles, c_Verts, J , J_Omega, L, L_Omega, nP, P, dx, dy, psi, sqdelta, Neighbours)
 
     total_time = time.time() - start
@@ -95,7 +94,7 @@ def assemble(
 cdef void par_assemble(int aTdx,
                     double [:,:] Ad,
                     double [:] fd,
-                    npint32_t [:,:] c_Triangles,
+                    long [:,:] c_Triangles,
                     double [:,:] c_Verts,
                     # Number of Triangles and number of Triangles in Omega
                     int J, int J_Omega,
@@ -106,14 +105,14 @@ cdef void par_assemble(int aTdx,
                     double [:] dy,
                     double [:,:] psi,
                     double sqdelta,
-                    npint32_t [:,:] Neighbours
-                   ) nogil:
+                    long [:,:] Neighbours
+                   ):# nogil::
 
      ## BFS ------------------------------------------------
     # Allocate Graph of Neighbours
     # Further definitions
     cdef int *visited = <int *> malloc(J*sizeof(int))
-    cdef npint32_t *Mis_interact = <npint32_t *> malloc(3*sizeof(npint32_t))
+    cdef long *Mis_interact = <long *> malloc(3*sizeof(long))
 
     cdef:
         # General Loop Indices ---------------------------------------
@@ -126,9 +125,9 @@ cdef void par_assemble(int aTdx,
         # List of visited triangles
         #np.ndarray[int, ndim=1, mode="c"] visited = py_visited
         # Matrix telling whether some vertex of Triangle a interactions with the baryCenter of Triangle b
-        #np.ndarray[npint32_t, ndim=1, mode="c"] Mis_interact = py_Mis_interact
+        #np.ndarray[long, ndim=1, mode="c"] Mis_interact = py_Mis_interact
 
-        npint32_t * NTdx
+        long * NTdx
         # Determinant of Triangle a and b.
         double aTdet, bTdet, id=0
         # Vector containing the coordinates of the vertices of a Triangle
@@ -138,8 +137,8 @@ cdef void par_assemble(int aTdx,
         # Loop index of basis functions
         int a=0, b=0, aAdxj =0
         # (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
-        npint32_t * aAdx
-        npint32_t * bAdx
+        long * aAdx
+        long * bAdx
 
         # Buffers for integration solutions
         double termf[3]
@@ -248,13 +247,13 @@ cdef void par_assemble(int aTdx,
                 visited[bTdx] = 1
     # Be careful. With gil, will allow to throw python exceptions, but it leads to a breakdown of performance
     # by a factor of x3, as the code has to jump between gil and nogil!
-    id = threadid()
-    with gil:
-        print("aTdx: ", aTdx, "id:", id, "\t Progress: ", round(aTdx / J_Omega * 100), "%", end="\r", flush=True)
+    #id = threadid()
+    #with gil:
+    print("aTdx: ", aTdx, "id:", id, "\t Progress: ", round(aTdx / J_Omega * 100), "%", end="\r", flush=True)
     free(visited)
     free(Mis_interact)
 
-cdef list set_neighbour(int rows, npint32_t * Triangles, npint32_t * Vdx):
+cdef list set_neighbour(int rows, long * Triangles, long * Vdx):
     """
     Find neighbour for index Tdx.
 
@@ -283,7 +282,7 @@ cdef void f(double * aTE,
             int nP,
             double * dx,
             double * psi,
-            double * termf) nogil:
+            double * termf):# nogil:
     cdef:
         int i,a
         double x[2]
@@ -300,7 +299,7 @@ cdef void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
                     double * dy,
                     double * psi,
                     double sqdelta, bint is_allInteract,
-                    double * cy_termLocal, double * cy_termNonloc) nogil:
+                    double * cy_termLocal, double * cy_termNonloc):# nogil:
     cdef:
         int i=0, j=0, a, b
         double kerd, innerIntLocal, innerIntNonloc
@@ -328,7 +327,7 @@ cdef void outerInt_full(double * aTE, double aTdet,
                         double * psi,
                         double sqdelta,
                         double * cy_termLocal,
-                        double * cy_termNonloc) nogil:
+                        double * cy_termNonloc):# nogil:
     cdef:
         int i=0, k=0, Rdx=0, a=0, b=0
         double x[2]
@@ -349,7 +348,7 @@ cdef void innerInt_retriangulate(double * x,
                                  double * T,
                                  double * P,
                                  int nP, double * dy, double sqdelta, int Rdx,
-                                 double * RT, double * innerLocal, double * innerNonloc) nogil:
+                                 double * RT, double * innerLocal, double * innerNonloc):# nogil:
     cdef:
         int nRT = 0, i=0, k=0, rTdx=0, b=0
         double psi_rp=0, ker=0, rTdet=0
@@ -374,7 +373,7 @@ cdef void innerInt_retriangulate(double * x,
                 psi_rp = evalBasisfunction(rp, b)
                 innerNonloc[b] += (psi_rp * ker * dy[i]) * rTdet # Nonlocal Term
 
-cdef double evalBasisfunction(double * p, int psidx) nogil:
+cdef double evalBasisfunction(double * p, int psidx):# nogil:
     if psidx == 0:
         return 1 - p[0] - p[1]
     elif psidx == 1:
@@ -383,10 +382,10 @@ cdef double evalBasisfunction(double * p, int psidx) nogil:
         return p[1]
     else:
         #with gil:
-        #    raise ValueError("in evalBasisfunction. Invalid psi index.")
+        raise ValueError("in evalBasisfunction. Invalid psi index.")
         abort() # Cython likes to ignore Python Excetions, I hope this line helps.
 
-cdef int retriangulate(double * x_center, double * TE, double sqdelta, double * out_RT) nogil:
+cdef int retriangulate(double * x_center, double * TE, double sqdelta, double * out_RT):# nogil:
         """ Retriangulates a given triangle.
 
         :param x_center: nd.array, real, shape (2,). Center of normball, e.g. pyhsical quadtrature point.
@@ -468,7 +467,7 @@ cdef int retriangulate(double * x_center, double * TE, double sqdelta, double * 
             return Rdx - 2 # So that, it acutally contains the number of triangles in the retriangulation
 
 # Define Right side f
-cdef double fPhys(double * x) nogil:
+cdef double fPhys(double * x):# nogil:
         """ Right side of the equation.
 
         :param x: nd.array, real, shape (2,). Physical point in the 2D plane
@@ -477,18 +476,18 @@ cdef double fPhys(double * x) nogil:
         # f = 1
         return 1.0
 
-cdef void toPhys(double * E, double * p, double * out_x) nogil:
+cdef void toPhys(double * E, double * p, double * out_x):# nogil:
     cdef:
         int i=0
     for i in range(2):
         out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i]
 
-cdef double c_kernelPhys(double * x, double * y, double sqdelta) nogil:
+cdef double c_kernelPhys(double * x, double * y, double sqdelta):# nogil:
     # Nonconstant Kernel does not yet work
     # pow(1-vec_sqL2dist(x,y, 2)/sqdelta, 2)
     return 4 / (pi * pow(sqdelta, 2))
 
-cdef double vec_sqL2dist(double * x, double * y, int length) nogil:
+cdef double vec_sqL2dist(double * x, double * y, int length):# nogil:
     """
     Computes squared l2 distance
     
@@ -504,7 +503,7 @@ cdef double vec_sqL2dist(double * x, double * y, int length) nogil:
         r += pow((x[i] - y[i]), 2)
     return r
 
-cdef double scal_sqL2dist(double x, double y) nogil:
+cdef double scal_sqL2dist(double x, double y):# nogil:
     """
     Computes squared l2 distance
     
@@ -514,7 +513,7 @@ cdef double scal_sqL2dist(double x, double y) nogil:
     """
     return pow((x-y), 2)
 
-cdef double vec_dot(double * x, double * y, int length) nogil:
+cdef double vec_dot(double * x, double * y, int length):# nogil:
     """
     Computes scalar product of two vectors.
     
@@ -530,7 +529,7 @@ cdef double vec_dot(double * x, double * y, int length) nogil:
         r += x[i]*y[i]
     return r
 
-cdef void solve2x2(double * A, double * b, double * x) nogil:
+cdef void solve2x2(double * A, double * b, double * x):# nogil:
     cdef:
         int i=0, dx0 = 0, dx1 = 1
         double l=0, u=0
@@ -543,7 +542,7 @@ cdef void solve2x2(double * A, double * b, double * x) nogil:
     # Check invertibility
     if A[2*dx0] == 0:
         #with gil:
-        #    raise LinAlgError("in solve2x2. Matrix not invertible.")
+        raise LinAlgError("in solve2x2. Matrix not invertible.")
         abort() # Cython likes to ignore Python Excetions, I hope this line helps.
 
     # LU Decomposition
@@ -553,7 +552,7 @@ cdef void solve2x2(double * A, double * b, double * x) nogil:
     # Check invertibility
     if u == 0:
         #with gil:
-        #    raise LinAlgError("in solve2x2. Matrix not invertible.")
+        raise LinAlgError("in solve2x2. Matrix not invertible.")
         abort() # Cython likes to ignore Python Excetions, I hope this line helps.
 
     # LU Solve
@@ -561,7 +560,7 @@ cdef void solve2x2(double * A, double * b, double * x) nogil:
     x[0] = (b[dx0] - A[2*dx0+1]*x[1])/A[2*dx0]
     return
 
-cdef void toRef(double * E, double * phys_x, double * ref_p) nogil:
+cdef void toRef(double * E, double * phys_x, double * ref_p):# nogil:
     cdef:
         double M[2*2]
         double b[2]
@@ -575,7 +574,7 @@ cdef void toRef(double * E, double * phys_x, double * ref_p) nogil:
     solve2x2(&M[0], &b[0], &ref_p[0])
     return
 
-cdef double absDet(double * E) nogil:
+cdef double absDet(double * E):# nogil:
     cdef:
         double out
         double M[2][2]
@@ -586,13 +585,13 @@ cdef double absDet(double * E) nogil:
     out =  absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0])
     return out
 
-cdef double absolute(double value) nogil:
+cdef double absolute(double value):# nogil:
     if value < 0 :
         return -value
     else:
         return value
 
-cdef void baryCenter(double * E, double * bary) nogil:
+cdef void baryCenter(double * E, double * bary):# nogil:
     cdef:
         int i
     bary[0] = 0
@@ -603,7 +602,7 @@ cdef void baryCenter(double * E, double * bary) nogil:
     bary[0] = bary[0]/3
     bary[1] = bary[1]/3
 
-cdef void inNbhd(double * aTE, double * bTE, double sqdelta, npint32_t * M) nogil:
+cdef void inNbhd(double * aTE, double * bTE, double sqdelta, long * M):# nogil:
     """
     Check whether two triangles interact w.r.t :math:`L_{2}`-ball of size delta.
     Returns an array of boolen values. Compares the barycenter of bT with the vertices of Ea.
@@ -624,31 +623,31 @@ cdef void inNbhd(double * aTE, double * bTE, double sqdelta, npint32_t * M) nogi
 
     return
 
-cdef void doubleVec_tozero(double * vec, int len) nogil:
+cdef void doubleVec_tozero(double * vec, int len):# nogil:
     cdef int i=0
     for i in range(len):
         vec[i]  = 0.
 
-cdef void intVec_tozero(int * vec, int len) nogil:
+cdef void intVec_tozero(int * vec, int len):# nogil:
     cdef int i=0
     for i in range(len):
         vec[i]  = 0
 
-cdef int npint32Vec_any(npint32_t * vec, int len) nogil:
+cdef int npint32Vec_any(long * vec, int len):# nogil:
     cdef int i=0
     for i in range(len):
             if vec[i] != 0:
                 return 1
     return 0
 
-cdef int doubleVec_any(double * vec, int len) nogil:
+cdef int doubleVec_any(double * vec, int len):# nogil:
     cdef int i=0
     for i in range(len):
             if vec[i] != 0:
                 return 1
     return 0
 
-cdef int intVec_all(npint32_t * vec, int len) nogil:
+cdef int intVec_all(long * vec, int len):# nogil:
     cdef int i=0
     for i in range(len):
             if vec[i] == 0:

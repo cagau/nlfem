@@ -1,0 +1,4 @@
+#!/bin/bash
+
+python3 solve_nonlocal.py
+python3 check_largeA.py
