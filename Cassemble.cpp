@@ -215,9 +215,9 @@ static double scale_toCircle(double * x_center, double sqdelta, double * s_midpo
         term2 = sqrt(v);
         lambda0 = term1 - term2; // First scaling factor.
         lambda1 = term1 + term2; // Second scaling factor.
-        if (lambda0 >= 0){
+        if ((lambda0 >= 0) && (lambda1 <= 0)){
             return lambda0;
-        } else if (lambda1 >= 0) {
+        } else if ((lambda1 >= 0) && (lambda0 <= 0)){
             return lambda1;
         } else {
             // This should not happen because we draw a polygone inside a circle. There should (given the normals
@@ -264,17 +264,16 @@ static int placePointOnCap(double * y_predecessor, double * y_current, double * 
     if ( inTriangle(y_new, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
         // Append y_new (Point on the cap)
         doubleVec_copyTo(y_new, &R[2*Rdx], 2);
-        Rdx += 1;
-        return Rdx;
+        return 1;
     } else {
-        return Rdx;
+        return 0;
     }
 }
 
 static int retriangulate(double * x_center, double * TE, double sqdelta, double * out_reTriangle_list){
         // C Variables and Arrays.
         int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
-        double v=0, lam1=0, lam2=0, term1=0, term2=0, lambda=1;
+        double v=0, lam1=0, lam2=0, term1=0, term2=0;
         double nu_a[2], nu_b[2], nu_c[2]; // Normals
         double p[2];
         double q[2];
@@ -282,9 +281,7 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
         double b[2];
         double y1[2];
         double y2[2];
-        double * y_predecessor, * y_first;
-        double y_new[2];
-        double s_projectionDirection[2], s_midpoint[2];
+
         bool is_onEdge=false, is_firstPointLiesOnVertex=true;
         // The upper bound for the number of required points is 9
         // Hence 9*3 is an upper bound to encode all resulting triangles
@@ -303,19 +300,11 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
             edgdx0 = k;
             edgdx1 = (k+1) % 3;
 
-            /*for (i=0; i<2; i++){
-                p[i] = TE[2*edgdx0+i];
-                q[i] = TE[2*edgdx1+i];
-                a[i] = q[i] - x_center[i];
-                b[i] = p[i] - q[i];
-            }*/
             doubleVec_copyTo(&TE[2*edgdx0], p, 2);
             doubleVec_copyTo(&TE[2*edgdx1], q, 2);
             doubleVec_subtract(q, x_center, a, 2);
             doubleVec_subtract(p, q, b, 2);
 
-            // Check wheter the point p lies in the Circle
-            // Why dont we put this outside of the if-clause?
             if (vec_sqL2dist(p, x_center, 2) <= sqdelta){
                 doubleVec_copyTo(p, &R[2*Rdx], 2);
                 is_onEdge = false; // This point does not lie on the edge.
@@ -344,7 +333,7 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
                     is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
                     // Check whether the predecessor lied on the edge
                     if (is_onEdge){
-                        placePointOnCap(&R[2*(Rdx-1)], y1, x_center, sqdelta, TE, nu_a, nu_b, nu_c, Rdx, R);
+                        Rdx += placePointOnCap(&R[2*(Rdx-1)], y1, x_center, sqdelta, TE, nu_a, nu_b, nu_c, Rdx, R);
                     }
                     // Append y1
                     doubleVec_copyTo(y1, &R[2*Rdx], 2);
@@ -357,7 +346,7 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
 
                     // Check whether the predecessor lied on the edge
                     if (is_onEdge){
-                        placePointOnCap(&R[2*(Rdx-1)], y2, x_center, sqdelta, TE, nu_a, nu_b, nu_c, Rdx, R);
+                        Rdx += placePointOnCap(&R[2*(Rdx-1)], y2, x_center, sqdelta, TE, nu_a, nu_b, nu_c, Rdx, R);
                     }
 
                     // Append y2
@@ -371,7 +360,7 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
         //(len(RD)>1) cares for the case that either the first and the last point lie on an endge
         // and there is no other point at all.
         if (is_onEdge && !is_firstPointLiesOnVertex && Rdx > 1){
-            placePointOnCap(&R[2*(Rdx-1)], &R[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, Rdx, R);
+            Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, Rdx, R);
         }
 
         // Construct List of Triangles from intersection points

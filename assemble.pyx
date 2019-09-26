@@ -1,22 +1,14 @@
 #-*- coding:utf-8 -*-
 #cython: language_level=3
-#cython: boundscheck=False, wraparound=False, cdivision=True
+#cython: boundscheck=True, wraparound=True, cdivision=False
 # Setting this compiler directive will given a minor increase of speed.
 
-# Cython Imports
-cimport cython
-cimport numpy as np
-from cython.parallel import prange, threadid
-# Python Imports
 import numpy as np
-from numpy.linalg import LinAlgError
 import time
-# C Imports
-from libcpp.queue cimport queue
-from libc.math cimport sqrt, pow, pi, cos
-from libc.stdlib cimport malloc, free, abort
+from libc.math cimport pow
 
-from Cassemble cimport par_assemble, par_evaluateA, par_assemblef, par_evaluateMass, par_assembleMass
+
+from Cassemble cimport par_assemble, par_evaluateA, par_assemblef, par_evaluateMass, par_assembleMass, retriangulate
 
 def assembleMass(int K_Omega, int J_Omega, long [:,:] Triangles, double [:,:] Verts, double [:,:] py_P, double [:] dx):
     py_Ad = np.zeros(K_Omega**2).flatten("C")
@@ -211,4 +203,18 @@ cdef list get_neighbour(int rows, long * Triangles, long * Vdx):
     return idx
 
 
+def py_retriangulate(
+        double [:] x_center,
+        double [:] TE,
+        double delta
+    ):
 
+    TriangleList =  np.zeros(9*3*2)
+    cdef:
+        double sqdelta = pow(delta,2)
+        double [:] cTriangleList = TriangleList
+
+    #static Rdx retriangulate(double * x_center, double * TE, double sqdelta, double * out_reTriangle_list)
+    Rdx = retriangulate(&x_center[0], &TE[0], sqdelta, &cTriangleList[0])
+
+    return Rdx, TriangleList
