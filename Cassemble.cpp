@@ -432,8 +432,8 @@ static void compute_A(double * aTE, double aTdet, double * bTE, double bTdet,
             }
         }
     } else {
-        //outerInt_full(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
-        outerInt_retriangulate(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
+        outerInt_full(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
+        //outerInt_retriangulate(&aTE[0], aTdet, &bTE[0], bTdet, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
     }
 }
 
