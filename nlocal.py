@@ -4,18 +4,37 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from nbhd import xnotinNbhd
 
-class clsFEM:
+class dummyMesh:
+    def __init__(self, nE, nE_Omega, nV, nV_Omega, vertices, triangles, ansatz="CG"):
+
+        self.vertices = vertices
+        self.triangles = triangles
+        self.nE = nE
+        self.nE_Omega = nE_Omega
+        self.nV = nV
+        self.nV_Omega = nV_Omega
+
+        if ansatz=="CG":
+            self.K = self.nV
+            self.K_Omega = self.nV_Omega
+            self.ansatz = "CG"
+        else:
+            self.K = self.nE*3
+            self.K_Omega = self.nE_Omega*3
+            self.ansatz = "DG"
+
+class Mesh:
     """ **Mesh Class**
 
     Let :math:`K` be the number of basis functions and :math:`J` the number of finite elements. The ordering of the vertices
     V is such that the first :math:`K_{\Omega}` vertices lie in the interior of :math:`\Omega`.
 
-    :ivar V: nd.array, real, shape (K, 2) List of vertices in the 2D plane
-    :ivar T: nd.array, int, shape (J, 3) List of indices mapping an index Tdx to 3 corresponding vertices of V.
+    :ivar vertices: nd.array, real, shape (K, 2) List of vertices in the 2D plane
+    :ivar triangles: nd.array, int, shape (J, 3) List of indices mapping an index Tdx to 3 corresponding vertices of V.
     :ivar K: Number of basis functions.
     :ivar K_Omega: Number if basis functions in the interior of :math:`\Omega`.
-    :ivar J: Number of finite elements :math:`\Omega`.
-    :ivar J_Omega: Number of finite elements in
+    :ivar nE: Number of finite elements :math:`\Omega`.
+    :ivar nE_Omega: Number of finite elements in
     """
     def __init__(self, mesh_data, ansatz):
         """Constructor
@@ -27,20 +46,22 @@ class clsFEM:
         else:
             args = self.mesh(mesh_data["Verts"], mesh_data["Lines"], mesh_data["Triangles"])
         # args = Verts, Triangles, J, J_Omega, L, L_Omega
-        self.V = args[0]
-        self.T = args[1][:, 1:]
-        self.J = args[2]
-        self.J_Omega = args[3]
-        self.L = args[4]
-        self.L_Omega = args[5]
+        self.vertices = args[0]
+        self.triangles = args[1]#[:, 1:]
+        self.nE = args[2]
+        self.nE_Omega = args[3]
+        self.nV = args[4]
+        self.nV_Omega = args[5]
 
         args = self.basis(ansatz=ansatz)
         self.K = args[0]
         self.K_Omega = args[1]
 
+        self.ansatz = ansatz
+
     def get_state_dict(self):
-        return {"Verts": self.V, "Triangles": self.T, "J":self.J, "J_Omega":self.J_Omega,
-                "L":self.L, "L_Omega":self.L_Omega, "K":self.K, "K_Omega":self.K_Omega}
+        return {"Verts": self.vertices, "Triangles": self.triangles, "J":self.nE, "J_Omega":self.nE_Omega,
+                "L":self.nV, "L_Omega":self.nV_Omega, "K":self.K, "K_Omega":self.K_Omega}
     def read_mesh(self, mshfile):
         """meshfile = .msh - file genrated by gmsh
 
@@ -128,17 +149,20 @@ class clsFEM:
         # Sortiere die Verts, sodass die Indizes der Nodes in Omega am Anfang des Arrays Verts liegen ------------------
         Verts = Verts[:, :2]  # Wir machen 2D, deshalb ist eine Spalte hier unnütz.
         # T heißt Triangle, dx index
-        Tdx_Omega = np.where(Triangles[:, 0] == 1)
+        # Das größte label bezeichnet den nichtlokalen Rand
+        elementlabelOmegaI = max(Triangles[:, 0])
+        Tdx_Omega = np.where(Triangles[:, 0] < elementlabelOmegaI)
         # V heißt Vertex, is bedeutet er nimmt die Kategorialen Werte 0,1,2 an.
-        Vis_inOmega = np.array([2] * len(Verts), dtype=np.int)
+        Vord_Omega = np.array([2] * len(Verts), dtype=np.int)
 
         # Wähle die Indizes heraus, die an Dreiecken in Omega.
         Vdx_inOmega = np.unique(Triangles[Tdx_Omega][1:].flatten())
-        Vis_inOmega[Vdx_inOmega] = 0  # Sie werden auf 2 gesetzt.
-        Vdx_Boundary = np.unique(Lines[np.where(Lines[:, 0] == 9)][:, 1:])
-        Vis_inOmega[Vdx_Boundary] = 1  # Die Punkte auf dem Rand allerdings werden auf 1 gesetzt.
+        Vord_Omega[Vdx_inOmega] = 0  # Sie werden auf 0 gesetzt.
+        linelabelOmegaI = max(Lines[:,0])
+        Vdx_Boundary = np.unique(Lines[np.where(Lines[:, 0] == linelabelOmegaI)][:, 1:])
+        Vord_Omega[Vdx_Boundary] = 1  # Die Punkte auf dem Rand allerdings werden auf 1 gesetzt.
 
-        piVdx_argsort = np.argsort(Vis_inOmega, kind="mergesort")  # Permutation der der Vertex indizes
+        piVdx_argsort = np.argsort(Vord_Omega, kind="mergesort")  # Permutation der der Vertex indizes
 
         # Auf Triangles und Lines müssen wir die inverse Permutation anwenden.
         # Der Code wäre mit np.argsort kurz und für Node-Zahl unter 1000 auch schnell, allerdings ist
@@ -159,6 +183,7 @@ class clsFEM:
 
         # Wende die Permutation auf Verts, Lines und Triangles an
         Verts = Verts[piVdx_argsort]
+
         Triangles[:, 1:] = piVdx(Triangles[:, 1:])
         Lines[:, 1:] = piVdx(Lines[:, 1:])
 
@@ -169,12 +194,12 @@ class clsFEM:
 
         # Setze J_Omega und J
         # Das ist die Anzahl der Dreiecke. Diese Zahlen sind für die Schleifendurchläufe wichtig.
-        J_Omega = np.sum(Triangles[:, 0] == 1)
+        J_Omega = np.sum(Triangles[:, 0] < elementlabelOmegaI)
         J = len(Triangles)
 
         ## Setze L_Omega und L
         ## Das ist die Anzahl der Knotenpunkte.
-        L_Omega = np.sum(Vis_inOmega == 0)
+        L_Omega = np.sum(Vord_Omega == 0)
         # L_dOmega = np.sum(Vis_inOmega == 1)
         L = len(Verts)
         # Im Falle von "CG" ist die Anzahl der Knotenpunkte gleich der Anzahl der Basisfunktionen.
@@ -193,17 +218,17 @@ class clsFEM:
             ## Setze K_Omega und K
             ## Das ist die Anzahl der finiten Elemente (in Omega und insgesamt).
             ## Diese Zahlen dienen als Dimensionen für die diskreten Matrizen und Vektoren.
-            K_Omega = self.L_Omega
+            K_Omega = self.nV_Omega
             #K_dOmega = np.sum(Vis_inOmega == 1)
-            K = self.L
+            K = self.nV
 
         elif ansatz == "DG":
             # Im Falle der DG-Methode is die Anzahl der Basisfunktionen 3-Mal die Anzahl der Dreiecke.
-            K_Omega = self.J_Omega*3
+            K_Omega = self.nE_Omega * 3
             #K_dOmega = np.sum(Vis_inOmega == 1)
-            K = self.J*3
+            K = self.nE * 3
 
         else:
-            raise ValueError("in clsFEM.basis(). No valid method (str) chosen.")
+            raise ValueError("in Mesh.basis(). No valid method (str) chosen.")
 
         return K, K_Omega

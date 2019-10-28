@@ -3,28 +3,26 @@
 
 // Model ---------------------------------------------------------------------------------------------------------------
 static double model_f(double *);
-static double model_kernel(double *, double *, double);
+static double model_kernel(double *, long, double *, long, double);
 static void model_basisFunction(double *, int, double *);
-static void inNbhd(double *, double *, double, long *);
 static double model_basisFunction(double * , int );
 
 // Integration ---------------------------------------------------------------------------------------------------------
-static void innerInt_bary(double *, double *, double *, int, double *, double, double *, double *, double *);
-static void innerInt_retriangulate(double *, double *, double *, int, double *, double,  double *, double *);
-static void outerInt_full(double *, double, double * , double , double *, int, double *, double *, double *, double, double *, double *);
-static void outerInt_retriangulate(double *, double, double * , double , double *, int, double *, double *, double *, double, double *, double *);
-static int retriangulate(double *, double *, double, double *);
-static int placePointOnCap(double *, double *, double *, double, double *, double *, double *, double *, int, double *);
+static void innerInt_retriangulate(double *, long, double *, long, double *, int, double *, double,  double *, double *);
+static void outerInt_full(double *, double, long, double *, double, long, double *, int, double *, double *, int, double *, double *, double *, double, double *, double *);
+//                            (aTE,   aTdet, labela, bTE,     bTdet, labelb, Px,      nPx, dx,        Py,      nPy, dy,       psix,       psiy,   sqdelta, termLocal, termNonloc);
+static int retriangulate(double * , double * , double , double * , int );
+
+static int placePointOnCap(double *, double *, double *, double, double *, double *, double *, double *, double, int, double *);
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
 static void compute_f(double *, double, double *, int, double *, double *, double *);
-static void compute_A(double *, double, double *, double, double *, int, double *, double *, double *, double, bool, double *, double *);
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-static void par_assemble(double *, int, double *, long *, double *,int, int, int, int, int, double *, double *, double *, double, long *);
-static void par_evaluateA(double *, double *, int, long *, double *,int, int, int, int, int, double *, double *, double *, double, long *);
-static void par_assemblef(double *, long *, double *, int, int, int, double *, double *);
+static void par_assemble(double *, int, double *, long *, double *,int, int, int, int, double *, int, double *, double *, int, double*, double, long *, int);
 static void par_assembleMass(double *, long *, double *, int, int, int, double *, double *);
+static void check_par_assemble(double *, long *, double *, int, int, int, double *, double *, double, long *);
+static double compute_area(double *, double, long, double *, double, long, double *, int, double *, double);
 
 // Mass matrix evaluation ----------------------------------------------------------------------------------------------
 static void par_evaluateMass(double *, double *, long *, double *, int, int, int, double *, double *);
@@ -35,6 +33,7 @@ static void solve2x2(double *, double *, double *);        // Solve 2x2 System w
 // Matrix operations (via * only) --------------------------------
 // Double
 static double absDet(double *);                            // Compute determinant
+static double signDet(double *);
 static void baryCenter(double *, double *);                // Bary Center
 static void toRef(double *, double *, double *);           // Pull point to Reference Element (performs 2x2 Solve)
 static void toPhys(double *, double *, double *);          // Push point to Physical Element
@@ -62,5 +61,8 @@ static void intVec_tozero(int *, int);                     // Reset to zero
 static double absolute(double);                            // Get absolute value
 static double scal_sqL2dist(double x, double y);           // L2 Distance
 
+//[DEBUG]
+//static void relativePosition(double *, double *, double *, double *, double *);
+//static void order(double *, int, double *);
 
 #endif /* Cassemble.h */

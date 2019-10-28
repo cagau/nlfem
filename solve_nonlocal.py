@@ -2,9 +2,8 @@
 #-*- coding:utf-8 -*-
 import numpy as np
 import pickle as pkl
-import matplotlib.pyplot as plt
-from conf import mesh_name, delta, ansatz, py_P, weights, SOLVE
-from nlocal import clsFEM#, assemble # Mesh class
+from conf import mesh_name, delta, ansatz, py_Px, py_Py, dx, dy, SOLVE
+from nlocal import Mesh#, assemble # Mesh class
 from aux import filename
 from plot import plot
 from assemble import assemble
@@ -16,16 +15,14 @@ if __name__ == "__main__":
     # aus readmesh passen!
 
     # Mesh construction --------------------
-    mesh = clsFEM(mesh_name + ".msh", ansatz)
+    mesh = Mesh(mesh_name + ".msh", ansatz)
     print("Delta: ", delta, "\t Mesh: ", mesh_name)
     print("Number of basis functions: ", mesh.K)
 
-    Ad, fd  = assemble(mesh.K, mesh.K_Omega, mesh.J, mesh.J_Omega, mesh.L, mesh.L_Omega,
-                       mesh.T,
-                       mesh.V,
-                       py_P, weights, weights, delta)
+    Ad, fd = assemble(mesh, py_Px, py_Py, dx, dy, delta)
+
     if SOLVE:
-        Ad_O = np.array(Ad[:, :mesh.K_Omega])
+        Ad_O = np.array(Ad[:,:mesh.K_Omega])
         ud = np.linalg.solve(Ad_O, fd)
 
         fd_Ext = np.zeros(mesh.K)
@@ -35,7 +32,9 @@ if __name__ == "__main__":
 
         Tstmp, fnm = filename(mesh_name, delta, Tstmp=False)
         fileObject = open(Tstmp + fnm, 'wb')
-        pkl.dump({"fd": fd, "ud_Ext": ud_Ext, "fd_Ext": fd_Ext, "mesh": mesh}, fileObject)
+        pkl.dump({"ud": ud_Ext, "fd": fd_Ext, "mesh": mesh}, fileObject)
         np.save(Tstmp+"Ad_O", Ad_O)
         fileObject.close()
-        plot(mesh_name, delta, Tstmp=Tstmp)
+
+        plot(mesh_name, delta, Tstmp=Tstmp, maxTriangles=100)
+

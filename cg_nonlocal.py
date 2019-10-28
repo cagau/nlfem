@@ -6,7 +6,7 @@ import pickle as pkl
 import matplotlib.pyplot as plt
 import time
 from conf import mesh_name, delta, ansatz, py_P, weights, SOLVE
-from nlocal import clsFEM#, assemble # Mesh class
+from nlocal import Mesh#, assemble # Mesh class
 from aux import filename
 from plot import plot, plot_sol
 from assemble import assemble, clsEvaluate, assembleMass, clsEvaluateMass
@@ -80,21 +80,21 @@ if __name__ == "__main__":
     fine_mesh_name = "rectangle2"
     coarse_mesh_name = "rectangle1"
     # Mesh construction --------------------
-    fine_mesh = clsFEM(fine_mesh_name + ".msh", ansatz)
+    fine_mesh = Mesh(fine_mesh_name + ".msh", ansatz)
     print("Delta: ", delta, "\t Mesh: ", fine_mesh_name)
     print("Number of basis functions: ", fine_mesh.K)
 
-    coarse_mesh = clsFEM(coarse_mesh_name + ".msh", ansatz)
+    coarse_mesh = Mesh(coarse_mesh_name + ".msh", ansatz)
     print("Delta: ", delta, "\t Mesh: ", coarse_mesh_name)
     print("Number of basis functions: ", coarse_mesh.K)
 
     # Initialize Evaluator Object
-    A = clsEvaluate(fine_mesh.K, fine_mesh.K_Omega, fine_mesh.J, fine_mesh.J_Omega, fine_mesh.L, fine_mesh.L_Omega, fine_mesh.T, fine_mesh.V, py_P, weights, weights, delta)
+    A = clsEvaluate(fine_mesh.K, fine_mesh.K_Omega, fine_mesh.nE, fine_mesh.nE_Omega, fine_mesh.nV, fine_mesh.nV_Omega, fine_mesh.triangles, fine_mesh.vertices, py_P, weights, weights, delta)
     ud = np.zeros(fine_mesh.K_Omega)
     fd = A.get_f()
 
     # Initialize Coarse Evaluator Object
-    coarse_A = clsEvaluate(coarse_mesh.K, coarse_mesh.K_Omega, coarse_mesh.J, coarse_mesh.J_Omega, coarse_mesh.L, coarse_mesh.L_Omega, coarse_mesh.T, coarse_mesh.V, py_P, weights, weights, delta)
+    coarse_A = clsEvaluate(coarse_mesh.K, coarse_mesh.K_Omega, coarse_mesh.nE, coarse_mesh.nE_Omega, coarse_mesh.nV, coarse_mesh.nV_Omega, coarse_mesh.triangles, coarse_mesh.vertices, py_P, weights, weights, delta)
 
     # Precoditioner
     class clsMultilevel:
@@ -114,7 +114,7 @@ if __name__ == "__main__":
             sol = self.interpolate(coarse_sol)
             return sol
 
-    M = clsMultilevel(fine_mesh.V[:fine_mesh.K_Omega], coarse_mesh.V[:coarse_mesh.K_Omega], coarse_A)
+    M = clsMultilevel(fine_mesh.vertices[:fine_mesh.K_Omega], coarse_mesh.vertices[:coarse_mesh.K_Omega], coarse_A)
 
     x = np.zeros(fine_mesh.K_Omega)
 
