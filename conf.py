@@ -2,7 +2,7 @@
 
 import numpy as np
 #mesh_name = "../compare_data/target_shape"
-mesh_name = "circle_huge"
+mesh_name = "circle_large"
 delta = .1
 SOLVE = True
 ansatz = "CG"
