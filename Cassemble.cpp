@@ -14,6 +14,11 @@ static double model_f(double * x){
         return 1.0;
 }
 
+static double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
+    return 4 / (M_PI * pow(sqdelta, 2));
+}
+
+/*
 static double model_kernel_(double * x, long labelx, double * y, long labely, double sqdelta){
     double dist;
     long label;
@@ -36,10 +41,7 @@ static double model_kernel_(double * x, long labelx, double * y, long labely, do
         abort();
     }
 }
-
-static double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
-    return 4 / (M_PI * pow(sqdelta, 2));
-}
+*/
 
 static void model_basisFunction(double * p, double *psi_vals){
     psi_vals[0] = 1 - p[0] - p[1];
