@@ -2,7 +2,7 @@
 
 import numpy as np
 #mesh_name = "../compare_data/target_shape"
-mesh_name = "circle_huge"
+mesh_name = "circle_insane"
 delta = .1
 is_PlotSolve = True
 ansatz = "CG"
