@@ -1,7 +1,6 @@
 # Usage 
 
 In order to use this code perform the following steps.
-If you use an Ubuntu machine the given shell snippets might help you.
 ### Basic requirements
 - Download or clone the C++ branch of this project.
 - Check that you have a Python 3 with numpy, scipy, matplotlib, and Cython available.
