@@ -2,10 +2,11 @@
 
 import numpy as np
 #mesh_name = "../compare_data/target_shape"
-mesh_name = "circle_large"
+mesh_name = "circle_huge"
 delta = .1
-SOLVE = True
+is_PlotSolve = True
 ansatz = "CG"
+boundaryConditionType = "Dirichlet" # "Neumann"
 # quad_order_outer == 8
 py_Px = np.array([[0.33333333, 0.33333333],
               [0.45929259, 0.45929259],

@@ -24,19 +24,34 @@ def assemble(
         **kwargs
     ):
 
-    cdef int is_DiscontinuousGalerkin
+    cdef:
+        int is_DiscontinuousGalerkin
+        int is_NeumannBoundary
+        long nE = mesh.nE
+        long nV = mesh.nV
+        long nE_Omega = mesh.nE_Omega
+        long nV_Omega = mesh.nV_Omega
+
+    if mesh.boundaryConditionType == "Dirichlet":
+        is_NeumannBoundary = 0
+    elif mesh.boundaryConditionType == "Neumann":
+        is_NeumannBoundary = 1
+        nE_Omega = nE
+        nV_Omega = nV
 
     if mesh.ansatz=="DG":
         K = mesh.nE*3
-        K_Omega = mesh.nE_Omega*3
+        K_Omega = nE_Omega*3
         is_DiscontinuousGalerkin=1
     elif mesh.ansatz=="CG":
         K = mesh.nV
-        K_Omega = mesh.nV_Omega
+        K_Omega = nV_Omega
         is_DiscontinuousGalerkin=0
     else:
         print("Ansatz ", mesh.ansatz, " not provided.")
         raise ValueError
+
+
 
     deltaVertices = kwargs.get("deltaVertices", None)
     if not deltaVertices is None:
@@ -49,12 +64,8 @@ def assemble(
     py_Ad = np.zeros(K_Omega* K).flatten("C")
     py_fd = np.zeros(K_Omega).flatten("C")
 
-    cdef:
-        long nE = mesh.nE
-        long nV = mesh.nV
-        long nE_Omega = mesh.nE_Omega
-        long nV_Omega = mesh.nV_Omega
 
+    cdef:
         int nPx = py_Px.shape[0]
         int nPy = py_Py.shape[0]
         long [:] c_Triangles = (np.array(mesh.triangles, int)).flatten("C")
@@ -82,7 +93,7 @@ def assemble(
 
     start = time.time()
     # Compute Assembly
-    par_assemble( &Ad[0], K, &fd[0], &c_Triangles[0], &c_Verts[0], nE , nE_Omega, nV, nV_Omega, &Px[0], nPx, &dx[0], &Py[0], nPy, &dy[0], sqdelta, &Neighbours[0], is_DiscontinuousGalerkin)
+    par_assemble( &Ad[0], K, &fd[0], &c_Triangles[0], &c_Verts[0], nE , nE_Omega, nV, nV_Omega, &Px[0], nPx, &dx[0], &Py[0], nPy, &dy[0], sqdelta, &Neighbours[0], is_DiscontinuousGalerkin, is_NeumannBoundary)
     total_time = time.time() - start
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 

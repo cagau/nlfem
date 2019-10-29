@@ -6,7 +6,7 @@ cdef extern from "Cassemble.cpp":
     int retriangulate(double *, double *, double, double *, int) nogil
 
     # Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-    void par_assemble(double *, int, double *, long *, double *,int, int, int, int, double *, int, double *, double *, int, double*, double, long *, int) nogil
+    void par_assemble(double *, int, double *, long *, double *,int, int, int, int, double *, int, double *, double *, int, double*, double, long *, int, int) nogil
     void par_assembleMass(double *, long *, double *, int, int, int, double *, double *) nogil
     void check_par_assemble(double *, long *, double *, int, int, int, double *, double *, double, long *) nogil
 

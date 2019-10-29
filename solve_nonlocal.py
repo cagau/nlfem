@@ -2,8 +2,8 @@
 #-*- coding:utf-8 -*-
 import numpy as np
 import pickle as pkl
-from conf import mesh_name, delta, ansatz, py_Px, py_Py, dx, dy, SOLVE
-from nlocal import Mesh#, assemble # Mesh class
+from conf import mesh_name, delta, ansatz, py_Px, py_Py, dx, dy, is_PlotSolve, boundaryConditionType
+from nlocal import Mesh
 from aux import filename
 from plot import plot
 from assemble import assemble
@@ -15,13 +15,13 @@ if __name__ == "__main__":
     # aus readmesh passen!
 
     # Mesh construction --------------------
-    mesh = Mesh(mesh_name + ".msh", ansatz)
+    mesh = Mesh(mesh_name + ".msh", ansatz, boundaryConditionType)
     print("Delta: ", delta, "\t Mesh: ", mesh_name)
     print("Number of basis functions: ", mesh.K)
 
     Ad, fd = assemble(mesh, py_Px, py_Py, dx, dy, delta)
 
-    if SOLVE:
+    if is_PlotSolve:
         Ad_O = np.array(Ad[:,:mesh.K_Omega])
         ud = np.linalg.solve(Ad_O, fd)
 

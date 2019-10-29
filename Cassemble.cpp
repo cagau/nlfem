@@ -493,7 +493,8 @@ static void par_assemble(  double * Ad,
                     double * Py, int nPy, double * dy,
                     double sqdelta,
                     long * Neighbours,
-                    int is_DiscontinuousGalerkin
+                    int is_DiscontinuousGalerkin,
+                    int is_NeumannBoundary
                    ) {
     int aTdx, h=0;
     double tmp_psi[3];

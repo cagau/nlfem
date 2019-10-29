@@ -19,7 +19,7 @@ static int placePointOnCap(double *, double *, double *, double, double *, doubl
 static void compute_f(double *, double, double *, int, double *, double *, double *);
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-static void par_assemble(double *, int, double *, long *, double *,int, int, int, int, double *, int, double *, double *, int, double*, double, long *, int);
+static void par_assemble(double *, int, double *, long *, double *,int, int, int, int, double *, int, double *, double *, int, double*, double, long *, int, int);
 static void par_assembleMass(double *, long *, double *, int, int, int, double *, double *);
 static void check_par_assemble(double *, long *, double *, int, int, int, double *, double *, double, long *);
 static double compute_area(double *, double, long, double *, double, long, double *, int, double *, double);

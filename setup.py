@@ -3,7 +3,7 @@ from distutils.core import setup
 from distutils.extension import Extension
 
 import os
-os.environ['CC'] = 'g++'
+os.environ['CC'] = 'gcc'
 os.environ['CXX'] = 'g++'
 
 ext_modules = [

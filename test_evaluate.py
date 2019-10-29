@@ -2,7 +2,7 @@
 #-*- coding:utf-8 -*-
 import numpy as np
 import time
-from conf import mesh_name, delta, ansatz, py_P, weights, SOLVE
+from conf import mesh_name, delta, ansatz, py_P, weights, is_PlotSolve
 from nlocal import Mesh
 from assemble import assemble, clsEvaluate
 

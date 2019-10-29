@@ -5,7 +5,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from nbhd import xnotinNbhd
 
 class dummyMesh:
-    def __init__(self, nE, nE_Omega, nV, nV_Omega, vertices, triangles, ansatz="CG"):
+    def __init__(self, nE, nE_Omega, nV, nV_Omega, vertices, triangles, ansatz="CG", boundaryConditionType="Dirichlet"):
 
         self.vertices = vertices
         self.triangles = triangles
@@ -22,7 +22,7 @@ class dummyMesh:
             self.K = self.nE*3
             self.K_Omega = self.nE_Omega*3
             self.ansatz = "DG"
-
+        self.boundaryConditionType = boundaryConditionType
 class Mesh:
     """ **Mesh Class**
 
@@ -36,7 +36,7 @@ class Mesh:
     :ivar nE: Number of finite elements :math:`\Omega`.
     :ivar nE_Omega: Number of finite elements in
     """
-    def __init__(self, mesh_data, ansatz):
+    def __init__(self, mesh_data, ansatz, boundaryConditionType="Dirichlet"):
         """Constructor
 
         Executes read_mesh and prepare.
@@ -58,7 +58,7 @@ class Mesh:
         self.K_Omega = args[1]
 
         self.ansatz = ansatz
-
+        self.boundaryConditionType = boundaryConditionType
     def get_state_dict(self):
         return {"Verts": self.vertices, "Triangles": self.triangles, "J":self.nE, "J_Omega":self.nE_Omega,
                 "L":self.nV, "L_Omega":self.nV_Omega, "K":self.K, "K_Omega":self.K_Omega}
