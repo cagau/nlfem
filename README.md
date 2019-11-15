@@ -18,5 +18,3 @@ The model is defined in the file Cassemble.cpp
 - The Kernel function is called <code>  model_kernel() </code>.
 - The right side is called <code>  model_f() </code>.
 - The function where the assembly happens is called <code> par_assemble </code>
-- Note again that a change in the file Cassemble.cpp has no effect on assemble.pyx, so the build command will not 
-react on those changes. You have to do some changes (possibly without effect) in assemble.pyx.
