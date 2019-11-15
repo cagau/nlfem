@@ -8,8 +8,6 @@ In order to use this code perform the following steps.
     - <code> pip3 install Cython </code>
 ### Build and Install
 - This step translates assemble.pyx to assemble.cpp (Cython) and compiles the C++ code to machine code.
-    - Note, 
-    the following command will not do anything if the file assemble.pyx has not changed. 
     - <code> python3 setup.py build --force install</code>
     - Note, if the installation requires sudo you might want to setup a virtual environment.
 - Check your installation by running solve_nonlocal
