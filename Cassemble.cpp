@@ -12,6 +12,14 @@ using namespace std;
 // Define Right side compute_f
 static double model_f(double * x){
         return 1.0;
+/*
+        if ((-.2 < x[0] && x[0] < .2) && (-2 < x[1] && x[1] < .2) )
+        {
+            return 1.0;
+        } else {
+            return 0.;
+        }
+*/
 }
 
 static double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
@@ -86,11 +94,12 @@ static void innerInt_retriangulate(double * x, long labela, double * bTE, long l
     double reference_quad[2];
     double psi_value[3];
     double reTriangle_list[9*3*2];
+    bool is_placePointOnCap;
 
     innerLocal[0] = 0.0;
     doubleVec_tozero(innerNonloc, 3);
-
-    Rdx = retriangulate(x, bTE, sqdelta, reTriangle_list, true); // innerInt_retriangulate
+    is_placePointOnCap = true;
+    Rdx = retriangulate(x, bTE, sqdelta, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
     //[DEBUG]
     //printf("Retriangulation Rdx %i\n", Rdx);
     for (i=0;i<Rdx;i++){
@@ -144,11 +153,11 @@ static double scale_toCircle(double * x_center, double sqdelta, double * s_midpo
     double norm_direction, p, q, term1, term2, v, lambda0, lambda1;
     double x_shiftedCenter[2];
 
-    norm_direction = vec_dot(s_projectionDirection, s_projectionDirection, 2);
     if (norm_direction == 0){
         cout << "Error in scale_toCircle: Projection Direction == 0." << endl;
         abort();
     }
+
     doubleVec_subtract(s_midpoint, x_center, x_shiftedCenter, 2);
 
     p = 2*(vec_dot(s_projectionDirection, x_shiftedCenter, 2)) / norm_direction;
@@ -158,7 +167,8 @@ static double scale_toCircle(double * x_center, double sqdelta, double * s_midpo
         term1 = -p/2;
         term2 = sqrt(v);
         lambda0 = term1 - term2; // First scaling factor.
-        lambda1 = term1 + term2; // Second scaling factor.
+        //lambda1 = term1 + term2; // Second scaling factor.
+        lambda1 = q/lambda0;
         if ((lambda0 >= 0) && (lambda1 <= 0)){
             return lambda0;
         } else if ((lambda1 >= 0) && (lambda0 <= 0)){
@@ -167,6 +177,7 @@ static double scale_toCircle(double * x_center, double sqdelta, double * s_midpo
             // This should not happen because we draw a polygone inside a circle. There should (given the normals
             // are chosen correctly) always be a positive scaling factor for the normal to hit the circle,
             // where the other one is negative.
+            printf ("lambda 0 %17.16e\nlambda 1 %17.16e \n", lambda0, lambda1);
             cout << "Error in scale_toCircle: No lambda found." << endl;
             abort();
         }
@@ -175,6 +186,7 @@ static double scale_toCircle(double * x_center, double sqdelta, double * s_midpo
         cout << "Error in scale_toCircle: No intersection with Circle possible." << endl;
         abort();
     }
+
 }
 
 static bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
@@ -197,14 +209,21 @@ static int placePointOnCap(double * y_predecessor, double * y_current, double * 
     // Place a point on the cap.
     //y_predecessor = &R[2*(Rdx-1)];
     double y_new[2], s_midpoint[2], s_projectionDirection[2], baryC[2];
-    double lambda;
+    double lambda, scalingFactor;
 
     doubleVec_midpoint(y_predecessor, y_current, s_midpoint, 2);
     // Note, this yields the left normal from y_predecessor to y0
     rightNormal(y_current, y_predecessor, orientation, s_projectionDirection);
-    lambda = scale_toCircle(x_center, sqdelta, s_midpoint, s_projectionDirection);
-    doubleVec_scale(lambda, s_projectionDirection, y_new, 2);
-    doubleVec_add(s_midpoint, y_new, y_new, 2);
+    // Simple way
+    scalingFactor = sqrt( sqdelta / vec_dot(s_projectionDirection, s_projectionDirection, 2));
+    doubleVec_scale(scalingFactor, s_projectionDirection, s_projectionDirection, 2);
+    doubleVec_add(x_center, s_projectionDirection, y_new, 2);
+
+    // The costly and uneffective way
+    //lambda = scale_toCircle(x_center, sqdelta, s_midpoint, s_projectionDirection);
+    //doubleVec_scale(lambda, s_projectionDirection, y_new, 2);
+    //doubleVec_add(s_midpoint, y_new, y_new, 2);
+
 
     if ( inTriangle(y_new, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
         // Append y_new (Point on the cap)
@@ -265,8 +284,17 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
             if (v >= 0){
                 term1 = -vec_dot(a, b, 2) / vec_dot(b, b, 2);
                 term2 = sqrt(v) / vec_dot(b, b, 2);
-                lam2 = term1 - term2;
-                lam1 = (vec_dot(a, a, 2) - sqdelta) / vec_dot(b, b, 2) / lam2;
+                // Vieta's Formula for computing the roots
+                if (term1 > 0){
+                    lam1 = term1 + term2;
+                    // (vec_dot(a, a, 2) - sqdelta) / vec_dot(b, b, 2) is the q, of the pq-Formula
+                    lam2 = 1/lam1*(vec_dot(a, a, 2) - sqdelta) / vec_dot(b, b, 2);
+                } else {
+                    lam2 = term1 - term2;
+                    lam1 = 1/lam2*(vec_dot(a, a, 2) - sqdelta) / vec_dot(b, b, 2);
+                }
+                //lam1 = term1 + term2;
+                //lam2 = term1 - term2;
                 // Set Intersection Points
                 doubleVec_scale(lam1, b, y1, 2);
                 doubleVec_add(y1, q, y1, 2);
@@ -317,12 +345,12 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
 
             // Left shift all points (should not make a difference)
             //shift = 1;
-            for (k=0; k<Rdx; k++){
-                j = (k+shift) % Rdx;
-                orderedR[2*j] = R[2*k];
-                orderedR[2*j+1] = R[2*k+1];
-            }
-            doubleVec_copyTo(orderedR, R, 2*Rdx);
+            //for (k=0; k<Rdx; k++){
+            //    j = (k+shift) % Rdx;
+            //    orderedR[2*j] = R[2*k];
+            //    orderedR[2*j+1] = R[2*k+1];
+            //}
+            //doubleVec_copyTo(orderedR, R, 2*Rdx);
 
 
             for (k=0; k < (Rdx - 2); k++){
@@ -563,7 +591,7 @@ static void par_assemble(  double * Ad,
         //[DEBUG]
         /*
         //if (false){
-        if (aTdx==10){
+        if (aTdx==7){
             cout << endl << "Total Local Term" << endl ;
             printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalLocal[0], DEBUG_termTotalLocal[1], DEBUG_termTotalLocal[2]);
             printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalLocal[3], DEBUG_termTotalLocal[4], DEBUG_termTotalLocal[5]);
@@ -724,6 +752,7 @@ static void par_assemble(  double * Ad,
 
                             // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
                             for (a=0; a<3; a++){
+                            // Note: Triangles[4*aTdx+1 + a] == aAdx[a] !
                                 if  (is_DiscontinuousGalerkin || (Triangles[4*aTdx+1 + a] < L_Omega)){
                                     for (b=0; b<3; b++){
                                         #pragma omp atomic update

@@ -44,7 +44,14 @@ class Mesh:
         if type(mesh_data) == str:
             args = self.mesh(*self.read_mesh(mesh_data))
         else:
-            args = self.mesh(mesh_data["Verts"], mesh_data["Lines"], mesh_data["Triangles"])
+            args = []
+            args.append(mesh_data.vertices)
+            args.append(mesh_data.triangles)
+            args.append(mesh_data.nE)
+            args.append(mesh_data.nE_Omega)
+            args.append(mesh_data.nV)
+            args.append(mesh_data.nV_Omega)
+
         # args = Verts, Triangles, J, J_Omega, L, L_Omega
         self.vertices = args[0]
         self.triangles = args[1]#[:, 1:]

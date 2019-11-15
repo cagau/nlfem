@@ -208,7 +208,7 @@ def py_check_par_assemble(
     #cdef double [:] Verts = mesh.vertices.flatten("C")
     #cdef long [:] Triangles = mesh.triangles.flatten("C")
 
-    for aTdx in range(9,10):#(mesh.nE-10, mesh.nE):
+    for aTdx in [7,16, 41]:#, 95, 98, 100]:#(mesh.nE-10, mesh.nE):
         fig = plt.figure()  # create a figure object
         ax = fig.add_subplot(1, 1, 1)
         ## Prepare Triangle information aTE and aTdet ------------------
@@ -308,7 +308,8 @@ cdef double compute_area(double [:] aTE, double aTdet, long labela, double [:] b
     if pp is not None:
         ax.fill(TE[:, 0], TE[:, 1], color="b", alpha=1, fill=False,  lw=.1)
         ax.scatter(py_IntegrationPoint[0], py_IntegrationPoint[1], c = "blue", s=2)
-    Rdx = retriangulate(physical_quad, &bTE[0], sqdelta, &reTriangle_list[0], 1)
+    is_placePointOnCaps = 1
+    Rdx = retriangulate(physical_quad, &bTE[0], sqdelta, &reTriangle_list[0], is_placePointOnCaps)
     for rTdx in range(Rdx):
         areaTerm += absDet(reTriangle_list[2*3*rTdx:])/2
         TE = np.array(reTriangle_list[2*3*rTdx:(2*3*rTdx + 6)])
@@ -318,7 +319,7 @@ cdef double compute_area(double [:] aTE, double aTdet, long labela, double [:] b
             plt.gca().set_aspect('equal')
             ax.fill(TE[:, 0], TE[:, 1], color="blue", alpha=.3)
             ax.fill(TE[:, 0], TE[:, 1], color="blue", fill=False,  lw=.7, alpha=.3)
-            if bTdx == 9:
+            if bTdx == aTdx:
                 ax.fill(TE[:, 0], TE[:, 1], color="blue", lw=.7, alpha=.3)
                 physical_quad_List = np.zeros((nP,2))
                 psi_value_List = np.zeros(nP)
@@ -382,21 +383,23 @@ cdef toPhys_(double [:] E, double * p, double * out_x):
 #
 # cdef class clsEvaluateMass:
 #     cdef:
-#         int K_Omega, nE_Omega, nP
+#         long K_Omega, nE_Omega, nP
 #         long[:] c_Triangles
 #         double[:] c_Verts
 #         double[:] P
 #         double [:] dx
 #
-#     def __init__(self, K_Omega, nE_Omega, Triangles, Verts, py_P, dx):
-#         self.K_Omega = K_Omega
-#         self.nE_Omega = nE_Omega
-#         self.c_Triangles = (np.array(Triangles, int)).flatten("C")
-#         self.c_Verts = (np.array(Verts, float)).flatten("C")
-#         self.nP = py_P.shape[0] # Does not differ in inner and outer integral!
-#         self.P = (np.array(py_P, float)).flatten("C")
+#     def __init__(self, mesh, K_Omega, nE_Omega, Triangles, Verts, py_Px, dx, py_Py, dy):
+#         self.K_Omega = mesh.K_Omega
+#         self.nE_Omega = mesh.nE_Omega
+#         self.c_Triangles = (np.array(mesh.triangles, int)).flatten("C")
+#         self.c_Verts = (np.array(mesh.vertices, float)).flatten("C")
+#         self.nPx = py_Px.shape[0]
+#         self.Px = (np.array(py_Px, float)).flatten("C")
 #         self.dx = dx
-#
+#         self.nPy = py_Py.shape[0]
+#         self.Py = (np.array(py_Py, float)).flatten("C")
+#         self.dy = dy
 #         pass
 #     def __call__(self, double [:] ud):
 #         py_vd = np.zeros(self.K_Omega).flatten("C")

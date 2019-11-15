@@ -38,6 +38,8 @@ def plot_mesh_CG(mesh, delta, fnm, **kwargs):
         plt.triplot(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.triangles[:,1:], lw=0.1, color='white', alpha=.3)
         plt.tricontourf(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.triangles[:,1:], fd)
         plt.colorbar(orientation='horizontal', shrink=.7)
+
+        #plt.scatter(mesh.vertices[:mesh.nV_Omega, 0], mesh.vertices[:mesh.nV_Omega, 1], c="b")
         plt.title("Right side compute_f")
         plt.savefig(pp, format='pdf')
         plt.close()
@@ -71,7 +73,7 @@ def plot_mesh_CG(mesh, delta, fnm, **kwargs):
     if Ad_O is not None:
         plt.imshow(Ad_O)
         plt.colorbar(orientation='horizontal', shrink=.7)
-        plt.title(r"$A_{\Omega\Omega}$")
+        plt.title(r"$A$")
         plt.savefig(pp, format='pdf')
         plt.close()
 

@@ -22,6 +22,7 @@ if __name__ == "__main__":
     Ad, fd = assemble(mesh, py_Px, py_Py, dx, dy, delta)
 
     if is_PlotSolve:
+        # Solves the homogeneous Dirichlet-Problem!
         Ad_O = np.array(Ad[:,:mesh.K_Omega])
         ud = np.linalg.solve(Ad_O, fd)
 

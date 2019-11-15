@@ -2,12 +2,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib
 from plot import plot_mesh_DG, plot_mesh_CG
 
 
 def test_retriangulate():
     from assemble import py_retriangulate
-    from conf import py_P
+    from conf import  py_Px
+    py_P = py_Px
 
     def plot_retriangulate(x_center, delta, TE, RD, Rdx, pp):
         ax = plt.gca()
@@ -53,7 +55,7 @@ def test_retriangulate():
     pp.close()
 
 def test_interfacedependendKernel():
-    from conf import py_Px, py_Py, dx, dy, delta, ansatz, mesh_name
+    from conf import py_Px, py_Py, dx, dy, delta, ansatz, boundaryConditionType
     from nlocal import Mesh
     from assemble import assemble
     import pickle as pkl
@@ -61,27 +63,16 @@ def test_interfacedependendKernel():
     import sys
     # insert at 1, 0 is the script path (or '' in REPL)
     sys.path.insert(1, '../nonlocal-assembly-chris')
-
-    mesh = Mesh(mesh_name+ ".msh", ansatz)
-    #T = np.load("triangles.npy")
-    #V =  np.load("verts.npy")
-
-    #mesh.triangles = np.load("../compare_data/Triangles_Chris.npy")
-    #mesh.vertices = np.load("../compare_data/Verts_Chris.npy")
-
-    mesh_chris = pkl.load(open( "../compare_data/mesh.pkl", "rb" ))
-    mesh.triangles = mesh_chris.triangles
-    mesh.vertices =  mesh_chris.verts
-
+    mesh = Mesh(pkl.load(open( "../compare_data/mesh.pkl", "rb" )), ansatz, boundaryConditionType=boundaryConditionType)
     Ad, fd  = assemble(mesh, py_Px, py_Py, dx, dy, delta)
-
-    Ad_O = np.array(Ad[:, :mesh.K_Omega])
-    ud = np.linalg.solve(Ad_O, fd)
+    Ad_O = Ad
+    #Ad_O = np.array(Ad[:, :mesh.K_Omega])
+    #ud = np.linalg.solve(Ad_O, fd)
 
     fd_Ext = np.zeros(mesh.K)
-    fd_Ext[:mesh.K_Omega] = fd
+    #fd_Ext[:mesh.K_Omega] = fd
     ud_Ext = np.zeros(mesh.K)
-    ud_Ext[:mesh.K_Omega] = ud
+    #ud_Ext[:mesh.K_Omega] = ud
 
     np.save("Ad_O", Ad_O)
     if mesh.ansatz == "CG":
@@ -90,17 +81,46 @@ def test_interfacedependendKernel():
         plot_mesh_DG(mesh, delta, "testCassemble_interfaceKernel", ud=ud_Ext, fd=fd_Ext, Ad_O = Ad_O, maxTriangles=None)
 
     if True:
-        my_Ad_O = Ad_O
-        loader = np.load("../compare_data/A_L2_h0.025_delta0.05_ballexact_L2_.npz")
-        A = ss.csr_matrix((loader['data'], loader['indices'], loader['indptr']), shape=loader['shape'])
-        chris_Ad_O = np.array(A.todense()[:mesh.K_Omega, :mesh.K_Omega])
+        pp = PdfPages("../compare_data/AssemblyMatrices.pdf")
+        chris_Ad_O = np.load("../compare_data/A_Chris.npy")
 
-        #chris_Ad_O = np.load("../compare_data/A_Chris.npy")
+        # Set correct shape
+        if boundaryConditionType == "Dirichlet":
+            my_Ad_O = Ad_O[:, :mesh.K_Omega]
+            chris_Ad_O = chris_Ad_O[:mesh.K_Omega, :mesh.K_Omega]
+        else:
+            my_Ad_O = Ad_O
+        #my_Ad_O = (my_Ad_O + my_Ad_O.T)/2
+        #chris_Ad_O = (chris_Ad_O + chris_Ad_O.T)/2
         diff_norm = np.linalg.norm(chris_Ad_O - my_Ad_O)
         print("L2 Norm Difference:\t", diff_norm)
         Ad_diff = my_Ad_O - chris_Ad_O
+
+        vmin = -np.max(np.abs(Ad_diff))*1.1
+        vmax = -vmin
+
         minim = np.min(Ad_diff)
         maxim = np.max(Ad_diff)
+        #plt.imshow(Ad_diff)
+        plt.imshow(chris_Ad_O - chris_Ad_O.T)#, vmin=vmin, vmax=vmax)
+        plt.title("Symm Chris")
+        plt.colorbar(orientation='horizontal', shrink=.7)
+        plt.savefig(pp, format='pdf')
+        plt.close()
+
+        plt.imshow(my_Ad_O - my_Ad_O.T)#, vmin=vmin, vmax=vmax)
+        plt.title("Symm John")
+        plt.colorbar(orientation='horizontal', shrink=.7)
+        plt.savefig(pp, format='pdf')
+        plt.close()
+
+        plt.imshow(Ad_diff)#, vmin=vmin, vmax=vmax)
+        plt.title("Diff")
+        plt.colorbar(orientation='horizontal', shrink=.7)
+        plt.savefig(pp, format='pdf')
+        plt.close()
+
+        pp.close()
     print("Stop")
 
 if __name__ == "__main__":
