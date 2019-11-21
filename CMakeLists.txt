@@ -34,4 +34,5 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 # When calling "Install" libCassemble.a is written to ~/lib
-install(TARGETS Cassemble DESTINATION $ENV{HOME}/lib CONFIGURATIONS Release)
+install(TARGETS Cassemble DESTINATION $ENV{HOME}/lib)
+install(TARGETS Cassemble DESTINATION ${MY_LIBRARY_SOURCE_DIR}/lib)
