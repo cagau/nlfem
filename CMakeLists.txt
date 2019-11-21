@@ -35,4 +35,3 @@ endif()
 
 # When calling "Install" libCassemble.a is written to ~/lib
 install(TARGETS Cassemble DESTINATION $ENV{HOME}/lib)
-install(TARGETS Cassemble DESTINATION ${MY_LIBRARY_SOURCE_DIR}/lib)
