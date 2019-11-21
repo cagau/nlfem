@@ -137,4 +137,4 @@ def test_interfacedependendKernel():
 
 if __name__ == "__main__":
     test_interfacedependendKernel()
-    #test_retriangulate()
+    test_retriangulate()

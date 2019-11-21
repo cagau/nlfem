@@ -149,47 +149,6 @@ void rightNormal(double * y0, double * y1, double orientation, double * normal){
     doubleVec_scale(orientation, normal, normal, 2);
 }
 
-double scale_toCircle(double * x_center, double sqdelta, double * s_midpoint, double * s_projectionDirection){
-    double norm_direction, p, q, term1, term2, v, lambda0, lambda1;
-    double x_shiftedCenter[2];
-
-    norm_direction = sqrt(vec_dot(s_projectionDirection, s_projectionDirection, 2));
-    if (norm_direction == 0){
-        cout << "Error in scale_toCircle: Projection Direction == 0." << endl;
-        abort();
-    }
-
-    doubleVec_subtract(s_midpoint, x_center, x_shiftedCenter, 2);
-
-    p = 2*(vec_dot(s_projectionDirection, x_shiftedCenter, 2)) / norm_direction;
-    q = (vec_dot(x_center, x_center, 2) - sqdelta + vec_dot(s_midpoint, s_midpoint, 2) - 2*( vec_dot(x_center, s_midpoint, 2)) )/norm_direction;
-    v = pow((p/2), 2)  - q;
-    if (v>=0){
-        term1 = -p/2;
-        term2 = sqrt(v);
-        lambda0 = term1 - term2; // First scaling factor.
-        //lambda1 = term1 + term2; // Second scaling factor.
-        lambda1 = q/lambda0;
-        if ((lambda0 >= 0) && (lambda1 <= 0)){
-            return lambda0;
-        } else if ((lambda1 >= 0) && (lambda0 <= 0)){
-            return lambda1;
-        } else {
-            // This should not happen because we draw a polygone inside a circle. There should (given the normals
-            // are chosen correctly) always be a positive scaling factor for the normal to hit the circle,
-            // where the other one is negative.
-            printf ("lambda 0 %17.16e\nlambda 1 %17.16e \n", lambda0, lambda1);
-            cout << "Error in scale_toCircle: No lambda found." << endl;
-            abort();
-        }
-    }
-    else {
-        cout << "Error in scale_toCircle: No intersection with Circle possible." << endl;
-        abort();
-    }
-
-}
-
 bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
     bool a, b, c;
     double vec[2];
@@ -209,8 +168,8 @@ bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu
 int placePointOnCap(double * y_predecessor, double * y_current, double * x_center, double sqdelta, double * TE, double * nu_a, double * nu_b, double * nu_c, double orientation, int Rdx, double * R){
     // Place a point on the cap.
     //y_predecessor = &R[2*(Rdx-1)];
-    double y_new[2], s_midpoint[2], s_projectionDirection[2], baryC[2];
-    double lambda, scalingFactor;
+    double y_new[2], s_midpoint[2], s_projectionDirection[2];
+    double scalingFactor;
 
     doubleVec_midpoint(y_predecessor, y_current, s_midpoint, 2);
     // Note, this yields the left normal from y_predecessor to y0
@@ -219,12 +178,6 @@ int placePointOnCap(double * y_predecessor, double * y_current, double * x_cente
     scalingFactor = sqrt( sqdelta / vec_dot(s_projectionDirection, s_projectionDirection, 2));
     doubleVec_scale(scalingFactor, s_projectionDirection, s_projectionDirection, 2);
     doubleVec_add(x_center, s_projectionDirection, y_new, 2);
-
-    // The costly and uneffective way
-    //lambda = scale_toCircle(x_center, sqdelta, s_midpoint, s_projectionDirection);
-    //doubleVec_scale(lambda, s_projectionDirection, y_new, 2);
-    //doubleVec_add(s_midpoint, y_new, y_new, 2);
-
 
     if ( inTriangle(y_new, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
         // Append y_new (Point on the cap)
@@ -237,7 +190,7 @@ int placePointOnCap(double * y_predecessor, double * y_current, double * x_cente
 
 int retriangulate(double * x_center, double * TE, double sqdelta, double * out_reTriangle_list, int is_placePointOnCap){
         // C Variables and Arrays.
-        int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0, shift=0, j=0;
+        int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
         double v=0, lam1=0, lam2=0, term1=0, term2=0;
         double nu_a[2], nu_b[2], nu_c[2]; // Normals
         double p[2];
@@ -246,8 +199,6 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
         double b[2];
         double y1[2];
         double y2[2];
-        double baryC[2];
-        double buffer[2];
         double orientation;
 
         bool is_onEdge=false, is_firstPointLiesOnVertex=true;
@@ -256,7 +207,7 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
         // Hence we can hardcode how much space needs to bee allocated
         // (This upper bound is thight! Check Christian Vollmann's thesis for more information.)
 
-        double R[9*2], orderedR[9*2]; // Vector containing all intersection points.
+        double R[9*2]; // Vector containing all intersection points.
         doubleVec_tozero(R, 9*2);
 
         // Compute Normals of the Triangle
@@ -343,16 +294,6 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
             // In this case the content of the array out_RE will not be touched.
             return 0;
         } else {
-
-            // Left shift all points (should not make a difference)
-            //shift = 1;
-            //for (k=0; k<Rdx; k++){
-            //    j = (k+shift) % Rdx;
-            //    orderedR[2*j] = R[2*k];
-            //    orderedR[2*j+1] = R[2*k+1];
-            //}
-            //doubleVec_copyTo(orderedR, R, 2*Rdx);
-
 
             for (k=0; k < (Rdx - 2); k++){
                 for (i=0; i<2; i++){
@@ -568,7 +509,7 @@ void par_assemble(  double * Ad,
     double bTE[2*3];
     // Integration information ------------------------------------
     // Loop index of basis functions
-    int a=0, b=0, aAdxj =0;
+    int a=0, b=0;
     long labela=0, labelb=0;
     // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
     long * aAdx;
@@ -651,7 +592,8 @@ void par_assemble(  double * Ad,
         for (a=0; a<3; a++){
             // Assembly happens in the interior of Omega only, so we throw away some values
             // Again, Triangles contains the labels as first entry! Hence, we start with a=1 here!
-            if (is_DiscontinuousGalerkin || (Triangles[4*aTdx+1 + a] < L_Omega)){
+            // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
+            if (is_DiscontinuousGalerkin || (aAdx[a] < L_Omega)){
                 #pragma omp atomic update
                 fd[aAdx[a]] += termf[a];
             }
@@ -756,8 +698,8 @@ void par_assemble(  double * Ad,
 
                             // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
                             for (a=0; a<3; a++){
-                            // Note: Triangles[4*aTdx+1 + a] == aAdx[a] !
-                                if  (is_DiscontinuousGalerkin || (Triangles[4*aTdx+1 + a] < L_Omega)){
+                            // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
+                                if  (is_DiscontinuousGalerkin || (aAdx[a] < L_Omega)){
                                     for (b=0; b<3; b++){
                                         #pragma omp atomic update
                                         Ad[aAdx[a]*K + aAdx[b]] += termLocal[3*a+b];
