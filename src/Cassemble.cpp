@@ -3,14 +3,14 @@
 #include <queue>
 #include <iostream>
 #include <stdio.h>
-#include "Cassemble.h"
-
+#include <Cassemble.h>
+#include <vector>
 using namespace std;
 
 // Model -----------------------------------------f----------------------------------------------------------------
 
 // Define Right side compute_f
-static double model_f(double * x){
+double model_f(double * x){
         return 1.0;
 /*
         if ((-.2 < x[0] && x[0] < .2) && (-2 < x[1] && x[1] < .2) )
@@ -22,12 +22,12 @@ static double model_f(double * x){
 */
 }
 
-static double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
+double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
     return 4 / (M_PI * pow(sqdelta, 2));
 }
 
 /*
-static double model_kernel_(double * x, long labelx, double * y, long labely, double sqdelta){
+double model_kernel_(double * x, long labelx, double * y, long labely, double sqdelta){
     double dist;
     long label;
 
@@ -51,14 +51,14 @@ static double model_kernel_(double * x, long labelx, double * y, long labely, do
 }
 */
 
-static void model_basisFunction(double * p, double *psi_vals){
+void model_basisFunction(double * p, double *psi_vals){
     psi_vals[0] = 1 - p[0] - p[1];
     psi_vals[1] = p[0];
     psi_vals[2] = p[1];
 }
 
 // Integration ---------------------------------------------------------------------------------------------------------
-static void outerInt_full(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb,
+void outerInt_full(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb,
                     double * Px, int nPx, double * dx,
                     double * Py, int nPy, double * dy,
                     double * psix, double * psiy,
@@ -87,7 +87,7 @@ static void outerInt_full(double * aTE, double aTdet, long labela, double * bTE,
 }
 
 
-static void innerInt_retriangulate(double * x, long labela, double * bTE, long labelb, double * P, int nP, double * dy, double sqdelta, double * innerLocal, double * innerNonloc){
+void innerInt_retriangulate(double * x, long labela, double * bTE, long labelb, double * P, int nP, double * dy, double sqdelta, double * innerLocal, double * innerNonloc){
     int i=0, rTdx=0, b=0, Rdx=0;
     double ker=0, rTdet=0;
     double physical_quad[2];
@@ -143,16 +143,17 @@ static void innerInt_retriangulate(double * x, long labela, double * bTE, long l
 }
 
 // Normal which looks to the right w.r.t the vector from y0 to y1.
-static void rightNormal(double * y0, double * y1, double orientation, double * normal){
+void rightNormal(double * y0, double * y1, double orientation, double * normal){
     normal[0] = y1[1] - y0[1];
     normal[1] = y0[0] - y1[0];
     doubleVec_scale(orientation, normal, normal, 2);
 }
 
-static double scale_toCircle(double * x_center, double sqdelta, double * s_midpoint, double * s_projectionDirection){
+double scale_toCircle(double * x_center, double sqdelta, double * s_midpoint, double * s_projectionDirection){
     double norm_direction, p, q, term1, term2, v, lambda0, lambda1;
     double x_shiftedCenter[2];
 
+    norm_direction = sqrt(vec_dot(s_projectionDirection, s_projectionDirection, 2));
     if (norm_direction == 0){
         cout << "Error in scale_toCircle: Projection Direction == 0." << endl;
         abort();
@@ -189,7 +190,7 @@ static double scale_toCircle(double * x_center, double sqdelta, double * s_midpo
 
 }
 
-static bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
+bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
     bool a, b, c;
     double vec[2];
 
@@ -205,7 +206,7 @@ static bool inTriangle(double * y_new, double * p, double * q, double * r, doubl
     return a && b && c;
 }
 
-static int placePointOnCap(double * y_predecessor, double * y_current, double * x_center, double sqdelta, double * TE, double * nu_a, double * nu_b, double * nu_c, double orientation, int Rdx, double * R){
+int placePointOnCap(double * y_predecessor, double * y_current, double * x_center, double sqdelta, double * TE, double * nu_a, double * nu_b, double * nu_c, double orientation, int Rdx, double * R){
     // Place a point on the cap.
     //y_predecessor = &R[2*(Rdx-1)];
     double y_new[2], s_midpoint[2], s_projectionDirection[2], baryC[2];
@@ -234,7 +235,7 @@ static int placePointOnCap(double * y_predecessor, double * y_current, double * 
     }
 }
 
-static int retriangulate(double * x_center, double * TE, double sqdelta, double * out_reTriangle_list, int is_placePointOnCap){
+int retriangulate(double * x_center, double * TE, double sqdelta, double * out_reTriangle_list, int is_placePointOnCap){
         // C Variables and Arrays.
         int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0, shift=0, j=0;
         double v=0, lam1=0, lam2=0, term1=0, term2=0;
@@ -371,7 +372,7 @@ static int retriangulate(double * x_center, double * TE, double sqdelta, double 
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
 
-static void compute_f(double * aTE,
+void compute_f(double * aTE,
                     double aTdet,
                     double * P,
                     int nP,
@@ -389,7 +390,7 @@ static void compute_f(double * aTE,
     }
 }
 
-//static void compute_A(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb,
+//void compute_A(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb,
 //                    double * P,
 //                    int nP,
 //                    double * dx,
@@ -400,7 +401,7 @@ static void compute_f(double * aTE,
 //    outerInt_full(&aTE[0], aTdet, labela, &bTE[0], bTdet, labelb, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
 //}
 
-static void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx){
+void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx){
     int aTdx=0, a=0, b=0, j=0;
     double aTE[2*3];
     double aTdet;
@@ -454,7 +455,7 @@ static void par_assembleMass(double * Ad, long * Triangles, double * Verts, int 
 
 }
 
-static void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx){
+void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx){
     int aTdx=0, a=0, b=0, j=0;
     double aTE[2*3];
     double aTdet;
@@ -508,7 +509,8 @@ static void par_evaluateMass(double * vd, double * ud, long * Triangles, double 
 
 }
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-static void par_assemble(  double * Ad,
+void par_assemble(  double * Ad,
+                    int K_Omega,
                     int K,
                     double * fd,
                     long * Triangles,
@@ -526,6 +528,8 @@ static void par_assemble(  double * Ad,
                    ) {
     int aTdx, h=0;
     double tmp_psi[3];
+
+
     double *psix = (double *) malloc(3*nPx*sizeof(double));
     double *psiy = (double *) malloc(3*nPy*sizeof(double));
 
@@ -777,7 +781,7 @@ static void par_assemble(  double * Ad,
     free(psiy);
 }
 
-static double compute_area(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb, double * P, int nP, double * dx, double sqdelta){
+double compute_area(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb, double * P, int nP, double * dx, double sqdelta){
     double areaTerm=0.0;
     int rTdx, Rdx;
     double * x;
@@ -795,7 +799,7 @@ static double compute_area(double * aTE, double aTdet, long labela, double * bTE
 
 // Math functions ------------------------------------------------------------------------------------------------------
 
-static void solve2x2(double * A, double * b, double * x){
+void solve2x2(double * A, double * b, double * x){
     int dx0 = 0, dx1 = 1;
     double l=0, u=0;
 
@@ -832,7 +836,7 @@ static void solve2x2(double * A, double * b, double * x){
 
 // Matrix operations (working with strides only) --------------------------------
 
-static double absDet(double * E){
+double absDet(double * E){
     double M[2][2];
     int i=0;
     for (i=0; i< 2; i++){
@@ -842,7 +846,7 @@ static double absDet(double * E){
     return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
 }
 
-static double signDet(double * E){
+double signDet(double * E){
     double M[2][2], det;
     int i=0;
     for (i=0; i< 2; i++){
@@ -860,7 +864,7 @@ static double signDet(double * E){
     }
 }
 
-static void baryCenter(double * E, double * bary){
+void baryCenter(double * E, double * bary){
     int i=0;
     bary[0] = 0;
     bary[1] = 0;
@@ -871,7 +875,7 @@ static void baryCenter(double * E, double * bary){
     bary[0] = bary[0]/3;
     bary[1] = bary[1]/3;
 }
-static void baryCenter_polygone(double * P, int nVerticies, double * bary){
+void baryCenter_polygone(double * P, int nVerticies, double * bary){
     int k=0;
     bary[0] = 0;
     bary[1] = 0;
@@ -883,14 +887,14 @@ static void baryCenter_polygone(double * P, int nVerticies, double * bary){
     bary[1] = bary[1]/nVerticies;
 }
 
-static void toPhys(double * E, double * p, double * out_x){
+void toPhys(double * E, double * p, double * out_x){
     int i=0;
     for (i=0; i<2;i++){
         out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i];
     }
 }
 
-static void toRef(double * E, double * phys_x, double * ref_p){
+void toRef(double * E, double * phys_x, double * ref_p){
     double M[2*2];
     double b[2];
 
@@ -909,7 +913,7 @@ static void toRef(double * E, double * phys_x, double * ref_p){
 // Double
 
 // Check whether any, or all elements of a vector are zero --------------
-static int doubleVec_any(double * vec, int len){
+int doubleVec_any(double * vec, int len){
     int i=0;
     for (i=0; i < len; i++){
         if (vec[i] != 0){
@@ -919,7 +923,7 @@ static int doubleVec_any(double * vec, int len){
     return 0;
 }
 
-static double vec_dot(double * x, double * y, int len){
+double vec_dot(double * x, double * y, int len){
     double r=0;
     int i=0;
     for (i=0; i<len; i++){
@@ -928,7 +932,7 @@ static double vec_dot(double * x, double * y, int len){
     return r;
 }
 
-static double vec_sqL2dist(double * x, double * y, int len){
+double vec_sqL2dist(double * x, double * y, int len){
     double r=0;
     int i=0;
     for (i=0; i<len; i++){
@@ -937,42 +941,42 @@ static double vec_sqL2dist(double * x, double * y, int len){
     return r;
 }
 
-static void doubleVec_tozero(double * vec, int len){
+void doubleVec_tozero(double * vec, int len){
     int i=0;
     for (i=0; i< len; i++){
         vec[i]  = 0;
     }
 }
 
-static void doubleVec_midpoint(double * vec1, double * vec2, double * midpoint, int len){
+void doubleVec_midpoint(double * vec1, double * vec2, double * midpoint, int len){
     int i = 0;
     for (i=0; i < len; i++){
         midpoint[i]  = (vec1[i] + vec2[i])/2;
     }
 }
 
-static void doubleVec_subtract(double * vec1, double * vec2, double * out, int len){
+void doubleVec_subtract(double * vec1, double * vec2, double * out, int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec1[i] - vec2[i];
     }
 }
 
-static void doubleVec_add(double * vec1, double * vec2, double * out, int len){
+void doubleVec_add(double * vec1, double * vec2, double * out, int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec1[i] + vec2[i];
     }
 }
 
-static void doubleVec_scale(double lambda, double * vec, double * out, int len){
+void doubleVec_scale(double lambda, double * vec, double * out, int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec[i]*lambda;
     }
 }
 
-static void doubleVec_copyTo(double * input, double * output, int len){
+void doubleVec_copyTo(double * input, double * output, int len){
     int i=0;
     for (i=0; i<len; i++){
         output[i] = input[i];
@@ -980,7 +984,7 @@ static void doubleVec_copyTo(double * input, double * output, int len){
 }
 // Long
 
-static int longVec_all(long * vec, int len){
+int longVec_all(long * vec, int len){
     int i=0;
     for (i=0; i<len; i++){
         if (vec[i] == 0){
@@ -990,7 +994,7 @@ static int longVec_all(long * vec, int len){
     return 1;
 }
 
-static int longVec_any(long * vec, int len){
+int longVec_any(long * vec, int len){
     int i=0;
     for (i=0; i<len; i++){
             if (vec[i] != 0){
@@ -1003,7 +1007,7 @@ static int longVec_any(long * vec, int len){
 // Int
 
 // Set Vectors to Zero -------------------------------------------------
-static void intVec_tozero(int * vec, int len){
+void intVec_tozero(int * vec, int len){
     int i=0;
     for (i=0; i< len; i++){
         vec[i]  = 0;
@@ -1011,7 +1015,7 @@ static void intVec_tozero(int * vec, int len){
 }
 // Scalar --------------------------------------------------------
 
-static double absolute(double value){
+double absolute(double value){
     if (value < 0){
         return - value;
     } else {
@@ -1019,13 +1023,13 @@ static double absolute(double value){
     }
 }
 
-static double scal_sqL2dist(double x, double y){
+double scal_sqL2dist(double x, double y){
     return pow((x-y), 2);
 }
 
 //[DEBUG] Christians order routine
 /*
-static void bubbleSort2(double * keyArray, int rows, int * indexList){
+void bubbleSort2(double * keyArray, int rows, int * indexList){
   // We assume keyArray has 2 Columns!
   // Sorting is done w.r.t first col, then second col.
   int n, i, cols=2;
@@ -1046,7 +1050,7 @@ static void bubbleSort2(double * keyArray, int rows, int * indexList){
   } // End outer for
 }
 
-static void relativePosition(double * origin, double * refvec, double * x, double * angle, double * length){
+void relativePosition(double * origin, double * refvec, double * x, double * angle, double * length){
     double vector[2], normalized[2];
     double lenVector, dotProd, diffProd;
     doubleVec_subtract(x, origin, vector, 2);
@@ -1063,7 +1067,7 @@ static void relativePosition(double * origin, double * refvec, double * x, doubl
     length[0] = lenVector;
 }
 
-static void order(double * pointList, int lenList, double * orderedPointList){
+void order(double * pointList, int lenList, double * orderedPointList){
     double * origin;
     double refvec[2];
     double angle[9], length[9];

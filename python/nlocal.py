@@ -1,8 +1,6 @@
 #-*- coding:utf-8 -*-
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-from nbhd import xnotinNbhd
+
 
 class dummyMesh:
     def __init__(self, nE, nE_Omega, nV, nV_Omega, vertices, triangles, ansatz="CG", boundaryConditionType="Dirichlet"):

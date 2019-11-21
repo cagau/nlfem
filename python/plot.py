@@ -5,8 +5,7 @@ import matplotlib
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-from conf import mesh_name, delta
-from aux import filename
+from python.aux import filename
 import pickle as pkl
 
 def uLocaSol(x,y):
@@ -144,7 +143,7 @@ def plot_mesh_DG(mesh, delta, fnm, **kwargs):
     print("Time Needed: ", time.time()-start)
     pp.close()
 
-def plot(mesh_name, delta, Tstmp= "", **kwargs):
+def plot(OUTPUT_PATH, mesh_name, delta, Tstmp= "", **kwargs):
     """
     Plot function. Plots the solution and the right side and saves them to a pdf.
 
@@ -154,15 +153,15 @@ def plot(mesh_name, delta, Tstmp= "", **kwargs):
     :return: None
         """
 
-    fnm = Tstmp + filename(mesh_name, delta)[1]
+    fnm = Tstmp + filename(OUTPUT_PATH + mesh_name, delta)[1]
 
     fileObject2 = open(fnm, 'rb')
     datakwargs = pkl.load(fileObject2)
     fileObject2.close()
     try:
-        datakwargs["Ad_O"] = np.load("Ad_O.npy")
+        datakwargs["Ad_O"] = np.load(OUTPUT_PATH + "Ad_O.npy")
     except IOError:
-        print("No Matrix Ad_O found")
+        print("In plot.plot(): No Matrix Ad_O found")
         datakwargs["Ad_O"] = None
 
     mesh = datakwargs.pop("mesh")

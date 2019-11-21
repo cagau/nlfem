@@ -1,8 +1,12 @@
 #-*- coding:utf-8 -*-
 
 import numpy as np
+
+DATA_PATH = "data/"
+OUTPUT_PATH = "output/"
+mesh_name = "circle_huge"
 #mesh_name = "../compare_data/target_shape"
-mesh_name = "circle_large"
+
 delta = .1
 is_PlotSolve = True
 ansatz = "CG"

@@ -1,14 +1,20 @@
+#!/home/klar/.venv/bin/python3
+#-*- coding:utf-8 -*-
+
+# In order to find the scripts in the python/ directory
+# we add the current project path == working directory to sys-path
+import sys
+sys.path.append(".")
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-import matplotlib
-from plot import plot_mesh_DG, plot_mesh_CG
+from python.plot import plot_mesh_DG, plot_mesh_CG
 
 
 def test_retriangulate():
     from assemble import py_retriangulate
-    from conf import  py_Px
+    from python.conf import  py_Px, OUTPUT_PATH
     py_P = py_Px
 
     def plot_retriangulate(x_center, delta, TE, RD, Rdx, pp):
@@ -42,7 +48,7 @@ def test_retriangulate():
     c_TE = TE.flatten("C")
     print("Triangle: ", c_TE)
 
-    pp = PdfPages("testCassemble_Retriangulate" + ".pdf")
+    pp = PdfPages(OUTPUT_PATH + "testCassemble_Retriangulate" + ".pdf")
     for i in range(len(deltaList)):
         print("Page ", i + 1)
         delta  = deltaList[i]
@@ -55,15 +61,21 @@ def test_retriangulate():
     pp.close()
 
 def test_interfacedependendKernel():
-    from conf import py_Px, py_Py, dx, dy, delta, ansatz, boundaryConditionType
-    from nlocal import Mesh
+    # This Code compares the output with the output of another code and does not work stand-alone
+    from python.conf import py_Px, py_Py, dx, dy, delta, ansatz, boundaryConditionType, OUTPUT_PATH
+    from python.nlocal import Mesh
     from assemble import assemble
     import pickle as pkl
-    import scipy.sparse as ss
     import sys
     # insert at 1, 0 is the script path (or '' in REPL)
     sys.path.insert(1, '../nonlocal-assembly-chris')
-    mesh = Mesh(pkl.load(open( "../compare_data/mesh.pkl", "rb" )), ansatz, boundaryConditionType=boundaryConditionType)
+
+    try:
+        mesh = Mesh(pkl.load(open("../compare_data/mesh.pkl", "rb")), ansatz, boundaryConditionType = boundaryConditionType)
+    except IOError:
+        print("\nError in test_interfacedependendKernel():\nThis Code compares the output with the output of another code and does not work stand-alone.\n")
+        raise IOError
+
     Ad, fd  = assemble(mesh, py_Px, py_Py, dx, dy, delta)
     Ad_O = Ad
     #Ad_O = np.array(Ad[:, :mesh.K_Omega])
@@ -74,14 +86,14 @@ def test_interfacedependendKernel():
     ud_Ext = np.zeros(mesh.K)
     #ud_Ext[:mesh.K_Omega] = ud
 
-    np.save("Ad_O", Ad_O)
+    np.save(OUTPUT_PATH + "Ad_O", Ad_O)
     if mesh.ansatz == "CG":
-        plot_mesh_CG(mesh, delta, "testCassemble_interfaceKernel", ud=ud_Ext, fd=fd_Ext, Ad_O=Ad_O)
+        plot_mesh_CG(mesh, delta, OUTPUT_PATH+"testCassemble_interfaceKernel", ud=ud_Ext, fd=fd_Ext, Ad_O=Ad_O)
     if mesh.ansatz == "DG":
-        plot_mesh_DG(mesh, delta, "testCassemble_interfaceKernel", ud=ud_Ext, fd=fd_Ext, Ad_O = Ad_O, maxTriangles=None)
+        plot_mesh_DG(mesh, delta, OUTPUT_PATH+"testCassemble_interfaceKernel", ud=ud_Ext, fd=fd_Ext, Ad_O = Ad_O, maxTriangles=None)
 
     if True:
-        pp = PdfPages("../compare_data/AssemblyMatrices.pdf")
+        pp = PdfPages(OUTPUT_PATH+"AssemblyMatrices.pdf")
         chris_Ad_O = np.load("../compare_data/A_Chris.npy")
 
         # Set correct shape
