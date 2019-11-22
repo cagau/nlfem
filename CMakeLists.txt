@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 # Set directory of source files
 set(MY_LIBRARY_SOURCE_DIR /home/klar/Promotion/projects/CLION-nonlocal-assembly-cpp/)
-# Equivalent to -fIC option in the compiler
+# Equivalent to -fPIC option in the compiler
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Find OpneMP Library
 find_package(OpenMP)
@@ -25,10 +25,10 @@ set(header ${MY_LIBRARY_SOURCE_DIR}/include)
 # Adds the library Cassemble. Leads to: libCassemble.a
 add_library(Cassemble SHARED ${src}/Cassemble.cpp ${header}/Cassemble.h)
 # Add test executable which only imports the function model_f()
-add_executable(CassembleTest ${src}/test.cpp)
+# add_executable(CassembleTest ${src}/test.cpp)
 
 # Add target link libraries
-target_link_libraries(CassembleTest PRIVATE Cassemble)
+# target_link_libraries(CassembleTest PRIVATE Cassemble)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(Cassemble PRIVATE OpenMP::OpenMP_CXX)
 endif()

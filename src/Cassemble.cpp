@@ -2,15 +2,13 @@
 #include <omp.h>
 #include <queue>
 #include <iostream>
-#include <stdio.h>
 #include <Cassemble.h>
-#include <vector>
 using namespace std;
 
 // Model -----------------------------------------f----------------------------------------------------------------
 
 // Define Right side compute_f
-double model_f(double * x){
+static double model_f(double * x){
         return 1.0;
 /*
         if ((-.2 < x[0] && x[0] < .2) && (-2 < x[1] && x[1] < .2) )
@@ -22,7 +20,7 @@ double model_f(double * x){
 */
 }
 
-double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
+static double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
     return 4 / (M_PI * pow(sqdelta, 2));
 }
 
@@ -51,14 +49,14 @@ double model_kernel_(double * x, long labelx, double * y, long labely, double sq
 }
 */
 
-void model_basisFunction(double * p, double *psi_vals){
+static void model_basisFunction(double * p, double *psi_vals){
     psi_vals[0] = 1 - p[0] - p[1];
     psi_vals[1] = p[0];
     psi_vals[2] = p[1];
 }
 
 // Integration ---------------------------------------------------------------------------------------------------------
-void outerInt_full(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb,
+static void outerInt_full(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb,
                     double * Px, int nPx, double * dx,
                     double * Py, int nPy, double * dy,
                     double * psix, double * psiy,
@@ -87,7 +85,7 @@ void outerInt_full(double * aTE, double aTdet, long labela, double * bTE, double
 }
 
 
-void innerInt_retriangulate(double * x, long labela, double * bTE, long labelb, double * P, int nP, double * dy, double sqdelta, double * innerLocal, double * innerNonloc){
+static void innerInt_retriangulate(double * x, long labela, double * bTE, long labelb, double * P, int nP, double * dy, double sqdelta, double * innerLocal, double * innerNonloc){
     int i=0, rTdx=0, b=0, Rdx=0;
     double ker=0, rTdet=0;
     double physical_quad[2];
@@ -143,13 +141,13 @@ void innerInt_retriangulate(double * x, long labela, double * bTE, long labelb, 
 }
 
 // Normal which looks to the right w.r.t the vector from y0 to y1.
-void rightNormal(double * y0, double * y1, double orientation, double * normal){
+static void rightNormal(double * y0, double * y1, double orientation, double * normal){
     normal[0] = y1[1] - y0[1];
     normal[1] = y0[0] - y1[0];
     doubleVec_scale(orientation, normal, normal, 2);
 }
 
-bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
+static bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
     bool a, b, c;
     double vec[2];
 
@@ -165,7 +163,7 @@ bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu
     return a && b && c;
 }
 
-int placePointOnCap(double * y_predecessor, double * y_current, double * x_center, double sqdelta, double * TE, double * nu_a, double * nu_b, double * nu_c, double orientation, int Rdx, double * R){
+static int placePointOnCap(double * y_predecessor, double * y_current, double * x_center, double sqdelta, double * TE, double * nu_a, double * nu_b, double * nu_c, double orientation, int Rdx, double * R){
     // Place a point on the cap.
     //y_predecessor = &R[2*(Rdx-1)];
     double y_new[2], s_midpoint[2], s_projectionDirection[2];
@@ -313,7 +311,7 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
 
-void compute_f(double * aTE,
+static void compute_f(double * aTE,
                     double aTdet,
                     double * P,
                     int nP,
@@ -741,7 +739,7 @@ double compute_area(double * aTE, double aTdet, long labela, double * bTE, doubl
 
 // Math functions ------------------------------------------------------------------------------------------------------
 
-void solve2x2(double * A, double * b, double * x){
+static void solve2x2(double * A, double * b, double * x){
     int dx0 = 0, dx1 = 1;
     double l=0, u=0;
 
@@ -778,7 +776,7 @@ void solve2x2(double * A, double * b, double * x){
 
 // Matrix operations (working with strides only) --------------------------------
 
-double absDet(double * E){
+static double absDet(double * E){
     double M[2][2];
     int i=0;
     for (i=0; i< 2; i++){
@@ -788,7 +786,7 @@ double absDet(double * E){
     return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
 }
 
-double signDet(double * E){
+static double signDet(double * E){
     double M[2][2], det;
     int i=0;
     for (i=0; i< 2; i++){
@@ -806,7 +804,7 @@ double signDet(double * E){
     }
 }
 
-void baryCenter(double * E, double * bary){
+static void baryCenter(double * E, double * bary){
     int i=0;
     bary[0] = 0;
     bary[1] = 0;
@@ -817,7 +815,7 @@ void baryCenter(double * E, double * bary){
     bary[0] = bary[0]/3;
     bary[1] = bary[1]/3;
 }
-void baryCenter_polygone(double * P, int nVerticies, double * bary){
+static void baryCenter_polygone(double * P, int nVerticies, double * bary){
     int k=0;
     bary[0] = 0;
     bary[1] = 0;
@@ -829,14 +827,14 @@ void baryCenter_polygone(double * P, int nVerticies, double * bary){
     bary[1] = bary[1]/nVerticies;
 }
 
-void toPhys(double * E, double * p, double * out_x){
+static void toPhys(double * E, double * p, double * out_x){
     int i=0;
     for (i=0; i<2;i++){
         out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i];
     }
 }
 
-void toRef(double * E, double * phys_x, double * ref_p){
+static void toRef(double * E, double * phys_x, double * ref_p){
     double M[2*2];
     double b[2];
 
@@ -855,7 +853,7 @@ void toRef(double * E, double * phys_x, double * ref_p){
 // Double
 
 // Check whether any, or all elements of a vector are zero --------------
-int doubleVec_any(double * vec, int len){
+static int doubleVec_any(double * vec, int len){
     int i=0;
     for (i=0; i < len; i++){
         if (vec[i] != 0){
@@ -865,7 +863,7 @@ int doubleVec_any(double * vec, int len){
     return 0;
 }
 
-double vec_dot(double * x, double * y, int len){
+static double vec_dot(double * x, double * y, int len){
     double r=0;
     int i=0;
     for (i=0; i<len; i++){
@@ -874,7 +872,7 @@ double vec_dot(double * x, double * y, int len){
     return r;
 }
 
-double vec_sqL2dist(double * x, double * y, int len){
+static double vec_sqL2dist(double * x, double * y, int len){
     double r=0;
     int i=0;
     for (i=0; i<len; i++){
@@ -883,42 +881,42 @@ double vec_sqL2dist(double * x, double * y, int len){
     return r;
 }
 
-void doubleVec_tozero(double * vec, int len){
+static void doubleVec_tozero(double * vec, int len){
     int i=0;
     for (i=0; i< len; i++){
         vec[i]  = 0;
     }
 }
 
-void doubleVec_midpoint(double * vec1, double * vec2, double * midpoint, int len){
+static void doubleVec_midpoint(double * vec1, double * vec2, double * midpoint, int len){
     int i = 0;
     for (i=0; i < len; i++){
         midpoint[i]  = (vec1[i] + vec2[i])/2;
     }
 }
 
-void doubleVec_subtract(double * vec1, double * vec2, double * out, int len){
+static void doubleVec_subtract(double * vec1, double * vec2, double * out, int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec1[i] - vec2[i];
     }
 }
 
-void doubleVec_add(double * vec1, double * vec2, double * out, int len){
+static void doubleVec_add(double * vec1, double * vec2, double * out, int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec1[i] + vec2[i];
     }
 }
 
-void doubleVec_scale(double lambda, double * vec, double * out, int len){
+static void doubleVec_scale(double lambda, double * vec, double * out, int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec[i]*lambda;
     }
 }
 
-void doubleVec_copyTo(double * input, double * output, int len){
+static void doubleVec_copyTo(double * input, double * output, int len){
     int i=0;
     for (i=0; i<len; i++){
         output[i] = input[i];
@@ -926,7 +924,7 @@ void doubleVec_copyTo(double * input, double * output, int len){
 }
 // Long
 
-int longVec_all(long * vec, int len){
+static int longVec_all(long * vec, int len){
     int i=0;
     for (i=0; i<len; i++){
         if (vec[i] == 0){
@@ -936,7 +934,7 @@ int longVec_all(long * vec, int len){
     return 1;
 }
 
-int longVec_any(long * vec, int len){
+static int longVec_any(long * vec, int len){
     int i=0;
     for (i=0; i<len; i++){
             if (vec[i] != 0){
@@ -949,7 +947,7 @@ int longVec_any(long * vec, int len){
 // Int
 
 // Set Vectors to Zero -------------------------------------------------
-void intVec_tozero(int * vec, int len){
+static void intVec_tozero(int * vec, int len){
     int i=0;
     for (i=0; i< len; i++){
         vec[i]  = 0;
@@ -957,7 +955,7 @@ void intVec_tozero(int * vec, int len){
 }
 // Scalar --------------------------------------------------------
 
-double absolute(double value){
+static double absolute(double value){
     if (value < 0){
         return - value;
     } else {
@@ -965,7 +963,7 @@ double absolute(double value){
     }
 }
 
-double scal_sqL2dist(double x, double y){
+static double scal_sqL2dist(double x, double y){
     return pow((x-y), 2);
 }
 
