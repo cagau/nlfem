@@ -49,7 +49,7 @@ double model_kernel_(double * x, long labelx, double * y, long labely, double sq
 }
 */
 
-static void model_basisFunction(double * p, double *psi_vals){
+void model_basisFunction(double * p, double *psi_vals){
     psi_vals[0] = 1 - p[0] - p[1];
     psi_vals[1] = p[0];
     psi_vals[2] = p[1];
@@ -827,14 +827,14 @@ static void baryCenter_polygone(double * P, int nVerticies, double * bary){
     bary[1] = bary[1]/nVerticies;
 }
 
-static void toPhys(double * E, double * p, double * out_x){
+void toPhys(double * E, double * p, double * out_x){
     int i=0;
     for (i=0; i<2;i++){
         out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i];
     }
 }
 
-static void toRef(double * E, double * phys_x, double * ref_p){
+void toRef(double * E, double * phys_x, double * ref_p){
     double M[2*2];
     double b[2];
 

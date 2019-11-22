@@ -5,8 +5,8 @@
 
 static double model_f(double *);
 static double model_kernel(double *, long, double *, long, double);
-static void model_basisFunction(double *, double *);
-static void model_basisFunction(double * , double * );
+// Used in DEBUG Helper Functions!
+void model_basisFunction(double *, double *);
 
 // Integration ---------------------------------------------------------------------------------------------------------
 static void innerInt_retriangulate(double *, long, double *, long, double *, int, double *, double,  double *, double *);
@@ -36,8 +36,9 @@ static void solve2x2(double *, double *, double *);        // Solve 2x2 System w
 static double absDet(double *);                            // Compute determinant
 static double signDet(double *);
 static void baryCenter(double *, double *);                // Bary Center
-static void toRef(double *, double *, double *);           // Pull point to Reference Element (performs 2x2 Solve)
-static void toPhys(double *, double *, double *);          // Push point to Physical Element
+// Used in DEBUG Helper Functions!
+void toRef(double *, double *, double *);           // Pull point to Reference Element (performs 2x2 Solve)
+void toPhys(double *, double *, double *);          // Push point to Physical Element
 
 // Vector operations ---------------------------------------------
 // Double
