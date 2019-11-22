@@ -17,9 +17,9 @@ cdef extern from "Cassemble.h":
     # DEBUG Helpers and test functions
     int retriangulate(double *, double *, double, double *, int) nogil
     # double model_f(double *) nogil
-    # void toPhys(double *, double *, double *) nogil
-    # void toRef(double *, double *, double *) nogil
-    # void model_basisFunction(double *, double *) nogil
+    void toPhys(double *, double *, double *) nogil
+    void toRef(double *, double *, double *) nogil
+    void model_basisFunction(double *, double *) nogil
 
 
 
