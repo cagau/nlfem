@@ -3,7 +3,10 @@
 #include <queue>
 #include <iostream>
 #include <Cassemble.h>
+#include <armadillo>
+
 using namespace std;
+using namespace arma;
 
 // Model -----------------------------------------f----------------------------------------------------------------
 
