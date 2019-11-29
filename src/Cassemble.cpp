@@ -4,14 +4,79 @@
 #include <iostream>
 #include <Cassemble.h>
 #include <armadillo>
-
 using namespace std;
-using namespace arma;
 
-// Model -----------------------------------------f----------------------------------------------------------------
+// Declaration of internal helper functions ----------------------------------------------------------------------------
+typedef struct {
+    double * Px;
+    double * Py;
+    double * dx;
+    double * dy;
+    int nPx;
+    int nPy;
+}QuadratureStruct;
+
+typedef struct {
+    double E[2*3];
+    long label;
+    double absDet;
+    int signDet;
+}TriangleStruct;
+
+// Model ---------------------------------------------------------------------------------------------------------------
+static double model_f(double *);
+static double model_kernel(double *, long, double *, long, double);
+// Used in DEBUG Helper Functions!
+void model_basisFunction(double *, double *);
+
+// Integration ---------------------------------------------------------------------------------------------------------
+static int placePointOnCap(double *, double *, double *, double, double *,
+        double *, double *, double *, double, int, double *);
+
+// Compute A and f -----------------------------------------------------------------------------------------------------
+
+// Math functions ------------------------------------------------------------------------------------------------------
+static void solve2x2(double *, double *, double *);        // Solve 2x2 System with LU
+
+// Matrix operations (via * only) ------------------------------------------------------------------------------------
+// Double
+static double absDet(double *);                            // Compute determinant
+static double signDet(double *);
+static void baryCenter(double *, double *);                // Bary Center
+// Used in DEBUG Helper Functions!
+void toRef(double *, double *, double *);           // Pull point to Reference Element (performs 2x2 Solve)
+void toPhys(double *, double *, double *);          // Push point to Physical Element
+
+// Vector operations -------------------------------------------------------------------------------------------------
+// Double
+static double vec_sqL2dist(double *, double *, int);       // L2 Distance
+static double vec_dot(double * x, double * y, int len);    // Scalar Product
+static int doubleVec_any(double *, int);                   // Any
+static void doubleVec_tozero(double *, int);               // Reset to zero
+static void doubleVec_subtract(double *, double *, double *, int);
+static void doubleVec_midpoint(double * , double * , double * , int );
+static void doubleVec_scale(double, double *, double *, int);
+static void doubleVec_add(double *, double *, double *, int);
+static void doubleVec_copyTo(double *, double *, int);
+
+// Long
+static int longVec_all(long *, int);                       // All
+static int longVec_any(long *, int);                       // Any
+
+// Int
+static void intVec_tozero(int *, int);                     // Reset to zero
+
+// Scalar ----------------------------------------------------------
+static double absolute(double);                            // Get absolute value
+static double scal_sqL2dist(double x, double y);           // L2 Distance
+
+
+
+
+// Model -----------------------------------------f-------------------------------------------------------------------
 
 // Define Right side compute_f
-static double model_f(double * x){
+double model_f(double * x){
         return 1.0;
 /*
         if ((-.2 < x[0] && x[0] < .2) && (-2 < x[1] && x[1] < .2) )
@@ -23,7 +88,7 @@ static double model_f(double * x){
 */
 }
 
-static double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
+double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
     return 4 / (M_PI * pow(sqdelta, 2));
 }
 
@@ -59,9 +124,11 @@ void model_basisFunction(double * p, double *psi_vals){
 }
 
 // Integration ---------------------------------------------------------------------------------------------------------
-static void outerInt_full(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb,
-                    double * Px, int nPx, double * dx,
-                    double * Py, int nPy, double * dy,
+
+
+void integrate(     TriangleStruct aT,
+                    TriangleStruct bT,
+                    const QuadratureStruct & quadRule,
                     double * psix, double * psiy,
                     double sqdelta,
                     double * termLocal, double * termNonloc){
@@ -69,27 +136,8 @@ static void outerInt_full(double * aTE, double aTdet, long labela, double * bTE,
     double x[2];
     double innerLocal=0;
     double innerNonloc[3];
-    //[DEBUG]
-    //printf("\nouterInt_full----------------------------------------\n");
-    for (k=0; k<nPx; k++){
-        toPhys(aTE, &Px[2 * k], x);
-        //printf("\nInner Integral, Iterate %i\n", k);
-        //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
-        innerInt_retriangulate(x, labela, bTE, labelb, Py, nPy, dy, sqdelta, &innerLocal, innerNonloc);
-        //printf("Local %17.16e\n", innerLocal);
-        //printf("Nonloc [%17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
-        for (b=0; b<3; b++){
-            for (a=0; a<3; a++){
-                termLocal[3*a+b] += aTdet * psix[nPx*a+k] * psix[nPx*b+k] * dx[k] * innerLocal; //innerLocal
-                termNonloc[3*a+b] += aTdet * psix[nPx*a+k] * dx[k] * innerNonloc[b]; //innerNonloc
-            }
-        }
-    }
-}
 
-
-static void innerInt_retriangulate(double * x, long labela, double * bTE, long labelb, double * P, int nP, double * dy, double sqdelta, double * innerLocal, double * innerNonloc){
-    int i=0, rTdx=0, b=0, Rdx=0;
+    int i=0, rTdx=0, Rdx=0;
     double ker=0, rTdet=0;
     double physical_quad[2];
     double reference_quad[2];
@@ -97,60 +145,80 @@ static void innerInt_retriangulate(double * x, long labela, double * bTE, long l
     double reTriangle_list[9*3*2];
     bool is_placePointOnCap;
 
-    innerLocal[0] = 0.0;
-    doubleVec_tozero(innerNonloc, 3);
-    is_placePointOnCap = true;
-    Rdx = retriangulate(x, bTE, sqdelta, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
     //[DEBUG]
-    //printf("Retriangulation Rdx %i\n", Rdx);
-    for (i=0;i<Rdx;i++){
-        //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i], reTriangle_list[2 * 3 * i+1]);
-        //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+2], reTriangle_list[2 * 3 * i+3]);
-        //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+4], reTriangle_list[2 * 3 * i+5]);
-        //printf("absDet %17.16e\n", absDet(&reTriangle_list[2 * 3 * i]));
-    }
-    if (Rdx == 0){
-        return;
-    }
-    //printf("\nInner Integral\n");
-    for (rTdx=0; rTdx < Rdx; rTdx++){
-    //printf("rTdx %i \n",rTdx);
-        for (i=0; i<nP; i++){
-            // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
-            toPhys(&reTriangle_list[2 * 3 * rTdx], &P[2*i], physical_quad);
-            // Determinant of Triangle of retriangulation
-            rTdet = absDet(&reTriangle_list[2 * 3 * rTdx]);
-            // inner Local integral with ker
-            *innerLocal += model_kernel(x, labela, physical_quad, labelb, sqdelta) * dy[i] * rTdet; // Local Term
-            // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
-            toRef(bTE, physical_quad, reference_quad);
-            // Evaluate ker on physical quad (note this is ker')
-            ker = model_kernel(physical_quad, labelb, x, labela, sqdelta);
-            // Evaluate basis function on resulting reference quadrature point
-            model_basisFunction(reference_quad, psi_value);
-            for (b=0; b<3; b++){
-                innerNonloc[b] += psi_value[b] * ker * dy[i] * rTdet; // Nonlocal Term
-            }
+    //printf("\nouterInt_full----------------------------------------\n");
+    for (k=0; k<quadRule.nPx; k++){
+        toPhys(aT.E, &(quadRule.Px[2*k]), x);
+        //printf("\nInner Integral, Iterate %i\n", k);
+        //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
+        //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
+
+        innerLocal = 0.0;
+        doubleVec_tozero(innerNonloc, 3);
+        is_placePointOnCap = true;
+
+        Rdx = retriangulate(x, bT.E, sqdelta, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
+
         //[DEBUG]
-        //printf("i %i \n",i);
-        //printf("GAM %17.16e\n", ker * dy[i] * rTdet);
-        //printf("Basis0 %17.16e\n", psi_value[0]);
-        //printf("Basis1 %17.16e\n", psi_value[1]);
-        //printf("Basis2 %17.16e\n", psi_value[2]);
+        //printf("Retriangulation Rdx %i\n", Rdx);
+        for (i=0;i<Rdx;i++){
+            //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i], reTriangle_list[2 * 3 * i+1]);
+            //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+2], reTriangle_list[2 * 3 * i+3]);
+            //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+4], reTriangle_list[2 * 3 * i+5]);
+            //printf("absDet %17.16e\n", absDet(&reTriangle_list[2 * 3 * i]));
         }
-       //printf("Chris: v0 %17.16e\nv1 %17.16e\nv2 %17.16e\n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
-       //printf("Chris: v %17.16e\n", innerLocal);
-   }
+        if (Rdx == 0){
+            return;
+        }
+        //printf("\nInner Integral\n");
+        for (rTdx=0; rTdx < Rdx; rTdx++){
+            //printf("rTdx %i \n",rTdx);
+            for (i=0; i<quadRule.nPy; i++){
+                // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
+                toPhys(&reTriangle_list[2 * 3 * rTdx], &(quadRule.Py[2*i]), physical_quad);
+                // Determinant of Triangle of retriangulation
+                rTdet = absDet(&reTriangle_list[2 * 3 * rTdx]);
+                // inner Local integral with ker
+                innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, sqdelta) * quadRule.dy[i] * rTdet; // Local Term
+                // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
+                toRef(bT.E, physical_quad, reference_quad);
+                // Evaluate ker on physical quad (note this is ker')
+                ker = model_kernel(physical_quad, bT.label, x, aT.label, sqdelta);
+                // Evaluate basis function on resulting reference quadrature point
+                model_basisFunction(reference_quad, psi_value);
+                for (b=0; b<3; b++){
+                    innerNonloc[b] += psi_value[b] * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
+                }
+                //[DEBUG]
+                //printf("i %i \n",i);
+                //printf("GAM %17.16e\n", ker * dy[i] * rTdet);
+                //printf("Basis0 %17.16e\n", psi_value[0]);
+                //printf("Basis1 %17.16e\n", psi_value[1]);
+                //printf("Basis2 %17.16e\n", psi_value[2]);
+            }
+            //printf("Chris: v0 %17.16e\nv1 %17.16e\nv2 %17.16e\n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
+            //printf("Chris: v %17.16e\n", innerLocal);
+        }
+
+        //printf("Local %17.16e\n", innerLocal);
+        //printf("Nonloc [%17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
+        for (b=0; b<3; b++){
+            for (a=0; a<3; a++){
+                termLocal[3*a+b] += aT.absDet * psix[quadRule.nPx*a+k] * psix[quadRule.nPx*b+k] * quadRule.dx[k] * innerLocal; //innerLocal
+                termNonloc[3*a+b] += aT.absDet * psix[quadRule.nPx*a+k] * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+            }
+        }
+    }
 }
 
 // Normal which looks to the right w.r.t the vector from y0 to y1.
-static void rightNormal(double * y0, double * y1, double orientation, double * normal){
+void rightNormal(double * y0, double * y1, double orientation, double * normal){
     normal[0] = y1[1] - y0[1];
     normal[1] = y0[0] - y1[0];
     doubleVec_scale(orientation, normal, normal, 2);
 }
 
-static bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
+bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
     bool a, b, c;
     double vec[2];
 
@@ -166,7 +234,7 @@ static bool inTriangle(double * y_new, double * p, double * q, double * r, doubl
     return a && b && c;
 }
 
-static int placePointOnCap(double * y_predecessor, double * y_current, double * x_center, double sqdelta, double * TE, double * nu_a, double * nu_b, double * nu_c, double orientation, int Rdx, double * R){
+int placePointOnCap(double * y_predecessor, double * y_current, double * x_center, double sqdelta, double * TE, double * nu_a, double * nu_b, double * nu_c, double orientation, int Rdx, double * R){
     // Place a point on the cap.
     //y_predecessor = &R[2*(Rdx-1)];
     double y_new[2], s_midpoint[2], s_projectionDirection[2];
@@ -274,7 +342,6 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
                     if (is_onEdge && is_placePointOnCap){
                         Rdx += placePointOnCap(&R[2*(Rdx-1)], y2, x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
                     }
-
                     // Append y2
                     doubleVec_copyTo(y2, &R[2*Rdx], 2);
                     is_onEdge = true; // This point lies on the edge.
@@ -314,20 +381,17 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
 
-static void compute_f(double * aTE,
-                    double aTdet,
-                    double * P,
-                    int nP,
-                    double * dx,
+void compute_f(     TriangleStruct & aT,
+                    const QuadratureStruct &quadRule,
                     double * psi,
                     double * termf){
     int i,a;
     double x[2];
 
     for (a=0; a<3; a++){
-        for (i=0; i<nP; i++){
-            toPhys(aTE, &P[2 * i], &x[0]);
-            termf[a] += psi[nP*a + i] * model_f(&x[0]) * aTdet * dx[i];
+        for (i=0; i<quadRule.nPx; i++){
+            toPhys(aT.E, &(quadRule.Px[2 * i]), &x[0]);
+            termf[a] += psi[quadRule.nPx*a + i] * model_f(&x[0]) * aT.absDet * quadRule.dx[i];
         }
     }
 }
@@ -471,9 +535,13 @@ void par_assemble(  double * Ad,
     int aTdx, h=0;
     double tmp_psi[3];
 
+    // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
+    arma::Mat<double> armAd(Ad, K, K_Omega, false, true);
 
     double *psix = (double *) malloc(3*nPx*sizeof(double));
     double *psiy = (double *) malloc(3*nPy*sizeof(double));
+
+    const QuadratureStruct quadRule = {Px, Py, dx, dy, nPx, nPy};
 
     for(h=0; h<nPx; h++){
        model_basisFunction(&Px[2*h], &tmp_psi[0]);
@@ -497,24 +565,27 @@ void par_assemble(  double * Ad,
     // Breadth First Search --------------------------------------
     int *visited = (int *) malloc(J*sizeof(int));
 
+    // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
+    arma::Mat<long> armTriangles(Triangles, 4, J);
+    arma::Mat<long> armNeighbours(Neighbours, 4, J);
+
     // Loop index of current outer triangle in BFS
     int sTdx=0;
     // Queue for Breadth first search
     queue<int> queue;
     // List of visited triangles
     long *NTdx;
-    // Determinant of Triangle a and b.
-    double aTdet, bTdet;
+
     // Vector containing the coordinates of the vertices of a Triangle
-    double aTE[2*3];
-    double bTE[2*3];
+    TriangleStruct aT, bT;
+    //double aTE[3*2];
+    //double bTE[3*2];
     // Integration information ------------------------------------
     // Loop index of basis functions
     int a=0, b=0;
-    long labela=0, labelb=0;
     // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
-    long * aAdx;
-    long * bAdx;
+    const long * aAdx;
+    const long * bAdx;
     long aDGdx[3]; // Index for discontinuous Galerkin
     long bDGdx[3];
 
@@ -570,24 +641,25 @@ void par_assemble(  double * Ad,
             // The first entry (index 0) of each row in triangles contains the Label of each point!
             // Hence, in order to get an pointer to the three Triangle idices, which we need here
             // we choose &Triangles[4*aTdx+1];
-            aAdx = &Triangles[4*aTdx+1];
+            aAdx = &armTriangles(1, aTdx);
         }
         // Prepare Triangle information aTE and aTdet ------------------
         // Copy coordinates of Triange a to aTE.
         // this is done fore convenience only, actually those are unnecessary copies!
         for (j=0; j<2; j++){
-            aTE[2*0+j] = Verts[2*Triangles[4*aTdx+1] + j];
-            aTE[2*1+j] = Verts[2*Triangles[4*aTdx+2] + j];
-            aTE[2*2+j] = Verts[2*Triangles[4*aTdx+3] + j];
+            aT.E[2*0+j] = Verts[2*armTriangles(1, aTdx) + j];
+            aT.E[2*1+j] = Verts[2*armTriangles(2, aTdx) + j];
+            aT.E[2*2+j] = Verts[2*armTriangles(3, aTdx) + j];
         }
-        // compute Determinant
-        aTdet = absDet(aTE);
-        labela = Triangles[4*aTdx];
+        // Initialize Struct
+        aT.absDet = absDet(aT.E);
+        aT.signDet = signDet(aT.E);
+        aT.label = armTriangles(0, aTdx);
 
         // Assembly of right side ---------------------------------------
         // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
         doubleVec_tozero(termf, 3); // Initialize Buffer
-        compute_f(aTE, aTdet, Px, nPx, dx, psix, termf); // Integrate and fill buffer
+        compute_f(aT, quadRule, psix, termf); // Integrate and fill buffer
 
         // Add content of buffer to the right side.
         for (a=0; a<3; a++){
@@ -614,7 +686,7 @@ void par_assemble(  double * Ad,
             sTdx = queue.front();
             queue.pop();
             // Get all the neighbours of sTdx.
-            NTdx =  &Neighbours[4*sTdx];
+            NTdx =  &armNeighbours(0, sTdx);
             // Run through the list of neighbours. (4 at max)
             for (j=0; j<4; j++){
                 // The next valid neighbour is our candidate for the inner Triangle b.
@@ -629,12 +701,15 @@ void par_assemble(  double * Ad,
                     // Copy coordinates of Triange b to bTE.
                     // again this is done for convenience only, actually those are unnecessary copies!
                     for (i=0; i<2;i++){
-                        bTE[2*0+i] = Verts[2*Triangles[4*bTdx+1] + i];
-                        bTE[2*1+i] = Verts[2*Triangles[4*bTdx+2] + i];
-                        bTE[2*2+i] = Verts[2*Triangles[4*bTdx+3] + i];
+                        bT.E[2*0+i] = Verts[2*armTriangles(1, bTdx) + i];
+                        bT.E[2*1+i] = Verts[2*armTriangles(2, bTdx) + i];
+                        bT.E[2*2+i] = Verts[2*armTriangles(3, bTdx) + i];
                     }
-                    bTdet = absDet(&bTE[0]);
-                    labelb = Triangles[4*bTdx];
+                    // Initialize Struct
+                    bT.absDet = absDet(bT.E);
+                    bT.signDet = signDet(bT.E);
+                    bT.label = armTriangles(0, bTdx);
+
                     // Check whether bTdx is already visited.
                     if (visited[bTdx]==0){
 
@@ -645,7 +720,7 @@ void par_assemble(  double * Ad,
                             bAdx = bDGdx;
                         } else {
                             // Get (pointer to) intex of basis function (in Continuous Galerkin)
-                            bAdx = &Triangles[4*bTdx+1];
+                            bAdx = &armTriangles(1, bTdx);
                             // The first entry (index 0) of each row in triangles contains the Label of each point!
                             // Hence, in order to get an pointer to the three Triangle idices, which we need here
                             // we choose &Triangles[4*aTdx+1];
@@ -654,7 +729,7 @@ void par_assemble(  double * Ad,
                         doubleVec_tozero(termLocal, 3 * 3); // Initialize Buffer
                         doubleVec_tozero(termNonloc, 3 * 3); // Initialize Buffer
                         // Compute integrals and write to buffer
-                        outerInt_full(aTE, aTdet, labela, bTE, bTdet, labelb, Px, nPx, dx, Py, nPy, dy, psix, psiy, sqdelta, termLocal, termNonloc);
+                        integrate(aT, bT, quadRule, psix, psiy, sqdelta, termLocal, termNonloc);
                         // [DEBUG]
                         //doubleVec_add(termLocal, DEBUG_termTotalLocal, DEBUG_termTotalLocal, 9);
                         //doubleVec_add(termNonloc, DEBUG_termTotalNonloc, DEBUG_termTotalNonloc, 9);
@@ -703,9 +778,9 @@ void par_assemble(  double * Ad,
                                 if  (is_DiscontinuousGalerkin || (aAdx[a] < L_Omega)){
                                     for (b=0; b<3; b++){
                                         #pragma omp atomic update
-                                        Ad[aAdx[a]*K + aAdx[b]] += termLocal[3*a+b];
+                                        armAd(aAdx[b], aAdx[a]) += termLocal[3*a+b];
                                         #pragma omp atomic update
-                                        Ad[aAdx[a]*K + bAdx[b]] -= termNonloc[3*a+b];
+                                        armAd(bAdx[b], aAdx[a]) -= termNonloc[3*a+b];
                                     }
                                 }
                             }
@@ -742,7 +817,7 @@ double compute_area(double * aTE, double aTdet, long labela, double * bTE, doubl
 
 // Math functions ------------------------------------------------------------------------------------------------------
 
-static void solve2x2(double * A, double * b, double * x){
+void solve2x2(double * A, double * b, double * x){
     int dx0 = 0, dx1 = 1;
     double l=0, u=0;
 
@@ -779,7 +854,7 @@ static void solve2x2(double * A, double * b, double * x){
 
 // Matrix operations (working with strides only) --------------------------------
 
-static double absDet(double * E){
+double absDet(double * E){
     double M[2][2];
     int i=0;
     for (i=0; i< 2; i++){
@@ -789,7 +864,7 @@ static double absDet(double * E){
     return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
 }
 
-static double signDet(double * E){
+double signDet(double * E){
     double M[2][2], det;
     int i=0;
     for (i=0; i< 2; i++){
@@ -807,7 +882,7 @@ static double signDet(double * E){
     }
 }
 
-static void baryCenter(double * E, double * bary){
+void baryCenter(double * E, double * bary){
     int i=0;
     bary[0] = 0;
     bary[1] = 0;
@@ -818,7 +893,7 @@ static void baryCenter(double * E, double * bary){
     bary[0] = bary[0]/3;
     bary[1] = bary[1]/3;
 }
-static void baryCenter_polygone(double * P, int nVerticies, double * bary){
+void baryCenter_polygone(double * P, int nVerticies, double * bary){
     int k=0;
     bary[0] = 0;
     bary[1] = 0;
@@ -856,7 +931,7 @@ void toRef(double * E, double * phys_x, double * ref_p){
 // Double
 
 // Check whether any, or all elements of a vector are zero --------------
-static int doubleVec_any(double * vec, int len){
+int doubleVec_any(double * vec, int len){
     int i=0;
     for (i=0; i < len; i++){
         if (vec[i] != 0){
@@ -866,7 +941,7 @@ static int doubleVec_any(double * vec, int len){
     return 0;
 }
 
-static double vec_dot(double * x, double * y, int len){
+double vec_dot(double * x, double * y, int len){
     double r=0;
     int i=0;
     for (i=0; i<len; i++){
@@ -875,7 +950,7 @@ static double vec_dot(double * x, double * y, int len){
     return r;
 }
 
-static double vec_sqL2dist(double * x, double * y, int len){
+double vec_sqL2dist(double * x, double * y, int len){
     double r=0;
     int i=0;
     for (i=0; i<len; i++){
@@ -884,42 +959,42 @@ static double vec_sqL2dist(double * x, double * y, int len){
     return r;
 }
 
-static void doubleVec_tozero(double * vec, int len){
+void doubleVec_tozero(double * vec, int len){
     int i=0;
     for (i=0; i< len; i++){
         vec[i]  = 0;
     }
 }
 
-static void doubleVec_midpoint(double * vec1, double * vec2, double * midpoint, int len){
+void doubleVec_midpoint(double * vec1, double * vec2, double * midpoint, int len){
     int i = 0;
     for (i=0; i < len; i++){
         midpoint[i]  = (vec1[i] + vec2[i])/2;
     }
 }
 
-static void doubleVec_subtract(double * vec1, double * vec2, double * out, int len){
+void doubleVec_subtract(double * vec1, double * vec2, double * out, int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec1[i] - vec2[i];
     }
 }
 
-static void doubleVec_add(double * vec1, double * vec2, double * out, int len){
+void doubleVec_add(double * vec1, double * vec2, double * out, int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec1[i] + vec2[i];
     }
 }
 
-static void doubleVec_scale(double lambda, double * vec, double * out, int len){
+void doubleVec_scale(double lambda, double * vec, double * out, int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec[i]*lambda;
     }
 }
 
-static void doubleVec_copyTo(double * input, double * output, int len){
+void doubleVec_copyTo(double * input, double * output, int len){
     int i=0;
     for (i=0; i<len; i++){
         output[i] = input[i];
@@ -927,7 +1002,7 @@ static void doubleVec_copyTo(double * input, double * output, int len){
 }
 // Long
 
-static int longVec_all(long * vec, int len){
+int longVec_all(long * vec, int len){
     int i=0;
     for (i=0; i<len; i++){
         if (vec[i] == 0){
@@ -937,7 +1012,7 @@ static int longVec_all(long * vec, int len){
     return 1;
 }
 
-static int longVec_any(long * vec, int len){
+int longVec_any(long * vec, int len){
     int i=0;
     for (i=0; i<len; i++){
             if (vec[i] != 0){
@@ -950,7 +1025,7 @@ static int longVec_any(long * vec, int len){
 // Int
 
 // Set Vectors to Zero -------------------------------------------------
-static void intVec_tozero(int * vec, int len){
+void intVec_tozero(int * vec, int len){
     int i=0;
     for (i=0; i< len; i++){
         vec[i]  = 0;
@@ -958,7 +1033,7 @@ static void intVec_tozero(int * vec, int len){
 }
 // Scalar --------------------------------------------------------
 
-static double absolute(double value){
+double absolute(double value){
     if (value < 0){
         return - value;
     } else {
@@ -966,7 +1041,7 @@ static double absolute(double value){
     }
 }
 
-static double scal_sqL2dist(double x, double y){
+double scal_sqL2dist(double x, double y){
     return pow((x-y), 2);
 }
 

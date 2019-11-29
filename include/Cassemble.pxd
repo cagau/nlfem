@@ -15,11 +15,11 @@ cdef extern from "Cassemble.h":
     # void par_evaluateMass(double *, double *, long *, double *, int, int, int, double *, double *) nogil
 
     # DEBUG Helpers and test functions
-    int retriangulate(double *, double *, double, double *, int) nogil
+    # int retriangulate(double *, double *, double, double *, int) nogil
     # double model_f(double *) nogil
-    void toPhys(double *, double *, double *) nogil
-    void toRef(double *, double *, double *) nogil
-    void model_basisFunction(double *, double *) nogil
+    # void toPhys(double *, double *, double *) nogil
+    # void toRef(double *, double *, double *) nogil
+    # void model_basisFunction(double *, double *) nogil
 
 
 

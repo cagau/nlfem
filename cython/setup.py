@@ -15,7 +15,7 @@ ext_modules = [
     Extension(
         name=name,
         sources=["cython/assemble.pyx"],
-        extra_link_args=['-fopenmp'],
+        extra_link_args=['-fopenmp', '-llapack', '-lblas'],
         language="c++",
         include_dirs=["include", "cython"],
         library_dirs=[home+"/lib"],

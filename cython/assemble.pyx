@@ -120,6 +120,7 @@ cdef list get_neighbour(int rows, long * Triangles, long * Vdx):
     return idx
 
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
+"""
 from Cassemble cimport retriangulate
 from Cassemble cimport toPhys, toRef, model_basisFunction
 import matplotlib
@@ -367,7 +368,7 @@ cdef toPhys_(double [:] E, double * p, double * out_x):
     cdef int i=0
     for i in range(2):
         out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i]
-
+"""
 # [END] DEBUG Helpers - ------------------------------------------------------------------------------------------------
 
 

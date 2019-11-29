@@ -32,6 +32,7 @@ add_library(Cassemble SHARED ${src}/Cassemble.cpp ${header}/Cassemble.h)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(Cassemble PRIVATE OpenMP::OpenMP_CXX)
 endif()
+target_link_libraries(Cassemble PRIVATE lapack blas armadillo)
 
 # When calling "Install" libCassemble.a is written to ~/lib
 install(TARGETS Cassemble DESTINATION $ENV{HOME}/lib)
