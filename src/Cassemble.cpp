@@ -8,12 +8,12 @@ using namespace std;
 
 // Declaration of internal helper functions ----------------------------------------------------------------------------
 typedef struct {
-    double * Px;
-    double * Py;
-    double * dx;
-    double * dy;
-    int nPx;
-    int nPy;
+    const double * Px;
+    const double * Py;
+    const double * dx;
+    const double * dy;
+    const int nPx;
+    const int nPy;
 }QuadratureStruct;
 
 typedef struct {
@@ -24,59 +24,58 @@ typedef struct {
 }TriangleStruct;
 
 // Model ---------------------------------------------------------------------------------------------------------------
-static double model_f(double *);
-static double model_kernel(double *, long, double *, long, double);
-// Used in DEBUG Helper Functions!
-void model_basisFunction(double *, double *);
+static double model_f(const double *);
+static double model_kernel(const double * x, const long labelx, const double * y, const long labely, const double sqdelta);
+static void model_basisFunction(const double * p, double *psi_vals);
 
 // Integration ---------------------------------------------------------------------------------------------------------
-static int placePointOnCap(double *, double *, double *, double, double *,
-        double *, double *, double *, double, int, double *);
-
-// Compute A and f -----------------------------------------------------------------------------------------------------
+static int placePointOnCap(const double * y_predecessor, const double * y_current,
+        const double * x_center, const double sqdelta, const double * TE,
+        const double * nu_a, const double * nu_b, const double * nu_c,
+        const double orientation, const int Rdx, double * R);
 
 // Math functions ------------------------------------------------------------------------------------------------------
-static void solve2x2(double *, double *, double *);        // Solve 2x2 System with LU
-
+static void solve2x2(const double *, const double *, double *);                 // Solve 2x2 System with LU
+static void rightNormal(const double * y0, const double * y1, const double orientation, double * normal);
 // Matrix operations (via * only) ------------------------------------------------------------------------------------
 // Double
-static double absDet(double *);                            // Compute determinant
-static double signDet(double *);
-static void baryCenter(double *, double *);                // Bary Center
-// Used in DEBUG Helper Functions!
-void toRef(double *, double *, double *);           // Pull point to Reference Element (performs 2x2 Solve)
-void toPhys(double *, double *, double *);          // Push point to Physical Element
+static double absDet(const double * E);                                         // Compute determinant
+static double signDet(const double * E);
+static void baryCenter(const double * E, double * bary);                        // Bary Center
+static void toRef(const double * E, const double * phys_x, double * ref_p);     // Pull point to Reference Element (performs 2x2 Solve)
+static void toPhys(const double * E, const double * p, double * out_x);         // Push point to Physical Element
 
 // Vector operations -------------------------------------------------------------------------------------------------
 // Double
-static double vec_sqL2dist(double *, double *, int);       // L2 Distance
-static double vec_dot(double * x, double * y, int len);    // Scalar Product
-static int doubleVec_any(double *, int);                   // Any
+static double vec_sqL2dist(const double * x, const double * y, const int len);      // L2 Distance
+static double vec_dot(const double * x, const double * y, const int len);           // Scalar Product
+static int doubleVec_any(const double * vec, const int len);                        // Any
 static void doubleVec_tozero(double *, int);               // Reset to zero
-static void doubleVec_subtract(double *, double *, double *, int);
-static void doubleVec_midpoint(double * , double * , double * , int );
-static void doubleVec_scale(double, double *, double *, int);
-static void doubleVec_add(double *, double *, double *, int);
-static void doubleVec_copyTo(double *, double *, int);
+static void doubleVec_subtract(const double * vec1, const double * vec2, double * out, const int len);
+static void doubleVec_midpoint(const double * vec1, const double * vec2, double * midpoint, const int len);
+static void doubleVec_scale(const double lambda, const double * vec, double * out, const int len);
+static void doubleVec_add(const double * vec1, const double * vec2, double * out, const int len);
+static void doubleVec_copyTo(const double * input, double * output, const int len);
 
 // Long
-static int longVec_all(long *, int);                       // All
-static int longVec_any(long *, int);                       // Any
+static int longVec_all(const long *, const int);                       // All
+static int longVec_any(const long *, const int);                       // Any
 
 // Int
-static void intVec_tozero(int *, int);                     // Reset to zero
+static void intVec_tozero(int *, const int);                     // Reset to zero
 
 // Scalar ----------------------------------------------------------
-static double absolute(double);                            // Get absolute value
-static double scal_sqL2dist(double x, double y);           // L2 Distance
+static double absolute(const double);                                  // Get absolute value
+static double scal_sqL2dist(const double x, const double y);           // L2 Distance
 
-
+static void initializeTriangle(const arma::mat & Verts, const arma::Mat<long> & Triangles,
+        const int Tdx, TriangleStruct & T);
 
 
 // Model -----------------------------------------f-------------------------------------------------------------------
 
 // Define Right side compute_f
-double model_f(double * x){
+double model_f(const double * x){
         return 1.0;
 /*
         if ((-.2 < x[0] && x[0] < .2) && (-2 < x[1] && x[1] < .2) )
@@ -88,7 +87,7 @@ double model_f(double * x){
 */
 }
 
-double model_kernel(double * x, long labelx, double * y, long labely, double sqdelta){
+double model_kernel(const double * x, const long labelx, const double * y, const long labely, const double sqdelta){
     return 4 / (M_PI * pow(sqdelta, 2));
 }
 
@@ -117,7 +116,7 @@ double model_kernel_(double * x, long labelx, double * y, long labely, double sq
 }
 */
 
-void model_basisFunction(double * p, double *psi_vals){
+void model_basisFunction(const double * p, double *psi_vals){
     psi_vals[0] = 1 - p[0] - p[1];
     psi_vals[1] = p[0];
     psi_vals[2] = p[1];
@@ -126,11 +125,11 @@ void model_basisFunction(double * p, double *psi_vals){
 // Integration ---------------------------------------------------------------------------------------------------------
 
 
-void integrate(     TriangleStruct aT,
-                    TriangleStruct bT,
+void integrate(     const TriangleStruct aT,
+                    const TriangleStruct bT,
                     const QuadratureStruct & quadRule,
-                    double * psix, double * psiy,
-                    double sqdelta,
+                    const arma::mat psix,
+                    const double sqdelta,
                     double * termLocal, double * termNonloc){
     int k=0, a=0, b=0;
     double x[2];
@@ -204,21 +203,22 @@ void integrate(     TriangleStruct aT,
         //printf("Nonloc [%17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
         for (b=0; b<3; b++){
             for (a=0; a<3; a++){
-                termLocal[3*a+b] += aT.absDet * psix[quadRule.nPx*a+k] * psix[quadRule.nPx*b+k] * quadRule.dx[k] * innerLocal; //innerLocal
-                termNonloc[3*a+b] += aT.absDet * psix[quadRule.nPx*a+k] * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+                termLocal[3*a+b] += aT.absDet * psix(a,k) * psix(b,k) * quadRule.dx[k] * innerLocal; //innerLocal
+                termNonloc[3*a+b] += aT.absDet * psix(a,k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
             }
         }
     }
 }
 
 // Normal which looks to the right w.r.t the vector from y0 to y1.
-void rightNormal(double * y0, double * y1, double orientation, double * normal){
+void rightNormal(const double * y0, const double * y1, const double orientation, double * normal){
     normal[0] = y1[1] - y0[1];
     normal[1] = y0[0] - y1[0];
     doubleVec_scale(orientation, normal, normal, 2);
 }
 
-bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu_a, double * nu_b, double * nu_c){
+bool inTriangle(const double * y_new, const double * p, const double * q, const double * r,
+        const double *  nu_a, const double * nu_b, const double * nu_c){
     bool a, b, c;
     double vec[2];
 
@@ -234,7 +234,10 @@ bool inTriangle(double * y_new, double * p, double * q, double * r, double *  nu
     return a && b && c;
 }
 
-int placePointOnCap(double * y_predecessor, double * y_current, double * x_center, double sqdelta, double * TE, double * nu_a, double * nu_b, double * nu_c, double orientation, int Rdx, double * R){
+int placePointOnCap(const double * y_predecessor, const double * y_current,
+                    const double * x_center, const double sqdelta, const double * TE,
+                    const double * nu_a, const double * nu_b, const double * nu_c,
+                    const double orientation, const int Rdx, double * R){
     // Place a point on the cap.
     //y_predecessor = &R[2*(Rdx-1)];
     double y_new[2], s_midpoint[2], s_projectionDirection[2];
@@ -257,17 +260,18 @@ int placePointOnCap(double * y_predecessor, double * y_current, double * x_cente
     }
 }
 
-int retriangulate(double * x_center, double * TE, double sqdelta, double * out_reTriangle_list, int is_placePointOnCap){
+int retriangulate(const double * x_center, const double * TE, const double sqdelta, double * out_reTriangle_list, const int is_placePointOnCap){
         // C Variables and Arrays.
         int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
         double v=0, lam1=0, lam2=0, term1=0, term2=0;
         double nu_a[2], nu_b[2], nu_c[2]; // Normals
-        double p[2];
-        double q[2];
-        double a[2];
-        double b[2];
-        double y1[2];
-        double y2[2];
+        arma::vec p(2);
+        arma::vec q(2);
+        arma::vec a(2);
+        arma::vec b(2);
+        arma::vec y1(2);
+        arma::vec y2(2);
+        arma::vec vec_x_center(x_center, 2);
         double orientation;
 
         bool is_onEdge=false, is_firstPointLiesOnVertex=true;
@@ -289,48 +293,44 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
             edgdx0 = k;
             edgdx1 = (k+1) % 3;
 
-            doubleVec_copyTo(&TE[2*edgdx0], p, 2);
-            doubleVec_copyTo(&TE[2*edgdx1], q, 2);
-            doubleVec_subtract(q, x_center, a, 2);
-            doubleVec_subtract(p, q, b, 2);
+            doubleVec_copyTo(&TE[2*edgdx0], &p[0], 2);
+            doubleVec_copyTo(&TE[2*edgdx1], &q[0], 2);
 
-            if (vec_sqL2dist(p, x_center, 2) <= sqdelta){
-                doubleVec_copyTo(p, &R[2*Rdx], 2);
+            a = q - vec_x_center;
+            b = p - q;
+
+            if (vec_sqL2dist(&p[0], x_center, 2) <= sqdelta){
+                doubleVec_copyTo(&p[0], &R[2*Rdx], 2);
                 is_onEdge = false; // This point does not lie on the edge.
                 Rdx += 1;
             }
             // PQ-Formula to solve quadratic problem
-            v = pow(vec_dot(a, b, 2), 2) - (vec_dot(a, a, 2) - sqdelta) * vec_dot(b, b, 2);
+            v = pow( dot(a, b), 2) - (dot(a, a) - sqdelta) * dot(b, b);
             // If there is no sol to the quadratic problem, there is nothing to do.
             if (v >= 0){
-                term1 = -vec_dot(a, b, 2) / vec_dot(b, b, 2);
-                term2 = sqrt(v) / vec_dot(b, b, 2);
+                term1 = - dot(a, b) / dot(b, b);
+                term2 = sqrt(v) / dot(b, b);
+
                 // Vieta's Formula for computing the roots
                 if (term1 > 0){
                     lam1 = term1 + term2;
-                    // (vec_dot(a, a, 2) - sqdelta) / vec_dot(b, b, 2) is the q, of the pq-Formula
-                    lam2 = 1/lam1*(vec_dot(a, a, 2) - sqdelta) / vec_dot(b, b, 2);
+                    lam2 = 1/lam1*(dot(a, a) - sqdelta);
                 } else {
                     lam2 = term1 - term2;
-                    lam1 = 1/lam2*(vec_dot(a, a, 2) - sqdelta) / vec_dot(b, b, 2);
+                    lam1 = 1/lam2*(dot(a, a) - sqdelta) / dot(b, b);
                 }
-                //lam1 = term1 + term2;
-                //lam2 = term1 - term2;
-                // Set Intersection Points
-                doubleVec_scale(lam1, b, y1, 2);
-                doubleVec_add(y1, q, y1, 2);
-                doubleVec_scale(lam2, b, y2, 2);
-                doubleVec_add(y2, q, y2, 2);
+                y1 = lam1*b + q;
+                y2 = lam2*b + q;
 
                 // Check whether the first lambda "lies on the Triangle".
                 if ((0 <= lam1) && (lam1 <= 1)){
                     is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
                     // Check whether the predecessor lied on the edge
                     if (is_onEdge && is_placePointOnCap){
-                        Rdx += placePointOnCap(&R[2*(Rdx-1)], y1, x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                        Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
                     }
                     // Append y1
-                    doubleVec_copyTo(y1, &R[2*Rdx], 2);
+                    doubleVec_copyTo(&y1[0], &R[2*Rdx], 2);
                     is_onEdge = true; // This point lies on the edge.
                     Rdx += 1;
                 }
@@ -340,10 +340,10 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
 
                     // Check whether the predecessor lied on the edge
                     if (is_onEdge && is_placePointOnCap){
-                        Rdx += placePointOnCap(&R[2*(Rdx-1)], y2, x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                        Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
                     }
                     // Append y2
-                    doubleVec_copyTo(y2, &R[2*Rdx], 2);
+                    doubleVec_copyTo(&y2[0], &R[2*Rdx], 2);
                     is_onEdge = true; // This point lies on the edge.
                     Rdx += 1;
                 }
@@ -381,9 +381,9 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
 
-void compute_f(     TriangleStruct & aT,
+void compute_f(     const TriangleStruct & aT,
                     const QuadratureStruct &quadRule,
-                    double * psi,
+                    const arma::mat psi,
                     double * termf){
     int i,a;
     double x[2];
@@ -391,21 +391,10 @@ void compute_f(     TriangleStruct & aT,
     for (a=0; a<3; a++){
         for (i=0; i<quadRule.nPx; i++){
             toPhys(aT.E, &(quadRule.Px[2 * i]), &x[0]);
-            termf[a] += psi[quadRule.nPx*a + i] * model_f(&x[0]) * aT.absDet * quadRule.dx[i];
+            termf[a] += psi(a, i) * model_f(&x[0]) * aT.absDet * quadRule.dx[i];
         }
     }
 }
-
-//void compute_A(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb,
-//                    double * P,
-//                    int nP,
-//                    double * dx,
-//                    double * dy,
-//                    double * psi,
-//                    double sqdelta,
-//                    double * termLocal, double * termNonloc){
-//    outerInt_full(&aTE[0], aTdet, labela, &bTE[0], bTdet, labelb, P, nP, dx, dy, psi, sqdelta, termLocal, termNonloc);
-//}
 
 void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx){
     int aTdx=0, a=0, b=0, j=0;
@@ -516,65 +505,53 @@ void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts
 }
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 void par_assemble(  double * Ad,
-                    int K_Omega,
-                    int K,
+                    const int K_Omega,
+                    const int K,
                     double * fd,
-                    long * Triangles,
-                    double * Verts,
+                    const long * ptrTriangles,
+                    const double * ptrVerts,
                     // Number of Triangles and number of Triangles in Omega
-                    int J, int J_Omega,
+                    const int J, const int J_Omega,
                     // Number of vertices (in case of CG = K and K_Omega)
-                    int L, int L_Omega,
-                    double * Px, int nPx, double * dx,
-                    double * Py, int nPy, double * dy,
-                    double sqdelta,
-                    long * Neighbours,
-                    int is_DiscontinuousGalerkin,
-                    int is_NeumannBoundary
-                   ) {
+                    const int L, const int L_Omega,
+                    const double * Px, const int nPx, const double * dx,
+                    const double * Py, const int nPy, const double * dy,
+                    const double sqdelta,
+                    const long * ptrNeighbours,
+                    const int is_DiscontinuousGalerkin,
+                    const int is_NeumannBoundary
+                    ){
     int aTdx, h=0;
-    double tmp_psi[3];
 
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     arma::Mat<double> armAd(Ad, K, K_Omega, false, true);
-
-    double *psix = (double *) malloc(3*nPx*sizeof(double));
-    double *psiy = (double *) malloc(3*nPy*sizeof(double));
-
-    const QuadratureStruct quadRule = {Px, Py, dx, dy, nPx, nPy};
-
+    arma::Mat<double> armapsix(3, nPx);
+    QuadratureStruct quadRule = {Px, Py, dx, dy, nPx, nPy};
     for(h=0; h<nPx; h++){
-       model_basisFunction(&Px[2*h], &tmp_psi[0]);
-       psix[nPx*0+h] = tmp_psi[0];
-       psix[nPx*1+h] = tmp_psi[1];
-       psix[nPx*2+h] = tmp_psi[2];
+        // This works due to Column Major ordering of Armadillo Matricies!
+        model_basisFunction(&Px[2*h], & armapsix[3*h]);
     }
 
-    for(h=0; h<nPy; h++){
-       model_basisFunction(&Py[2*h], &tmp_psi[0]);
-       psiy[nPy*0+h] = tmp_psi[0];
-       psiy[nPy*1+h] = tmp_psi[1];
-       psiy[nPy*2+h] = tmp_psi[2];
-    }
+    // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
+    const arma::Mat<long> Triangles(ptrTriangles, 4, J);
+    const arma::Mat<long> Neighbours(ptrNeighbours, 4, J);
+    const arma::Mat<double> Verts(ptrVerts, 2, L);
 
     #pragma omp parallel
     {
     // General Loop Indices ---------------------------------------
-    int i=0, j=0, bTdx=0;
+    int j=0, bTdx=0;
 
     // Breadth First Search --------------------------------------
-    int *visited = (int *) malloc(J*sizeof(int));
+    arma::Col<int> visited(J, arma::fill::zeros);
 
-    // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
-    arma::Mat<long> armTriangles(Triangles, 4, J);
-    arma::Mat<long> armNeighbours(Neighbours, 4, J);
 
     // Loop index of current outer triangle in BFS
     int sTdx=0;
     // Queue for Breadth first search
     queue<int> queue;
     // List of visited triangles
-    long *NTdx;
+    const long *NTdx;
 
     // Vector containing the coordinates of the vertices of a Triangle
     TriangleStruct aT, bT;
@@ -641,25 +618,15 @@ void par_assemble(  double * Ad,
             // The first entry (index 0) of each row in triangles contains the Label of each point!
             // Hence, in order to get an pointer to the three Triangle idices, which we need here
             // we choose &Triangles[4*aTdx+1];
-            aAdx = &armTriangles(1, aTdx);
+            aAdx = &Triangles(1, aTdx);
         }
         // Prepare Triangle information aTE and aTdet ------------------
-        // Copy coordinates of Triange a to aTE.
-        // this is done fore convenience only, actually those are unnecessary copies!
-        for (j=0; j<2; j++){
-            aT.E[2*0+j] = Verts[2*armTriangles(1, aTdx) + j];
-            aT.E[2*1+j] = Verts[2*armTriangles(2, aTdx) + j];
-            aT.E[2*2+j] = Verts[2*armTriangles(3, aTdx) + j];
-        }
-        // Initialize Struct
-        aT.absDet = absDet(aT.E);
-        aT.signDet = signDet(aT.E);
-        aT.label = armTriangles(0, aTdx);
+        initializeTriangle(Verts, Triangles, aTdx, aT);
 
         // Assembly of right side ---------------------------------------
         // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
         doubleVec_tozero(termf, 3); // Initialize Buffer
-        compute_f(aT, quadRule, psix, termf); // Integrate and fill buffer
+        compute_f(aT, quadRule, armapsix, termf); // Integrate and fill buffer
 
         // Add content of buffer to the right side.
         for (a=0; a<3; a++){
@@ -678,7 +645,7 @@ void par_assemble(  double * Ad,
         // Intialize search queue with current outer triangle
         queue.push(aTdx);
         // Initialize vector of visited triangles with 0
-        intVec_tozero(&visited[0], J);
+        visited.zeros();
 
         // Check whether BFS is over.
         while (!queue.empty()){
@@ -686,7 +653,7 @@ void par_assemble(  double * Ad,
             sTdx = queue.front();
             queue.pop();
             // Get all the neighbours of sTdx.
-            NTdx =  &armNeighbours(0, sTdx);
+            NTdx =  &Neighbours(0, sTdx);
             // Run through the list of neighbours. (4 at max)
             for (j=0; j<4; j++){
                 // The next valid neighbour is our candidate for the inner Triangle b.
@@ -698,17 +665,7 @@ void par_assemble(  double * Ad,
                 if (bTdx < J){
 
                     // Prepare Triangle information bTE and bTdet ------------------
-                    // Copy coordinates of Triange b to bTE.
-                    // again this is done for convenience only, actually those are unnecessary copies!
-                    for (i=0; i<2;i++){
-                        bT.E[2*0+i] = Verts[2*armTriangles(1, bTdx) + i];
-                        bT.E[2*1+i] = Verts[2*armTriangles(2, bTdx) + i];
-                        bT.E[2*2+i] = Verts[2*armTriangles(3, bTdx) + i];
-                    }
-                    // Initialize Struct
-                    bT.absDet = absDet(bT.E);
-                    bT.signDet = signDet(bT.E);
-                    bT.label = armTriangles(0, bTdx);
+                    initializeTriangle(Verts, Triangles, bTdx,bT);
 
                     // Check whether bTdx is already visited.
                     if (visited[bTdx]==0){
@@ -720,7 +677,7 @@ void par_assemble(  double * Ad,
                             bAdx = bDGdx;
                         } else {
                             // Get (pointer to) intex of basis function (in Continuous Galerkin)
-                            bAdx = &armTriangles(1, bTdx);
+                            bAdx = &Triangles(1, bTdx);
                             // The first entry (index 0) of each row in triangles contains the Label of each point!
                             // Hence, in order to get an pointer to the three Triangle idices, which we need here
                             // we choose &Triangles[4*aTdx+1];
@@ -729,7 +686,7 @@ void par_assemble(  double * Ad,
                         doubleVec_tozero(termLocal, 3 * 3); // Initialize Buffer
                         doubleVec_tozero(termNonloc, 3 * 3); // Initialize Buffer
                         // Compute integrals and write to buffer
-                        integrate(aT, bT, quadRule, psix, psiy, sqdelta, termLocal, termNonloc);
+                        integrate(aT, bT, quadRule, armapsix, sqdelta, termLocal, termNonloc);
                         // [DEBUG]
                         //doubleVec_add(termLocal, DEBUG_termTotalLocal, DEBUG_termTotalLocal, 9);
                         //doubleVec_add(termNonloc, DEBUG_termTotalNonloc, DEBUG_termTotalNonloc, 9);
@@ -793,10 +750,21 @@ void par_assemble(  double * Ad,
             }
         }
     }
-    free(visited);
     }
-    free(psix);
-    free(psiy);
+}
+
+void initializeTriangle(const arma::mat & Verts, const arma::Mat<long> & Triangles, const int Tdx, TriangleStruct & T){
+    // Copy coordinates of Triange b to bTE.
+    int j;
+    for (j=0; j<2; j++){
+        T.E[2*0+j] = Verts(j, Triangles(1, Tdx));
+        T.E[2*1+j] = Verts(j, Triangles(2, Tdx));
+        T.E[2*2+j] = Verts(j, Triangles(3, Tdx));
+    }
+    // Initialize Struct
+    T.absDet = absDet(T.E);
+    T.signDet = signDet(T.E);
+    T.label = Triangles(0, Tdx);
 }
 
 double compute_area(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb, double * P, int nP, double * dx, double sqdelta){
@@ -817,7 +785,7 @@ double compute_area(double * aTE, double aTdet, long labela, double * bTE, doubl
 
 // Math functions ------------------------------------------------------------------------------------------------------
 
-void solve2x2(double * A, double * b, double * x){
+void solve2x2(const double * A, const double * b, double * x){
     int dx0 = 0, dx1 = 1;
     double l=0, u=0;
 
@@ -854,7 +822,7 @@ void solve2x2(double * A, double * b, double * x){
 
 // Matrix operations (working with strides only) --------------------------------
 
-double absDet(double * E){
+double absDet(const double * E){
     double M[2][2];
     int i=0;
     for (i=0; i< 2; i++){
@@ -864,7 +832,7 @@ double absDet(double * E){
     return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
 }
 
-double signDet(double * E){
+double signDet(const double * E){
     double M[2][2], det;
     int i=0;
     for (i=0; i< 2; i++){
@@ -882,7 +850,7 @@ double signDet(double * E){
     }
 }
 
-void baryCenter(double * E, double * bary){
+void baryCenter(const double * E, double * bary){
     int i=0;
     bary[0] = 0;
     bary[1] = 0;
@@ -893,7 +861,7 @@ void baryCenter(double * E, double * bary){
     bary[0] = bary[0]/3;
     bary[1] = bary[1]/3;
 }
-void baryCenter_polygone(double * P, int nVerticies, double * bary){
+void baryCenter_polygone(const double * P, const int nVerticies, double * bary){
     int k=0;
     bary[0] = 0;
     bary[1] = 0;
@@ -905,14 +873,14 @@ void baryCenter_polygone(double * P, int nVerticies, double * bary){
     bary[1] = bary[1]/nVerticies;
 }
 
-void toPhys(double * E, double * p, double * out_x){
+void toPhys(const double * E, const double * p, double * out_x){
     int i=0;
     for (i=0; i<2;i++){
         out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i];
     }
 }
 
-void toRef(double * E, double * phys_x, double * ref_p){
+void toRef(const double * E, const double * phys_x, double * ref_p){
     double M[2*2];
     double b[2];
 
@@ -931,7 +899,7 @@ void toRef(double * E, double * phys_x, double * ref_p){
 // Double
 
 // Check whether any, or all elements of a vector are zero --------------
-int doubleVec_any(double * vec, int len){
+int doubleVec_any(const double * vec, const int len){
     int i=0;
     for (i=0; i < len; i++){
         if (vec[i] != 0){
@@ -941,7 +909,7 @@ int doubleVec_any(double * vec, int len){
     return 0;
 }
 
-double vec_dot(double * x, double * y, int len){
+double vec_dot(const double * x, const double * y, const int len){
     double r=0;
     int i=0;
     for (i=0; i<len; i++){
@@ -950,7 +918,7 @@ double vec_dot(double * x, double * y, int len){
     return r;
 }
 
-double vec_sqL2dist(double * x, double * y, int len){
+double vec_sqL2dist(const double * x, const double * y, const int len){
     double r=0;
     int i=0;
     for (i=0; i<len; i++){
@@ -959,42 +927,42 @@ double vec_sqL2dist(double * x, double * y, int len){
     return r;
 }
 
-void doubleVec_tozero(double * vec, int len){
+void doubleVec_tozero(double * vec, const int len){
     int i=0;
     for (i=0; i< len; i++){
         vec[i]  = 0;
     }
 }
 
-void doubleVec_midpoint(double * vec1, double * vec2, double * midpoint, int len){
+void doubleVec_midpoint(const double * vec1, const double * vec2, double * midpoint, const int len){
     int i = 0;
     for (i=0; i < len; i++){
         midpoint[i]  = (vec1[i] + vec2[i])/2;
     }
 }
 
-void doubleVec_subtract(double * vec1, double * vec2, double * out, int len){
+void doubleVec_subtract(const double * vec1, const double * vec2, double * out, const int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec1[i] - vec2[i];
     }
 }
 
-void doubleVec_add(double * vec1, double * vec2, double * out, int len){
+void doubleVec_add(const double * vec1, const double * vec2, double * out, const int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec1[i] + vec2[i];
     }
 }
 
-void doubleVec_scale(double lambda, double * vec, double * out, int len){
+void doubleVec_scale(const double lambda, const double * vec, double * out, const int len){
     int i=0;
     for (i=0; i < len; i++){
         out[i]  = vec[i]*lambda;
     }
 }
 
-void doubleVec_copyTo(double * input, double * output, int len){
+void doubleVec_copyTo(const double * input, double * output, const int len){
     int i=0;
     for (i=0; i<len; i++){
         output[i] = input[i];
@@ -1002,7 +970,7 @@ void doubleVec_copyTo(double * input, double * output, int len){
 }
 // Long
 
-int longVec_all(long * vec, int len){
+int longVec_all(const long * vec, const int len){
     int i=0;
     for (i=0; i<len; i++){
         if (vec[i] == 0){
@@ -1012,7 +980,7 @@ int longVec_all(long * vec, int len){
     return 1;
 }
 
-int longVec_any(long * vec, int len){
+int longVec_any(const long * vec, const int len){
     int i=0;
     for (i=0; i<len; i++){
             if (vec[i] != 0){
@@ -1025,7 +993,7 @@ int longVec_any(long * vec, int len){
 // Int
 
 // Set Vectors to Zero -------------------------------------------------
-void intVec_tozero(int * vec, int len){
+void intVec_tozero(int * vec, const int len){
     int i=0;
     for (i=0; i< len; i++){
         vec[i]  = 0;
@@ -1033,7 +1001,7 @@ void intVec_tozero(int * vec, int len){
 }
 // Scalar --------------------------------------------------------
 
-double absolute(double value){
+double absolute(const double value){
     if (value < 0){
         return - value;
     } else {
@@ -1041,7 +1009,7 @@ double absolute(double value){
     }
 }
 
-double scal_sqL2dist(double x, double y){
+double scal_sqL2dist(const double x, const double y){
     return pow((x-y), 2);
 }
 

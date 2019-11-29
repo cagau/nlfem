@@ -122,7 +122,7 @@ cdef list get_neighbour(int rows, long * Triangles, long * Vdx):
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
 """
 from Cassemble cimport retriangulate
-from Cassemble cimport toPhys, toRef, model_basisFunction
+from Cassemble cimport toRef, model_basisFunction
 import matplotlib
 from libcpp.queue cimport queue
 import matplotlib.pyplot as plt
@@ -296,6 +296,11 @@ cdef absDet(double [:] E):
 
     return np.abs(M[0][0]*M[1][1] - M[0][1]*M[1][0])
 
+cdef toPhys(double [:] E, double * p, double * out_x):
+    cdef int i=0
+    for i in range(2):
+        out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i]
+
 cdef double compute_area(double [:] aTE, double aTdet, long labela, double [:] bTE, double bTdet, long labelb, double [:] P, int nP, double [:] dx, double sqdelta, pp, ax, aTdx, bTdx, h):
     cdef:
         double areaTerm=0.0
@@ -364,10 +369,6 @@ cdef double [:] baryCenter(double [:] E):
     bary[1] = bary[1]/3
     return bary
 
-cdef toPhys_(double [:] E, double * p, double * out_x):
-    cdef int i=0
-    for i in range(2):
-        out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i]
 """
 # [END] DEBUG Helpers - ------------------------------------------------------------------------------------------------
 
