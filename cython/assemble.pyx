@@ -66,6 +66,11 @@ def assemble(
     py_fd = np.zeros(K_Omega).flatten("C")
 
 
+    print("In assemble.pyx, Dimension set to 2D.")
+
+    cdef int dim = 2
+    cdef int dVertex = dim + 1
+
     cdef:
         int aTdx, n , i
         int nPx = py_Px.shape[0]
@@ -79,7 +84,7 @@ def assemble(
         double[:] Ad = py_Ad
 
         # List of neighbours of each triangle, Neighbours[Tdx] returns row with Neighbour indices
-        long[:] Neighbours = mesh.nE*np.ones((mesh.nE*4), dtype=int)
+        long[:] Neighbours = mesh.nE*np.ones((mesh.nE*dVertex), dtype=int)
 
         # Squared interaction horizon
         double sqdelta = pow(delta,2)
@@ -87,15 +92,42 @@ def assemble(
     # Setup adjaciency graph of the mesh --------------------------
     neigs = []
     for aTdx in range(nE):
-        neigs = get_neighbour(nE, &c_Triangles[0], &c_Triangles[4*aTdx])
+        neigs = get_neighbour(nE, dVertex, &c_Triangles[0], &c_Triangles[(dVertex+1)*aTdx])
         n = len(neigs)
         for i in range(n):
-            Neighbours[4*aTdx + i] = neigs[i]
+            Neighbours[dVertex*aTdx + i] = neigs[i]
 
+    # Initialize Quadrature Rule
+    cdef Cassemble.QuadratureType Cquadrule = Cassemble.QuadratureType(
+        Px = &Px[0],
+        Py = &Py[0],
+        dx = &dx[0],
+        dy = &dy[0],
+        nPx = nPx,
+        nPy = nPy
+    )
+
+    # Initialize Quadrature Mesh
+    cdef Cassemble.MeshType Cmesh = Cassemble.MeshType(
+        K_Omega=K_Omega,
+        K=K,
+        ptrTriangles=&c_Triangles[0],
+        ptrVerts=&c_Verts[0],
+        J=nE,
+        J_Omega=nE_Omega,
+        L=nV,
+        L_Omega=nV_Omega,
+        sqdelta=sqdelta,
+        ptrNeighbours=&Neighbours[0],
+        is_DiscontinuousGalerkin=is_DiscontinuousGalerkin,
+        is_NeumannBoundary=is_NeumannBoundary,
+        dim=dim,
+        dVertex=dVertex
+    )
 
     start = time.time()
-    # Compute Assembly
-    Cassemble.par_assemble( &Ad[0], K_Omega, K, &fd[0], &c_Triangles[0], &c_Verts[0], nE , nE_Omega, nV, nV_Omega, &Px[0], nPx, &dx[0], &Py[0], nPy, &dy[0], sqdelta, &Neighbours[0], is_DiscontinuousGalerkin, is_NeumannBoundary)
+    Cassemble.par_assemble(Cmesh, Cquadrule, &Ad[0], &fd[0])
+
     total_time = time.time() - start
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 
@@ -103,7 +135,7 @@ def assemble(
     return np.reshape(py_Ad, (K_Omega, K)), py_fd
 
 # Setup adjaciency graph of the mesh --------------------------
-cdef list get_neighbour(int rows, long * Triangles, long * Vdx):
+cdef list get_neighbour(int rows, int dVertex, long * Triangles, long * Vdx):
     cdef:
         int i, j, k, n
     idx = []
@@ -112,8 +144,10 @@ cdef list get_neighbour(int rows, long * Triangles, long * Vdx):
         n = 0
         for j in range(3):
             for k in range(3):
-                if Triangles[4*i+1+j] == Vdx[k+1]:
+            # Triangles contains Vertex Indices and a Label.
+                if Triangles[(dVertex+1)*i+1+j] == Vdx[k+1]:
                     n+=1
+        # The graph has no loops. A triangle is not its own neighbour!
         if n == 2:
             idx.append(i)
 
@@ -173,14 +207,14 @@ def py_check_par_assemble(
         # Cython interface of C-aligned arrays of solution and right side
         double[:] fd = py_fd
         # List of neighbours of each triangle, Neighbours[Tdx] returns row with Neighbour indices
-        long[:] Neighbours = mesh.nE*np.ones((mesh.nE*4), dtype=int)
+        long[:] Neighbours = mesh.nE*np.ones((mesh.nE*dVertex), dtype=int)
         # Squared interaction horizon
         double sqdelta = pow(delta,2)
 
     # Setup adjaciency graph of the mesh --------------------------
     neigs = []
     for aTdx in range(mesh.nE):
-        neigs = get_neighbour(mesh.nE, &Triangles[0], &Triangles[4*aTdx])
+        neigs = get_neighbour(mesh.nE, dVertex, &Triangles[0], &Triangles[(dVertex+1)*aTdx])
         n = len(neigs)
         for i in range(n):
             Neighbours[4*aTdx + i] = neigs[i]
@@ -220,13 +254,13 @@ def py_check_par_assemble(
         ## this is done fore convenience only, actually those are unnecessary copies!
         print(aTdx)
         for j in range(2):
-            aTE[2*0+j] = Verts[2*Triangles[4*aTdx+1] + j]
-            aTE[2*1+j] = Verts[2*Triangles[4*aTdx+2] + j]
-            aTE[2*2+j] = Verts[2*Triangles[4*aTdx+3] + j]
+            aTE[2*0+j] = Verts[2*Triangles[(dVertex+1)*aTdx+1] + j]
+            aTE[2*1+j] = Verts[2*Triangles[(dVertex+1)*aTdx+2] + j]
+            aTE[2*2+j] = Verts[2*Triangles[(dVertex+1)*aTdx+3] + j]
 
         ## compute Determinant
         aTdet = absDet(aTE)
-        labela = Triangles[4*aTdx]
+        labela = Triangles[(dVertex+1)*aTdx]
 
         ## Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
         ## on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
@@ -259,12 +293,12 @@ def py_check_par_assemble(
                     ## Copy coordinates of Triange b to bTE.
                     ## again this is done fore convenience only, actually those are unnecessary copies!
                     for i in range(2):
-                        bTE[2*0+i] = Verts[2*Triangles[4*bTdx+1] + i]
-                        bTE[2*1+i] = Verts[2*Triangles[4*bTdx+2] + i]
-                        bTE[2*2+i] = Verts[2*Triangles[4*bTdx+3] + i]
+                        bTE[2*0+i] = Verts[2*Triangles[(dVertex+1)*bTdx+1] + i]
+                        bTE[2*1+i] = Verts[2*Triangles[(dVertex+1)*bTdx+2] + i]
+                        bTE[2*2+i] = Verts[2*Triangles[(dVertex+1)*bTdx+3] + i]
 
                     bTdet = absDet(bTE)
-                    labelb = Triangles[4*bTdx]
+                    labelb = Triangles[(dVertex+1)*bTdx]
                     ## Check wheter bTdx is already visited.
                     if (visited[bTdx]==0):
 
@@ -457,12 +491,12 @@ cdef double [:] baryCenter(double [:] E):
 #         self.dy = dy
 #
 #         # nVist of neighbours of each triangle, Neighbours[Tdx] returns row with Neighbour indices
-#         self.Neighbours = self.nE*np.ones((self.nE*4), dtype=int)
+#         self.Neighbours = self.nE*np.ones((self.nE*dVertex), dtype=int)
 #
 #         # Setup adjaciency graph of the mesh --------------------------
 #         neigs = []
 #         for aTdx in range(self.nE):
-#             neigs = get_neighbour(self.nE, &self.c_Triangles[0], &self.c_Triangles[4*aTdx])
+#             neigs = get_neighbour(self.nE, dVertex, &self.c_Triangles[0], &self.c_Triangles[4*aTdx])
 #             n = len(neigs)
 #             for i in range(n):
 #                 self.Neighbours[4*aTdx + i] = neigs[i]

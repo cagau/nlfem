@@ -7,21 +7,15 @@
 using namespace std;
 
 // Declaration of internal helper functions ----------------------------------------------------------------------------
-typedef struct {
-    const double * Px;
-    const double * Py;
-    const double * dx;
-    const double * dy;
-    const int nPx;
-    const int nPy;
-}QuadratureStruct;
-
-typedef struct {
-    double E[2*3];
+struct ElementStruct{
+    arma::vec matE;
+    double * E;
+    int dim;
     long label;
     double absDet;
     int signDet;
-}TriangleStruct;
+};
+typedef ElementStruct ElementType;
 
 // Model ---------------------------------------------------------------------------------------------------------------
 static double model_f(const double *);
@@ -68,8 +62,7 @@ static void intVec_tozero(int *, const int);                     // Reset to zer
 static double absolute(const double);                                  // Get absolute value
 static double scal_sqL2dist(const double x, const double y);           // L2 Distance
 
-static void initializeTriangle(const arma::mat & Verts, const arma::Mat<long> & Triangles,
-        const int Tdx, TriangleStruct & T);
+static void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T);
 
 
 // Model -----------------------------------------f-------------------------------------------------------------------
@@ -125,9 +118,9 @@ void model_basisFunction(const double * p, double *psi_vals){
 // Integration ---------------------------------------------------------------------------------------------------------
 
 
-void integrate(     const TriangleStruct aT,
-                    const TriangleStruct bT,
-                    const QuadratureStruct & quadRule,
+void integrate(     const ElementType aT,
+                    const ElementType bT,
+                    const QuadratureType & quadRule,
                     const arma::mat psix,
                     const double sqdelta,
                     double * termLocal, double * termNonloc){
@@ -381,8 +374,8 @@ int retriangulate(const double * x_center, const double * TE, const double sqdel
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
 
-void compute_f(     const TriangleStruct & aT,
-                    const QuadratureStruct &quadRule,
+void compute_f(     const ElementType & aT,
+                    const QuadratureType &quadRule,
                     const arma::mat psi,
                     double * termf){
     int i,a;
@@ -504,38 +497,29 @@ void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts
 
 }
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-void par_assemble(  double * Ad,
-                    const int K_Omega,
-                    const int K,
-                    double * fd,
-                    const long * ptrTriangles,
-                    const double * ptrVerts,
-                    // Number of Triangles and number of Triangles in Omega
-                    const int J, const int J_Omega,
-                    // Number of vertices (in case of CG = K and K_Omega)
-                    const int L, const int L_Omega,
-                    const double * Px, const int nPx, const double * dx,
-                    const double * Py, const int nPy, const double * dy,
-                    const double sqdelta,
-                    const long * ptrNeighbours,
-                    const int is_DiscontinuousGalerkin,
-                    const int is_NeumannBoundary
+void par_assemble(  const MeshType& mesh,
+                    const QuadratureType& quadRule,
+                    double * Ad,
+                    double * fd
                     ){
     int aTdx, h=0;
-
+    //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
-    arma::Mat<double> armAd(Ad, K, K_Omega, false, true);
-    arma::Mat<double> armapsix(3, nPx);
-    QuadratureStruct quadRule = {Px, Py, dx, dy, nPx, nPy};
-    for(h=0; h<nPx; h++){
+
+    arma::Mat<double> armAd(Ad, mesh.K, mesh.K_Omega, false, true);
+    arma::Mat<double> armapsix(mesh.dVertex, quadRule.nPx);
+
+    for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
-        model_basisFunction(&Px[2*h], & armapsix[3*h]);
+        model_basisFunction(&quadRule.Px[mesh.dim*h], & armapsix[mesh.dVertex*h]);
     }
 
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
-    const arma::Mat<long> Triangles(ptrTriangles, 4, J);
-    const arma::Mat<long> Neighbours(ptrNeighbours, 4, J);
-    const arma::Mat<double> Verts(ptrVerts, 2, L);
+    // Contains one row more than number of verticies as label information is contained here
+    const arma::Mat<long> Triangles(mesh.ptrTriangles, mesh.dVertex+1, mesh.J);
+    // Contains number of direct neighbours of an element + 1 (itself).
+    const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.J);
+    const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
     #pragma omp parallel
     {
@@ -543,7 +527,7 @@ void par_assemble(  double * Ad,
     int j=0, bTdx=0;
 
     // Breadth First Search --------------------------------------
-    arma::Col<int> visited(J, arma::fill::zeros);
+    arma::Col<int> visited(mesh.J, arma::fill::zeros);
 
 
     // Loop index of current outer triangle in BFS
@@ -554,7 +538,9 @@ void par_assemble(  double * Ad,
     const long *NTdx;
 
     // Vector containing the coordinates of the vertices of a Triangle
-    TriangleStruct aT, bT;
+    ElementType aT, bT;
+    aT.matE = arma::vec(mesh.dim*(mesh.dim+1));
+    bT.matE = arma::vec(mesh.dim*(mesh.dim+1));
     //double aTE[3*2];
     //double bTE[3*2];
     // Integration information ------------------------------------
@@ -563,13 +549,13 @@ void par_assemble(  double * Ad,
     // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
     const long * aAdx;
     const long * bAdx;
-    long aDGdx[3]; // Index for discontinuous Galerkin
-    long bDGdx[3];
+    long aDGdx[mesh.dVertex]; // Index for discontinuous Galerkin
+    long bDGdx[mesh.dVertex];
 
     // Buffers for integration solutions
-    double termf[3];
-    double termLocal[3*3];
-    double termNonloc[3*3];
+    double termf[mesh.dVertex];
+    double termLocal[mesh.dVertex*mesh.dVertex];
+    double termNonloc[mesh.dVertex*mesh.dVertex];
     //[DEBUG]
     /*
     double DEBUG_termTotalLocal[3*3];
@@ -579,7 +565,7 @@ void par_assemble(  double * Ad,
 
 
     #pragma omp for
-    for (aTdx=0; aTdx<J_Omega; aTdx++)
+    for (aTdx=0; aTdx<mesh.J_Omega; aTdx++)
     {
 
         //[DEBUG]
@@ -609,9 +595,12 @@ void par_assemble(  double * Ad,
         //[End DEBUG]
 
         // Get index of ansatz functions in matrix compute_A.-------------------
-        if(is_DiscontinuousGalerkin){
+        if(mesh.is_DiscontinuousGalerkin){
             // Discontinuous Galerkin
-            aDGdx[0] = 3*aTdx; aDGdx[1] = 3*aTdx+1; aDGdx[2] = 3*aTdx+2;
+            //aDGdx[0] = (dVertex+1)*aTdx+1; aDGdx[1] = (dVertex+1)*aTdx+2; aDGdx[2] = (dVertex+1)*aTdx+3;
+            for (j=0; j<mesh.dVertex; j++){
+                aDGdx[j] =  mesh.dVertex*aTdx+j;
+            }
             aAdx = aDGdx;
         } else {
             // Continuous Galerkin
@@ -621,19 +610,19 @@ void par_assemble(  double * Ad,
             aAdx = &Triangles(1, aTdx);
         }
         // Prepare Triangle information aTE and aTdet ------------------
-        initializeTriangle(Verts, Triangles, aTdx, aT);
+        initializeTriangle(aTdx, mesh, aT);
 
         // Assembly of right side ---------------------------------------
         // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
-        doubleVec_tozero(termf, 3); // Initialize Buffer
+        doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
         compute_f(aT, quadRule, armapsix, termf); // Integrate and fill buffer
 
         // Add content of buffer to the right side.
-        for (a=0; a<3; a++){
+        for (a=0; a<mesh.dVertex; a++){
             // Assembly happens in the interior of Omega only, so we throw away some values
             // Again, Triangles contains the labels as first entry! Hence, we start with a=1 here!
             // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
-            if (is_DiscontinuousGalerkin || (aAdx[a] < L_Omega)){
+            if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)){
                 #pragma omp atomic update
                 fd[aAdx[a]] += termf[a];
             }
@@ -647,33 +636,36 @@ void par_assemble(  double * Ad,
         // Initialize vector of visited triangles with 0
         visited.zeros();
 
-        // Check whether BFS is over.
+        // Check whether BFS is completed.
         while (!queue.empty()){
             // Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
             sTdx = queue.front();
             queue.pop();
             // Get all the neighbours of sTdx.
             NTdx =  &Neighbours(0, sTdx);
-            // Run through the list of neighbours. (4 at max)
-            for (j=0; j<4; j++){
+            // Run through the list of neighbours.
+            // 3 at max in 2D, 4 in 3D.
+            for (j=0; j<mesh.dVertex; j++){
                 // The next valid neighbour is our candidate for the inner Triangle b.
                 bTdx = NTdx[j];
 
-                // Check how many neighbours sTdx has. It can be 4 at max. (Itself, and the three others)
+                // Check how many neighbours sTdx has. It can be 3 at max.
                 // In order to be able to store the list as contiguous array we fill up the empty spots with the number J
                 // i.e. the total number of Triangles (which cannot be an index).
-                if (bTdx < J){
+                if (bTdx < mesh.J){
 
                     // Prepare Triangle information bTE and bTdet ------------------
-                    initializeTriangle(Verts, Triangles, bTdx,bT);
+                    initializeTriangle(bTdx, mesh, bT);
 
                     // Check whether bTdx is already visited.
                     if (visited[bTdx]==0){
 
                         // Retriangulation and integration ------------------------
-                        if (is_DiscontinuousGalerkin){
+                        if (mesh.is_DiscontinuousGalerkin){
                             // Discontinuous Galerkin
-                            bDGdx[0] = 3*bTdx; bDGdx[1] = 3*bTdx+1; bDGdx[2] = 3*bTdx+2;
+                            for (j=0; j<mesh.dVertex; j++){
+                                bDGdx[j] =  mesh.dVertex*bTdx+j;
+                            }
                             bAdx = bDGdx;
                         } else {
                             // Get (pointer to) intex of basis function (in Continuous Galerkin)
@@ -683,10 +675,10 @@ void par_assemble(  double * Ad,
                             // we choose &Triangles[4*aTdx+1];
                         }
                         // Assembly of matrix ---------------------------------------
-                        doubleVec_tozero(termLocal, 3 * 3); // Initialize Buffer
-                        doubleVec_tozero(termNonloc, 3 * 3); // Initialize Buffer
+                        doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex); // Initialize Buffer
+                        doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex); // Initialize Buffer
                         // Compute integrals and write to buffer
-                        integrate(aT, bT, quadRule, armapsix, sqdelta, termLocal, termNonloc);
+                        integrate(aT, bT, quadRule, armapsix, mesh.sqdelta, termLocal, termNonloc);
                         // [DEBUG]
                         //doubleVec_add(termLocal, DEBUG_termTotalLocal, DEBUG_termTotalLocal, 9);
                         //doubleVec_add(termNonloc, DEBUG_termTotalNonloc, DEBUG_termTotalNonloc, 9);
@@ -721,7 +713,7 @@ void par_assemble(  double * Ad,
                         //[End DEBUG]
 
 
-                        if (doubleVec_any(termNonloc, 3 * 3) || doubleVec_any(termLocal, 3 * 3)){
+                        if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) || doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)){
                             queue.push(bTdx);
                             // In order to speed up the integration we only check whether the integral
                             // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
@@ -730,14 +722,14 @@ void par_assemble(  double * Ad,
                             // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
 
                             // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
-                            for (a=0; a<3; a++){
+                            for (a=0; a<mesh.dVertex; a++){
                             // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
-                                if  (is_DiscontinuousGalerkin || (aAdx[a] < L_Omega)){
-                                    for (b=0; b<3; b++){
+                                if  (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)){
+                                    for (b=0; b<mesh.dVertex; b++){
                                         #pragma omp atomic update
-                                        armAd(aAdx[b], aAdx[a]) += termLocal[3*a+b];
+                                        armAd(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex*a+b];
                                         #pragma omp atomic update
-                                        armAd(bAdx[b], aAdx[a]) -= termNonloc[3*a+b];
+                                        armAd(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex*a+b];
                                     }
                                 }
                             }
@@ -753,18 +745,26 @@ void par_assemble(  double * Ad,
     }
 }
 
-void initializeTriangle(const arma::mat & Verts, const arma::Mat<long> & Triangles, const int Tdx, TriangleStruct & T){
+//void initializeTriangle(const arma::mat & Verts, const arma::Mat<long> & Triangles, const int Tdx, const int dim, ElementType & T){
+void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     // Copy coordinates of Triange b to bTE.
-    int j;
-    for (j=0; j<2; j++){
-        T.E[2*0+j] = Verts(j, Triangles(1, Tdx));
-        T.E[2*1+j] = Verts(j, Triangles(2, Tdx));
-        T.E[2*2+j] = Verts(j, Triangles(3, Tdx));
+    int j, k, Vdx;
+    //T.matE = arma::vec(dim*(dim+1));
+    for (k=0; k<mesh.dim+1; k++) {
+        Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
+        for (j=0; j<mesh.dim; j++){
+            //T.matE[mesh.dim * k + j] = mesh.Verts(j, mesh.Triangles(k+1, Tdx));
+            T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
+        }
     }
     // Initialize Struct
+    T.E = T.matE.memptr();
     T.absDet = absDet(T.E);
     T.signDet = signDet(T.E);
-    T.label = Triangles(0, Tdx);
+    //T.label = Triangles(0, Tdx);
+    T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
+    //T.dim = dim;
+    T.dim = mesh.dim;
 }
 
 double compute_area(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb, double * P, int nP, double * dx, double sqdelta){
