@@ -70,7 +70,6 @@ def assemble(
 
     cdef int dim = 2
     cdef int dVertex = dim + 1
-
     cdef:
         int aTdx, n , i
         int nPx = py_Px.shape[0]
@@ -97,37 +96,10 @@ def assemble(
         for i in range(n):
             Neighbours[dVertex*aTdx + i] = neigs[i]
 
-    # Initialize Quadrature Rule
-    cdef Cassemble.QuadratureType Cquadrule = Cassemble.QuadratureType(
-        Px = &Px[0],
-        Py = &Py[0],
-        dx = &dx[0],
-        dy = &dy[0],
-        nPx = nPx,
-        nPy = nPy
-    )
-
-    # Initialize Quadrature Mesh
-    cdef Cassemble.MeshType Cmesh = Cassemble.MeshType(
-        K_Omega=K_Omega,
-        K=K,
-        ptrTriangles=&c_Triangles[0],
-        ptrVerts=&c_Verts[0],
-        J=nE,
-        J_Omega=nE_Omega,
-        L=nV,
-        L_Omega=nV_Omega,
-        sqdelta=sqdelta,
-        ptrNeighbours=&Neighbours[0],
-        is_DiscontinuousGalerkin=is_DiscontinuousGalerkin,
-        is_NeumannBoundary=is_NeumannBoundary,
-        dim=dim,
-        dVertex=dVertex
-    )
 
     start = time.time()
-    Cassemble.par_assemble(Cmesh, Cquadrule, &Ad[0], &fd[0])
-
+    # Compute Assembly
+    Cassemble.par_assemble( &Ad[0], K_Omega, K, &fd[0], &c_Triangles[0], &c_Verts[0], nE , nE_Omega, nV, nV_Omega, &Px[0], nPx, &dx[0], &Py[0], nPy, &dy[0], sqdelta, &Neighbours[0], is_DiscontinuousGalerkin, is_NeumannBoundary, dim)
     total_time = time.time() - start
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 

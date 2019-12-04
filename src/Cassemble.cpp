@@ -121,35 +121,35 @@ void model_basisFunction(const double * p, double *psi_vals){
 void integrate(     const ElementType aT,
                     const ElementType bT,
                     const QuadratureType & quadRule,
-                    const arma::mat psix,
-                    const double sqdelta,
+                    const MeshType & mesh,
                     double * termLocal, double * termNonloc){
+    const int dim = mesh.dim;
     int k=0, a=0, b=0;
-    double x[2];
+    double x[dim];
     double innerLocal=0;
-    double innerNonloc[3];
+    double innerNonloc[mesh.dVertex];
 
     int i=0, rTdx=0, Rdx=0;
     double ker=0, rTdet=0;
-    double physical_quad[2];
-    double reference_quad[2];
-    double psi_value[3];
-    double reTriangle_list[9*3*2];
+    double physical_quad[dim];
+    double reference_quad[dim];
+    double psi_value[mesh.dVertex];
+    double reTriangle_list[36*mesh.dVertex*dim];
     bool is_placePointOnCap;
 
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
     for (k=0; k<quadRule.nPx; k++){
-        toPhys(aT.E, &(quadRule.Px[2*k]), x);
+        toPhys(aT.E, &(quadRule.Px[dim*k]), x);
         //printf("\nInner Integral, Iterate %i\n", k);
         //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
         //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
 
         innerLocal = 0.0;
-        doubleVec_tozero(innerNonloc, 3);
+        doubleVec_tozero(innerNonloc, mesh.dVertex);
         is_placePointOnCap = true;
 
-        Rdx = retriangulate(x, bT.E, sqdelta, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
+        Rdx = retriangulate(x, bT.E, mesh, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
 
         //[DEBUG]
         //printf("Retriangulation Rdx %i\n", Rdx);
@@ -167,18 +167,18 @@ void integrate(     const ElementType aT,
             //printf("rTdx %i \n",rTdx);
             for (i=0; i<quadRule.nPy; i++){
                 // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
-                toPhys(&reTriangle_list[2 * 3 * rTdx], &(quadRule.Py[2*i]), physical_quad);
+                toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Py[dim*i]), physical_quad);
                 // Determinant of Triangle of retriangulation
-                rTdet = absDet(&reTriangle_list[2 * 3 * rTdx]);
+                rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
                 // inner Local integral with ker
-                innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, sqdelta) * quadRule.dy[i] * rTdet; // Local Term
+                innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] * rTdet; // Local Term
                 // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
                 toRef(bT.E, physical_quad, reference_quad);
                 // Evaluate ker on physical quad (note this is ker')
-                ker = model_kernel(physical_quad, bT.label, x, aT.label, sqdelta);
+                ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
                 // Evaluate basis function on resulting reference quadrature point
                 model_basisFunction(reference_quad, psi_value);
-                for (b=0; b<3; b++){
+                for (b=0; b<mesh.dVertex; b++){
                     innerNonloc[b] += psi_value[b] * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
                 }
                 //[DEBUG]
@@ -194,10 +194,10 @@ void integrate(     const ElementType aT,
 
         //printf("Local %17.16e\n", innerLocal);
         //printf("Nonloc [%17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
-        for (b=0; b<3; b++){
-            for (a=0; a<3; a++){
-                termLocal[3*a+b] += aT.absDet * psix(a,k) * psix(b,k) * quadRule.dx[k] * innerLocal; //innerLocal
-                termNonloc[3*a+b] += aT.absDet * psix(a,k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+        for (b=0; b<mesh.dVertex; b++){
+            for (a=0; a<mesh.dVertex; a++){
+                termLocal[mesh.dVertex*a+b] += aT.absDet * quadRule.psix(a,k) * quadRule.psix(b,k) * quadRule.dx[k] * innerLocal; //innerLocal
+                termNonloc[mesh.dVertex*a+b] += aT.absDet * quadRule.psix(a,k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
             }
         }
     }
@@ -253,7 +253,7 @@ int placePointOnCap(const double * y_predecessor, const double * y_current,
     }
 }
 
-int retriangulate(const double * x_center, const double * TE, const double sqdelta, double * out_reTriangle_list, const int is_placePointOnCap){
+int retriangulate(const double * x_center, const double * TE, const MeshType & mesh, double * out_reTriangle_list, const int is_placePointOnCap){
         // C Variables and Arrays.
         int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
         double v=0, lam1=0, lam2=0, term1=0, term2=0;
@@ -292,13 +292,13 @@ int retriangulate(const double * x_center, const double * TE, const double sqdel
             a = q - vec_x_center;
             b = p - q;
 
-            if (vec_sqL2dist(&p[0], x_center, 2) <= sqdelta){
+            if (vec_sqL2dist(&p[0], x_center, 2) <= mesh.sqdelta){
                 doubleVec_copyTo(&p[0], &R[2*Rdx], 2);
                 is_onEdge = false; // This point does not lie on the edge.
                 Rdx += 1;
             }
             // PQ-Formula to solve quadratic problem
-            v = pow( dot(a, b), 2) - (dot(a, a) - sqdelta) * dot(b, b);
+            v = pow( dot(a, b), 2) - (dot(a, a) - mesh.sqdelta) * dot(b, b);
             // If there is no sol to the quadratic problem, there is nothing to do.
             if (v >= 0){
                 term1 = - dot(a, b) / dot(b, b);
@@ -307,10 +307,10 @@ int retriangulate(const double * x_center, const double * TE, const double sqdel
                 // Vieta's Formula for computing the roots
                 if (term1 > 0){
                     lam1 = term1 + term2;
-                    lam2 = 1/lam1*(dot(a, a) - sqdelta);
+                    lam2 = 1/lam1*(dot(a, a) - mesh.sqdelta);
                 } else {
                     lam2 = term1 - term2;
-                    lam1 = 1/lam2*(dot(a, a) - sqdelta) / dot(b, b);
+                    lam1 = 1/lam2*(dot(a, a) - mesh.sqdelta) / dot(b, b);
                 }
                 y1 = lam1*b + q;
                 y2 = lam2*b + q;
@@ -320,7 +320,7 @@ int retriangulate(const double * x_center, const double * TE, const double sqdel
                     is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
                     // Check whether the predecessor lied on the edge
                     if (is_onEdge && is_placePointOnCap){
-                        Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                        Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], x_center, mesh.sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
                     }
                     // Append y1
                     doubleVec_copyTo(&y1[0], &R[2*Rdx], 2);
@@ -333,7 +333,7 @@ int retriangulate(const double * x_center, const double * TE, const double sqdel
 
                     // Check whether the predecessor lied on the edge
                     if (is_onEdge && is_placePointOnCap){
-                        Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                        Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], x_center, mesh.sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
                     }
                     // Append y2
                     doubleVec_copyTo(&y2[0], &R[2*Rdx], 2);
@@ -347,7 +347,7 @@ int retriangulate(const double * x_center, const double * TE, const double sqdel
         // and there is no other point at all.
         //shift=1;
         if (is_onEdge && (!is_firstPointLiesOnVertex && Rdx > 1) && is_placePointOnCap){
-            Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+            Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], x_center, mesh.sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
         }
 
         // Construct List of Triangles from intersection points
@@ -376,7 +376,6 @@ int retriangulate(const double * x_center, const double * TE, const double sqdel
 
 void compute_f(     const ElementType & aT,
                     const QuadratureType &quadRule,
-                    const arma::mat psi,
                     double * termf){
     int i,a;
     double x[2];
@@ -384,7 +383,7 @@ void compute_f(     const ElementType & aT,
     for (a=0; a<3; a++){
         for (i=0; i<quadRule.nPx; i++){
             toPhys(aT.E, &(quadRule.Px[2 * i]), &x[0]);
-            termf[a] += psi(a, i) * model_f(&x[0]) * aT.absDet * quadRule.dx[i];
+            termf[a] += quadRule.psix(a, i) * model_f(&x[0]) * aT.absDet * quadRule.dx[i];
         }
     }
 }
@@ -497,29 +496,46 @@ void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts
 
 }
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-void par_assemble(  const MeshType& mesh,
-                    const QuadratureType& quadRule,
-                    double * Ad,
-                    double * fd
+void par_assemble(  double * ptrAd,
+                    const int K_Omega,
+                    const int K,
+                    double * fd,
+                    const long * ptrTriangles,
+                    const double * ptrVerts,
+                    // Number of Triangles and number of Triangles in Omega
+                    const int J, const int J_Omega,
+                    // Number of vertices (in case of CG = K and K_Omega)
+                    const int L, const int L_Omega,
+                    const double * Px, const int nPx, const double * dx,
+                    const double * Py, const int nPy, const double * dy,
+                    const double sqdelta,
+                    const long * ptrNeighbours,
+                    const int is_DiscontinuousGalerkin,
+                    const int is_NeumannBoundary,
+                    const int dim
                     ){
+    //test();
+    QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
+    MeshType mesh = {K_Omega, K, ptrTriangles, ptrVerts, J, J_Omega,
+                     L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
+                    is_NeumannBoundary, dim, dim+1};
     int aTdx, h=0;
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
 
-    arma::Mat<double> armAd(Ad, mesh.K, mesh.K_Omega, false, true);
-    arma::Mat<double> armapsix(mesh.dVertex, quadRule.nPx);
-
+    arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
     for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
-        model_basisFunction(&quadRule.Px[mesh.dim*h], & armapsix[mesh.dVertex*h]);
+        model_basisFunction(&quadRule.Px[mesh.dim*h], & quadRule.psix[mesh.dVertex * h]);
     }
 
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     // Contains one row more than number of verticies as label information is contained here
-    const arma::Mat<long> Triangles(mesh.ptrTriangles, mesh.dVertex+1, mesh.J);
+    //const arma::Mat<long> Triangles(mesh.ptrTriangles, mesh.dVertex+1, mesh.J);
+    //mesh.Triangles = arma::Mat<long>(mesh.ptrTriangles, mesh.dVertex+1, mesh.J);
     // Contains number of direct neighbours of an element + 1 (itself).
-    const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.J);
-    const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
+    //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.J);
+    //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
     #pragma omp parallel
     {
@@ -607,7 +623,7 @@ void par_assemble(  const MeshType& mesh,
             // The first entry (index 0) of each row in triangles contains the Label of each point!
             // Hence, in order to get an pointer to the three Triangle idices, which we need here
             // we choose &Triangles[4*aTdx+1];
-            aAdx = &Triangles(1, aTdx);
+            aAdx = &mesh.Triangles(1, aTdx);
         }
         // Prepare Triangle information aTE and aTdet ------------------
         initializeTriangle(aTdx, mesh, aT);
@@ -615,7 +631,7 @@ void par_assemble(  const MeshType& mesh,
         // Assembly of right side ---------------------------------------
         // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
         doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
-        compute_f(aT, quadRule, armapsix, termf); // Integrate and fill buffer
+        compute_f(aT, quadRule, termf); // Integrate and fill buffer
 
         // Add content of buffer to the right side.
         for (a=0; a<mesh.dVertex; a++){
@@ -642,7 +658,7 @@ void par_assemble(  const MeshType& mesh,
             sTdx = queue.front();
             queue.pop();
             // Get all the neighbours of sTdx.
-            NTdx =  &Neighbours(0, sTdx);
+            NTdx =  &mesh.Neighbours(0, sTdx);
             // Run through the list of neighbours.
             // 3 at max in 2D, 4 in 3D.
             for (j=0; j<mesh.dVertex; j++){
@@ -669,7 +685,7 @@ void par_assemble(  const MeshType& mesh,
                             bAdx = bDGdx;
                         } else {
                             // Get (pointer to) intex of basis function (in Continuous Galerkin)
-                            bAdx = &Triangles(1, bTdx);
+                            bAdx = &mesh.Triangles(1, bTdx);
                             // The first entry (index 0) of each row in triangles contains the Label of each point!
                             // Hence, in order to get an pointer to the three Triangle idices, which we need here
                             // we choose &Triangles[4*aTdx+1];
@@ -678,7 +694,7 @@ void par_assemble(  const MeshType& mesh,
                         doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex); // Initialize Buffer
                         doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex); // Initialize Buffer
                         // Compute integrals and write to buffer
-                        integrate(aT, bT, quadRule, armapsix, mesh.sqdelta, termLocal, termNonloc);
+                        integrate(aT, bT, quadRule, mesh, termLocal, termNonloc);
                         // [DEBUG]
                         //doubleVec_add(termLocal, DEBUG_termTotalLocal, DEBUG_termTotalLocal, 9);
                         //doubleVec_add(termNonloc, DEBUG_termTotalNonloc, DEBUG_termTotalNonloc, 9);
@@ -727,9 +743,9 @@ void par_assemble(  const MeshType& mesh,
                                 if  (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)){
                                     for (b=0; b<mesh.dVertex; b++){
                                         #pragma omp atomic update
-                                        armAd(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex*a+b];
+                                        Ad(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
                                         #pragma omp atomic update
-                                        armAd(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex*a+b];
+                                        Ad(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
                                     }
                                 }
                             }
@@ -751,38 +767,41 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     int j, k, Vdx;
     //T.matE = arma::vec(dim*(dim+1));
     for (k=0; k<mesh.dim+1; k++) {
-        Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
+        //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
+        Vdx = mesh.Triangles(k+1, Tdx);
         for (j=0; j<mesh.dim; j++){
-            //T.matE[mesh.dim * k + j] = mesh.Verts(j, mesh.Triangles(k+1, Tdx));
-            T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
+            T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx);
+            //T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
         }
     }
     // Initialize Struct
     T.E = T.matE.memptr();
     T.absDet = absDet(T.E);
     T.signDet = signDet(T.E);
-    //T.label = Triangles(0, Tdx);
-    T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
+    T.label = mesh.Triangles(0, Tdx);
+    //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
     //T.dim = dim;
     T.dim = mesh.dim;
 }
-
+/*
 double compute_area(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb, double * P, int nP, double * dx, double sqdelta){
     double areaTerm=0.0;
     int rTdx, Rdx;
     double * x;
     double physical_quad[2];
     double reTriangle_list[9*3*2];
-
+    const MeshType mesh = {K_Omega, K, ptrTriangles, ptrVerts, J, J_Omega,
+                                        L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
+                                        is_NeumannBoundary, dim, dim+1};;
     x = &P[0];
     toPhys(aTE, x, physical_quad);
-    Rdx = retriangulate(physical_quad, bTE, sqdelta, reTriangle_list, true);
+    Rdx = retriangulate(physical_quad, bTE, mesh, reTriangle_list, true);
     for (rTdx=0; rTdx < Rdx; rTdx++){
         areaTerm += absDet(&reTriangle_list[2*3*rTdx])/2;
     }
     return areaTerm;
 }
-
+*/
 // Math functions ------------------------------------------------------------------------------------------------------
 
 void solve2x2(const double * A, const double * b, double * x){
