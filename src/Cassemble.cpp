@@ -7,21 +7,13 @@
 using namespace std;
 
 // Declaration of internal helper functions ----------------------------------------------------------------------------
-struct ElementStruct{
-    arma::vec matE;
-    double * E;
-    int dim;
-    long label;
-    double absDet;
-    int signDet;
-};
-typedef ElementStruct ElementType;
+
 
 // Model ---------------------------------------------------------------------------------------------------------------
 static double model_f(const double *);
 static double model_kernel(const double * x, const long labelx, const double * y, const long labely, const double sqdelta);
 static void model_basisFunction(const double * p, double *psi_vals);
-
+static void model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals);
 // Integration ---------------------------------------------------------------------------------------------------------
 static int placePointOnCap(const double * y_predecessor, const double * y_current,
         const double * x_center, const double sqdelta, const double * TE,
@@ -34,10 +26,13 @@ static void rightNormal(const double * y0, const double * y1, const double orien
 // Matrix operations (via * only) ------------------------------------------------------------------------------------
 // Double
 static double absDet(const double * E);                                         // Compute determinant
+static double absDet(const double * E, const MeshType & mesh);
 static double signDet(const double * E);
+static double signDet(const double * E, const MeshType & mesh);
 static void baryCenter(const double * E, double * bary);                        // Bary Center
 static void toRef(const double * E, const double * phys_x, double * ref_p);     // Pull point to Reference Element (performs 2x2 Solve)
 static void toPhys(const double * E, const double * p, double * out_x);         // Push point to Physical Element
+static void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x);
 
 // Vector operations -------------------------------------------------------------------------------------------------
 // Double
@@ -115,6 +110,36 @@ void model_basisFunction(const double * p, double *psi_vals){
     psi_vals[2] = p[1];
 }
 
+void model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals){
+    int i=0;
+
+    psi_vals[0] = 1;
+    for (i=0; i<mesh.dim; i++){
+        psi_vals[0] -= p[i];
+        psi_vals[i+1] = p[i];
+    }
+}
+
+
+int baryCenterMethod(const double * x, const ElementType & T, const MeshType & mesh, double * reTriangle_list){
+    int i,k;
+    double distance;
+    arma::vec baryC(mesh.dim);
+
+    baryCenter(T.E, &baryC[0]);
+    distance = vec_sqL2dist(x, &baryC[0], mesh.dim);
+
+    if (distance > mesh.sqdelta){
+        return 0;
+    } else {
+        for (i=0; i<mesh.dim; i++){
+            for(k=0; k<mesh.dVertex; k++) {
+                reTriangle_list[2 * k + i] = T.E[2 * k + i];
+            }
+        }
+        return -1;
+    };
+}
 // Integration ---------------------------------------------------------------------------------------------------------
 
 
@@ -123,6 +148,7 @@ void integrate(     const ElementType aT,
                     const QuadratureType & quadRule,
                     const MeshType & mesh,
                     double * termLocal, double * termNonloc){
+
     const int dim = mesh.dim;
     int k=0, a=0, b=0;
     double x[dim];
@@ -140,7 +166,7 @@ void integrate(     const ElementType aT,
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
     for (k=0; k<quadRule.nPx; k++){
-        toPhys(aT.E, &(quadRule.Px[dim*k]), x);
+        toPhys(aT.E, &(quadRule.Px[dim*k]), mesh, x);
         //printf("\nInner Integral, Iterate %i\n", k);
         //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
         //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
@@ -150,54 +176,73 @@ void integrate(     const ElementType aT,
         is_placePointOnCap = true;
 
         Rdx = retriangulate(x, bT.E, mesh, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
+        //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list);
+        //Rdx = quadRule.interactionMethod(x, bT, mesh, reTriangle_list);
 
         //[DEBUG]
         //printf("Retriangulation Rdx %i\n", Rdx);
-        for (i=0;i<Rdx;i++){
+        //for (i=0;i<Rdx;i++){
             //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i], reTriangle_list[2 * 3 * i+1]);
             //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+2], reTriangle_list[2 * 3 * i+3]);
             //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+4], reTriangle_list[2 * 3 * i+5]);
             //printf("absDet %17.16e\n", absDet(&reTriangle_list[2 * 3 * i]));
-        }
+        //}
         if (Rdx == 0){
             return;
         }
-        //printf("\nInner Integral\n");
-        for (rTdx=0; rTdx < Rdx; rTdx++){
-            //printf("rTdx %i \n",rTdx);
-            for (i=0; i<quadRule.nPy; i++){
+        else if(Rdx == -1){
+            for (i = 0; i < quadRule.nPy; i++) {
                 // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
-                toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Py[dim*i]), physical_quad);
+                toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, physical_quad);
                 // Determinant of Triangle of retriangulation
-                rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
+                rTdet = absDet(bT.E);
                 // inner Local integral with ker
                 innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] * rTdet; // Local Term
-                // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
-                toRef(bT.E, physical_quad, reference_quad);
                 // Evaluate ker on physical quad (note this is ker')
                 ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
                 // Evaluate basis function on resulting reference quadrature point
-                model_basisFunction(reference_quad, psi_value);
-                for (b=0; b<mesh.dVertex; b++){
-                    innerNonloc[b] += psi_value[b] * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
+                for (b = 0; b < mesh.dVertex; b++) {
+                    innerNonloc[b] += quadRule.psiy(b,i) * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
                 }
-                //[DEBUG]
-                //printf("i %i \n",i);
-                //printf("GAM %17.16e\n", ker * dy[i] * rTdet);
-                //printf("Basis0 %17.16e\n", psi_value[0]);
-                //printf("Basis1 %17.16e\n", psi_value[1]);
-                //printf("Basis2 %17.16e\n", psi_value[2]);
             }
-            //printf("Chris: v0 %17.16e\nv1 %17.16e\nv2 %17.16e\n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
-            //printf("Chris: v %17.16e\n", innerLocal);
+        } else {
+            //printf("\nInner Integral\n");
+            for (rTdx = 0; rTdx < Rdx; rTdx++) {
+                //printf("rTdx %i \n",rTdx);
+                for (i = 0; i < quadRule.nPy; i++) {
+                    // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
+                    toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Py[dim * i]), physical_quad);
+                    // Determinant of Triangle of retriangulation
+                    rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
+                    // inner Local integral with ker
+                    innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] *
+                                  rTdet; // Local Term
+                    // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
+                    toRef(bT.E, physical_quad, reference_quad);
+                    // Evaluate ker on physical quad (note this is ker')
+                    ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
+                    // Evaluate basis function on resulting reference quadrature point
+                    model_basisFunction(reference_quad, mesh, psi_value);
+                    for (b = 0; b < mesh.dVertex; b++) {
+                        innerNonloc[b] += psi_value[b] * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
+                    }
+                    //[DEBUG]
+                    //printf("i %i \n",i);
+                    //printf("GAM %17.16e\n", ker * dy[i] * rTdet);
+                    //printf("Basis0 %17.16e\n", psi_value[0]);
+                    //printf("Basis1 %17.16e\n", psi_value[1]);
+                    //printf("Basis2 %17.16e\n", psi_value[2]);
+                }
+                //printf("Chris: v0 %17.16e\nv1 %17.16e\nv2 %17.16e\n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
+                //printf("Chris: v %17.16e\n", innerLocal);
+            }
         }
-
         //printf("Local %17.16e\n", innerLocal);
-        //printf("Nonloc [%17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
+        //printf("Nonloc [%17.16e, %17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2], innerNonloc[3]);
         for (b=0; b<mesh.dVertex; b++){
             for (a=0; a<mesh.dVertex; a++){
-                termLocal[mesh.dVertex*a+b] += aT.absDet * quadRule.psix(a,k) * quadRule.psix(b,k) * quadRule.dx[k] * innerLocal; //innerLocal
-                termNonloc[mesh.dVertex*a+b] += aT.absDet * quadRule.psix(a,k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+                termLocal[mesh.dVertex*a+b] += 2 * aT.absDet * quadRule.psix(a,k) * quadRule.psix(b,k) * quadRule.dx[k] * innerLocal; //innerLocal
+                termNonloc[mesh.dVertex*a+b] += 2 * aT.absDet * quadRule.psix(a,k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
             }
         }
     }
@@ -376,13 +421,14 @@ int retriangulate(const double * x_center, const double * TE, const MeshType & m
 
 void compute_f(     const ElementType & aT,
                     const QuadratureType &quadRule,
+                    const MeshType & mesh,
                     double * termf){
     int i,a;
-    double x[2];
+    double x[mesh.dim];
 
-    for (a=0; a<3; a++){
+    for (a=0; a<mesh.dVertex; a++){
         for (i=0; i<quadRule.nPx; i++){
-            toPhys(aT.E, &(quadRule.Px[2 * i]), &x[0]);
+            toPhys(aT.E, &(quadRule.Px[mesh.dim * i]),  mesh,&x[0]);
             termf[a] += quadRule.psix(a, i) * model_f(&x[0]) * aT.absDet * quadRule.dx[i];
         }
     }
@@ -501,6 +547,7 @@ void par_assemble(  double * ptrAd,
                     const int K,
                     double * fd,
                     const long * ptrTriangles,
+                    const long * ptrLabelTriangles,
                     const double * ptrVerts,
                     // Number of Triangles and number of Triangles in Omega
                     const int J, const int J_Omega,
@@ -515,20 +562,23 @@ void par_assemble(  double * ptrAd,
                     const int dim
                     ){
     //test();
-    QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
-    MeshType mesh = {K_Omega, K, ptrTriangles, ptrVerts, J, J_Omega,
+    MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
                      L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
                     is_NeumannBoundary, dim, dim+1};
+    QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
+
     int aTdx, h=0;
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
-
     arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
     for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
-        model_basisFunction(&quadRule.Px[mesh.dim*h], & quadRule.psix[mesh.dVertex * h]);
+        model_basisFunction(& quadRule.Px[mesh.dim*h], mesh,& quadRule.psix[mesh.dVertex * h]);
     }
-
+    for(h=0; h<quadRule.nPy; h++){
+        // This works due to Column Major ordering of Armadillo Matricies!
+        model_basisFunction(& quadRule.Py[mesh.dim*h], mesh,& quadRule.psiy[mesh.dVertex * h]);
+    }
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     // Contains one row more than number of verticies as label information is contained here
     //const arma::Mat<long> Triangles(mesh.ptrTriangles, mesh.dVertex+1, mesh.J);
@@ -623,16 +673,14 @@ void par_assemble(  double * ptrAd,
             // The first entry (index 0) of each row in triangles contains the Label of each point!
             // Hence, in order to get an pointer to the three Triangle idices, which we need here
             // we choose &Triangles[4*aTdx+1];
-            aAdx = &mesh.Triangles(1, aTdx);
+            aAdx = &mesh.Triangles(0, aTdx);
         }
         // Prepare Triangle information aTE and aTdet ------------------
         initializeTriangle(aTdx, mesh, aT);
-
         // Assembly of right side ---------------------------------------
         // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
         doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
-        compute_f(aT, quadRule, termf); // Integrate and fill buffer
-
+        compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
         // Add content of buffer to the right side.
         for (a=0; a<mesh.dVertex; a++){
             // Assembly happens in the interior of Omega only, so we throw away some values
@@ -685,7 +733,7 @@ void par_assemble(  double * ptrAd,
                             bAdx = bDGdx;
                         } else {
                             // Get (pointer to) intex of basis function (in Continuous Galerkin)
-                            bAdx = &mesh.Triangles(1, bTdx);
+                            bAdx = &mesh.Triangles(0, bTdx);
                             // The first entry (index 0) of each row in triangles contains the Label of each point!
                             // Hence, in order to get an pointer to the three Triangle idices, which we need here
                             // we choose &Triangles[4*aTdx+1];
@@ -764,11 +812,22 @@ void par_assemble(  double * ptrAd,
 //void initializeTriangle(const arma::mat & Verts, const arma::Mat<long> & Triangles, const int Tdx, const int dim, ElementType & T){
 void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     // Copy coordinates of Triange b to bTE.
+
+    // Tempalte of Triangle Point data -------------------------------------------------
+    // 2D Case, a, b, c are the vertices of a triangle
+    //         _____________________________
+    // T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
+    // Hence, if one wnats to put T.E into col major order matrix it would be of shape
+    //                              ______________
+    //                             | a1 | b1 | c1 |
+    // M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
+    //  --------------------------------------------------------------------------------
+
     int j, k, Vdx;
     //T.matE = arma::vec(dim*(dim+1));
-    for (k=0; k<mesh.dim+1; k++) {
+    for (k=0; k<mesh.dVertex; k++) {
         //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
-        Vdx = mesh.Triangles(k+1, Tdx);
+        Vdx = mesh.Triangles(k, Tdx);
         for (j=0; j<mesh.dim; j++){
             T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx);
             //T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
@@ -776,9 +835,9 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     }
     // Initialize Struct
     T.E = T.matE.memptr();
-    T.absDet = absDet(T.E);
-    T.signDet = signDet(T.E);
-    T.label = mesh.Triangles(0, Tdx);
+    T.absDet = absDet(T.E, mesh);
+    T.signDet = signDet(T.E, mesh);
+    T.label = mesh.LabelTriangles(Tdx);
     //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
     //T.dim = dim;
     T.dim = mesh.dim;
@@ -851,6 +910,21 @@ double absDet(const double * E){
     return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
 }
 
+double absDet(const double * E, const MeshType & mesh){
+    // Let a,b,c,d be the Verticies of a Tetrahedon (3D)
+    // Then M will be the 3x3 matrix containg [b-a,c-a,d-a]
+    arma::mat M(mesh.dim, mesh.dim, arma::fill::zeros);
+
+    // Copy Values
+    int i=0, j=0;
+    for (i = 1; i < mesh.dVertex; i++) {
+        for (j = 0; j < mesh.dim; j++) {
+            M(j,i-1) += (E[j + mesh.dim*i] - E[j + 0]);
+        }
+    }
+    return absolute(arma::det(M));
+}
+
 double signDet(const double * E){
     double M[2][2], det;
     int i=0;
@@ -859,6 +933,29 @@ double signDet(const double * E){
         M[i][1] = E[2*2+i] - E[2*0+i];
     }
     det = (M[0][0]*M[1][1] - M[0][1]*M[1][0]);
+    if (det > 0){
+        return 1.;
+    } else if ( det < 0){
+        return -1.;
+    } else {
+        cout << "Warning in signDet(): Determinant is 0" << endl;
+        return 0.0;
+    }
+}
+
+double signDet(const double * E, const MeshType & mesh){
+    // Let a,b,c,d be the Verticies of a Tetrahedon (3D)
+    // Then M will be the 3x3 matrix containg [b-a,c-a,d-a]
+    arma::mat M(mesh.dim, mesh.dim, arma::fill::zeros);
+    double det;
+    // Copy Values
+    int i=0, j=0;
+    for (i = 1; i < mesh.dVertex; i++) {
+        for (j = 0; j < mesh.dim; j++) {
+            M(j,i-1) += (E[j + mesh.dim*i] - E[j + 0]);
+        }
+    }
+    det = arma::det(M);
     if (det > 0){
         return 1.;
     } else if ( det < 0){
@@ -896,6 +993,27 @@ void toPhys(const double * E, const double * p, double * out_x){
     int i=0;
     for (i=0; i<2;i++){
         out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i];
+    }
+}
+
+void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x) {
+    int i = 0, j = 0;
+    // Handing over const pointer to Mat constructer enforces to neither set "copy" nor "strict" parameters.
+    // Which also would make no sense.
+    // Again note the column major view.
+    arma::Mat<double> M(E, mesh.dim, mesh.dVertex);
+    //printf ("TE\n[%17.16e, %17.16e, %17.16e]\n[%17.16e, %17.16e, %17.16e]\n[%17.16e, %17.16e, %17.16e]\n[%17.16e, %17.16e, %17.16e]\n",
+    //        E[0],E[1],E[2],E[3],E[4],E[5],E[6],E[7],E[8],E[9],E[10],E[11]);
+    doubleVec_tozero(out_x, mesh.dim);
+
+    // out_x = B@p + a, where B = [b-a, c-a, d-a] (3D case)
+    // perform product B@p with matrix M := [a,b,c,d]
+    for (j = 0; j < mesh.dim; j++) {
+        for (i = 1; i < mesh.dVertex; i++) {
+            out_x[j] +=  (M(j,i) - M(j,0))*p[i];
+        }
+        // add vector a
+        out_x[j] += M(j,0);
     }
 }
 

@@ -34,8 +34,8 @@ def plot_mesh_CG(mesh, delta, fnm, **kwargs):
         plt.xticks(grid)
         plt.grid(True, color='white', lw=0.1, alpha=.6)
 
-        plt.triplot(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.triangles[:,1:], lw=0.1, color='white', alpha=.3)
-        plt.tricontourf(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.triangles[:,1:], fd)
+        plt.triplot(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.elements, lw=0.1, color='white', alpha=.3)
+        plt.tricontourf(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.elements, fd)
         plt.colorbar(orientation='horizontal', shrink=.7)
 
         #plt.scatter(mesh.vertices[:mesh.nV_Omega, 0], mesh.vertices[:mesh.nV_Omega, 1], c="b")
@@ -51,8 +51,8 @@ def plot_mesh_CG(mesh, delta, fnm, **kwargs):
         plt.xticks(grid)
         plt.grid(True, color='white', lw=0.1, alpha=.6)
 
-        plt.triplot(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.triangles[:,1:], lw=0.1, color='white', alpha=.3)
-        plt.tricontourf(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.triangles[:,1:], ud)
+        plt.triplot(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.elements, lw=0.1, color='white', alpha=.3)
+        plt.tricontourf(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.elements, ud)
         plt.colorbar(orientation='horizontal', shrink=.7)
         plt.title("Solution u")
         plt.savefig(pp, format='pdf')
@@ -112,7 +112,7 @@ def plot_mesh_DG(mesh, delta, fnm, **kwargs):
     plt.grid(True, color='white', lw=0.1, alpha=.6)
 
 
-    plt.triplot(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.triangles[:, 1:], lw=0.1, color='white', alpha=.3)
+    plt.triplot(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.elements, lw=0.1, color='white', alpha=.3)
 
     start = time.time()
 
@@ -123,7 +123,7 @@ def plot_mesh_DG(mesh, delta, fnm, **kwargs):
 
         for k in range(maxTriangles):
             print("Iterate ", k, " ", ud[3*k:(3*k+3)],end="\r", flush=True)
-            Vdx = mesh.triangles[k,1:]
+            Vdx = mesh.elements[k]
             plt.tricontourf(mesh.vertices[Vdx, 0], mesh.vertices[Vdx, 1], ud[3*k:(3*k+3)],  5, cmap=plt.cm.get_cmap('rainbow'), vmin=minval, vmax=maxval)
         ax, _ = matplotlib.colorbar.make_axes(plt.gca(), shrink=.7)
         matplotlib.colorbar.ColorbarBase(ax, cmap=plt.cm.get_cmap('rainbow'),

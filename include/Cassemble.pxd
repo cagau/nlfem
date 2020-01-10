@@ -13,6 +13,7 @@ cdef extern from "Cassemble.h" nogil:
                         const int K,
                         double * fd,
                         const long * ptrTriangles,
+                        const long * ptrLabelTriangles,
                         const double * ptrVerts,
             # Number of Triangles and number of Triangles in Omega
                         const int J, const int J_Omega,

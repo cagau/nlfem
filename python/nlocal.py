@@ -1,12 +1,135 @@
 #-*- coding:utf-8 -*-
 import numpy as np
+import meshio
+from assemble import constructAdjaciencyGraph
 
+# Auf Triangles und Lines müssen wir die inverse Permutation anwenden.
+# Der Code wäre mit np.argsort kurz und für Node-Zahl unter 1000 auch schnell, allerdings ist
+# sortieren nicht in der richtigen Effizienzklasse. (Eigentlich muss ja nur eine Matrix transponiert werden)
+# siehe https://stackoverflow.com/questions/11649577/how-to-invert-a-permutation-array-in-numpy
+def invert_permutation(p):
+    """
+    The function inverts a given permutation.
+    :param p: nd.array, shape (m,) The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1.
+    :return: nd.array, shape (m,) Returns an array s, where s[i] gives the index of i in p.
+    """
+    s = np.empty(p.size, p.dtype)
+    s[p] = np.arange(p.size)
+    return s
+
+class MeshIO(meshio._mesh.Mesh):
+    def __init__(self, mesh_data, **kwargs):
+        print("Constructing Mesh\n")
+        # Read mesh into meshio.__mesh.Mesh Class
+        parentMesh = meshio.read(mesh_data)
+        # Run Constructor of Parent Class
+        super(MeshIO, self).__init__(parentMesh.points, parentMesh.cells, parentMesh.point_data,
+                      parentMesh.cell_data, parentMesh.field_data,
+                      parentMesh.node_sets, parentMesh.element_sets,
+                      parentMesh.gmsh_periodic, parentMesh.info)
+
+        # DIMENSION + Number of Elements and Verts ---------------------------------------------------------------------
+        # Identify in which dimension we work in and set Elements
+        elementName = "tetra"
+        elements = self.cells.get(elementName, None)
+        if elements is not None:
+            faceName = "triangle"
+            self.dim = 3
+        else:
+            elementName = "triangle"
+            elements = self.cells.get(elementName, None)
+            if elements is not None:
+                faceName = "line"
+                self.dim = 2
+            else:
+                raise ValueError("In assemble: Mesh seems to contain neither Triangles nor Tetraeders.")
+        vertices = self.points[:, :self.dim]
+        self.nE = elements.shape[0]
+        self.nV = vertices.shape[0]
+        print("In nlocal.MeshIO, Dimension assumed to be {}D.".format(self.dim))
+
+        # READ LABEL INFO FROM CONF  -----------------------------------------------------------------------------------
+        # Read Physical Names of Gmsh File
+        boundaryName = kwargs["boundaryPhysicalName"] # If this fails we stop with an error!
+        labelEntry = self.field_data.get(boundaryName, None)
+        if  (labelEntry is not None) and (labelEntry[1] == self.dim-1):
+            boundaryLabel = labelEntry[0]
+        else:
+            boundaryLabel = kwargs["boundaryPhysicalName"]
+        print("Label of dOmega", boundaryLabel)
+
+        domainName = kwargs["domainPhysicalName"] # If this fails we stop with an error!
+        labelEntry = self.field_data.get(domainName, None)
+        if  (labelEntry is not None) and (labelEntry[1] == self.dim):
+            domainLabel = labelEntry[0]
+        else:
+            domainLabel = kwargs["domainPhysicalName"]
+        print("Label of Omega", domainLabel)
+
+        interactionName = kwargs["interactiondomainPhysicalName"] # If this fails we stop with an error!
+        labelEntry = self.field_data.get(interactionName, None)
+        if  (labelEntry is not None) and (labelEntry[1] == self.dim):
+            interactionLabel = labelEntry[0]
+        else:
+            interactionLabel = kwargs["interactiondomainPhysicalName"]
+        print("Label of OmegaI", interactionLabel)
+
+
+        # ELEMENT LABELS + Number of Elements in Omega -----------------------------------------------------------------
+        self.elementLabels = self.cell_data[elementName]["gmsh:physical"]
+        # As Omega is considered an open set
+        # we label each node in the complement by the interactionLabel
+        VertexLabels = np.full(self.nV, domainLabel)
+        for i, label in enumerate(self.elementLabels):
+            if label == interactionLabel:
+                Vdx = elements[i]
+                VertexLabels[Vdx] = interactionLabel
+        self.point_data["vertexLabels"] = VertexLabels.copy()
+        self.nE_Omega = np.sum(self.elementLabels == domainLabel) # mesh.nE_Omega
+        self.nV_Omega = np.sum(VertexLabels == domainLabel) # mesh.nV_Omega
+
+        # VERTEX AND ELEMENT ORDER -------------------------------------------------------------------------------------
+        piVdx_argsort = np.argsort(VertexLabels, kind="mergesort")  # Permutation der der Vertex indizes
+        piVdx_invargsort = invert_permutation(piVdx_argsort)
+        piVdx = lambda dx: piVdx_invargsort[dx]  # Permutation definieren
+        # Wende die Permutation auf Verts, Lines und Triangles an
+        self.vertices = vertices[piVdx_argsort] # Vorwärts Permutieren
+        self.elements = piVdx(elements) # Inverse Permutation
+
+        # INCLUDE CONFS boundaryCondition, ansatz + Matrix Dimension ---------------------------------------------------
+        self.boundaryConditionType = kwargs["boundaryConditionType"]
+        if kwargs["boundaryConditionType"] == "Dirichlet":
+            self.is_NeumannBoundary = 0
+        else:# mesh.boundaryConditionType == "Neumann": #
+            self.is_NeumannBoundary = 1
+            # In case of Neumann conditions we assemble a Maitrx over Omega + OmegaI.
+            # In order to achieve that we "redefine" Omega := Omega + OmegaI
+            # This is rather a shortcut to make things work quickly.
+            self.nE_Omega = self.nE
+            self.nV_Omega = self.nV
+
+        self.ansatz = kwargs["ansatz"]
+        if kwargs["ansatz"] =="DG":
+            self.K = self.nE*3
+            self.K_Omega = self.nE_Omega*3
+            self.is_DiscontinuousGalerkin=1
+        elif kwargs["ansatz"] =="CG":
+            self.K = self.nV
+            self.K_Omega = self.nV_Omega
+            self.is_DiscontinuousGalerkin=0
+        else:
+            print("Ansatz ", kwargs["ansatz"], " not provided.")
+            raise ValueError
+
+    # Setup adjaciency graph of the mesh --------------------------
+        self.neighbours = constructAdjaciencyGraph(self.elements)
+        print("Done [Constructing Mesh]\n")
 
 class dummyMesh:
-    def __init__(self, nE, nE_Omega, nV, nV_Omega, vertices, triangles, ansatz="CG", boundaryConditionType="Dirichlet"):
+    def __init__(self, nE, nE_Omega, nV, nV_Omega, vertices, elements, ansatz="CG", boundaryConditionType="Dirichlet"):
 
         self.vertices = vertices
-        self.triangles = triangles
+        self.elements = elements
         self.nE = nE
         self.nE_Omega = nE_Omega
         self.nV = nV
@@ -52,7 +175,7 @@ class Mesh:
 
         # args = Verts, Triangles, J, J_Omega, L, L_Omega
         self.vertices = args[0]
-        self.triangles = args[1]#[:, 1:]
+        self.elements = args[1]#[:, 1:]
         self.nE = args[2]
         self.nE_Omega = args[3]
         self.nV = args[4]
@@ -65,7 +188,7 @@ class Mesh:
         self.ansatz = ansatz
         self.boundaryConditionType = boundaryConditionType
     def get_state_dict(self):
-        return {"Verts": self.vertices, "Triangles": self.triangles, "J":self.nE, "J_Omega":self.nE_Omega,
+        return {"Verts": self.vertices, "Triangles": self.elements, "J":self.nE, "J_Omega":self.nE_Omega,
                 "L":self.nV, "L_Omega":self.nV_Omega, "K":self.K, "K_Omega":self.K_Omega}
     def read_mesh(self, mshfile):
         """meshfile = .msh - file genrated by gmsh
@@ -163,8 +286,8 @@ class Mesh:
         # Wähle die Indizes heraus, die an Dreiecken in Omega.
         Vdx_inOmega = np.unique(Triangles[Tdx_Omega][1:].flatten())
         Vord_Omega[Vdx_inOmega] = 0  # Sie werden auf 0 gesetzt.
-        linelabelOmegaI = max(Lines[:,0])
-        Vdx_Boundary = np.unique(Lines[np.where(Lines[:, 0] == linelabelOmegaI)][:, 1:])
+        linelabelOmega = min(Lines[:, 0])
+        Vdx_Boundary = np.unique(Lines[np.where(Lines[:, 0] == linelabelOmega)][:, 1:])
         Vord_Omega[Vdx_Boundary] = 1  # Die Punkte auf dem Rand allerdings werden auf 1 gesetzt.
 
         piVdx_argsort = np.argsort(Vord_Omega, kind="mergesort")  # Permutation der der Vertex indizes
@@ -205,7 +328,7 @@ class Mesh:
         ## Setze L_Omega und L
         ## Das ist die Anzahl der Knotenpunkte.
         L_Omega = np.sum(Vord_Omega == 0)
-        # L_dOmega = np.sum(Vis_inOmega == 1)
+        L_dOmega = np.sum(Vord_Omega > 0)
         L = len(Verts)
         # Im Falle von "CG" ist die Anzahl der Knotenpunkte gleich der Anzahl der Basisfunktionen.
 

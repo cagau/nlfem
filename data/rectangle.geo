@@ -12,7 +12,7 @@ Line(13) = {03,4};
 Line(14) = {4,1};
 
 Line Loop(111) = {11,12,13,14};
-Physical Line("Bound_Omega", 9) = {11,12,13,14};
+Physical Line("dOmega", 9) = {11,12,13,14};
 
 //OMEGA_I RECTANGLE --------------------------------
 Point(5) = {-delta, -delta, 0, 1};
@@ -26,7 +26,7 @@ Line(17) = {7,8};
 Line(18) = {8,5};
 
 Line Loop(112) = {15,16,17,18};
-Physical Line("Bound_OmegaI", 99) = {15,16,17,18};
+Physical Line("dOmegaI", 99) = {15,16,17,18};
 
 //OMEGA (RECTANGLE SURFACE)-------------------------
 Plane Surface(21) = {111};
@@ -36,6 +36,4 @@ Physical Surface("Omega", 1) = {21};
 //OMGEA_I (RECTANGLE SURFACE) ----------------------
 Plane Surface(22) = {112, 111};
 Transfinite Surface {22};
-Physical Surface("Omega_I", 2) = {22};
-
-
+Physical Surface("OmegaI", 2) = {22};

@@ -7,6 +7,7 @@
 
 # Assembly routine
 cimport Cassemble
+import meshio
 #from Cassemble cimport par_assemble
 import numpy as np
 import time
@@ -16,8 +17,8 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Free
 def assemble(
         # Mesh information ------------------------------------
         mesh,
-        double [:,:] py_Px,
-        double [:,:] py_Py,
+        double [:,:] Px,
+        double [:,:] Py,
         # Weights for quadrature rule
         double [:] dx,
         double [:] dy,
@@ -25,106 +26,79 @@ def assemble(
         **kwargs
     ):
 
-    cdef:
-        int is_DiscontinuousGalerkin
-        int is_NeumannBoundary
-        long nE = mesh.nE
-        long nV = mesh.nV
-        long nE_Omega = mesh.nE_Omega
-        long nV_Omega = mesh.nV_Omega
+    Ad = np.zeros(mesh.K*mesh.K_Omega)
+    fd = np.zeros(mesh.K_Omega)
 
-    if mesh.boundaryConditionType == "Dirichlet":
-        is_NeumannBoundary = 0
-    else:# mesh.boundaryConditionType == "Neumann": #
-        is_NeumannBoundary = 1
-        nE_Omega = nE
-        nV_Omega = nV
-
-    if mesh.ansatz=="DG":
-        K = mesh.nE*3
-        K_Omega = nE_Omega*3
-        is_DiscontinuousGalerkin=1
-    elif mesh.ansatz=="CG":
-        K = mesh.nV
-        K_Omega = nV_Omega
-        is_DiscontinuousGalerkin=0
-    else:
-        print("Ansatz ", mesh.ansatz, " not provided.")
-        raise ValueError
-
-
-
-    deltaVertices = kwargs.get("deltaVertices", None)
-    if not deltaVertices is None:
-        Verts = mesh.vertices + deltaVertices
-    else:
-        Verts = mesh.vertices
-
-    ## Data Matrix ----------------------------------------
-    # Allocate Matrix compute_A and right side compute_f
-    py_Ad = np.zeros(K_Omega* K).flatten("C")
-    py_fd = np.zeros(K_Omega).flatten("C")
-
-
-    print("In assemble.pyx, Dimension set to 2D.")
-
-    cdef int dim = 2
-    cdef int dVertex = dim + 1
-    cdef:
-        int aTdx, n , i
-        int nPx = py_Px.shape[0]
-        int nPy = py_Py.shape[0]
-        long [:] c_Triangles = (np.array(mesh.triangles, int)).flatten("C")
-        double [:] c_Verts = (np.array(Verts, float)).flatten("C")
-        double[:] Px = (np.array(py_Px, float)).flatten("C")
-        double[:] Py = (np.array(py_Py, float)).flatten("C")
-        # Cython interface of C-aligned arrays of solution and right side
-        double[:] fd = py_fd
-        double[:] Ad = py_Ad
-
-        # List of neighbours of each triangle, Neighbours[Tdx] returns row with Neighbour indices
-        long[:] Neighbours = mesh.nE*np.ones((mesh.nE*dVertex), dtype=int)
-
-        # Squared interaction horizon
-        double sqdelta = pow(delta,2)
-
-    # Setup adjaciency graph of the mesh --------------------------
-    neigs = []
-    for aTdx in range(nE):
-        neigs = get_neighbour(nE, dVertex, &c_Triangles[0], &c_Triangles[(dVertex+1)*aTdx])
-        n = len(neigs)
-        for i in range(n):
-            Neighbours[dVertex*aTdx + i] = neigs[i]
-
+    cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
+    cdef long[:] elements = mesh.elements.flatten()
+    cdef long[:] elementLabels = mesh.elementLabels.flatten()
+    cdef double[:] vertices = mesh.vertices.flatten()
+    cdef double[:] ptrAd = Ad
+    cdef double[:] ptrfd = fd
+    #cdef double[:] ptrPx = Px.flatten()
+    #cdef double[:] ptrPy = Py.flatten()
 
     start = time.time()
-    # Compute Assembly
-    Cassemble.par_assemble( &Ad[0], K_Omega, K, &fd[0], &c_Triangles[0], &c_Verts[0], nE , nE_Omega, nV, nV_Omega, &Px[0], nPx, &dx[0], &Py[0], nPy, &dy[0], sqdelta, &Neighbours[0], is_DiscontinuousGalerkin, is_NeumannBoundary, dim)
+    # Compute Assembly -------------------------------------------
+
+    Cassemble.par_assemble( &ptrAd[0], mesh.K_Omega, mesh.K,
+                        &ptrfd[0], &elements[0], &elementLabels[0], &vertices[0],
+                        mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
+                        &Px[0,0], Px.shape[0], &dx[0],
+                        &Py[0,0], Py.shape[0], &dy[0],
+                        delta**2,
+                        &neighbours[0],
+                        mesh.is_DiscontinuousGalerkin,
+                        mesh.is_NeumannBoundary,
+                        mesh.dim)
+
     total_time = time.time() - start
+
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+    return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
 
-    py_Ad *= 2
-    return np.reshape(py_Ad, (K_Omega, K)), py_fd
+cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, const long dVerts):
+    cdef int n=0, i,j
+    for i in range(dVerts):
+        for j in range(dVerts):
+            if (Elements[aTdx, i] == Elements[bTdx, j]):
+                n += 1
+    return n == (dVerts-1)
 
-# Setup adjaciency graph of the mesh --------------------------
-cdef list get_neighbour(int rows, int dVertex, long * Triangles, long * Vdx):
-    cdef:
-        int i, j, k, n
-    idx = []
+def constructAdjaciencyGraph(long [:,:] Elements):
+    print("Constructing adjaciency graph...")
+    cdef int nE = Elements.shape[0]
+    cdef int dVerts = Elements.shape[1]
+    cdef long[:,:] Neighbours = np.zeros((nE, dVerts), dtype=int)
+    cdef long [:] neighbourCounter = np.zeros(nE, dtype=int)
+    cdef int aTdx, bTdx
 
-    for i in range(rows):
-        n = 0
-        for j in range(3):
-            for k in range(3):
-            # Triangles contains Vertex Indices and a Label.
-                if Triangles[(dVertex+1)*i+1+j] == Vdx[k+1]:
-                    n+=1
-        # The graph has no loops. A triangle is not its own neighbour!
-        if n == 2:
-            idx.append(i)
+    #print(dVerts)
+    bTdxFilter = np.ones(nE, dtype=bool)
 
-    return idx
-
+    # Outer For Loop,
+    # Find all neighbours of Triangle aT
+    for aTdx in range(nE):
+        #print("\na", aTdx)
+        # No triangle can be its own neighbour
+        # and all of its neighbours will be found
+        bTdxFilter[aTdx] = False
+        # If a triangle index was already in the outer loop,
+        # Traverse all triangles bT
+        # which do not have dVerts neighbours yet
+        for bTdx in range(nE):
+            if bTdxFilter[bTdx] and is_neighbour(aTdx, bTdx, Elements, dVerts):
+                #print("b", bTdx, "c", neighbourCounter[bTdx])
+                #print("aT:", np.array(Elements[aTdx]))
+                #print("bT:", np.array(Elements[bTdx]))
+                Neighbours[aTdx, neighbourCounter[aTdx]] = bTdx
+                neighbourCounter[aTdx] += 1
+                Neighbours[bTdx, neighbourCounter[bTdx]] = aTdx
+                neighbourCounter[bTdx] += 1
+                if neighbourCounter[bTdx] == dVerts:
+                    #print(bTdx)
+                    bTdxFilter[bTdx] = False
+    return np.array(Neighbours)
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
 """
 from Cassemble cimport retriangulate

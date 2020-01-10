@@ -4,13 +4,13 @@ import numpy as np
 
 DATA_PATH = "data/"
 OUTPUT_PATH = "output/"
-mesh_name = "circle_large"
+mesh_name = "cube"
 #mesh_name = "../compare_data/target_shape"
 
 delta = .1
 is_PlotSolve = True
 ansatz = "CG"
-boundaryConditionType = "Dirichlet" #"Neumann" #
+boundaryConditionType = "Dirichlet" # "Neumann" #
 # quad_order_outer == 8
 py_Px = np.array([[0.33333333, 0.33333333],
               [0.45929259, 0.45929259],
@@ -63,3 +63,19 @@ dy = dx
 #                      0.12593918054483,
 #                      0.12593918054483,
 #                      0.12593918054483])
+
+
+
+# import quadpy
+# scheme = quadpy.nsimplex.stroud_1961(3)
+py_Px3D = np.array([[1.        , 0.        , 0. ],
+            [0.        , 1.        , 0. ],
+            [0.        , 0.        , 1. ],
+            [0.        , 0.        , 0. ],
+            [0.33333333, 0.33333333, 0.33333333],
+            [0.33333333, 0.33333333, 0.        ],
+            [0.33333333, 0.        , 0.33333333],
+            [0.        , 0.33333333, 0.33333333]])
+py_Py3D = py_Px
+dx3D = np.array([ 0.025, 0.025, 0.025, 0.025, 0.225, 0.225, 0.225, 0.225])
+dy3D = dx

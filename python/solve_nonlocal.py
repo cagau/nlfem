@@ -5,11 +5,13 @@
 # we add the current project path == working directory to sys-path
 import sys
 sys.path.append(".")
+import matplotlib.pyplot as plt
 
 import numpy as np
+import meshio
 import pickle as pkl
 from python.conf import * # mesh_name, delta, ansatz, py_Px, py_Py, dx, dy, is_PlotSolve, boundaryConditionType
-from python.nlocal import Mesh
+from python.nlocal import MeshIO
 from python.aux import filename
 from python.plot import plot
 try:
@@ -23,29 +25,43 @@ if __name__ == "__main__":
     # Nodes and Function values on nodes
     # Die Reihenfolge der phis muss zu der Reihenfolge
     # aus readmesh passen!
+    # confDict = {"domainPhysicalName": "Omega", "boundaryPhysicalName": "dOmega", "interactionPhysicalName": "OmegaI"}
+    confDict = {"domainPhysicalName": 1, "boundaryPhysicalName": 9, "interactiondomainPhysicalName": 2,
+                "boundaryConditionType": boundaryConditionType, "ansatz": ansatz}
+
 
     # Mesh construction --------------------
-    mesh = Mesh(DATA_PATH + mesh_name + ".msh", ansatz, boundaryConditionType)
+    #mesh = Mesh(DATA_PATH + mesh_name + ".msh", ansatz, boundaryConditionType)
+    mesh = MeshIO(DATA_PATH + mesh_name + ".msh", **confDict)
     print("Delta: ", delta, "\t Mesh: ", mesh_name)
     print("Number of basis functions: ", mesh.K)
 
-    Ad, fd = assemble(mesh, py_Px, py_Py, dx, dy, delta)
+    if mesh.dim == 3:
+        Ad, fd = assemble(mesh, py_Px3D, py_Py3D, dx3D, dy3D, delta, **confDict)
+
+    if mesh.dim == 2:
+        Ad, fd = assemble(mesh, py_Px, py_Py, dx, dy, delta, **confDict)
 
     if is_PlotSolve:
         # Solves the homogeneous Dirichlet-Problem!
-        Ad_O = np.array(Ad[:,:mesh.K_Omega])
-        ud = np.linalg.solve(Ad_O, fd)
+        if mesh.boundaryConditionType == "Dirichlet":
+            Ad_O = np.array(Ad[:, :mesh.K_Omega])
+            ud = np.linalg.solve(Ad_O, fd)
 
-        fd_Ext = np.zeros(mesh.K)
-        fd_Ext[:mesh.K_Omega] = fd
-        ud_Ext = np.zeros(mesh.K)
-        ud_Ext[:mesh.K_Omega] = ud
+            fd_Ext = np.zeros(mesh.K)
+            fd_Ext[:mesh.K_Omega] = fd
+            ud_Ext = np.zeros(mesh.K)
+            ud_Ext[:mesh.K_Omega] = ud
 
+    if mesh.dim == 2:
         Tstmp, fnm = filename(OUTPUT_PATH + mesh_name, delta, Tstmp=False)
         fileObject = open(Tstmp + fnm, 'wb')
         pkl.dump({"ud": ud_Ext, "fd": fd_Ext, "mesh": mesh}, fileObject)
         np.save(OUTPUT_PATH + Tstmp+"Ad_O", Ad_O)
         fileObject.close()
-
         plot(OUTPUT_PATH, mesh_name, delta, Tstmp=Tstmp, maxTriangles=100)
+    if mesh.dim == 3:
+        mesh.point_data["u"] = ud_Ext
+        meshio.write(OUTPUT_PATH + mesh_name + ".vtk", mesh)
+
 
