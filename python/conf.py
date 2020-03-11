@@ -4,7 +4,7 @@ import numpy as np
 
 DATA_PATH = "data/"
 OUTPUT_PATH = "output/"
-mesh_name = "cube"
+mesh_name = "circle"
 #mesh_name = "../compare_data/target_shape"
 
 delta = .1

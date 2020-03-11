@@ -3,10 +3,98 @@ import numpy as np
 import meshio
 from assemble import constructAdjaciencyGraph
 
+
+def readMeshBuilder(name):
+    t = name[:-3]+"vrt"
+    f = open(name[:-3]+"vrt", "r")
+    print("Verts ", f.readline())
+    size = f.readline().split()
+    size = [int(s) for s in np.array(size)]
+    print("Size ", size)
+    Verts = np.zeros(size)
+    for k,line in enumerate(f):
+        Verts[k] = line.split()
+    f.close()
+    Verts = Verts.T
+    #print(Verts)
+
+    try:
+        f = open(name[:-3]+"tri", "r")
+
+        dim = 2
+        cell_name = "triangle"
+        print("Triangles ", f.readline())
+        size = f.readline().split()
+        size = [int(s) for s in np.array(size)]
+        print("Size ", size)
+        Elements = np.zeros(size, dtype=np.int)
+        for k,line in enumerate(f):
+            Elements[k] = line.split()
+        f.close()
+        Elements = Elements.T
+        #print(Triangles)
+
+    except FileNotFoundError:
+        dim = 3
+        print("No triangles found.")
+
+    f = open(name[:-3]+"lab", "r")
+    print("labels ", f.readline())
+    size = f.readline().split()
+    size = [int(s) for s in np.array(size)]
+    print("Size ", size)
+    ElementLabels = np.zeros(size, dtype=np.int)
+    for k,line in enumerate(f):
+        ElementLabels[k] = line.split()
+    ElementLabels = ElementLabels.flatten()
+    f.close()
+    print(ElementLabels)
+
+    try:
+        f = open(name[:-3]+"nbr", "r")
+        print("neighbours ", f.readline())
+        size = f.readline().split()
+        size = [int(s) for s in np.array(size)]
+        print("Size ", size)
+        mbNeighbours = np.zeros(size, dtype=np.int)
+        for k,line in enumerate(f):
+            mbNeighbours[k] = line.split()
+        mbNeighbours = mbNeighbours
+        f.close()
+    except FileNotFoundError:
+        mbNeighbours = None
+
+    f = open(name[:-3]+"dat", "r")
+    print("u ", f.readline())
+    size = f.readline().split()
+    size = [int(s) for s in np.array(size)]
+    print("Size ", size)
+    u = np.zeros(size)
+    for k,line in enumerate(f):
+        u[k] = line.split()
+    u = u.flatten()
+    f.close()
+    #print(u)
+
+    # Construct Element Dictionary as input for meshio
+    cell_data = {
+        cell_name: {
+            "gmsh:physical" : ElementLabels
+        }
+    }
+    cells = {
+        cell_name: Elements
+    }
+
+    mesh = meshio.Mesh(points = Verts, cells = cells, cell_data=cell_data, point_data = {"u": u})
+    return mesh, mbNeighbours
+
+
 # Auf Triangles und Lines müssen wir die inverse Permutation anwenden.
 # Der Code wäre mit np.argsort kurz und für Node-Zahl unter 1000 auch schnell, allerdings ist
 # sortieren nicht in der richtigen Effizienzklasse. (Eigentlich muss ja nur eine Matrix transponiert werden)
 # siehe https://stackoverflow.com/questions/11649577/how-to-invert-a-permutation-array-in-numpy
+
 def invert_permutation(p):
     """
     The function inverts a given permutation.
@@ -21,7 +109,11 @@ class MeshIO(meshio._mesh.Mesh):
     def __init__(self, mesh_data, **kwargs):
         print("Constructing Mesh\n")
         # Read mesh into meshio.__mesh.Mesh Class
-        parentMesh = meshio.read(mesh_data)
+        if (mesh_data[-3:] == "vrt"):
+            parentMesh, mbNeighbours = readMeshBuilder(mesh_data)
+        else:
+            mbNeighbours = None
+            parentMesh = meshio.read(mesh_data + ".msh")
         # Run Constructor of Parent Class
         super(MeshIO, self).__init__(parentMesh.points, parentMesh.cells, parentMesh.point_data,
                       parentMesh.cell_data, parentMesh.field_data,
@@ -43,6 +135,7 @@ class MeshIO(meshio._mesh.Mesh):
                 self.dim = 2
             else:
                 raise ValueError("In assemble: Mesh seems to contain neither Triangles nor Tetraeders.")
+
         vertices = self.points[:, :self.dim]
         self.nE = elements.shape[0]
         self.nV = vertices.shape[0]
@@ -95,6 +188,9 @@ class MeshIO(meshio._mesh.Mesh):
         # Wende die Permutation auf Verts, Lines und Triangles an
         self.vertices = vertices[piVdx_argsort] # Vorwärts Permutieren
         self.elements = piVdx(elements) # Inverse Permutation
+        # reorder elements
+        piTdx_argsort = np.argsort(self.elementLabels, kind="mergesort")
+        self.elements = self.elements[piTdx_argsort]
 
         # INCLUDE CONFS boundaryCondition, ansatz + Matrix Dimension ---------------------------------------------------
         self.boundaryConditionType = kwargs["boundaryConditionType"]
@@ -122,8 +218,27 @@ class MeshIO(meshio._mesh.Mesh):
             raise ValueError
 
     # Setup adjaciency graph of the mesh --------------------------
-        self.neighbours = constructAdjaciencyGraph(self.elements)
+        if kwargs.get("isNeighbours", True):
+            self.neighbours = constructAdjaciencyGraph(self.elements)
+        # built in Neighbour Routine of MeshBulder yields mbNeighbours.
+        #self.neighbours = mbNeighbours.T
+
+        self.baryCenter = np.zeros((self.nE, self.dim))
+        for i in range(self.nE):
+            corners = self.vertices[self.elements[i]]
+            bC = np.sum(corners, 0)/(self.dim+1)
+            self.baryCenter[i] = bC
         print("Done [Constructing Mesh]\n")
+
+    def dual(self):
+        # Dual Mesh
+        # Construct Element Dictionary as input for meshio
+        neigs =  self.neighbours.copy()
+        neigs = neigs.flatten()
+        neigs[np.where(neigs == self.nE)] = 0
+        neigs = neigs.reshape((self.nE, self.dim+1))
+        cells = {"triangle": neigs}
+        return meshio.Mesh(points=self.baryCenter, cells=cells)
 
 class dummyMesh:
     def __init__(self, nE, nE_Omega, nV, nV_Omega, vertices, elements, ansatz="CG", boundaryConditionType="Dirichlet"):
@@ -157,7 +272,7 @@ class Mesh:
     :ivar nE: Number of finite elements :math:`\Omega`.
     :ivar nE_Omega: Number of finite elements in
     """
-    def __init__(self, mesh_data, ansatz, boundaryConditionType="Dirichlet"):
+    def __init__(self, mesh_data, ansatz, boundaryConditionType="Dirichlet", is_DiscontinuousGalerkin=0, is_NeumannBoundary=0):
         """Constructor
 
         Executes read_mesh and prepare.
@@ -175,7 +290,8 @@ class Mesh:
 
         # args = Verts, Triangles, J, J_Omega, L, L_Omega
         self.vertices = args[0]
-        self.elements = args[1]#[:, 1:]
+        self.elements = args[1][:, 1:]
+        self.elementLabels = args[1][:, 0]
         self.nE = args[2]
         self.nE_Omega = args[3]
         self.nV = args[4]
@@ -187,6 +303,11 @@ class Mesh:
 
         self.ansatz = ansatz
         self.boundaryConditionType = boundaryConditionType
+        self.is_DiscontinuousGalerkin = is_DiscontinuousGalerkin
+        self.is_NeumannBoundary = is_NeumannBoundary
+        self.neighbours = constructAdjaciencyGraph(self.elements)
+        self.dim = 2
+
     def get_state_dict(self):
         return {"Verts": self.vertices, "Triangles": self.elements, "J":self.nE, "J_Omega":self.nE_Omega,
                 "L":self.nV, "L_Omega":self.nV_Omega, "K":self.K, "K_Omega":self.K_Omega}

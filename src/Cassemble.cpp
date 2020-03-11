@@ -1,5 +1,4 @@
 #include <math.h>
-#include <omp.h>
 #include <queue>
 #include <iostream>
 #include <Cassemble.h>
@@ -174,7 +173,6 @@ void integrate(     const ElementType aT,
         innerLocal = 0.0;
         doubleVec_tozero(innerNonloc, mesh.dVertex);
         is_placePointOnCap = true;
-
         Rdx = retriangulate(x, bT.E, mesh, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
         //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list);
         //Rdx = quadRule.interactionMethod(x, bT, mesh, reTriangle_list);
@@ -541,6 +539,7 @@ void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts
     }
 
 }
+
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 void par_assemble(  double * ptrAd,
                     const int K_Omega,
@@ -559,15 +558,22 @@ void par_assemble(  double * ptrAd,
                     const long * ptrNeighbours,
                     const int is_DiscontinuousGalerkin,
                     const int is_NeumannBoundary,
-                    const int dim
-                    ){
+                    const int dim){
+
     //test();
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
                      L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
-                    is_NeumannBoundary, dim, dim+1};
+                     is_NeumannBoundary, dim, dim+1};
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
+    par_assemble( ptrAd, fd, mesh, quadRule, is_DiscontinuousGalerkin, is_NeumannBoundary);
+}
 
-    int aTdx, h=0;
+void par_assemble( double * ptrAd, double * fd, MeshType & mesh,
+                   QuadratureType & quadRule,
+                   const int is_DiscontinuousGalerkin,
+                   const int is_NeumannBoundary){
+
+    int aTdx=0, h=0;
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
@@ -631,183 +637,188 @@ void par_assemble(  double * ptrAd,
 
 
     #pragma omp for
-    for (aTdx=0; aTdx<mesh.J_Omega; aTdx++)
-    {
+    for (aTdx=0; aTdx<mesh.J_Omega; aTdx++) {
+        // It would be nice, if in future there is no dependency on the element ordering...
+        //cout <<  aTdx << endl;
+        //cout << "L " << mesh.LabelTriangles[aTdx] << endl;
+        //if (mesh.LabelTriangles[aTdx] == 1) {
 
-        //[DEBUG]
-        /*
-        //if (false){
-        if (aTdx==7){
-            cout << endl << "Total Local Term" << endl ;
-            printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalLocal[0], DEBUG_termTotalLocal[1], DEBUG_termTotalLocal[2]);
-            printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalLocal[3], DEBUG_termTotalLocal[4], DEBUG_termTotalLocal[5]);
-            printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalLocal[6], DEBUG_termTotalLocal[7], DEBUG_termTotalLocal[8]);
+            //[DEBUG]
+            /*
+            //if (false){
+            if (aTdx==7){
+                cout << endl << "Total Local Term" << endl ;
+                printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalLocal[0], DEBUG_termTotalLocal[1], DEBUG_termTotalLocal[2]);
+                printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalLocal[3], DEBUG_termTotalLocal[4], DEBUG_termTotalLocal[5]);
+                printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalLocal[6], DEBUG_termTotalLocal[7], DEBUG_termTotalLocal[8]);
 
-            cout << endl << "Total Nonlocal Term" << endl ;
-            printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalNonloc[0], DEBUG_termTotalNonloc[1], DEBUG_termTotalNonloc[2]);
-            printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalNonloc[3], DEBUG_termTotalNonloc[4], DEBUG_termTotalNonloc[5]);
-            printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalNonloc[6], DEBUG_termTotalNonloc[7], DEBUG_termTotalNonloc[8]);
+                cout << endl << "Total Nonlocal Term" << endl ;
+                printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalNonloc[0], DEBUG_termTotalNonloc[1], DEBUG_termTotalNonloc[2]);
+                printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalNonloc[3], DEBUG_termTotalNonloc[4], DEBUG_termTotalNonloc[5]);
+                printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalNonloc[6], DEBUG_termTotalNonloc[7], DEBUG_termTotalNonloc[8]);
 
-            abort();
-        }
-        */
-        //[End DEBUG]
-
-        //[DEBUG]
-        /*
-        doubleVec_tozero(DEBUG_termTotalLocal, 9);
-        doubleVec_tozero(DEBUG_termTotalNonloc, 9);
-        */
-        //[End DEBUG]
-
-        // Get index of ansatz functions in matrix compute_A.-------------------
-        if(mesh.is_DiscontinuousGalerkin){
-            // Discontinuous Galerkin
-            //aDGdx[0] = (dVertex+1)*aTdx+1; aDGdx[1] = (dVertex+1)*aTdx+2; aDGdx[2] = (dVertex+1)*aTdx+3;
-            for (j=0; j<mesh.dVertex; j++){
-                aDGdx[j] =  mesh.dVertex*aTdx+j;
+                abort();
             }
-            aAdx = aDGdx;
-        } else {
-            // Continuous Galerkin
-            // The first entry (index 0) of each row in triangles contains the Label of each point!
-            // Hence, in order to get an pointer to the three Triangle idices, which we need here
-            // we choose &Triangles[4*aTdx+1];
-            aAdx = &mesh.Triangles(0, aTdx);
-        }
-        // Prepare Triangle information aTE and aTdet ------------------
-        initializeTriangle(aTdx, mesh, aT);
-        // Assembly of right side ---------------------------------------
-        // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
-        doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
-        compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
-        // Add content of buffer to the right side.
-        for (a=0; a<mesh.dVertex; a++){
-            // Assembly happens in the interior of Omega only, so we throw away some values
-            // Again, Triangles contains the labels as first entry! Hence, we start with a=1 here!
-            // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
-            if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)){
-                #pragma omp atomic update
-                fd[aAdx[a]] += termf[a];
+            */
+            //[End DEBUG]
+
+            //[DEBUG]
+            /*
+            doubleVec_tozero(DEBUG_termTotalLocal, 9);
+            doubleVec_tozero(DEBUG_termTotalNonloc, 9);
+            */
+            //[End DEBUG]
+
+            // Get index of ansatz functions in matrix compute_A.-------------------
+            if (mesh.is_DiscontinuousGalerkin) {
+                // Discontinuous Galerkin
+                //aDGdx[0] = (dVertex+1)*aTdx+1; aDGdx[1] = (dVertex+1)*aTdx+2; aDGdx[2] = (dVertex+1)*aTdx+3;
+                for (j = 0; j < mesh.dVertex; j++) {
+                    aDGdx[j] = mesh.dVertex * aTdx + j;
+                }
+                aAdx = aDGdx;
+            } else {
+                // Continuous Galerkin
+                // The first entry (index 0) of each row in triangles contains the Label of each point!
+                // Hence, in order to get an pointer to the three Triangle idices, which we need here
+                // we choose &Triangles[4*aTdx+1];
+                aAdx = &mesh.Triangles(0, aTdx);
             }
-        }
-        // Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
-        // on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
-
-        // BFS -------------------------------------------------------------
-        // Intialize search queue with current outer triangle
-        queue.push(aTdx);
-        // Initialize vector of visited triangles with 0
-        visited.zeros();
-
-        // Check whether BFS is completed.
-        while (!queue.empty()){
-            // Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
-            sTdx = queue.front();
-            queue.pop();
-            // Get all the neighbours of sTdx.
-            NTdx =  &mesh.Neighbours(0, sTdx);
-            // Run through the list of neighbours.
-            // 3 at max in 2D, 4 in 3D.
-            for (j=0; j<mesh.dVertex; j++){
-                // The next valid neighbour is our candidate for the inner Triangle b.
-                bTdx = NTdx[j];
-
-                // Check how many neighbours sTdx has. It can be 3 at max.
-                // In order to be able to store the list as contiguous array we fill up the empty spots with the number J
-                // i.e. the total number of Triangles (which cannot be an index).
-                if (bTdx < mesh.J){
-
-                    // Prepare Triangle information bTE and bTdet ------------------
-                    initializeTriangle(bTdx, mesh, bT);
-
-                    // Check whether bTdx is already visited.
-                    if (visited[bTdx]==0){
-
-                        // Retriangulation and integration ------------------------
-                        if (mesh.is_DiscontinuousGalerkin){
-                            // Discontinuous Galerkin
-                            for (j=0; j<mesh.dVertex; j++){
-                                bDGdx[j] =  mesh.dVertex*bTdx+j;
-                            }
-                            bAdx = bDGdx;
-                        } else {
-                            // Get (pointer to) intex of basis function (in Continuous Galerkin)
-                            bAdx = &mesh.Triangles(0, bTdx);
-                            // The first entry (index 0) of each row in triangles contains the Label of each point!
-                            // Hence, in order to get an pointer to the three Triangle idices, which we need here
-                            // we choose &Triangles[4*aTdx+1];
-                        }
-                        // Assembly of matrix ---------------------------------------
-                        doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex); // Initialize Buffer
-                        doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex); // Initialize Buffer
-                        // Compute integrals and write to buffer
-                        integrate(aT, bT, quadRule, mesh, termLocal, termNonloc);
-                        // [DEBUG]
-                        //doubleVec_add(termLocal, DEBUG_termTotalLocal, DEBUG_termTotalLocal, 9);
-                        //doubleVec_add(termNonloc, DEBUG_termTotalNonloc, DEBUG_termTotalNonloc, 9);
-                        // [End DEBUG]
-
-                        // If bT interacts it will be a candidate for our BFS, so it is added to the queue
-
-                        //[DEBUG]
-                        /*
-                        //if (aTdx == 9 && bTdx == 911){
-                        if (false){
-
-                        printf("aTdx %i\ndet %17.16e, label %i \n", aTdx, aTdet, labela);
-                        printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aTE[0],aTE[1],aTE[2],aTE[3],aTE[4],aTE[5]);
-                        printf("bTdx %i\ndet %17.16e, label %i \n", bTdx, bTdet, labelb);
-                        printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bTE[0],bTE[1],bTE[2],bTE[3],bTE[4],bTE[5]);
-
-                        cout << endl << "Local Term" << endl ;
-                        printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[0], termLocal[1], termLocal[2]);
-                        printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[3], termLocal[4], termLocal[5]);
-                        printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[6], termLocal[7], termLocal[8]);
-
-                        cout << endl << "Nonlocal Term" << endl ;
-                        printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[0], termNonloc[1], termNonloc[2]);
-                        printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[3], termNonloc[4], termNonloc[5]);
-                        printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[6], termNonloc[7], termNonloc[8]);
-
-                        abort();
-
-                        }
-                        */
-                        //[End DEBUG]
-
-
-                        if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) || doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)){
-                            queue.push(bTdx);
-                            // In order to speed up the integration we only check whether the integral
-                            // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
-                            // However, this works only if we can guarantee that interacting triangles do actually
-                            // also contribute a non-zero entry, i.e. the Kernel as to be > 0 everywhere on its support for example.
-                            // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
-
-                            // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
-                            for (a=0; a<mesh.dVertex; a++){
-                            // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
-                                if  (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)){
-                                    for (b=0; b<mesh.dVertex; b++){
-                                        #pragma omp atomic update
-                                        Ad(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
-                                        #pragma omp atomic update
-                                        Ad(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
-                                    }
-                                }
-                            }
-                        }
-
-                    }
-                    // Mark bTdx as visited
-                    visited[bTdx] = 1;
+            // Prepare Triangle information aTE and aTdet ------------------
+            initializeTriangle(aTdx, mesh, aT);
+            // Assembly of right side ---------------------------------------
+            // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
+            doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
+            compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
+            // Add content of buffer to the right side.
+            for (a = 0; a < mesh.dVertex; a++) {
+                // Assembly happens in the interior of Omega only, so we throw away some values
+                // Again, Triangles contains the labels as first entry! Hence, we start with a=1 here!
+                // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
+                if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
+                    #pragma omp atomic update
+                    fd[aAdx[a]] += termf[a];
                 }
             }
-        }
-    }
-    }
-}
+            // Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
+            // on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
+
+            // BFS -------------------------------------------------------------
+            // Intialize search queue with current outer triangle
+            queue.push(aTdx);
+            // Initialize vector of visited triangles with 0
+            visited.zeros();
+
+            // Check whether BFS is completed.
+            while (!queue.empty()) {
+                // Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
+                sTdx = queue.front();
+                queue.pop();
+                // Get all the neighbours of sTdx.
+                NTdx = &mesh.Neighbours(0, sTdx);
+                // Run through the list of neighbours.
+                // 3 at max in 2D, 4 in 3D.
+                for (j = 0; j < mesh.dVertex; j++) {
+                    // The next valid neighbour is our candidate for the inner Triangle b.
+                    bTdx = NTdx[j];
+
+                    // Check how many neighbours sTdx has. It can be 3 at max.
+                    // In order to be able to store the list as contiguous array we fill up the empty spots with the number J
+                    // i.e. the total number of Triangles (which cannot be an index).
+                    if (bTdx < mesh.J) {
+
+                        // Prepare Triangle information bTE and bTdet ------------------
+                        initializeTriangle(bTdx, mesh, bT);
+
+                        // Check whether bTdx is already visited.
+                        if (visited[bTdx] == 0) {
+
+                            // Retriangulation and integration ------------------------
+                            if (mesh.is_DiscontinuousGalerkin) {
+                                // Discontinuous Galerkin
+                                for (j = 0; j < mesh.dVertex; j++) {
+                                    bDGdx[j] = mesh.dVertex * bTdx + j;
+                                }
+                                bAdx = bDGdx;
+                            } else {
+                                // Get (pointer to) intex of basis function (in Continuous Galerkin)
+                                bAdx = &mesh.Triangles(0, bTdx);
+                                // The first entry (index 0) of each row in triangles contains the Label of each point!
+                                // Hence, in order to get an pointer to the three Triangle idices, which we need here
+                                // we choose &Triangles[4*aTdx+1];
+                            }
+                            // Assembly of matrix ---------------------------------------
+                            doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex); // Initialize Buffer
+                            doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex); // Initialize Buffer
+                            // Compute integrals and write to buffer
+                            integrate(aT, bT, quadRule, mesh, termLocal, termNonloc);
+                            // [DEBUG]
+                            //doubleVec_add(termLocal, DEBUG_termTotalLocal, DEBUG_termTotalLocal, 9);
+                            //doubleVec_add(termNonloc, DEBUG_termTotalNonloc, DEBUG_termTotalNonloc, 9);
+                            // [End DEBUG]
+
+                            // If bT interacts it will be a candidate for our BFS, so it is added to the queue
+
+                            //[DEBUG]
+                            /*
+                            //if (aTdx == 9 && bTdx == 911){
+                            if (false){
+
+                            printf("aTdx %i\ndet %17.16e, label %i \n", aTdx, aTdet, labela);
+                            printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aTE[0],aTE[1],aTE[2],aTE[3],aTE[4],aTE[5]);
+                            printf("bTdx %i\ndet %17.16e, label %i \n", bTdx, bTdet, labelb);
+                            printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bTE[0],bTE[1],bTE[2],bTE[3],bTE[4],bTE[5]);
+
+                            cout << endl << "Local Term" << endl ;
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[0], termLocal[1], termLocal[2]);
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[3], termLocal[4], termLocal[5]);
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[6], termLocal[7], termLocal[8]);
+
+                            cout << endl << "Nonlocal Term" << endl ;
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[0], termNonloc[1], termNonloc[2]);
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[3], termNonloc[4], termNonloc[5]);
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[6], termNonloc[7], termNonloc[8]);
+
+                            abort();
+
+                            }
+                            */
+                            //[End DEBUG]
+
+
+                            if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) ||
+                                doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)) {
+                                queue.push(bTdx);
+                                // In order to speed up the integration we only check whether the integral
+                                // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
+                                // However, this works only if we can guarantee that interacting triangles do actually
+                                // also contribute a non-zero entry, i.e. the Kernel as to be > 0 everywhere on its support for example.
+                                // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
+
+                                // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
+                                for (a = 0; a < mesh.dVertex; a++) {
+                                    // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
+                                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
+                                        for (b = 0; b < mesh.dVertex; b++) {
+                                            #pragma omp atomic update
+                                            Ad(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
+                                            #pragma omp atomic update
+                                            Ad(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
+                                        }
+                                    }
+                                }
+                            }// End if (doubleVec_any(termNonloc, ...)
+
+                        }// End if BFS (visited[bTdx] == 0)
+                        // Mark bTdx as visited
+                        visited[bTdx] = 1;
+                    }// End if BFS (bTdx < mesh.J)
+                }//End for loop BFS (j = 0; j < mesh.dVertex; j++)
+            }//End while loo BFS (!queue.empty())
+        //}// End if Label of (aTdx == 1)
+    }// End parallel for
+    }// End pragma omp parallel
+}// End function par_assemble
 
 //void initializeTriangle(const arma::mat & Verts, const arma::Mat<long> & Triangles, const int Tdx, const int dim, ElementType & T){
 void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){

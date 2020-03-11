@@ -7,12 +7,56 @@
 
 # Assembly routine
 cimport Cassemble
+cimport Cassemble2D
 import meshio
 #from Cassemble cimport par_assemble
 import numpy as np
 import time
 from libc.math cimport pow
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
+
+def assemble2D(
+        # Mesh information ------------------------------------
+        mesh,
+        double [:,:] Px,
+        double [:,:] Py,
+        # Weights for quadrature rule
+        double [:] dx,
+        double [:] dy,
+        double delta,
+        **kwargs
+    ):
+
+    Ad = np.zeros(mesh.K*mesh.K_Omega)
+    fd = np.zeros(mesh.K_Omega)
+
+    cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
+    cdef long[:] elements = mesh.elements.flatten()
+    cdef long[:] elementLabels = mesh.elementLabels.flatten()
+    cdef double[:] vertices = mesh.vertices.flatten()
+    cdef double[:] ptrAd = Ad
+    cdef double[:] ptrfd = fd
+    #cdef double[:] ptrPx = Px.flatten()
+    #cdef double[:] ptrPy = Py.flatten()
+
+    start = time.time()
+    # Compute Assembly -------------------------------------------
+
+    Cassemble2D.par_assemble2D( &ptrAd[0],
+                        mesh.K,
+                        &ptrfd[0], &elements[0], &elementLabels[0], &vertices[0],
+                        mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
+                        &Px[0,0], Px.shape[0], &dx[0],
+                        &Py[0,0], Py.shape[0], &dy[0],
+                        delta**2,
+                        &neighbours[0],
+                        mesh.is_DiscontinuousGalerkin,
+                        mesh.is_NeumannBoundary)
+
+    total_time = time.time() - start
+
+    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+    return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
 
 def assemble(
         # Mesh information ------------------------------------
@@ -69,7 +113,7 @@ def constructAdjaciencyGraph(long [:,:] Elements):
     print("Constructing adjaciency graph...")
     cdef int nE = Elements.shape[0]
     cdef int dVerts = Elements.shape[1]
-    cdef long[:,:] Neighbours = np.zeros((nE, dVerts), dtype=int)
+    cdef long[:,:] Neighbours = np.ones((nE, dVerts), dtype=int)*nE
     cdef long [:] neighbourCounter = np.zeros(nE, dtype=int)
     cdef int aTdx, bTdx
 

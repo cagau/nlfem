@@ -26,7 +26,7 @@ cdef extern from "Cassemble.h" nogil:
                         const int is_DiscontinuousGalerkin,
                         const int is_NeumannBoundary,
                         const int dim
-    )
+    ) nogil
     # void par_assembleMass(double *, long *, double *, int, int, int, double *, double *) nogil
     # void check_par_assemble(double *, long *, double *, int, int, int, double *, double *, double, long *) nogil
 
