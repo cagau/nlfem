@@ -12,7 +12,7 @@ int main(){
     double delta = 0.1;
     double err, err_=1;
     double sqdelta = pow(delta, 2);
-    arma::Col<long> N_Omega={11,21,41,81,161};
+    arma::Col<long> N_Omega={11};
     arma::mat Px, Py;
     arma::vec dx, dy;
     arma::vec x(2);
@@ -22,7 +22,6 @@ int main(){
     Py.load("conf/P1.txt");
     nPy = Py.n_rows;
     Py = Py.t();
-
     dx.load("conf/d16.txt");
     dy.load("conf/d1.txt");
 
