@@ -8,6 +8,8 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/examples/CompareCodes)
 
 # Set directory of source files
 set(MY_LIBRARY_SOURCE_DIR $ENV{HOME}/Promotion/projects/CLION-nonlocal-assembly-cpp)
+#set(MY_LIBRARY_SOURCE_DIR $ENV{HOME}/klar/nonlocal-assembly)
+
 # Equivalent to -fPIC option in the compiler
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Find OpneMP Library
