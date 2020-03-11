@@ -5,6 +5,7 @@
 # we add the current project path == working directory to sys-path
 import sys
 sys.path.append(".")
+sys.path.append("../../")
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -14,6 +15,7 @@ from python.conf import * # mesh_name, delta, ansatz, py_Px, py_Py, dx, dy, is_P
 from python.nlocal import MeshIO
 from python.aux import filename
 from python.plot import plot
+
 
 try:
     from assemble import assemble

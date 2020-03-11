@@ -5,6 +5,7 @@
 # we add the current project path == working directory to sys-path
 import sys
 sys.path.append(".")
+sys.path.append("../../")
 
 import numpy as np
 import matplotlib.pyplot as plt
