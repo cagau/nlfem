@@ -3,7 +3,7 @@
 In order to use this code perform the following steps.
 ### Basic requirements
 - Download or clone the C++ branch of this project.
-- Check that you have a Python 3 with numpy, scipy, matplotlib, and Cython available.
+- Check that you have a Python 3 with numpy, scipy, matplotlib, pathos, meshio and Cython available.
  (Cython requires a C and C++ compiler)
     - <code> pip3 install Cython </code>
 - Check that you have CMake available
