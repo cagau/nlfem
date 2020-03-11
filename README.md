@@ -8,13 +8,15 @@ In order to use this code perform the following steps.
     - <code> pip3 install Cython </code>
 - Check that you have CMake available
 
-### Build and Install
-- Install C++ Library Cassemble
+### Build and Install C++ Library Cassemble
+- Enter the project directory and type
     - <code> mkdir build </code>
     - <code> cd build </code>
     - <code> cmake .. </code>
     - <code> cmake --build . --target Cassemble -- -j 4 </code>
     - <code> cmake --build . --target install -- -j 4 </code>
+
+### Build and Install Python package assemble
 - This step translates assemble.pyx to assemble.cpp (Cython) and compiles the C++ code to machine code.
     - <code> python3 setup.py build --force install</code>
     - Note, if the installation requires sudo you might want to setup a virtual environment.
