@@ -6,7 +6,15 @@ In order to use this code perform the following steps.
 - Check that you have a Python 3 with numpy, scipy, matplotlib, and Cython available.
  (Cython requires a C and C++ compiler)
     - <code> pip3 install Cython </code>
+- Check that you have CMake available
+
 ### Build and Install
+- Install C++ Library Cassemble
+    - mkdir build
+    - cd build
+    - cmake ..
+    - cmake --build . --target Cassemble -- -j 4
+    - cmake --build . --target install -- -j 4
 - This step translates assemble.pyx to assemble.cpp (Cython) and compiles the C++ code to machine code.
     - <code> python3 setup.py build --force install</code>
     - Note, if the installation requires sudo you might want to setup a virtual environment.
