@@ -19,7 +19,6 @@ include_directories(${MY_LIBRARY_SOURCE_DIR}/include/)
 # Some variable definitions
 set(src ${MY_LIBRARY_SOURCE_DIR}/src)
 set(exp ${MY_LIBRARY_SOURCE_DIR}/examples/Rates2DCpp)
-message( ${exp})
 set(header ${MY_LIBRARY_SOURCE_DIR}/include)
 
 # Adds the library Cassemble. Leads to: libCassemble.a

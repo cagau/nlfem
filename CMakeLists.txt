@@ -4,6 +4,7 @@ project(nonlocal_assembly)
 set(CMAKE_CXX_STANDARD 14)
 # add_subdirectory(src) # If more CMakeText Files are used
 add_subdirectory(${PROJECT_SOURCE_DIR}/examples/Rates2DCpp)
+add_subdirectory(${PROJECT_SOURCE_DIR}/examples/CompareCodes)
 
 # Set directory of source files
 set(MY_LIBRARY_SOURCE_DIR $ENV{HOME}/Promotion/projects/CLION-nonlocal-assembly-cpp)
@@ -34,7 +35,7 @@ set(src ${MY_LIBRARY_SOURCE_DIR}/src)
 set(header ${MY_LIBRARY_SOURCE_DIR}/include)
 
 # Adds the library Cassemble. Leads to: libCassemble.a
-add_library(Cassemble SHARED ${src}/Cassemble.cpp ${header}/Cassemble.h ${src}/Cassemble2D.cpp ${header}/Cassemble2D.h ${src}/MeshBuilder.cpp ${header}/MeshBuilder.h ${src}/MeshBuilder.cpp ${src}/MeshBuilder.cpp ${header}/MeshBuilder.h)
+add_library(Cassemble SHARED ${src}/Cassemble.cpp ${header}/Cassemble.h ${src}/Cassemble2D.cpp ${header}/Cassemble2D.h ${src}/MeshBuilder.cpp ${header}/MeshBuilder.h)
 # Add test executable which only imports the function model_f()
 #add_executable(CassembleTest ${src}/MeshBuilder.cpp)
 

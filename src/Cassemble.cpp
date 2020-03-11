@@ -63,7 +63,8 @@ static void initializeTriangle( const int Tdx, const MeshType & mesh, ElementTyp
 
 // Define Right side compute_f
 double model_f(const double * x){
-        return 1.0;
+    //return 1.0;
+    return -2. * (x[1] + 1.);
 /*
         if ((-.2 < x[0] && x[0] < .2) && (-2 < x[1] && x[1] < .2) )
         {
@@ -350,7 +351,7 @@ int retriangulate(const double * x_center, const double * TE, const MeshType & m
                 // Vieta's Formula for computing the roots
                 if (term1 > 0){
                     lam1 = term1 + term2;
-                    lam2 = 1/lam1*(dot(a, a) - mesh.sqdelta);
+                    lam2 = 1/lam1*(dot(a, a) - mesh.sqdelta) / dot(b, b);
                 } else {
                     lam2 = term1 - term2;
                     lam1 = 1/lam2*(dot(a, a) - mesh.sqdelta) / dot(b, b);
