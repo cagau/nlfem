@@ -388,6 +388,7 @@ int retriangulate(double * x_center, double * TE, double sqdelta, double * out_r
                 if ((0 <= lam2) && (lam2 <= 1) && (scal_sqL2dist(lam1, lam2) > 0)){
                     is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
 
+
                     // Check whether the predecessor lied on the edge
                     if (is_onEdge && is_placePointOnCap){
                         Rdx += placePointOnCap(&R[2*(Rdx-1)], y2, x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
