@@ -15,6 +15,8 @@ In order to use this code perform the following steps.
     - <code> cmake .. </code>
     - <code> cmake --build . --target Cassemble -- -j 4 </code>
     - <code> cmake --build . --target install -- -j 4 </code>
+- libCassemble.so will be installed to <code> /home/user/lib </code> add this path via
+    - <code> export LD_LIBRARY_PATH="/home/user/lib" </code>
 
 ### Build and Install Python package assemble
 - This step translates assemble.pyx to assemble.cpp (Cython) and compiles the C++ code to machine code.
