@@ -18,7 +18,7 @@ from python.plot import plot
 
 
 try:
-    from assemble import assemble
+    from assemble import assemble, assemble2D
 except ImportError:
     print("\nCan't import assemble.\nTry: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/libCassemble.\n")
     raise ImportError

@@ -139,6 +139,7 @@ void outerInt_full(double * aTE, double aTdet, long labela, double * bTE, double
         for (a=0; a<3; a++){
             for (b=0; b<3; b++){
                 termLocal[3*a+b] += 2*aTdet * psix[nPx*a+k] * psix[nPx*b+k] * dx[k] * innerLocal; //innerLocal
+                //printf("quadRule.psix(%i,%i) %17.16e\nquadRule.psix(%i,%i) %17.16e \n", a,k, psix[nPx*a+k], b,k,psix[nPx*b+k]);
                 termNonloc[3*a+b] += 2*aTdet * psix[nPx*a+k] * dx[k] * innerNonloc[b]; //innerNonloc
             }
         }
@@ -153,6 +154,7 @@ void innerInt_retriangulate(double * x, long labela, double * bTE, long labelb, 
     double reference_quad[2];
     double psi_value[3];
     double reTriangle_list[9*3*2];
+    doubleVec_tozero(reTriangle_list, 9*3*2);
     bool is_placePointOnCap;
 
     innerLocal[0] = 0.0;
@@ -585,7 +587,7 @@ void par_assemble2D( double * Ad,
                     const long * Neighbours,
                     int is_DiscontinuousGalerkin,
                     int is_NeumannBoundary) {
-    //cout << "par_assemble 2D" << endl;
+    cout << "par_assemble 2D" << endl;
     int aTdx, h=0;
     double tmp_psi[3];
     double *psix = (double *) malloc(3*nPx*sizeof(double));
@@ -728,6 +730,7 @@ void par_assemble2D( double * Ad,
             for (j=0; j<3; j++){
                 // The next valid neighbour is our candidate for the inner Triangle b.
                 bTdx = NTdx[j];
+                //bTdx = 45;
 
                 // Check how many neighbours sTdx has.
                 // In order to be able to store the list as contiguous array we fill up the empty spots with the number J
@@ -769,12 +772,12 @@ void par_assemble2D( double * Ad,
 
                         //[DEBUG]
                         /*
-                        //if (aTdx == 9 && bTdx == 911){
-                        if (false){
+                        if (aTdx == 0&& bTdx == 45){
+                        //if (true){
 
-                        printf("aTdx %i\ndet %17.16e, label %i \n", aTdx, aTdet, labela);
+                        printf("aTdx %i\ndet %17.16e, label %li \n", aTdx, aTdet, labela);
                         printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aTE[0],aTE[1],aTE[2],aTE[3],aTE[4],aTE[5]);
-                        printf("bTdx %i\ndet %17.16e, label %i \n", bTdx, bTdet, labelb);
+                        printf("bTdx %i\ndet %17.16e, label %li \n", bTdx, bTdet, labelb);
                         printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bTE[0],bTE[1],bTE[2],bTE[3],bTE[4],bTE[5]);
 
                         cout << endl << "Local Term" << endl ;
@@ -786,7 +789,9 @@ void par_assemble2D( double * Ad,
                         printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[0], termNonloc[1], termNonloc[2]);
                         printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[3], termNonloc[4], termNonloc[5]);
                         printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[6], termNonloc[7], termNonloc[8]);
-
+                        //if (aTdx == 10){
+                        //    abort();
+                        //}
                         abort();
 
                         }

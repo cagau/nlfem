@@ -161,11 +161,13 @@ void integrate(     const ElementType aT,
     double reference_quad[dim];
     double psi_value[mesh.dVertex];
     double reTriangle_list[36*mesh.dVertex*dim];
+    doubleVec_tozero(reTriangle_list, 36*mesh.dVertex*dim);
     bool is_placePointOnCap;
 
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
     for (k=0; k<quadRule.nPx; k++){
+        //printf("k %i, quadRule.nPx %i\n", k, quadRule.nPx);
         toPhys(aT.E, &(quadRule.Px[dim*k]), mesh, x);
         //printf("\nInner Integral, Iterate %i\n", k);
         //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
@@ -173,6 +175,7 @@ void integrate(     const ElementType aT,
 
         innerLocal = 0.0;
         doubleVec_tozero(innerNonloc, mesh.dVertex);
+
         is_placePointOnCap = true;
         Rdx = retriangulate(x, bT.E, mesh, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
         //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list);
@@ -187,7 +190,7 @@ void integrate(     const ElementType aT,
             //printf("absDet %17.16e\n", absDet(&reTriangle_list[2 * 3 * i]));
         //}
         if (Rdx == 0){
-            return;
+            //return;
         }
         else if(Rdx == -1){
             for (i = 0; i < quadRule.nPy; i++) {
@@ -236,11 +239,13 @@ void integrate(     const ElementType aT,
                 //printf("Chris: v %17.16e\n", innerLocal);
             }
         }
+
         //printf("Local %17.16e\n", innerLocal);
         //printf("Nonloc [%17.16e, %17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2], innerNonloc[3]);
-        for (b=0; b<mesh.dVertex; b++){
-            for (a=0; a<mesh.dVertex; a++){
+        for (a=0; a<mesh.dVertex; a++){
+            for (b=0; b<mesh.dVertex; b++){
                 termLocal[mesh.dVertex*a+b] += 2 * aT.absDet * quadRule.psix(a,k) * quadRule.psix(b,k) * quadRule.dx[k] * innerLocal; //innerLocal
+                //printf("quadRule.psix(%i,%i) %17.16e\nquadRule.psix(%i,%i) %17.16e \n", a,k, quadRule.psix(a,k), b,k,quadRule.psix(b,k));
                 termNonloc[mesh.dVertex*a+b] += 2 * aT.absDet * quadRule.psix(a,k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
             }
         }
@@ -573,11 +578,12 @@ void par_assemble( double * ptrAd, double * fd, MeshType & mesh,
                    QuadratureType & quadRule,
                    const int is_DiscontinuousGalerkin,
                    const int is_NeumannBoundary){
-
+    cout << "par_assemble Generic" << endl;
     int aTdx=0, h=0;
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
+    Ad.zeros();
     for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(& quadRule.Px[mesh.dim*h], mesh,& quadRule.psix[mesh.dVertex * h]);
@@ -722,6 +728,7 @@ void par_assemble( double * ptrAd, double * fd, MeshType & mesh,
                 for (j = 0; j < mesh.dVertex; j++) {
                     // The next valid neighbour is our candidate for the inner Triangle b.
                     bTdx = NTdx[j];
+                    //bTdx = 45;
 
                     // Check how many neighbours sTdx has. It can be 3 at max.
                     // In order to be able to store the list as contiguous array we fill up the empty spots with the number J
@@ -762,13 +769,13 @@ void par_assemble( double * ptrAd, double * fd, MeshType & mesh,
 
                             //[DEBUG]
                             /*
-                            //if (aTdx == 9 && bTdx == 911){
-                            if (false){
+                            if (aTdx == 0 && bTdx == 45){
+                            //if (true){
 
-                            printf("aTdx %i\ndet %17.16e, label %i \n", aTdx, aTdet, labela);
-                            printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aTE[0],aTE[1],aTE[2],aTE[3],aTE[4],aTE[5]);
-                            printf("bTdx %i\ndet %17.16e, label %i \n", bTdx, bTdet, labelb);
-                            printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bTE[0],bTE[1],bTE[2],bTE[3],bTE[4],bTE[5]);
+                            printf("aTdx %i\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
+                            printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aT.E[0],aT.E[1],aT.E[2],aT.E[3],aT.E[4],aT.E[5]);
+                            printf("bTdx %i\ndet %17.16e, label %li \n", bTdx, bT.absDet, bT.label);
+                            printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bT.E[0],bT.E[1],bT.E[2],bT.E[3],bT.E[4],bT.E[5]);
 
                             cout << endl << "Local Term" << endl ;
                             printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[0], termLocal[1], termLocal[2]);
@@ -779,7 +786,9 @@ void par_assemble( double * ptrAd, double * fd, MeshType & mesh,
                             printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[0], termNonloc[1], termNonloc[2]);
                             printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[3], termNonloc[4], termNonloc[5]);
                             printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[6], termNonloc[7], termNonloc[8]);
-
+                            //if (aTdx == 10){
+                            //    abort();
+                            //}
                             abort();
 
                             }
@@ -1010,22 +1019,12 @@ void toPhys(const double * E, const double * p, double * out_x){
 
 void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x) {
     int i = 0, j = 0;
-    // Handing over const pointer to Mat constructer enforces to neither set "copy" nor "strict" parameters.
-    // Which also would make no sense.
-    // Again note the column major view.
-    arma::Mat<double> M(E, mesh.dim, mesh.dVertex);
-    //printf ("TE\n[%17.16e, %17.16e, %17.16e]\n[%17.16e, %17.16e, %17.16e]\n[%17.16e, %17.16e, %17.16e]\n[%17.16e, %17.16e, %17.16e]\n",
-    //        E[0],E[1],E[2],E[3],E[4],E[5],E[6],E[7],E[8],E[9],E[10],E[11]);
     doubleVec_tozero(out_x, mesh.dim);
-
-    // out_x = B@p + a, where B = [b-a, c-a, d-a] (3D case)
-    // perform product B@p with matrix M := [a,b,c,d]
-    for (j = 0; j < mesh.dim; j++) {
-        for (i = 1; i < mesh.dVertex; i++) {
-            out_x[j] +=  (M(j,i) - M(j,0))*p[i];
+    for (i=0; i<mesh.dim;i++){
+        for(j=0; j<mesh.dim;j++){
+            out_x[i] += p[j]*(E[mesh.dim*(j+1)+i] - E[i]);
         }
-        // add vector a
-        out_x[j] += M(j,0);
+        out_x[i] += E[i];
     }
 }
 

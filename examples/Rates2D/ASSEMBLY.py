@@ -48,7 +48,7 @@ def main(num_fem_sols):
         #              ASSEMBLY AND SAVE
         #==============================================================================
 
-        A, f = assemble.assemble2D(nlocal.Mesh(mesh, conf.ansatz, conf.boundaryConditionType), conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta)
+        A, f = assemble.assemble(nlocal.Mesh(mesh, conf.ansatz, conf.boundaryConditionType), conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta)
         A = sp.csr_matrix(A)
         bib.save_sparse_csr(folder+'A'+output_A, A)
         #del A

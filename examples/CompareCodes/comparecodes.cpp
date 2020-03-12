@@ -27,7 +27,7 @@ int main() {
     dy.load("conf/d1.txt");
 
     int k;
-    bool compute2D = true;
+    bool compute2D = false;
 
     cout << "\nConstruct Grid and Adjaciency Graph..." << endl;
     Grid2D coarseGrid(N_Omega, delta);
