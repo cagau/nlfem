@@ -2,22 +2,21 @@
 #include <queue>
 #include <iostream>
 #include <Cassemble.h>
+#include <kernel.cpp>
 #include <armadillo>
 using namespace std;
 
 // Declaration of internal helper functions ----------------------------------------------------------------------------
-
-
 // Model ---------------------------------------------------------------------------------------------------------------
 static double model_f(const double *);
-static double model_kernel(const double * x, const long labelx, const double * y, const long labely, const double sqdelta);
+
 static void model_basisFunction(const double * p, double *psi_vals);
 static void model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals);
 // Integration ---------------------------------------------------------------------------------------------------------
 static int placePointOnCap(const double * y_predecessor, const double * y_current,
-        const double * x_center, const double sqdelta, const double * TE,
-        const double * nu_a, const double * nu_b, const double * nu_c,
-        const double orientation, const int Rdx, double * R);
+const double * x_center, const double sqdelta, const double * TE,
+const double * nu_a, const double * nu_b, const double * nu_c,
+const double orientation, const int Rdx, double * R);
 
 // Math functions ------------------------------------------------------------------------------------------------------
 static void solve2x2(const double *, const double *, double *);                 // Solve 2x2 System with LU
@@ -75,9 +74,7 @@ double model_f(const double * x){
 */
 }
 
-double model_kernel(const double * x, const long labelx, const double * y, const long labely, const double sqdelta){
-    return 4 / (M_PI * pow(sqdelta, 2));
-}
+
 
 /*
 double model_kernel_(double * x, long labelx, double * y, long labely, double sqdelta){
@@ -173,9 +170,6 @@ void integrate(     const ElementType aT,
         //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
         //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
 
-        innerLocal = 0.0;
-        doubleVec_tozero(innerNonloc, mesh.dVertex);
-
         is_placePointOnCap = true;
         Rdx = retriangulate(x, bT.E, mesh, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
         //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list);
@@ -189,8 +183,10 @@ void integrate(     const ElementType aT,
             //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+4], reTriangle_list[2 * 3 * i+5]);
             //printf("absDet %17.16e\n", absDet(&reTriangle_list[2 * 3 * i]));
         //}
+
+        innerLocal = 0.0;
+        doubleVec_tozero(innerNonloc, mesh.dVertex);
         if (Rdx == 0){
-            //return;
         }
         else if(Rdx == -1){
             for (i = 0; i < quadRule.nPy; i++) {

@@ -12,7 +12,7 @@ int main(){
     double delta = 0.1;
     double err, err_=1;
     double sqdelta = pow(delta, 2);
-    arma::Col<long> N_Omega={11};
+    arma::Col<long> N_Omega={11,21,41};
     arma::mat Px, Py;
     arma::vec dx, dy;
     arma::vec x(2);
@@ -65,7 +65,7 @@ int main(){
         pGrid = &coarseGrid;
         k=0;
         cout << pGrid -> N_Omega;
-        while (k < (nInterations-i-1+1)){
+        while (k < (nInterations-i-1+2)){
             cout << " refine > ";
             pGrid = new Grid2D(pGrid); // Copy constructor performs refinement!
             k++;

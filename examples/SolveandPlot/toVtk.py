@@ -4,8 +4,8 @@ import sys
 sys.path.append(".")
 
 import meshio
-from python.nlocal import MeshIO
-from python.conf import *
+from examples.SolveandPlot.nlocal import MeshIO
+from examples.SolveandPlot.conf import *
 import glob
 
 confDict = {"domainPhysicalName": 1, "boundaryPhysicalName": 9, "interactiondomainPhysicalName": 2,

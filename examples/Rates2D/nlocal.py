@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 import numpy as np
 import meshio
-from assemble import constructAdjaciencyGraph
+import assemble
 
 
 def readMeshBuilder(name):
@@ -219,7 +219,7 @@ class MeshIO(meshio._mesh.Mesh):
 
     # Setup adjaciency graph of the mesh --------------------------
         if kwargs.get("isNeighbours", True):
-            self.neighbours = constructAdjaciencyGraph(self.elements)
+            self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
         # built in Neighbour Routine of MeshBulder yields mbNeighbours.
         #self.neighbours = mbNeighbours.T
 
@@ -305,7 +305,7 @@ class Mesh:
         self.boundaryConditionType = boundaryConditionType
         self.is_DiscontinuousGalerkin = is_DiscontinuousGalerkin
         self.is_NeumannBoundary = is_NeumannBoundary
-        self.neighbours = constructAdjaciencyGraph(self.elements)
+        self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
         self.dim = 2
 
     def get_state_dict(self):

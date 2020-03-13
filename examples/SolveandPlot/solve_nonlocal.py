@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import meshio
 import pickle as pkl
-from python.conf import * # mesh_name, delta, ansatz, py_Px, py_Py, dx, dy, is_PlotSolve, boundaryConditionType
-from python.nlocal import MeshIO
-from python.aux import filename
-from python.plot import plot
+from examples.SolveandPlot.conf import * # mesh_name, delta, ansatz, py_Px, py_Py, dx, dy, is_PlotSolve, boundaryConditionType
+from examples.SolveandPlot.nlocal import MeshIO
+from examples.SolveandPlot.aux import filename
+from examples.SolveandPlot.plot import plot
 
 
 try:

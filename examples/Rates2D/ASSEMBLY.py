@@ -6,11 +6,11 @@ Created on Mon Feb 25 13:31:10 2019
 """
 import assemble
 import numpy as np
-import python.bib3 as bib
 import pickle as pkl
 import scipy.sparse as sp
-import python.nlocal as nlocal
-import python.conf as conf
+import examples.Rates2D.bib3 as bib
+import examples.Rates2D.nlocal as nlocal
+import examples.Rates2D.conf as conf
 
 #==============================================================================
 #                                   INPUT
@@ -48,16 +48,14 @@ def main(num_fem_sols):
         #              ASSEMBLY AND SAVE
         #==============================================================================
 
-        A, f = assemble.assemble2D(nlocal.Mesh(mesh, conf.ansatz, conf.boundaryConditionType), conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta)
+        A, f = assemble.assemble(nlocal.Mesh(mesh, conf.ansatz, conf.boundaryConditionType), conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta)
         A = sp.csr_matrix(A)
         bib.save_sparse_csr(folder+'A'+output_A, A)
-        #del A
 
         M = bib.mass_matrix2(mesh)
         bib.save_sparse_csr(folder+'M_'+str(h), M.tocsr())
         M = bib.mass_matrix_full(mesh)
         bib.save_sparse_csr(folder+'M_full_'+str(h), M.tocsr())
-        #del M
 
 if __name__ == "__main__":
     main(2)

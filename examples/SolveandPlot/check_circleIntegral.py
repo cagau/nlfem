@@ -9,10 +9,10 @@ sys.path.append("../../")
 
 import numpy as np
 import pickle as pkl
-from python.conf import *
-from python.nlocal import Mesh#, assemble # Mesh class
-from python.aux import filename
-from python.plot import plot
+from examples.SolveandPlot.conf import *
+from examples.SolveandPlot.nlocal import Mesh#, assemble # Mesh class
+from examples.SolveandPlot.aux import filename
+from examples.SolveandPlot.plot import plot
 
 from assemble import py_check_par_assemble
 from matplotlib.backends.backend_pdf import PdfPages

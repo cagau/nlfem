@@ -5,6 +5,7 @@
 #include <MeshBuilder.h>
 #include <Cassemble2D.h>
 #include <Cassemble.h>
+
 double uExact(arma::vec x){
     return pow(x(0), 2)*x(1) + pow(x(1),2);
 }

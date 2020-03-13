@@ -10,12 +10,12 @@ sys.path.append("../../")
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from python.plot import plot_mesh_DG, plot_mesh_CG
+from examples.SolveandPlot.plot import plot_mesh_DG, plot_mesh_CG
 
 
 def test_retriangulate():
     from assemble import py_retriangulate
-    from python.conf import  py_Px, OUTPUT_PATH
+    from examples.SolveandPlot.conf import  py_Px, OUTPUT_PATH
     py_P = py_Px
 
     def plot_retriangulate(x_center, delta, TE, RD, Rdx, pp):
@@ -63,8 +63,8 @@ def test_retriangulate():
 
 def test_interfacedependendKernel():
     # This Code compares the output with the output of another code and does not work stand-alone
-    from python.conf import py_Px, py_Py, dx, dy, delta, ansatz, boundaryConditionType, OUTPUT_PATH
-    from python.nlocal import Mesh
+    from examples.SolveandPlot.conf import py_Px, py_Py, dx, dy, delta, ansatz, boundaryConditionType, OUTPUT_PATH
+    from examples.SolveandPlot.nlocal import Mesh
     from assemble import assemble
     import pickle as pkl
     import sys
@@ -137,5 +137,6 @@ def test_interfacedependendKernel():
     print("Stop")
 
 if __name__ == "__main__":
-    test_interfacedependendKernel()
-    test_retriangulate()
+    pass
+    #test_interfacedependendKernel()
+    #test_retriangulate()

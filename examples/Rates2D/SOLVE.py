@@ -3,12 +3,13 @@ Created on Mon Feb 25 14:59:05 2019
 
 @author: vollmann
 """
-import python.bib3 as bib
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as ss
 from pathos.multiprocessing import ProcessingPool as Pool
-import python.conf as conf
+import examples.Rates2D.conf as conf
+import examples.Rates2D.bib3 as bib
 
 def source(x):
     return -2. * (x[1] + 1)
