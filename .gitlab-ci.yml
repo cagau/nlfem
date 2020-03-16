@@ -1,0 +1,5 @@
+image: python
+
+pages:
+    script:
+        - cp docs/html ../public
