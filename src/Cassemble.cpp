@@ -35,10 +35,12 @@ void lookup_configuration(ConfigurationType & conf){
     // Lookup integration method  --------------------------------------------------------------------------------------
     cout << "Integration Method: " << conf.integration_method << endl;
     if (conf.integration_method == "baryCenter"){
-        integration_method = method_baryCenter;
-    } else if (conf.integration_method == "retriangulate") {
-        integration_method = method_retriangulate;
-    }  else {
+        integrate = integrate_baryCenter;
+    } else if (conf.integration_method == "baryCenterRT") {
+        integrate = integrate_baryCenterRT;
+    }  else if (conf.integration_method == "retriangulate") {
+        integrate = integrate_retriangulate;
+    } else {
         cout << "Error in par:assemblele. Integration method " << conf.integration_method <<
              " is not implemented." << endl;
         abort();

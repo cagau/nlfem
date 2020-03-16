@@ -11,33 +11,45 @@
 // ___ INTEGRATION DECLARATION _________________________________________________________________________________________
 
 // Integration Routine #################################################################################################
-void integrate(     ElementType aT,
-                    ElementType bT,
+void (*integrate)(     const ElementType & aT,
+                       const ElementType & bT,
                     const QuadratureType & quadRule,
                     const MeshType & mesh,
                     double * termLocal, double * termNonloc);
 
 // Integration Methods #################################################################################################
-int (*integration_method)(const double * x_center, const ElementType & T, const MeshType & mesh, double * reTriangle_list, int is_placePointOnCap);
-
 // Methods -------------------------------------------------------------------------------------------------------------
+void integrate_retriangulate(    const  ElementType & aT,
+                                 const ElementType & bT,
+                              const QuadratureType & quadRule,
+                              const MeshType & mesh,
+                              double * termLocal, double * termNonloc);
+void integrate_baryCenter(   const   ElementType & aT,
+                            const ElementType & bT,
+                           const QuadratureType & quadRule,
+                           const MeshType & mesh,
+                           double * termLocal, double * termNonloc);
+void integrate_baryCenterRT(   const   ElementType & aT,
+                             const ElementType & bT,
+                             const QuadratureType & quadRule,
+                             const MeshType & mesh,
+                             double * termLocal, double * termNonloc);
+// Helpers -------------------------------------------------------------------------------------------------------------
 int method_baryCenter(const double * x_center, const ElementType & T, const MeshType & mesh, double * reTriangle_list, int is_placePointOnCap);
 int method_retriangulate(const double * x_center, const ElementType & T, const MeshType & mesh, double * re_Triangle_list, int is_placePointOnCap);
-
-// Helpers -------------------------------------------------------------------------------------------------------------
 int placePointOnCap(const double * y_predecessor, const double * y_current,
-                           const double * x_center, double sqdelta, const double * TE,
-                           const double * nu_a, const double * nu_b, const double * nu_c,
-                           double orientation, int Rdx, double * R);
+                   const double * x_center, double sqdelta, const double * TE,
+                   const double * nu_a, const double * nu_b, const double * nu_c,
+                   double orientation, int Rdx, double * R);
 bool inTriangle(const double * y_new, const double * p, const double * q, const double * r,
                 const double *  nu_a, const double * nu_b, const double * nu_c);
 
 // ___ INTEGRATION IMPLEMENTATION ______________________________________________________________________________________
 
-// Integration Routine #################################################################################################
+// Integration Methods #################################################################################################
 
-void integrate(     const ElementType aT,
-                    const ElementType bT,
+void integrate_retriangulate(     const ElementType & aT,
+                    const ElementType & bT,
                     const QuadratureType & quadRule,
                     const MeshType & mesh,
                     double * termLocal, double * termNonloc){
@@ -67,8 +79,7 @@ void integrate(     const ElementType aT,
         //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
 
         is_placePointOnCap = true;
-        Rdx = integration_method(x, bT, mesh, reTriangle_list, is_placePointOnCap);
-        //Rdx = retriangulate(x, bT, mesh, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
+        Rdx = method_retriangulate(x, bT, mesh, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
         //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list, is_placePointOnCap);
         //Rdx = quadRule.interactionMethod(x, bT, mesh, reTriangle_list);
 
@@ -84,22 +95,6 @@ void integrate(     const ElementType aT,
         innerLocal = 0.0;
         doubleVec_tozero(innerNonloc, mesh.dVertex);
         if (Rdx == 0){
-        }
-        else if(Rdx == -1){
-            for (i = 0; i < quadRule.nPy; i++) {
-                // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
-                toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, physical_quad);
-                // Determinant of Triangle of retriangulation
-                rTdet = absDet(bT.E);
-                // inner Local integral with ker
-                innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] * rTdet; // Local Term
-                // Evaluate ker on physical quad (note this is ker')
-                ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
-                // Evaluate basis function on resulting reference quadrature point
-                for (b = 0; b < mesh.dVertex; b++) {
-                    innerNonloc[b] += quadRule.psiy(b,i) * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
-                }
-            }
         } else {
             //printf("\nInner Integral\n");
             for (rTdx = 0; rTdx < Rdx; rTdx++) {
@@ -146,9 +141,125 @@ void integrate(     const ElementType aT,
 }
 
 
+void integrate_baryCenter(     const ElementType & aT,
+                                const ElementType & bT,
+                                const QuadratureType & quadRule,
+                                const MeshType & mesh,
+                                double * termLocal, double * termNonloc){
 
+    const int dim = mesh.dim;
+    int k=0, a=0, b=0;
+    double x[dim];
+    double innerLocal=0;
+    double innerNonloc[mesh.dVertex];
 
-// Integration Methods #################################################################################################
+    int i=0;
+    double ker=0, rTdet=0;
+    double physical_quad[dim];
+    double reTriangle_list[36*mesh.dVertex*dim];
+    doubleVec_tozero(reTriangle_list, 36*mesh.dVertex*dim);
+
+    //[DEBUG]
+    //printf("\nouterInt_full----------------------------------------\n");
+    for (k=0; k<quadRule.nPx; k++){
+        toPhys(aT.E, &(quadRule.Px[dim*k]), mesh, x);
+
+        innerLocal = 0.0;
+        doubleVec_tozero(innerNonloc, mesh.dVertex);
+        if(method_baryCenter(x, bT, mesh, reTriangle_list, false)){
+            for (i = 0; i < quadRule.nPy; i++) {
+                // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
+                toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, physical_quad);
+                // Determinant of Triangle of retriangulation
+                rTdet = absDet(bT.E);
+                // inner Local integral with ker
+                innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] * rTdet; // Local Term
+                // Evaluate ker on physical quad (note this is ker')
+                ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
+                // Evaluate basis function on resulting reference quadrature point
+                for (b = 0; b < mesh.dVertex; b++) {
+                    innerNonloc[b] += quadRule.psiy(b,i) * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
+                }
+            }
+        }
+        //printf("Local %17.16e\n", innerLocal);
+        //printf("Nonloc [%17.16e, %17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2], innerNonloc[3]);
+        for (a=0; a<mesh.dVertex; a++){
+            for (b=0; b<mesh.dVertex; b++){
+                termLocal[mesh.dVertex*a+b] += 2 * aT.absDet * quadRule.psix(a,k) * quadRule.psix(b,k) * quadRule.dx[k] * innerLocal; //innerLocal
+                termNonloc[mesh.dVertex*a+b] += 2 * aT.absDet * quadRule.psix(a,k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+            }
+        }
+    }
+}
+
+void integrate_baryCenterRT(     const ElementType & aT,
+                               const ElementType & bT,
+                               const QuadratureType & quadRule,
+                               const MeshType & mesh,
+                               double * termLocal, double * termNonloc){
+
+    const int dim = mesh.dim;
+    int k=0, a=0, b=0;
+    double x[dim];
+    double bTbaryC[dim];
+    double innerLocal=0;
+    double innerNonloc[mesh.dVertex];
+
+    int i=0, Rdx, rTdx;
+    double ker=0, rTdet=0, bTdet=0;
+    double physical_quad[dim];
+    double reTriangle_list[36*mesh.dVertex*dim];
+    doubleVec_tozero(reTriangle_list, 36*mesh.dVertex*dim);
+
+    //[DEBUG]
+    //printf("\nouterInt_full----------------------------------------\n");
+    baryCenter(bT.E, &bTbaryC[0]);
+    Rdx = method_retriangulate(bTbaryC, aT, mesh, reTriangle_list, true);
+
+    if (!Rdx){
+        return;
+    } else {
+        // Determinant of Triangle of retriangulation
+        bTdet = absDet(bT.E);
+
+        for (rTdx = 0; rTdx < Rdx; rTdx++) {
+            rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
+
+            for (k = 0; k < quadRule.nPx; k++) {
+                toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Px[dim * k]), mesh, x);
+
+                // Compute Integral over Triangle bT
+                innerLocal = 0.0;
+                doubleVec_tozero(innerNonloc, mesh.dVertex);
+
+                for (i = 0; i < quadRule.nPy; i++) {
+                    // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
+                    toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, physical_quad);
+                    // inner Local integral with ker
+                    innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] *
+                                  bTdet; // Local Term
+                    // Evaluate ker on physical quad (note this is ker')
+                    ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
+                    // Evaluate basis function on resulting reference quadrature point
+                    for (b = 0; b < mesh.dVertex; b++) {
+                        innerNonloc[b] += quadRule.psiy(b, i) * ker * quadRule.dy[i] * bTdet; // Nonlocal Term
+                    }
+                }
+
+                for (a = 0; a < mesh.dVertex; a++) {
+                    for (b = 0; b < mesh.dVertex; b++) {
+                        termLocal[mesh.dVertex * a + b] += 2 * rTdet * quadRule.psix(a, k) *
+                                quadRule.psix(b, k) * quadRule.dx[k] * innerLocal; //innerLocal
+                        termNonloc[mesh.dVertex * a + b] +=
+                                2 * rTdet * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+                    }
+                }
+            }
+        }
+    }
+}
+// Helpers -------------------------------------------------------------------------------------------------------------
 
 // Bary Center Method --------------------------------------------------------------------------------------------------
 int method_baryCenter(const double * x_center, const ElementType & T, const MeshType & mesh, double * reTriangle_list, int is_placePointOnCap){
@@ -172,7 +283,6 @@ int method_baryCenter(const double * x_center, const ElementType & T, const Mesh
 }
 
 // Retriangulation Method ----------------------------------------------------------------------------------------------
-
 bool inTriangle(const double * y_new, const double * p, const double * q, const double * r,
                 const double *  nu_a, const double * nu_b, const double * nu_c){
     bool a, b, c;
