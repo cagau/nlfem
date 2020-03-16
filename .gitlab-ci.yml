@@ -2,4 +2,4 @@ image: python
 
 pages:
     script:
-        - cp docs/html ../public
+        - cp -r docs/html ../public
