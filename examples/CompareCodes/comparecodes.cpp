@@ -4,7 +4,7 @@
 
 #include <MeshBuilder.h>
 #include <Cassemble2D.h>
-#include <Cassemble.h>
+#include "Cassemble.h"
 
 double uExact(arma::vec x){
     return pow(x(0), 2)*x(1) + pow(x(1),2);
@@ -63,7 +63,11 @@ int main() {
                      sqdelta,
                      coarseMesh.Neighbours.memptr(),
                      false,
-                     false, 2);
+                     false,
+                     "constant",
+                     "linear",
+                     "retriangulate",
+                     2);
     };
 
 

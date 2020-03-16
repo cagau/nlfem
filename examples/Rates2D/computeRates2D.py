@@ -7,4 +7,3 @@ if __name__ == "__main__":
     assembly.main(num_fem_sols)
     solve.main(num_fem_sols)
     l2rates.main(num_fem_sols)
-

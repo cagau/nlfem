@@ -13,7 +13,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON) # Equivalent to -fPIC option in the comp
 # Abbreviations for file names...
 
 # include --------------------------------------------------------------------------------------------------------------
-include_directories(./include/)
+include_directories(./include/ ./src/)
 
 # target ---------------------------------------------------------------------------------------------------------------
 # Adds the library Cassemble. Leads to: libCassemble.a

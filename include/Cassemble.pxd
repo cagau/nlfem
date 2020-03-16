@@ -5,6 +5,7 @@
 # distutils: language = c++
 # distutils: sources = RoadDensityPyMod.cpp
 from libcpp cimport bool
+from libcpp.string cimport string
 
 cdef extern from "Cassemble.h" nogil:
     # Assembly algorithm with BFS -----------------------------------------------------------------------------------------
@@ -25,6 +26,9 @@ cdef extern from "Cassemble.h" nogil:
                         const long * ptrNeighbours,
                         const int is_DiscontinuousGalerkin,
                         const int is_NeumannBoundary,
+                        const string  str_model_kernel,
+                        const string str_model_f,
+                        const string str_integration_method,
                         const int dim
     ) nogil
     # void par_assembleMass(double *, long *, double *, int, int, int, double *, double *) nogil

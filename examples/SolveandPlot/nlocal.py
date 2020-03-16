@@ -334,8 +334,7 @@ class Mesh:
                     # run through all nodes
                     line = fid.readline()  # put current line to be the one next
                     data = line.split()  # split line into its atomic characters
-                    Verts[i, :] = list(map(float, data[
-                                                  1:]))  # read out the coordinates of the node by applying the function float() to the characters in data
+                    Verts[i, :] = list(map(float, data[1:]))  # read out the coordinates of the node by applying the function float() to the characters in data
 
             if line.find('$Elements') == 0:
                 line = fid.readline()

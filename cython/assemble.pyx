@@ -6,6 +6,7 @@
 # Setting this compiler directive will given a minor increase of speed.
 
 # Assembly routine
+from libcpp.string cimport string
 cimport Cassemble
 cimport Cassemble2D
 import meshio
@@ -79,8 +80,10 @@ def assemble(
     cdef double[:] vertices = mesh.vertices.flatten()
     cdef double[:] ptrAd = Ad
     cdef double[:] ptrfd = fd
-    #cdef double[:] ptrPx = Px.flatten()
-    #cdef double[:] ptrPy = Py.flatten()
+
+    cdef string model_kernel = kwargs.get("model_kernel", "constant").encode('UTF-8')
+    cdef string model_f = kwargs.get("model_f", "constant").encode('UTF-8')
+    cdef string integration_method = kwargs.get("integration_method", "retriangulate").encode('UTF-8')
 
     start = time.time()
     # Compute Assembly -------------------------------------------
@@ -94,6 +97,9 @@ def assemble(
                         &neighbours[0],
                         mesh.is_DiscontinuousGalerkin,
                         mesh.is_NeumannBoundary,
+                        &model_kernel[0],
+                        &model_f[0],
+                        &integration_method[0],
                         mesh.dim)
 
     total_time = time.time() - start

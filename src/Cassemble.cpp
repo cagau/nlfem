@@ -1,424 +1,85 @@
+#include <Cassemble.h>
 #include <math.h>
 #include <queue>
 #include <iostream>
-#include <Cassemble.h>
-#include <kernel.cpp>
+#include <integration.cpp>
+#include <mathhelpers.cpp>
+#include <model.cpp>
 #include <armadillo>
 using namespace std;
 
-// Declaration of internal helper functions ----------------------------------------------------------------------------
-// Model ---------------------------------------------------------------------------------------------------------------
-static double model_f(const double *);
+void lookup_configuration(ConfigurationType & conf){
 
-static void model_basisFunction(const double * p, double *psi_vals);
-static void model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals);
-// Integration ---------------------------------------------------------------------------------------------------------
-static int placePointOnCap(const double * y_predecessor, const double * y_current,
-const double * x_center, const double sqdelta, const double * TE,
-const double * nu_a, const double * nu_b, const double * nu_c,
-const double orientation, const int Rdx, double * R);
-
-// Math functions ------------------------------------------------------------------------------------------------------
-static void solve2x2(const double *, const double *, double *);                 // Solve 2x2 System with LU
-static void rightNormal(const double * y0, const double * y1, const double orientation, double * normal);
-// Matrix operations (via * only) ------------------------------------------------------------------------------------
-// Double
-static double absDet(const double * E);                                         // Compute determinant
-static double absDet(const double * E, const MeshType & mesh);
-static double signDet(const double * E);
-static double signDet(const double * E, const MeshType & mesh);
-static void baryCenter(const double * E, double * bary);                        // Bary Center
-static void toRef(const double * E, const double * phys_x, double * ref_p);     // Pull point to Reference Element (performs 2x2 Solve)
-static void toPhys(const double * E, const double * p, double * out_x);         // Push point to Physical Element
-static void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x);
-
-// Vector operations -------------------------------------------------------------------------------------------------
-// Double
-static double vec_sqL2dist(const double * x, const double * y, const int len);      // L2 Distance
-static double vec_dot(const double * x, const double * y, const int len);           // Scalar Product
-static int doubleVec_any(const double * vec, const int len);                        // Any
-static void doubleVec_tozero(double *, int);               // Reset to zero
-static void doubleVec_subtract(const double * vec1, const double * vec2, double * out, const int len);
-static void doubleVec_midpoint(const double * vec1, const double * vec2, double * midpoint, const int len);
-static void doubleVec_scale(const double lambda, const double * vec, double * out, const int len);
-static void doubleVec_add(const double * vec1, const double * vec2, double * out, const int len);
-static void doubleVec_copyTo(const double * input, double * output, const int len);
-
-// Long
-static int longVec_all(const long *, const int);                       // All
-static int longVec_any(const long *, const int);                       // Any
-
-// Int
-static void intVec_tozero(int *, const int);                     // Reset to zero
-
-// Scalar ----------------------------------------------------------
-static double absolute(const double);                                  // Get absolute value
-static double scal_sqL2dist(const double x, const double y);           // L2 Distance
-
-static void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T);
-
-
-// Model -----------------------------------------f-------------------------------------------------------------------
-
-// Define Right side compute_f
-double model_f(const double * x){
-    //return 1.0;
-    return -2. * (x[1] + 1.);
-/*
-        if ((-.2 < x[0] && x[0] < .2) && (-2 < x[1] && x[1] < .2) )
-        {
-            return 1.0;
-        } else {
-            return 0.;
-        }
-*/
-}
-
-
-
-/*
-double model_kernel_(double * x, long labelx, double * y, long labely, double sqdelta){
-    double dist;
-    long label;
-
-    label = 10*labelx + labely;
-    dist = vec_sqL2dist(y, x, 2);
-    if (dist >= sqdelta) {
-        cout << "Error in model_kernel. Distance smaller delta not expected." << endl;
-        cout << dist << endl;
+    // Lookup right hand side ------------------------------------------------------------------------------------------
+    cout << "Right hand side: " << conf.model_f << endl;
+    if (conf.model_f == "linear"){
+        model_f = f_linear;
+    } else if (conf.model_f == "constant"){
+        model_f = f_constant;
+    } else {
+        cout << "Error in par:assemblele. Right hand side: " << conf.model_f << " is not implemented." << endl;
         abort();
     }
-    if (label <= 12) {
-        return 0.01 * 3. / (4*pow(sqdelta, 2));
-    } else if (label>=21){
-        return (100 *  3. / (4*pow(sqdelta, 2))) * (1 - (dist/sqdelta) );
-    } else if (label == 13){
-        return 0.0;
+
+    // Lookup kernel ---------------------------------------------------------------------------------------------------
+    cout << "Kernel: " << conf.model_kernel << endl;
+    if (conf.model_kernel == "constant"){
+        model_kernel = kernel_constant;
+    } else if (conf.model_kernel == "labeled"){
+        model_kernel = kernel_labeled;
     } else {
-        cout << "No such case " << endl;
+        cout << "Error in par:assemblele. Kernel " << conf.model_kernel << " is not implemented." << endl;
+        abort();
+    }
+
+    // Lookup integration method  --------------------------------------------------------------------------------------
+    cout << "Integration Method: " << conf.integration_method << endl;
+    if (conf.integration_method == "baryCenter"){
+        integration_method = method_baryCenter;
+    } else if (conf.integration_method == "retriangulate") {
+        integration_method = method_retriangulate;
+    }  else {
+        cout << "Error in par:assemblele. Integration method " << conf.integration_method <<
+             " is not implemented." << endl;
         abort();
     }
 }
-*/
 
-void model_basisFunction(const double * p, double *psi_vals){
-    psi_vals[0] = 1 - p[0] - p[1];
-    psi_vals[1] = p[0];
-    psi_vals[2] = p[1];
-}
+void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
+    // Copy coordinates of Triange b to bTE.
 
-void model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals){
-    int i=0;
+    // Tempalte of Triangle Point data -------------------------------------------------
+    // 2D Case, a, b, c are the vertices of a triangle
+    //         _____________________________
+    // T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
+    // Hence, if one wnats to put T.E into col major order matrix it would be of shape
+    //                              ______________
+    //                             | a1 | b1 | c1 |
+    // M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
+    //  --------------------------------------------------------------------------------
 
-    psi_vals[0] = 1;
-    for (i=0; i<mesh.dim; i++){
-        psi_vals[0] -= p[i];
-        psi_vals[i+1] = p[i];
-    }
-}
-
-
-int baryCenterMethod(const double * x, const ElementType & T, const MeshType & mesh, double * reTriangle_list){
-    int i,k;
-    double distance;
-    arma::vec baryC(mesh.dim);
-
-    baryCenter(T.E, &baryC[0]);
-    distance = vec_sqL2dist(x, &baryC[0], mesh.dim);
-
-    if (distance > mesh.sqdelta){
-        return 0;
-    } else {
-        for (i=0; i<mesh.dim; i++){
-            for(k=0; k<mesh.dVertex; k++) {
-                reTriangle_list[2 * k + i] = T.E[2 * k + i];
-            }
-        }
-        return -1;
-    };
-}
-// Integration ---------------------------------------------------------------------------------------------------------
-
-
-void integrate(     const ElementType aT,
-                    const ElementType bT,
-                    const QuadratureType & quadRule,
-                    const MeshType & mesh,
-                    double * termLocal, double * termNonloc){
-
-    const int dim = mesh.dim;
-    int k=0, a=0, b=0;
-    double x[dim];
-    double innerLocal=0;
-    double innerNonloc[mesh.dVertex];
-
-    int i=0, rTdx=0, Rdx=0;
-    double ker=0, rTdet=0;
-    double physical_quad[dim];
-    double reference_quad[dim];
-    double psi_value[mesh.dVertex];
-    double reTriangle_list[36*mesh.dVertex*dim];
-    doubleVec_tozero(reTriangle_list, 36*mesh.dVertex*dim);
-    bool is_placePointOnCap;
-
-    //[DEBUG]
-    //printf("\nouterInt_full----------------------------------------\n");
-    for (k=0; k<quadRule.nPx; k++){
-        //printf("k %i, quadRule.nPx %i\n", k, quadRule.nPx);
-        toPhys(aT.E, &(quadRule.Px[dim*k]), mesh, x);
-        //printf("\nInner Integral, Iterate %i\n", k);
-        //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
-        //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
-
-        is_placePointOnCap = true;
-        Rdx = retriangulate(x, bT.E, mesh, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
-        //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list);
-        //Rdx = quadRule.interactionMethod(x, bT, mesh, reTriangle_list);
-
-        //[DEBUG]
-        //printf("Retriangulation Rdx %i\n", Rdx);
-        //for (i=0;i<Rdx;i++){
-            //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i], reTriangle_list[2 * 3 * i+1]);
-            //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+2], reTriangle_list[2 * 3 * i+3]);
-            //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+4], reTriangle_list[2 * 3 * i+5]);
-            //printf("absDet %17.16e\n", absDet(&reTriangle_list[2 * 3 * i]));
-        //}
-
-        innerLocal = 0.0;
-        doubleVec_tozero(innerNonloc, mesh.dVertex);
-        if (Rdx == 0){
-        }
-        else if(Rdx == -1){
-            for (i = 0; i < quadRule.nPy; i++) {
-                // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
-                toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, physical_quad);
-                // Determinant of Triangle of retriangulation
-                rTdet = absDet(bT.E);
-                // inner Local integral with ker
-                innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] * rTdet; // Local Term
-                // Evaluate ker on physical quad (note this is ker')
-                ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
-                // Evaluate basis function on resulting reference quadrature point
-                for (b = 0; b < mesh.dVertex; b++) {
-                    innerNonloc[b] += quadRule.psiy(b,i) * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
-                }
-            }
-        } else {
-            //printf("\nInner Integral\n");
-            for (rTdx = 0; rTdx < Rdx; rTdx++) {
-                //printf("rTdx %i \n",rTdx);
-                for (i = 0; i < quadRule.nPy; i++) {
-                    // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
-                    toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Py[dim * i]), physical_quad);
-                    // Determinant of Triangle of retriangulation
-                    rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
-                    // inner Local integral with ker
-                    innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] *
-                                  rTdet; // Local Term
-                    // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
-                    toRef(bT.E, physical_quad, reference_quad);
-                    // Evaluate ker on physical quad (note this is ker')
-                    ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
-                    // Evaluate basis function on resulting reference quadrature point
-                    model_basisFunction(reference_quad, mesh, psi_value);
-                    for (b = 0; b < mesh.dVertex; b++) {
-                        innerNonloc[b] += psi_value[b] * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
-                    }
-                    //[DEBUG]
-                    //printf("i %i \n",i);
-                    //printf("GAM %17.16e\n", ker * dy[i] * rTdet);
-                    //printf("Basis0 %17.16e\n", psi_value[0]);
-                    //printf("Basis1 %17.16e\n", psi_value[1]);
-                    //printf("Basis2 %17.16e\n", psi_value[2]);
-                }
-                //printf("Chris: v0 %17.16e\nv1 %17.16e\nv2 %17.16e\n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
-                //printf("Chris: v %17.16e\n", innerLocal);
-            }
-        }
-
-        //printf("Local %17.16e\n", innerLocal);
-        //printf("Nonloc [%17.16e, %17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2], innerNonloc[3]);
-        for (a=0; a<mesh.dVertex; a++){
-            for (b=0; b<mesh.dVertex; b++){
-                termLocal[mesh.dVertex*a+b] += 2 * aT.absDet * quadRule.psix(a,k) * quadRule.psix(b,k) * quadRule.dx[k] * innerLocal; //innerLocal
-                //printf("quadRule.psix(%i,%i) %17.16e\nquadRule.psix(%i,%i) %17.16e \n", a,k, quadRule.psix(a,k), b,k,quadRule.psix(b,k));
-                termNonloc[mesh.dVertex*a+b] += 2 * aT.absDet * quadRule.psix(a,k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
-            }
+    int j, k, Vdx;
+    //T.matE = arma::vec(dim*(dim+1));
+    for (k=0; k<mesh.dVertex; k++) {
+        //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
+        Vdx = mesh.Triangles(k, Tdx);
+        for (j=0; j<mesh.dim; j++){
+            T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx);
+            //T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
         }
     }
+    // Initialize Struct
+    T.E = T.matE.memptr();
+    T.absDet = absDet(T.E, mesh);
+    T.signDet = signDet(T.E, mesh);
+    T.label = mesh.LabelTriangles(Tdx);
+    //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
+    //T.dim = dim;
+    T.dim = mesh.dim;
 }
 
-// Normal which looks to the right w.r.t the vector from y0 to y1.
-void rightNormal(const double * y0, const double * y1, const double orientation, double * normal){
-    normal[0] = y1[1] - y0[1];
-    normal[1] = y0[0] - y1[0];
-    doubleVec_scale(orientation, normal, normal, 2);
-}
-
-bool inTriangle(const double * y_new, const double * p, const double * q, const double * r,
-        const double *  nu_a, const double * nu_b, const double * nu_c){
-    bool a, b, c;
-    double vec[2];
-
-    doubleVec_subtract(y_new, p, vec, 2);
-    a = vec_dot(nu_a, vec , 2) >= 0;
-
-    doubleVec_subtract(y_new, q, vec, 2);
-    b = vec_dot(nu_b, vec , 2) >= 0;
-
-    doubleVec_subtract(y_new, r, vec, 2);
-    c = vec_dot(nu_c, vec , 2) >= 0;
-
-    return a && b && c;
-}
-
-int placePointOnCap(const double * y_predecessor, const double * y_current,
-                    const double * x_center, const double sqdelta, const double * TE,
-                    const double * nu_a, const double * nu_b, const double * nu_c,
-                    const double orientation, const int Rdx, double * R){
-    // Place a point on the cap.
-    //y_predecessor = &R[2*(Rdx-1)];
-    double y_new[2], s_midpoint[2], s_projectionDirection[2];
-    double scalingFactor;
-
-    doubleVec_midpoint(y_predecessor, y_current, s_midpoint, 2);
-    // Note, this yields the left normal from y_predecessor to y0
-    rightNormal(y_current, y_predecessor, orientation, s_projectionDirection);
-    // Simple way
-    scalingFactor = sqrt( sqdelta / vec_dot(s_projectionDirection, s_projectionDirection, 2));
-    doubleVec_scale(scalingFactor, s_projectionDirection, s_projectionDirection, 2);
-    doubleVec_add(x_center, s_projectionDirection, y_new, 2);
-
-    if ( inTriangle(y_new, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
-        // Append y_new (Point on the cap)
-        doubleVec_copyTo(y_new, &R[2*Rdx], 2);
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-int retriangulate(const double * x_center, const double * TE, const MeshType & mesh, double * out_reTriangle_list, const int is_placePointOnCap){
-        // C Variables and Arrays.
-        int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
-        double v=0, lam1=0, lam2=0, term1=0, term2=0;
-        double nu_a[2], nu_b[2], nu_c[2]; // Normals
-        arma::vec p(2);
-        arma::vec q(2);
-        arma::vec a(2);
-        arma::vec b(2);
-        arma::vec y1(2);
-        arma::vec y2(2);
-        arma::vec vec_x_center(x_center, 2);
-        double orientation;
-
-        bool is_onEdge=false, is_firstPointLiesOnVertex=true;
-        // The upper bound for the number of required points is 9
-        // Hence 9*3 is an upper bound to encode all resulting triangles
-        // Hence we can hardcode how much space needs to bee allocated
-        // (This upper bound is thight! Check Christian Vollmann's thesis for more information.)
-
-        double R[9*2]; // Vector containing all intersection points.
-        doubleVec_tozero(R, 9*2);
-
-        // Compute Normals of the Triangle
-        orientation = -signDet(TE);
-        rightNormal(&TE[0], &TE[2], orientation, nu_a);
-        rightNormal(&TE[2], &TE[4], orientation, nu_b);
-        rightNormal(&TE[4], &TE[0], orientation, nu_c);
-
-        for (k=0; k<3; k++){
-            edgdx0 = k;
-            edgdx1 = (k+1) % 3;
-
-            doubleVec_copyTo(&TE[2*edgdx0], &p[0], 2);
-            doubleVec_copyTo(&TE[2*edgdx1], &q[0], 2);
-
-            a = q - vec_x_center;
-            b = p - q;
-
-            if (vec_sqL2dist(&p[0], x_center, 2) <= mesh.sqdelta){
-                doubleVec_copyTo(&p[0], &R[2*Rdx], 2);
-                is_onEdge = false; // This point does not lie on the edge.
-                Rdx += 1;
-            }
-            // PQ-Formula to solve quadratic problem
-            v = pow( dot(a, b), 2) - (dot(a, a) - mesh.sqdelta) * dot(b, b);
-            // If there is no sol to the quadratic problem, there is nothing to do.
-            if (v >= 0){
-                term1 = - dot(a, b) / dot(b, b);
-                term2 = sqrt(v) / dot(b, b);
-
-                // Vieta's Formula for computing the roots
-                if (term1 > 0){
-                    lam1 = term1 + term2;
-                    lam2 = 1/lam1*(dot(a, a) - mesh.sqdelta) / dot(b, b);
-                } else {
-                    lam2 = term1 - term2;
-                    lam1 = 1/lam2*(dot(a, a) - mesh.sqdelta) / dot(b, b);
-                }
-                y1 = lam1*b + q;
-                y2 = lam2*b + q;
-
-                // Check whether the first lambda "lies on the Triangle".
-                if ((0 <= lam1) && (lam1 <= 1)){
-                    is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
-                    // Check whether the predecessor lied on the edge
-                    if (is_onEdge && is_placePointOnCap){
-                        Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], x_center, mesh.sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
-                    }
-                    // Append y1
-                    doubleVec_copyTo(&y1[0], &R[2*Rdx], 2);
-                    is_onEdge = true; // This point lies on the edge.
-                    Rdx += 1;
-                }
-                // Check whether the second lambda "lies on the Triangle".
-                if ((0 <= lam2) && (lam2 <= 1) && (scal_sqL2dist(lam1, lam2) > 0)){
-                    is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
-
-                    // Check whether the predecessor lied on the edge
-                    if (is_onEdge && is_placePointOnCap){
-                        Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], x_center, mesh.sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
-                    }
-                    // Append y2
-                    doubleVec_copyTo(&y2[0], &R[2*Rdx], 2);
-                    is_onEdge = true; // This point lies on the edge.
-                    Rdx += 1;
-                }
-            }
-        }
-        //[DEBUG]
-        //(len(RD)>1) cares for the case that either the first and the last point lie on an endge
-        // and there is no other point at all.
-        //shift=1;
-        if (is_onEdge && (!is_firstPointLiesOnVertex && Rdx > 1) && is_placePointOnCap){
-            Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], x_center, mesh.sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
-        }
-
-        // Construct List of Triangles from intersection points
-        if (Rdx < 3){
-            // In this case the content of the array out_RE will not be touched.
-            return 0;
-        } else {
-
-            for (k=0; k < (Rdx - 2); k++){
-                for (i=0; i<2; i++){
-                    // i is the index which runs first, then h (which does not exist here), then k
-                    // hence if we increase i, the *-index (of the pointer) inreases in the same way.
-                    // if we increase k, there is quite a 'jump'
-                    out_reTriangle_list[2 * (3 * k + 0) + i] = R[i];
-                    out_reTriangle_list[2 * (3 * k + 1) + i] = R[2*(k + 1) + i];
-                    out_reTriangle_list[2 * (3 * k + 2) + i] = R[2*(k + 2) + i];
-                }
-            }
-            // Excessing the bound out_Rdx will not lead to an error but simply to corrupted data!
-
-            return Rdx - 2; // So that, it acutally contains the number of triangles in the retriangulation
-        }
-}
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
-
 void compute_f(     const ElementType & aT,
                     const QuadratureType &quadRule,
                     const MeshType & mesh,
@@ -560,21 +221,26 @@ void par_assemble(  double * ptrAd,
                     const long * ptrNeighbours,
                     const int is_DiscontinuousGalerkin,
                     const int is_NeumannBoundary,
+                    const string  str_model_kernel,
+                    const string str_model_f,
+                    const string str_integration_method,
                     const int dim){
 
-    //test();
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
                      L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, dim+1};
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
-    par_assemble( ptrAd, fd, mesh, quadRule, is_DiscontinuousGalerkin, is_NeumannBoundary);
+    ConfigurationType conf = {str_model_kernel, str_model_f, str_integration_method};
+    par_assemble( ptrAd, fd, mesh, quadRule, conf);
 }
 
-void par_assemble( double * ptrAd, double * fd, MeshType & mesh,
-                   QuadratureType & quadRule,
-                   const int is_DiscontinuousGalerkin,
-                   const int is_NeumannBoundary){
-    cout << "par_assemble Generic" << endl;
+void par_assemble( double * ptrAd, double * fd,
+                    MeshType & mesh,
+                    QuadratureType & quadRule,
+                    ConfigurationType & conf){
+
+    cout << "Function: par_assemble (generic)" << endl;
+    lookup_configuration(conf);
     int aTdx=0, h=0;
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
@@ -826,39 +492,7 @@ void par_assemble( double * ptrAd, double * fd, MeshType & mesh,
     }// End pragma omp parallel
 }// End function par_assemble
 
-//void initializeTriangle(const arma::mat & Verts, const arma::Mat<long> & Triangles, const int Tdx, const int dim, ElementType & T){
-void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
-    // Copy coordinates of Triange b to bTE.
-
-    // Tempalte of Triangle Point data -------------------------------------------------
-    // 2D Case, a, b, c are the vertices of a triangle
-    //         _____________________________
-    // T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
-    // Hence, if one wnats to put T.E into col major order matrix it would be of shape
-    //                              ______________
-    //                             | a1 | b1 | c1 |
-    // M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
-    //  --------------------------------------------------------------------------------
-
-    int j, k, Vdx;
-    //T.matE = arma::vec(dim*(dim+1));
-    for (k=0; k<mesh.dVertex; k++) {
-        //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
-        Vdx = mesh.Triangles(k, Tdx);
-        for (j=0; j<mesh.dim; j++){
-            T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx);
-            //T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
-        }
-    }
-    // Initialize Struct
-    T.E = T.matE.memptr();
-    T.absDet = absDet(T.E, mesh);
-    T.signDet = signDet(T.E, mesh);
-    T.label = mesh.LabelTriangles(Tdx);
-    //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
-    //T.dim = dim;
-    T.dim = mesh.dim;
-}
+// [DEBUG] _____________________________________________________________________________________________________________
 /*
 double compute_area(double * aTE, double aTdet, long labela, double * bTE, double bTdet, long labelb, double * P, int nP, double * dx, double sqdelta){
     double areaTerm=0.0;
@@ -878,339 +512,3 @@ double compute_area(double * aTE, double aTdet, long labela, double * bTE, doubl
     return areaTerm;
 }
 */
-// Math functions ------------------------------------------------------------------------------------------------------
-
-void solve2x2(const double * A, const double * b, double * x){
-    int dx0 = 0, dx1 = 1;
-    double l=0, u=0;
-
-    // Column Pivot Strategy
-    if (absolute(A[0]) < absolute(A[2])){
-        dx0 = 1;
-        dx1 = 0;
-    }
-
-    // Check invertibility
-    if (A[2*dx0] == 0){
-        // raise LinAlgError("in solve2x2. Matrix not invertible.")
-        cout << "in solve2x2. Matrix not invertible." << endl;
-        abort();
-    }
-
-    // LU Decomposition
-    l = A[2*dx1]/A[2*dx0];
-    u = A[2*dx1+1] - l*A[2*dx0+1];
-
-    // Check invertibility
-    if (u == 0){
-        // raise LinAlgError("in solve2x2. Matrix not invertible.")
-        cout << "in solve2x2. Matrix not invertible." << endl;
-        abort();
-    }
-
-    // LU Solve
-    x[1] = (b[dx1] - l*b[dx0])/u;
-    x[0] = (b[dx0] - A[2*dx0+1]*x[1])/A[2*dx0];
-    return;
-}
-
-
-// Matrix operations (working with strides only) --------------------------------
-
-double absDet(const double * E){
-    double M[2][2];
-    int i=0;
-    for (i=0; i< 2; i++){
-        M[i][0] = E[2*1+i] - E[2*0+i];
-        M[i][1] = E[2*2+i] - E[2*0+i];
-    }
-    return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
-}
-
-double absDet(const double * E, const MeshType & mesh){
-    // Let a,b,c,d be the Verticies of a Tetrahedon (3D)
-    // Then M will be the 3x3 matrix containg [b-a,c-a,d-a]
-    arma::mat M(mesh.dim, mesh.dim, arma::fill::zeros);
-
-    // Copy Values
-    int i=0, j=0;
-    for (i = 1; i < mesh.dVertex; i++) {
-        for (j = 0; j < mesh.dim; j++) {
-            M(j,i-1) += (E[j + mesh.dim*i] - E[j + 0]);
-        }
-    }
-    return absolute(arma::det(M));
-}
-
-double signDet(const double * E){
-    double M[2][2], det;
-    int i=0;
-    for (i=0; i< 2; i++){
-        M[i][0] = E[2*1+i] - E[2*0+i];
-        M[i][1] = E[2*2+i] - E[2*0+i];
-    }
-    det = (M[0][0]*M[1][1] - M[0][1]*M[1][0]);
-    if (det > 0){
-        return 1.;
-    } else if ( det < 0){
-        return -1.;
-    } else {
-        cout << "Warning in signDet(): Determinant is 0" << endl;
-        return 0.0;
-    }
-}
-
-double signDet(const double * E, const MeshType & mesh){
-    // Let a,b,c,d be the Verticies of a Tetrahedon (3D)
-    // Then M will be the 3x3 matrix containg [b-a,c-a,d-a]
-    arma::mat M(mesh.dim, mesh.dim, arma::fill::zeros);
-    double det;
-    // Copy Values
-    int i=0, j=0;
-    for (i = 1; i < mesh.dVertex; i++) {
-        for (j = 0; j < mesh.dim; j++) {
-            M(j,i-1) += (E[j + mesh.dim*i] - E[j + 0]);
-        }
-    }
-    det = arma::det(M);
-    if (det > 0){
-        return 1.;
-    } else if ( det < 0){
-        return -1.;
-    } else {
-        cout << "Warning in signDet(): Determinant is 0" << endl;
-        return 0.0;
-    }
-}
-
-void baryCenter(const double * E, double * bary){
-    int i=0;
-    bary[0] = 0;
-    bary[1] = 0;
-    for  (i=0; i< 3; i++){
-        bary[0] += E[2*i+0];
-        bary[1] += E[2*i+1];
-    }
-    bary[0] = bary[0]/3;
-    bary[1] = bary[1]/3;
-}
-void baryCenter_polygone(const double * P, const int nVerticies, double * bary){
-    int k=0;
-    bary[0] = 0;
-    bary[1] = 0;
-    for (k=0; k<nVerticies; k++){
-        bary[0] += P[2*k+0];
-        bary[1] += P[2*k+1];
-    }
-    bary[0] = bary[0]/nVerticies;
-    bary[1] = bary[1]/nVerticies;
-}
-
-void toPhys(const double * E, const double * p, double * out_x){
-    int i=0;
-    for (i=0; i<2;i++){
-        out_x[i] = (E[2*1+i] - E[2*0+i])*p[0] + (E[2*2+i] - E[2*0+i])*p[1] + E[2*0+i];
-    }
-}
-
-void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x) {
-    int i = 0, j = 0;
-    doubleVec_tozero(out_x, mesh.dim);
-    for (i=0; i<mesh.dim;i++){
-        for(j=0; j<mesh.dim;j++){
-            out_x[i] += p[j]*(E[mesh.dim*(j+1)+i] - E[i]);
-        }
-        out_x[i] += E[i];
-    }
-}
-
-void toRef(const double * E, const double * phys_x, double * ref_p){
-    double M[2*2];
-    double b[2];
-
-    M[0] = E[2] - E[0];
-    M[1] = E[4] - E[0];
-    M[2] = E[3] - E[1];
-    M[3] = E[5] - E[1];
-
-    b[0] = phys_x[0] - E[0];
-    b[1] = phys_x[1] - E[1];
-
-    solve2x2(&M[0], &b[0], &ref_p[0]);
-    return;
-}
-// Vector operations ---------------------------------------------
-// Double
-
-// Check whether any, or all elements of a vector are zero --------------
-int doubleVec_any(const double * vec, const int len){
-    int i=0;
-    for (i=0; i < len; i++){
-        if (vec[i] != 0){
-            return 1;
-        }
-    }
-    return 0;
-}
-
-double vec_dot(const double * x, const double * y, const int len){
-    double r=0;
-    int i=0;
-    for (i=0; i<len; i++){
-        r += x[i]*y[i];
-    }
-    return r;
-}
-
-double vec_sqL2dist(const double * x, const double * y, const int len){
-    double r=0;
-    int i=0;
-    for (i=0; i<len; i++){
-        r += pow((x[i] - y[i]), 2);
-    }
-    return r;
-}
-
-void doubleVec_tozero(double * vec, const int len){
-    int i=0;
-    for (i=0; i< len; i++){
-        vec[i]  = 0;
-    }
-}
-
-void doubleVec_midpoint(const double * vec1, const double * vec2, double * midpoint, const int len){
-    int i = 0;
-    for (i=0; i < len; i++){
-        midpoint[i]  = (vec1[i] + vec2[i])/2;
-    }
-}
-
-void doubleVec_subtract(const double * vec1, const double * vec2, double * out, const int len){
-    int i=0;
-    for (i=0; i < len; i++){
-        out[i]  = vec1[i] - vec2[i];
-    }
-}
-
-void doubleVec_add(const double * vec1, const double * vec2, double * out, const int len){
-    int i=0;
-    for (i=0; i < len; i++){
-        out[i]  = vec1[i] + vec2[i];
-    }
-}
-
-void doubleVec_scale(const double lambda, const double * vec, double * out, const int len){
-    int i=0;
-    for (i=0; i < len; i++){
-        out[i]  = vec[i]*lambda;
-    }
-}
-
-void doubleVec_copyTo(const double * input, double * output, const int len){
-    int i=0;
-    for (i=0; i<len; i++){
-        output[i] = input[i];
-    }
-}
-// Long
-
-int longVec_all(const long * vec, const int len){
-    int i=0;
-    for (i=0; i<len; i++){
-        if (vec[i] == 0){
-            return 0;
-        }
-    }
-    return 1;
-}
-
-int longVec_any(const long * vec, const int len){
-    int i=0;
-    for (i=0; i<len; i++){
-            if (vec[i] != 0){
-                return 1;
-            }
-    }
-    return 0;
-}
-
-// Int
-
-// Set Vectors to Zero -------------------------------------------------
-void intVec_tozero(int * vec, const int len){
-    int i=0;
-    for (i=0; i< len; i++){
-        vec[i]  = 0;
-    }
-}
-// Scalar --------------------------------------------------------
-
-double absolute(const double value){
-    if (value < 0){
-        return - value;
-    } else {
-        return value;
-    }
-}
-
-double scal_sqL2dist(const double x, const double y){
-    return pow((x-y), 2);
-}
-
-//[DEBUG] Christians order routine
-/*
-void bubbleSort2(double * keyArray, int rows, int * indexList){
-  // We assume keyArray has 2 Columns!
-  // Sorting is done w.r.t first col, then second col.
-  int n, i, cols=2;
-  int buffer;
-  for (n=rows; n>1; --n){
-    for (i=0; i<n-1; ++i){
-      if (keyArray[cols*i] > keyArray[cols*(i+1)]){
-        buffer = indexList[i];
-        indexList[i] = indexList[i+1];
-        indexList[i+1] = buffer;
-
-      } else if ((keyArray[cols*i] == keyArray[cols*(i+1)]) && (keyArray[cols*i+1] > keyArray[cols*(i+1)+1])){
-        buffer = indexList[i];
-        indexList[i] = indexList[i+1];
-        indexList[i+1] = buffer;
-      } // End if
-    } // End inner for
-  } // End outer for
-}
-
-void relativePosition(double * origin, double * refvec, double * x, double * angle, double * length){
-    double vector[2], normalized[2];
-    double lenVector, dotProd, diffProd;
-    doubleVec_subtract(x, origin, vector, 2);
-    lenVector = sqrt(vec_sqL2dist(x, origin, 2));
-    if (lenVector == 0){
-        angle[0] = -M_PI;
-        length[0] = 0;
-        return;
-    }
-    doubleVec_scale(1/lenVector, vector, normalized, 2);
-    dotProd = vec_dot(normalized, refvec, 2);
-    diffProd = refvec[1] * normalized[0] - refvec[0] * normalized[1];
-    angle[0] = atan2(diffProd, dotProd);
-    length[0] = lenVector;
-}
-
-void order(double * pointList, int lenList, double * orderedPointList){
-    double * origin;
-    double refvec[2];
-    double angle[9], length[9];
-    int i;
-
-    origin = &pointList[0];
-    doubleVec_subtract(&pointList[2*1], origin, refvec, 2);
-
-    for (i=0; i<lenList; i++){
-        relativePosition(origin, refvec, &pointList[2*i], &angle[i], &length[i]);
-        //printf("Angle %17.16e\nLength %17.16e\n", angle[i], length[i]);
-    }
-}
-
-*/
-// [END DEBUG]

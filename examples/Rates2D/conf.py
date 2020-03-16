@@ -4,6 +4,9 @@ import numpy as np
 delta = .1
 ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
+model_f = "linear" # "constant" #
+model_kernel = "constant" # "labeled" #
+integration_method = "baryCenter" # "retriangulate" #
 
 # quad_order_outer == 8
 py_Px = np.array([[0.33333333, 0.33333333],

@@ -1,23 +1,14 @@
 #ifndef CASSEMBLE_H
 #define CASSEMBLE_H
 #include <armadillo>
-#include "MeshBuilder.h"
-
-struct ElementStruct{
-    arma::vec matE;
-    double * E;
-    int dim;
-    long label;
-    double absDet;
-    int signDet;
-};
-typedef ElementStruct ElementType;
+#include "MeshTypes.h"
+#include "cstring"
+using namespace std;
 
 // Retriangulation Routine ---------------------------------------------------------------------------------------------
-int retriangulate(const double * x_center, const double * TE, const MeshType & mesh, double * out_reTriangle_list, const int is_placePointOnCap);
+int retriangulate(const double * x_center, const double * TE, const MeshType & mesh, double * re_Triangle_list, const int is_placePointOnCap);
 
-void par_assemble( double * ptrAd, double * fd, MeshType & mesh, QuadratureType & quadRule,
-        const int is_DiscontinuousGalerkin, const int is_NeumannBoundary);
+void par_assemble( double * ptrAd, double * fd, MeshType & mesh, QuadratureType & quadRule, ConfigurationType & conf);
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 void par_assemble(  double * ptrAd,
@@ -37,6 +28,9 @@ void par_assemble(  double * ptrAd,
                     const long * ptrNeighbours,
                     const int is_DiscontinuousGalerkin,
                     const int is_NeumannBoundary,
+                    const string  str_model_kernel,
+                    const string str_model_f,
+                    const string str_integration_method,
                     const int dim
 );
 void par_assembleMass(double *, long *, double *, int, int, int, double *, double *);
