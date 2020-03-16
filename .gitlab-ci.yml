@@ -1,5 +1,0 @@
-image: python
-
-pages:
-    script:
-        - cp -r docs/html ../public
