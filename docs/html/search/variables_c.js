@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['n',['N',['../class_grid.html#a3991f919af6b36bc33638fda34db2607',1,'Grid::N()'],['../namespacebib3.html#a94caff6cfac2b6baa4727ffa8af88c7d',1,'bib3.n()']]],
+  ['n1_5f1d',['n1_1d',['../namespacebib3.html#af26d37997f451fbdd95e77aca454b033',1,'bib3']]],
+  ['n2',['n2',['../namespacebib3.html#a8a502b1c662774b8a5993ecc4ac58df6',1,'bib3']]],
+  ['n2_5f1d',['n2_1d',['../namespacebib3.html#aacdb6019e9069a53393c99712dba73a5',1,'bib3']]],
+  ['n_5finner',['n_inner',['../namespacebib3.html#a68cc39c0019dca133401a430b8d4da0c',1,'bib3']]],
+  ['n_5fomega',['N_Omega',['../class_grid.html#a41b448410513b1a1de29f1f25916878c',1,'Grid']]],
+  ['n_5fomegai',['N_OmegaI',['../class_grid.html#ac8210a6f5414efcf487ee6ba4da383cb',1,'Grid']]],
+  ['n_5fouter',['n_outer',['../namespacebib3.html#a2983f188dbfe6abb3d06f58f28b32ead',1,'bib3']]],
+  ['name',['name',['../namespacesetup.html#ab3a7a0638d76a01367c5bc3cc699447f',1,'setup']]],
+  ['ne',['nE',['../classbib3_1_1_mesh.html#a543b64657ede7c48c02fe9f4e067cb8c',1,'bib3.Mesh.nE()'],['../classnlocal_1_1_mesh_i_o.html#a52f448acd1e5d37d31e6d85571e23d5f',1,'nlocal.MeshIO.nE()'],['../classnlocal_1_1dummy_mesh.html#aeea1b9260e98035955d753dfafe9c548',1,'nlocal.dummyMesh.nE()'],['../classnlocal_1_1_mesh.html#a38f2a7a59f2ef10e51123e08b5e92f47',1,'nlocal.Mesh.nE()'],['../class_grid.html#a2696409efa3137ffc6d82876d5f51216',1,'Grid::nE()']]],
+  ['ne_5fomega',['nE_Omega',['../classbib3_1_1_mesh.html#ab30785c11a601ccb9c466200742c21c3',1,'bib3.Mesh.nE_Omega()'],['../classnlocal_1_1_mesh_i_o.html#ab0338f37381676afba9dca0cad91c889',1,'nlocal.MeshIO.nE_Omega()'],['../classnlocal_1_1dummy_mesh.html#abf91d71fe6f97b7f5f188c3f879e08b1',1,'nlocal.dummyMesh.nE_Omega()'],['../classnlocal_1_1_mesh.html#a290f65a195e65f252a3e940eb5946809',1,'nlocal.Mesh.nE_Omega()']]],
+  ['neighbours',['neighbours',['../classnlocal_1_1_mesh_i_o.html#a7588d8be91eb35f6be723ec409cef2cb',1,'nlocal.MeshIO.neighbours()'],['../classnlocal_1_1_mesh.html#a5b9f7084c3928887e8981bbcf40b24e1',1,'nlocal.Mesh.neighbours()'],['../struct_mesh_struct.html#a970c7e969086bd70dc2faf32329e41a6',1,'MeshStruct::Neighbours()']]],
+  ['nhd',['nhd',['../classbib3_1_1_mesh.html#a886af226750330a0c60e95898f44b729',1,'bib3::Mesh']]],
+  ['nodes',['nodes',['../classbib3_1_1_mesh.html#a43a92b07954938fa28587aaee1f02a15',1,'bib3.Mesh.nodes()'],['../classbib3_1_1_mesh__slim.html#a76884646e145a9d7a2087e71733d2e24',1,'bib3.Mesh_slim.nodes()'],['../classbib3_1_1_mesh__1d.html#a34955392790e815612d0ff9b9168c5cd',1,'bib3.Mesh_1d.nodes()']]],
+  ['norm',['Norm',['../namespacebib3.html#ac4ce786e5e237674a04f28c538cd6e16',1,'bib3']]],
+  ['norm_5fdict',['norm_dict',['../namespacebib3.html#a38b63a9f19d06a7706d4c482d8dd8ab6',1,'bib3']]],
+  ['npx',['nPx',['../struct_quadrature_struct.html#a2dd8f7d8b8c2f49febf9f9be4cb13819',1,'QuadratureStruct']]],
+  ['npy',['nPy',['../struct_quadrature_struct.html#a8b5fccb30b85cd0cb9976ab389b1040c',1,'QuadratureStruct']]],
+  ['num_5fcores',['num_cores',['../namespacebib3.html#af6c4c4beaa1fcd60c440d1dce3f2a944',1,'bib3']]],
+  ['num_5ffem_5fsols',['num_fem_sols',['../namespacecompute_rates2_d.html#a30c0bbadbc6ba6813043845968da2bad',1,'computeRates2D']]],
+  ['nv',['nV',['../classbib3_1_1_mesh.html#a36087ac5c6177028ebe0dc431f263ff7',1,'bib3.Mesh.nV()'],['../classnlocal_1_1_mesh_i_o.html#ac5425b69ceeeed6a49df43e4fac470b0',1,'nlocal.MeshIO.nV()'],['../classnlocal_1_1dummy_mesh.html#aa51e7db269fe019212b0e138449c0399',1,'nlocal.dummyMesh.nV()'],['../classnlocal_1_1_mesh.html#a959b2db53575585b17db3c7ebb764f14',1,'nlocal.Mesh.nV()'],['../class_grid.html#ae23dd2b2e5712ce71f941c87c3af973c',1,'Grid::nV()']]],
+  ['nv_5fomega',['nV_Omega',['../classbib3_1_1_mesh.html#a98c72ee8591257765f796d2da3cd05b7',1,'bib3.Mesh.nV_Omega()'],['../classnlocal_1_1_mesh_i_o.html#a17c14ba6b24bae7d51e3eee526783d2b',1,'nlocal.MeshIO.nV_Omega()'],['../classnlocal_1_1dummy_mesh.html#ae5cc03247ee15ead08b6cdc7726b9982',1,'nlocal.dummyMesh.nV_Omega()'],['../classnlocal_1_1_mesh.html#af9bcf65313012b775edeff61348c9c34',1,'nlocal.Mesh.nV_Omega()']]]
+];
