@@ -113,8 +113,10 @@ def main(num_fem_sols):
         print( a)
 
     print( 'RATES')
+    rates = []
     for i in range(len(error_l2)-1):
-        print( np.log(error_l2[i]/error_l2[i+1])/np.log(2))
+        rates.append(np.log(error_l2[i]/error_l2[i+1])/np.log(2))
+        print(rates[-1])
 
     leftout = 0
     xdata = np.log(np.array([2**i for i in range(len(U)-leftout)]) )#np.array([0.6 * 2**-(i+1) for i in range(9)])# np.log(np.array([1./(0.2 * 2**-(i)) for i in range(9)]))
@@ -130,6 +132,7 @@ def main(num_fem_sols):
     print( 'GRADIENT OF LINEAR FIT: ', b)
 
     print()
+    return {"h": H, "L2 Error": error_l2, "Rates": [0] + rates}
 
 if __name__ == "__main__":
     main(2)

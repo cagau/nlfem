@@ -10,6 +10,7 @@ import scipy.sparse as sp
 import examples.Rates2D.bib3 as bib
 import examples.Rates2D.nlocal as nlocal
 import examples.Rates2D.conf as conf
+import time
 
 
 # ==============================================================================
@@ -26,6 +27,7 @@ def main(num_fem_sols):
     norm = "L2"
     folder = 'results/overlap/'
     mesh_str = 'regular_'
+    times = []
 
     for h in H:
         output_mesh_data = folder + 'mesh_data_' + mesh_str + 'h_' + str(h) + '_delta_' + str(delta)
@@ -48,12 +50,14 @@ def main(num_fem_sols):
         # ==============================================================================
         #              ASSEMBLY AND SAVE
         # ==============================================================================
-
+        start = time.time()
         A, f = assemble.assemble(nlocal.Mesh(mesh, conf.ansatz, conf.boundaryConditionType), conf.py_Px, conf.py_Py,
                                  conf.dx, conf.dy, conf.delta,
                                  model_f=conf.model_f,
                                  model_kernel=conf.model_kernel,
                                  integration_method=conf.integration_method)
+        times.append(time.time() - start)
+
         A = sp.csr_matrix(A)
         bib.save_sparse_csr(folder + 'A' + output_A, A)
 
@@ -61,6 +65,8 @@ def main(num_fem_sols):
         bib.save_sparse_csr(folder + 'M_' + str(h), M.tocsr())
         M = bib.mass_matrix_full(mesh)
         bib.save_sparse_csr(folder + 'M_full_' + str(h), M.tocsr())
+
+    return {"Assembly Time": times}
 
 
 if __name__ == "__main__":
