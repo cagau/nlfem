@@ -241,8 +241,12 @@ void par_assemble( double * ptrAd, double * fd,
                     QuadratureType & quadRule,
                     ConfigurationType & conf){
 
-    cout << "Function: par_assemble (generic)" << endl;
+    printf("Function: par_assemble (generic)\n");
+    printf("Mesh dimension: %i\n", mesh.dim);
     lookup_configuration(conf);
+    printf("Quadrule outer: %i\n", quadRule.nPx);
+    printf("Quadrule inner: %i\n", quadRule.nPy);
+
     int aTdx=0, h=0;
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!

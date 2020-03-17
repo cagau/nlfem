@@ -201,14 +201,14 @@ void integrate_baryCenterRT(     const ElementType & aT,
 
     const int dim = mesh.dim;
     int k=0, a=0, b=0;
-    double x[dim];
+    double physical_quad[dim], reference_quad[dim], psix[mesh.dVertex];
     double bTbaryC[dim];
     double innerLocal=0;
     double innerNonloc[mesh.dVertex];
 
     int i=0, Rdx, rTdx;
     double ker=0, rTdet=0, bTdet=0;
-    double physical_quad[dim];
+    double y[dim];
     double reTriangle_list[36*mesh.dVertex*dim];
     doubleVec_tozero(reTriangle_list, 36*mesh.dVertex*dim);
 
@@ -227,7 +227,7 @@ void integrate_baryCenterRT(     const ElementType & aT,
             rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
 
             for (k = 0; k < quadRule.nPx; k++) {
-                toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Px[dim * k]), mesh, x);
+                toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Px[dim * k]), mesh, physical_quad);
 
                 // Compute Integral over Triangle bT
                 innerLocal = 0.0;
@@ -235,24 +235,27 @@ void integrate_baryCenterRT(     const ElementType & aT,
 
                 for (i = 0; i < quadRule.nPy; i++) {
                     // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
-                    toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, physical_quad);
+                    toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, y);
                     // inner Local integral with ker
-                    innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] *
-                                  bTdet; // Local Term
+                    // Local Term
+                    innerLocal += model_kernel(physical_quad, aT.label, y, bT.label, mesh.sqdelta) * quadRule.dy[i] * bTdet;
                     // Evaluate ker on physical quad (note this is ker')
-                    ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
+                    ker = model_kernel(y, bT.label, physical_quad, aT.label, mesh.sqdelta);
                     // Evaluate basis function on resulting reference quadrature point
                     for (b = 0; b < mesh.dVertex; b++) {
                         innerNonloc[b] += quadRule.psiy(b, i) * ker * quadRule.dy[i] * bTdet; // Nonlocal Term
                     }
                 }
 
+                toRef(aT.E, physical_quad, reference_quad);
+                model_basisFunction(reference_quad, psix);
+
                 for (a = 0; a < mesh.dVertex; a++) {
                     for (b = 0; b < mesh.dVertex; b++) {
-                        termLocal[mesh.dVertex * a + b] += 2 * rTdet * quadRule.psix(a, k) *
-                                quadRule.psix(b, k) * quadRule.dx[k] * innerLocal; //innerLocal
+                        termLocal[mesh.dVertex * a + b] += 2 * rTdet * psix[a] *
+                                psix[b] * quadRule.dx[k] * innerLocal; //innerLocal
                         termNonloc[mesh.dVertex * a + b] +=
-                                2 * rTdet * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+                                2 * rTdet * psix[a] * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
                     }
                 }
             }
