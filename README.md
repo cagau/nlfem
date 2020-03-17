@@ -30,4 +30,3 @@ The model is defined in the file Cassemble.cpp
 - The Kernel function is called <code>  model_kernel() </code>.
 - The right side is called <code>  model_f() </code>.
 - The function where the assembly happens is called <code> par_assemble </code>
-- l
