@@ -483,7 +483,7 @@ class Mesh:
         return K, K_Omega
 
 def write_output(data):
-    import examples.Rates2D.conf as conf
+    import examples.Rates2D_reg.conf as conf
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
     import os

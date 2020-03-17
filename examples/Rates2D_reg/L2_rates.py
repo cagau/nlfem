@@ -5,7 +5,7 @@ Created on Wed Jul  3 10:37:19 2019
 @author: vollmann
 """
 import numpy as np
-import examples.Rates2D.bib3 as bib
+import examples.Rates2D_reg.bib3 as bib
 import scipy.optimize as optimization
 
 def u_exact(x):

@@ -9,7 +9,7 @@
 from libcpp.string cimport string
 cimport Cassemble
 cimport Cassemble2D
-import meshio
+#import meshio
 #from Cassemble cimport par_assemble
 import numpy as np
 import time

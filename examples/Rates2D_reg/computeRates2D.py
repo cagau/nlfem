@@ -1,7 +1,7 @@
-import examples.Rates2D.ASSEMBLY as assembly
-import examples.Rates2D.SOLVE as solve
-import examples.Rates2D.L2_rates as l2rates
-from examples.Rates2D.nlocal import write_output
+import examples.Rates2D_reg.ASSEMBLY as assembly
+import examples.Rates2D_reg.SOLVE as solve
+import examples.Rates2D_reg.L2_rates as l2rates
+from examples.Rates2D_reg.nlocal import write_output
 
 if __name__ == "__main__":
     num_fem_sols = 2

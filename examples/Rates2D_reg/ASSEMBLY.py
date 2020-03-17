@@ -7,9 +7,9 @@ import assemble
 import numpy as np
 import pickle as pkl
 import scipy.sparse as sp
-import examples.Rates2D.bib3 as bib
-import examples.Rates2D.nlocal as nlocal
-import examples.Rates2D.conf as conf
+import examples.Rates2D_reg.bib3 as bib
+import examples.Rates2D_reg.nlocal as nlocal
+import examples.Rates2D_reg.conf as conf
 import time
 
 
