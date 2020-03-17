@@ -38,8 +38,10 @@ void lookup_configuration(ConfigurationType & conf){
         integrate = integrate_baryCenter;
     } else if (conf.integration_method == "baryCenterRT") {
         integrate = integrate_baryCenterRT;
+        printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
     }  else if (conf.integration_method == "retriangulate") {
         integrate = integrate_retriangulate;
+        printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
     } else {
         cout << "Error in par:assemblele. Integration method " << conf.integration_method <<
              " is not implemented." << endl;
@@ -206,33 +208,18 @@ void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts
 }
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-void par_assemble(  double * ptrAd,
-                    const int K_Omega,
-                    const int K,
-                    double * fd,
-                    const long * ptrTriangles,
-                    const long * ptrLabelTriangles,
-                    const double * ptrVerts,
-                    // Number of Triangles and number of Triangles in Omega
-                    const int J, const int J_Omega,
-                    // Number of vertices (in case of CG = K and K_Omega)
-                    const int L, const int L_Omega,
-                    const double * Px, const int nPx, const double * dx,
-                    const double * Py, const int nPy, const double * dy,
-                    const double sqdelta,
-                    const long * ptrNeighbours,
-                    const int is_DiscontinuousGalerkin,
-                    const int is_NeumannBoundary,
-                    const string  str_model_kernel,
-                    const string str_model_f,
-                    const string str_integration_method,
-                    const int dim){
+void par_assemble(double *ptrAd, const int K_Omega, const int K, double *fd, const long *ptrTriangles,
+                  const long *ptrLabelTriangles, const double *ptrVerts, const int J, const int J_Omega, const int L,
+                  const int L_Omega, const double *Px, const int nPx, const double *dx, const double *Py, const int nPy,
+                  const double *dy, const double sqdelta, const long *ptrNeighbours, const int is_DiscontinuousGalerkin,
+                  const int is_NeumannBoundary, const string str_model_kernel, const string str_model_f,
+                  const string str_integration_method, const int is_PlacePointOnCap, const int dim) {
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
                      L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, dim+1};
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
-    ConfigurationType conf = {str_model_kernel, str_model_f, str_integration_method};
+    ConfigurationType conf = {str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
     par_assemble( ptrAd, fd, mesh, quadRule, conf);
 }
 
@@ -427,7 +414,7 @@ void par_assemble( double * ptrAd, double * fd,
                             doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex); // Initialize Buffer
                             doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex); // Initialize Buffer
                             // Compute integrals and write to buffer
-                            integrate(aT, bT, quadRule, mesh, termLocal, termNonloc);
+                            integrate(aT, bT, quadRule, mesh, conf, termLocal, termNonloc);
                             // [DEBUG]
                             //doubleVec_add(termLocal, DEBUG_termTotalLocal, DEBUG_termTotalLocal, 9);
                             //doubleVec_add(termNonloc, DEBUG_termTotalNonloc, DEBUG_termTotalNonloc, 9);

@@ -21,6 +21,7 @@ struct ConfigurationStruct{
     const string model_kernel;
     const string  model_f;
     const string  integration_method;
+    const bool is_placePointOnCap;
 };
 typedef ConfigurationStruct ConfigurationType;
 

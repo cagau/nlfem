@@ -11,28 +11,12 @@ int retriangulate(const double * x_center, const double * TE, const MeshType & m
 void par_assemble( double * ptrAd, double * fd, MeshType & mesh, QuadratureType & quadRule, ConfigurationType & conf);
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-void par_assemble(  double * ptrAd,
-                    const int K_Omega,
-                    const int K,
-                    double * fd,
-                    const long * ptrTriangles,
-                    const long * ptrLabelTriangles,
-                    const double * ptrVerts,
-                     // Number of Triangles and number of Triangles in Omega
-                    const int J, const int J_Omega,
-                    // Number of vertices (in case of CG = K and K_Omega)
-                    const int L, const int L_Omega,
-                    const double * Px, const int nPx, const double * dx,
-                    const double * Py, const int nPy, const double * dy,
-                    const double sqdelta,
-                    const long * ptrNeighbours,
-                    const int is_DiscontinuousGalerkin,
-                    const int is_NeumannBoundary,
-                    const string  str_model_kernel,
-                    const string str_model_f,
-                    const string str_integration_method,
-                    const int dim
-);
+void par_assemble(double *ptrAd, const int K_Omega, const int K, double *fd, const long *ptrTriangles,
+                  const long *ptrLabelTriangles, const double *ptrVerts, const int J, const int J_Omega, const int L,
+                  const int L_Omega, const double *Px, const int nPx, const double *dx, const double *Py, const int nPy,
+                  const double *dy, const double sqdelta, const long *ptrNeighbours, const int is_DiscontinuousGalerkin,
+                  const int is_NeumannBoundary, const string str_model_kernel, const string str_model_f,
+                  const string str_integration_method, const int is_PlacePointOnCap, const int dim);
 void par_assembleMass(double *, long *, double *, int, int, int, double *, double *);
 void check_par_assemble(double *, long *, double *, int, int, int, double *, double *, double, long *);
 double compute_area(double *, double, long, double *, double, long, double *, int, double *, double);

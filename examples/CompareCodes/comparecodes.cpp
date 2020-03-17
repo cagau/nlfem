@@ -67,6 +67,7 @@ int main() {
                      "constant",
                      "linear",
                      "retriangulate",
+                     1,
                      2);
     };
 

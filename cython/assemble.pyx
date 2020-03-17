@@ -84,6 +84,7 @@ def assemble(
     cdef string model_kernel = kwargs.get("model_kernel", "constant").encode('UTF-8')
     cdef string model_f = kwargs.get("model_f", "constant").encode('UTF-8')
     cdef string integration_method = kwargs.get("integration_method", "retriangulate").encode('UTF-8')
+    cdef int is_PlacePointOnCap = kwargs.get("is_PlacePointOnCap", 1)
 
     start = time.time()
     # Compute Assembly -------------------------------------------
@@ -100,6 +101,7 @@ def assemble(
                         &model_kernel[0],
                         &model_f[0],
                         &integration_method[0],
+                        is_PlacePointOnCap,
                         mesh.dim)
 
     total_time = time.time() - start

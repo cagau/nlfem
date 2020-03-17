@@ -7,6 +7,7 @@ boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
 model_kernel = "constant" # "labeled" #
 integration_method = "baryCenterRT" # "retriangulate" # "baryCenter" #
+is_PlacePointOnCap = False
 quadrule_outer = "7"
 quadrule_inner = "1"
 
@@ -30,7 +31,7 @@ quadrules = {
                                 0.12593918054483,
                                 0.12593918054483])
             ],
-    "8":    [
+    "16":    [
             np.array([[0.33333333, 0.33333333],
                               [0.45929259, 0.45929259],
                               [0.45929259, 0.08141482],

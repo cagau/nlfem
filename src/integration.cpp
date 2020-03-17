@@ -11,29 +11,19 @@
 // ___ INTEGRATION DECLARATION _________________________________________________________________________________________
 
 // Integration Routine #################################################################################################
-void (*integrate)(     const ElementType & aT,
-                       const ElementType & bT,
-                    const QuadratureType & quadRule,
-                    const MeshType & mesh,
-                    double * termLocal, double * termNonloc);
+void (*integrate)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                  const ConfigurationType &conf, double *termLocal, double *termNonloc);
 
 // Integration Methods #################################################################################################
 // Methods -------------------------------------------------------------------------------------------------------------
-void integrate_retriangulate(    const  ElementType & aT,
-                                 const ElementType & bT,
-                              const QuadratureType & quadRule,
-                              const MeshType & mesh,
-                              double * termLocal, double * termNonloc);
-void integrate_baryCenter(   const   ElementType & aT,
-                            const ElementType & bT,
-                           const QuadratureType & quadRule,
-                           const MeshType & mesh,
-                           double * termLocal, double * termNonloc);
-void integrate_baryCenterRT(   const   ElementType & aT,
-                             const ElementType & bT,
-                             const QuadratureType & quadRule,
-                             const MeshType & mesh,
-                             double * termLocal, double * termNonloc);
+void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                             const MeshType &mesh, const ConfigurationType &conf, double *termLocal,
+                             double *termNonloc);
+void
+integrate_baryCenter(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                     const ConfigurationType &conf, double *termLocal, double *termNonloc);
+void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                            const MeshType &mesh, const ConfigurationType &conf, double *termLocal, double *termNonloc);
 // Helpers -------------------------------------------------------------------------------------------------------------
 int method_baryCenter(const double * x_center, const ElementType & T, const MeshType & mesh, double * reTriangle_list, int is_placePointOnCap);
 int method_retriangulate(const double * x_center, const ElementType & T, const MeshType & mesh, double * re_Triangle_list, int is_placePointOnCap);
@@ -48,11 +38,9 @@ bool inTriangle(const double * y_new, const double * p, const double * q, const 
 
 // Integration Methods #################################################################################################
 
-void integrate_retriangulate(     const ElementType & aT,
-                    const ElementType & bT,
-                    const QuadratureType & quadRule,
-                    const MeshType & mesh,
-                    double * termLocal, double * termNonloc){
+void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                             const MeshType &mesh, const ConfigurationType &conf, double *termLocal,
+                             double *termNonloc) {
 
     const int dim = mesh.dim;
     int k=0, a=0, b=0;
@@ -67,7 +55,7 @@ void integrate_retriangulate(     const ElementType & aT,
     double psi_value[mesh.dVertex];
     double reTriangle_list[36*mesh.dVertex*dim];
     doubleVec_tozero(reTriangle_list, 36*mesh.dVertex*dim);
-    bool is_placePointOnCap;
+    //bool is_placePointOnCap;
 
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
@@ -78,8 +66,8 @@ void integrate_retriangulate(     const ElementType & aT,
         //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
         //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
 
-        is_placePointOnCap = true;
-        Rdx = method_retriangulate(x, bT, mesh, reTriangle_list, is_placePointOnCap); // innerInt_retriangulate
+        //is_placePointOnCap = true;
+        Rdx = method_retriangulate(x, bT, mesh, reTriangle_list, conf.is_placePointOnCap); // innerInt_retriangulate
         //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list, is_placePointOnCap);
         //Rdx = quadRule.interactionMethod(x, bT, mesh, reTriangle_list);
 
@@ -141,11 +129,9 @@ void integrate_retriangulate(     const ElementType & aT,
 }
 
 
-void integrate_baryCenter(     const ElementType & aT,
-                                const ElementType & bT,
-                                const QuadratureType & quadRule,
-                                const MeshType & mesh,
-                                double * termLocal, double * termNonloc){
+void
+integrate_baryCenter(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                     const ConfigurationType &conf, double *termLocal, double *termNonloc) {
 
     const int dim = mesh.dim;
     int k=0, a=0, b=0;
@@ -193,11 +179,9 @@ void integrate_baryCenter(     const ElementType & aT,
     }
 }
 
-void integrate_baryCenterRT(     const ElementType & aT,
-                               const ElementType & bT,
-                               const QuadratureType & quadRule,
-                               const MeshType & mesh,
-                               double * termLocal, double * termNonloc){
+void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                            const MeshType &mesh, const ConfigurationType &conf, double *termLocal,
+                            double *termNonloc) {
 
     const int dim = mesh.dim;
     int k=0, a=0, b=0;
@@ -215,7 +199,7 @@ void integrate_baryCenterRT(     const ElementType & aT,
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
     baryCenter(bT.E, &bTbaryC[0]);
-    Rdx = method_retriangulate(bTbaryC, aT, mesh, reTriangle_list, true);
+    Rdx = method_retriangulate(bTbaryC, aT, mesh, reTriangle_list, conf.is_placePointOnCap);
 
     if (!Rdx){
         return;

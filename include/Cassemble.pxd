@@ -29,6 +29,7 @@ cdef extern from "Cassemble.h" nogil:
                         const string  str_model_kernel,
                         const string str_model_f,
                         const string str_integration_method,
+                        const int is_PlacePointOnCap,
                         const int dim
     ) nogil
     # void par_assembleMass(double *, long *, double *, int, int, int, double *, double *) nogil

@@ -55,7 +55,8 @@ def main(num_fem_sols):
                                  conf.dx, conf.dy, conf.delta,
                                  model_f=conf.model_f,
                                  model_kernel=conf.model_kernel,
-                                 integration_method=conf.integration_method)
+                                 integration_method=conf.integration_method,
+                                 is_PlacePointOnCap = conf.is_PlacePointOnCap)
         times.append(time.time() - start)
 
         A = sp.csr_matrix(A)
