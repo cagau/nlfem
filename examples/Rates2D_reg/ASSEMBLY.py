@@ -57,6 +57,8 @@ def main(num_fem_sols):
                                  model_kernel=conf.model_kernel,
                                  integration_method=conf.integration_method,
                                  is_PlacePointOnCap = conf.is_PlacePointOnCap)
+        #A, f = assemble.assemble2D(nlocal.Mesh(mesh, conf.ansatz, conf.boundaryConditionType), conf.py_Px, conf.py_Py,
+        #                         conf.dx, conf.dy, conf.delta)
         times.append(time.time() - start)
 
         A = sp.csr_matrix(A)

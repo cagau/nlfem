@@ -510,6 +510,7 @@ def write_output(data):
         "Right hand side": conf.model_f,
         "Kernel": conf.model_kernel,
         "Integration Method": conf.integration_method,
+        "With caps": conf.is_PlacePointOnCap,
         "Quadrule outer": conf.quadrule_outer,
         "Quadrule inner": conf.quadrule_inner,
         "Delta": conf.delta,

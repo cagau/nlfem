@@ -6,9 +6,9 @@ ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
 model_kernel = "constant" # "labeled" #
-integration_method = "baryCenterRT" # "retriangulate" # "baryCenter" #
-is_PlacePointOnCap = False
-quadrule_outer = "7"
+integration_method = "retriangulate" # "retriangulate" # "baryCenter" #
+is_PlacePointOnCap = True
+quadrule_outer = "16"
 quadrule_inner = "1"
 
 

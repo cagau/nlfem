@@ -299,11 +299,12 @@ void par_assemble( double * ptrAd, double * fd,
 
 
     #pragma omp for
-    for (aTdx=0; aTdx<mesh.J_Omega; aTdx++) {
-        // It would be nice, if in future there is no dependency on the element ordering...
-        //cout <<  aTdx << endl;
-        //cout << "L " << mesh.LabelTriangles[aTdx] << endl;
-        //if (mesh.LabelTriangles[aTdx] == 1) {
+    for (aTdx=0; aTdx<mesh.J; aTdx++) {
+        if (mesh.LabelTriangles[aTdx] == 1) {
+            // It would be nice, if in future there is no dependency on the element ordering...
+            //cout <<  aTdx << endl;
+            //cout << "L " << mesh.LabelTriangles[aTdx] << endl;
+            //if (mesh.LabelTriangles[aTdx] == 1) {
 
             //[DEBUG]
             /*
@@ -358,7 +359,7 @@ void par_assemble( double * ptrAd, double * fd,
                 // Again, Triangles contains the labels as first entry! Hence, we start with a=1 here!
                 // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
                 if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
-                    #pragma omp atomic update
+#pragma omp atomic update
                     fd[aAdx[a]] += termf[a];
                 }
             }
@@ -465,9 +466,9 @@ void par_assemble( double * ptrAd, double * fd,
                                     // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
                                     if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
                                         for (b = 0; b < mesh.dVertex; b++) {
-                                            #pragma omp atomic update
+#pragma omp atomic update
                                             Ad(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
-                                            #pragma omp atomic update
+#pragma omp atomic update
                                             Ad(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
                                         }
                                     }
@@ -480,7 +481,8 @@ void par_assemble( double * ptrAd, double * fd,
                     }// End if BFS (bTdx < mesh.J)
                 }//End for loop BFS (j = 0; j < mesh.dVertex; j++)
             }//End while loo BFS (!queue.empty())
-        //}// End if Label of (aTdx == 1)
+            //}// End if Label of (aTdx == 1)
+        }// End if LabelTriangles == 1
     }// End parallel for
     }// End pragma omp parallel
 }// End function par_assemble
