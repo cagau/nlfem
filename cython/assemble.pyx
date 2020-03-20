@@ -68,7 +68,10 @@ def assemble(
         double [:] dx,
         double [:] dy,
         double delta,
-        **kwargs
+        model_kernel="constant",
+        model_f = "constant",
+        integration_method = "retriangulate",
+        is_PlacePointOnCap = 1
     ):
 
     Ad = np.zeros(mesh.K*mesh.K_Omega)
@@ -81,10 +84,10 @@ def assemble(
     cdef double[:] ptrAd = Ad
     cdef double[:] ptrfd = fd
 
-    cdef string model_kernel = kwargs.get("model_kernel", "constant").encode('UTF-8')
-    cdef string model_f = kwargs.get("model_f", "constant").encode('UTF-8')
-    cdef string integration_method = kwargs.get("integration_method", "retriangulate").encode('UTF-8')
-    cdef int is_PlacePointOnCap = kwargs.get("is_PlacePointOnCap", 1)
+    cdef string model_kernel_ = model_kernel.encode('UTF-8')
+    cdef string model_f_ = model_f.encode('UTF-8')
+    cdef string integration_method_ = integration_method.encode('UTF-8')
+    cdef int is_PlacePointOnCap_ = is_PlacePointOnCap
 
     start = time.time()
     # Compute Assembly -------------------------------------------
@@ -98,17 +101,43 @@ def assemble(
                         &neighbours[0],
                         mesh.is_DiscontinuousGalerkin,
                         mesh.is_NeumannBoundary,
-                        &model_kernel[0],
-                        &model_f[0],
-                        &integration_method[0],
-                        is_PlacePointOnCap,
+                        &model_kernel_[0],
+                        &model_f_[0],
+                        &integration_method_[0],
+                        is_PlacePointOnCap_,
                         mesh.dim)
 
     total_time = time.time() - start
 
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
     return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
+def evaluateMass(
+      # Mesh information ------------------------------------
+            mesh,
+            double [:] ud,
+            double [:,:] Px,
+            # Weights for quadrature rule
+            double [:] dx
+        ):
+        vd = np.zeros(mesh.K_Omega)
+        cdef double[:] ptrvd = vd
 
+        cdef long[:] elements = mesh.elements.flatten()
+        cdef long [:] elementLabels = mesh.elementLabels.flatten()
+        cdef double[:] vertices = mesh.vertices.flatten()
+
+        Cassemble.par_evaluateMass(
+                &ptrvd[0],
+                &ud[0],
+                &elements[0],
+                &elementLabels[0],
+                &vertices[0],
+                mesh.K_Omega,
+                mesh.nE_Omega,
+                Px.shape[0], &Px[0,0], &dx[0]
+        )
+
+        return vd
 cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, const long dVerts):
     cdef int n=0, i,j
     for i in range(dVerts):

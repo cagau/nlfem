@@ -153,7 +153,9 @@ void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega
 
 }
 
-void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx){
+void
+par_evaluateMass(double *vd, double *ud, long *Triangles, long *TriangleLabels, double *Verts, int K_Omega, int J,
+                 int nP, double *P, double *dx) {
     int aTdx=0, a=0, b=0, j=0;
     double aTE[2*3];
     double aTdet;
@@ -170,34 +172,34 @@ void par_evaluateMass(double * vd, double * ud, long * Triangles, double * Verts
     }
 
     #pragma omp parallel for private(aAdx, a, b, aTE, aTdet, j)
-    for (aTdx=0; aTdx < J_Omega; aTdx++){
-        // Get index of ansatz functions in matrix compute_A.-------------------
-        // Continuous Galerkin
-        aAdx = &Triangles[4*aTdx+1];
-        // Discontinuous Galerkin
-        // - Not implemented -
+    for (aTdx=0; aTdx < J; aTdx++){
+        if (TriangleLabels[aTdx] == 1) {
+            // Get index of ansatz functions in matrix compute_A.-------------------
+            // Continuous Galerkin
+            aAdx = &Triangles[4 * aTdx + 1];
+            // Discontinuous Galerkin
+            // - Not implemented -
 
-        // Prepare Triangle information aTE and aTdet ------------------
-        // Copy coordinates of Triange a to aTE.
-        // this is done fore convenience only, actually those are unnecessary copies!
-        for (j=0; j<2; j++){
-            aTE[2*0+j] = Verts[2*Triangles[4*aTdx+1] + j];
-            aTE[2*1+j] = Verts[2*Triangles[4*aTdx+2] + j];
-            aTE[2*2+j] = Verts[2*Triangles[4*aTdx+3] + j];
-        }
-        // compute Determinant
-        aTdet = absDet(&aTE[0]);
+            // Prepare Triangle information aTE and aTdet ------------------
+            // Copy coordinates of Triange a to aTE.
+            // this is done fore convenience only, actually those are unnecessary copies!
+            for (j = 0; j < 2; j++) {
+                aTE[2 * 0 + j] = Verts[2 * Triangles[4 * aTdx + 1] + j];
+                aTE[2 * 1 + j] = Verts[2 * Triangles[4 * aTdx + 2] + j];
+                aTE[2 * 2 + j] = Verts[2 * Triangles[4 * aTdx + 3] + j];
+            }
+            // compute Determinant
+            aTdet = absDet(&aTE[0]);
 
-        for (a=0; a<3; a++){
-            if (aAdx[a] < K_Omega){
-                for (b=0; b<3; b++){
-                    if (aAdx[b] < K_Omega){
-                        for (j=0; j<nP; j++){
-                            // Assembly
-                            //vd[aAdx[a]*K_Omega + aAdx[b]] += psi[nP*a+j]*psi[nP*b+j]*aTdet*dx[j];
-                            // Evaluation
-                            #pragma omp atomic update
-                            vd[aAdx[a]] += psi[nP*a+j]*psi[nP*b+j]*aTdet*dx[j]*ud[aAdx[b]];
+            for (a = 0; a < 3; a++) {
+                if (aAdx[a] < K_Omega) {
+                    for (b = 0; b < 3; b++) {
+                        if (aAdx[b] < K_Omega) {
+                            for (j = 0; j < nP; j++) {
+                                // Evaluation
+                                #pragma omp atomic update
+                                vd[aAdx[a]] += psi[nP * a + j] * psi[nP * b + j] * aTdet * dx[j] * ud[aAdx[b]];
+                            }
                         }
                     }
                 }

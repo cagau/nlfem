@@ -36,7 +36,8 @@ cdef extern from "Cassemble.h" nogil:
     # void check_par_assemble(double *, long *, double *, int, int, int, double *, double *, double, long *) nogil
 
     # Mass matrix evaluation ----------------------------------------------------------------------------------------------
-    # void par_evaluateMass(double *, double *, long *, double *, int, int, int, double *, double *) nogil
+    void par_evaluateMass(double *vd, double *ud, long *Triangles, long *TriangleLabels, double *Verts, int K_Omega, int J,
+                          int nP, double *P, double *dx) nogil
 
     # DEBUG Helpers and test functions
     # int retriangulate(double *, double *, double, double *, int) nogil
