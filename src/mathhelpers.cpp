@@ -156,7 +156,7 @@ double signDet(const double * E, const MeshType & mesh){
     } else if ( det < 0){
         return -1.;
     } else {
-        cout << "Warning in signDet(): Determinant is 0" << endl;
+        cout << "Warning in signDet() 3D: Determinant is 0" << endl;
         return 0.0;
     }
 }

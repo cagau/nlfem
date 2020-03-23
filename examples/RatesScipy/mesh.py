@@ -120,7 +120,8 @@ class RegMesh2D:
                 plt.savefig(pp, format='pdf')
                 plt.close()
 
-if __name__ == "__main__":
+
+def testInterpolation2D():
     delta = .1
 
     n_start = 12
@@ -138,3 +139,14 @@ if __name__ == "__main__":
         mesh = RegMesh2D(delta,N_fine, coarseMesh=mesh)
         print("L2 Error: ", l2dist(mesh_exact.u, mesh.u))
     pp.close()
+
+if __name__ == "__main__":
+    u_exact = lambda x: x[0] ** 2 * x[1] + x[1] ** 2
+
+    delta = .1
+    n = 12
+    mesh = RegMesh2D(delta, n, ufunc=u_exact, dim=3)
+
+    n = 13
+    mesh = RegMesh2D(delta, n, coarseMesh=mesh, dim=3)
+    print(mesh.dim)
