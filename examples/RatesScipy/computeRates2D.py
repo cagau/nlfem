@@ -10,12 +10,11 @@ def main():
     import examples.RatesScipy.conf as conf
     err_ = None
 
-    mesh_exact = RegMesh2D(conf.delta, conf.N_fine, conf.u_exact)
-
     pp = PdfPages(conf.fnames["triPlot.pdf"])
     for n in conf.N:
-        print()
-        mesh=RegMesh2D(conf.delta, n)
+        mesh=RegMesh2D(conf.delta, n, ufunc=conf.u_exact)
+
+        print("\n h: ", mesh.h)
         conf.data["h"].append(mesh.h)
         conf.data["nV_Omega"].append(mesh.nV_Omega)
 
@@ -36,15 +35,15 @@ def main():
 
         # Solve ---------------------------------------------------------------------------
         print("Solve...")
-        mesh.write_u(np.linalg.solve(A_O,f), conf.u_exact)
-        mesh.plot(pp)
+        mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
 
         # Refine to N_fine ----------------------------------------------------------------
-        mesh = RegMesh2D(conf.delta, conf.N_fine, coarseMesh=mesh)
-
+        mesh.plot_ud(pp)
+        mesh = RegMesh2D(conf.delta, conf.N_fine, ufunc=conf.u_exact, coarseMesh=mesh,
+                         is_constructAdjaciencyGraph=False)
         # Evaluate L2 Error ---------------------------------------------------------------
-        u_diff = (mesh_exact.u - mesh.u)[:mesh_exact.K_Omega]
-        Mu_udiff = assemble.evaluateMass(mesh_exact, u_diff, conf.py_Px, conf.dx)
+        u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
+        Mu_udiff = assemble.evaluateMass(mesh, u_diff, conf.py_Px, conf.dx)
         err = np.sqrt(u_diff @ Mu_udiff)
 
         # Print Rates ---------------------------------------------------------------------
@@ -56,7 +55,6 @@ def main():
             conf.data["Rates"].append(rate)
         else:
             conf.data["Rates"].append(0)
-
         err_ = err
     pp.close()
     return conf.data

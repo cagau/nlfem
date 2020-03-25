@@ -115,7 +115,9 @@ double absDet(const double * E, const MeshType & mesh){
     for (i = 1; i < mesh.dVertex; i++) {
         for (j = 0; j < mesh.dim; j++) {
             M(j,i-1) += (E[j + mesh.dim*i] - E[j + 0]);
+            //printf("%3.2f ", M(j,i-1));
         }
+        //printf("\n");
     }
     return absolute(arma::det(M));
 }
@@ -156,7 +158,7 @@ double signDet(const double * E, const MeshType & mesh){
     } else if ( det < 0){
         return -1.;
     } else {
-        cout << "Warning in signDet() 3D: Determinant is 0" << endl;
+        //cout << "Warning in signDet() 3D: Determinant is 0" << endl;
         return 0.0;
     }
 }

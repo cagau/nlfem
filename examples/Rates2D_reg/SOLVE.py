@@ -31,7 +31,7 @@ def main(num_fem_sols):
     Norm = 'L2'
     new_mesh = 1
     suffix_string = ''
-    plot = 0
+    plot = 1
     folder = 'results/'+timestr+'/'
     mesh_str = 'regular_'
     #==============================================================================

@@ -6,13 +6,13 @@ ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
 model_kernel = "constant" # "labeled" #
-integration_method = "retriangulate" # "retriangulate" # "baryCenter" #
+integration_method = "baryCenter" # "retriangulate" # "baryCenter" #
 is_PlacePointOnCap = True
 quadrule_outer = "16"
 quadrule_inner = "1"
 
 n_start = 12
-n_layers = 2
+n_layers = 3
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4
 u_exact = lambda x: x[0] ** 2 * x[1] + x[1] ** 2
@@ -59,6 +59,7 @@ quadrules = {
                   [0.72849239, 0.26311283],
                   [0.26311283, 0.00839478],
                   [0.00839478, 0.72849239]]),
+
         0.5 * np.array([0.14431560767779
                            , 0.09509163426728
                            , 0.09509163426728
@@ -83,6 +84,6 @@ quadrules = {
 }
 
 py_Px = quadrules[quadrule_outer][0]
-dx =  quadrules[quadrule_outer][1]
+dx = quadrules[quadrule_outer][1]
 py_Py = quadrules[quadrule_inner][0]
 dy = quadrules[quadrule_inner][1]

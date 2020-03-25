@@ -18,3 +18,4 @@ print(B)
 if __name__ == "__main__":
     mesh = RegMesh(.1, 3)
     mesh.save(conf.outputdir)
+    conf.save(conf.outputdir)

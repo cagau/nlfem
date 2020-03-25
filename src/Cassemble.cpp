@@ -69,14 +69,17 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
         Vdx = mesh.Triangles(k, Tdx);
         for (j=0; j<mesh.dim; j++){
             T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx);
+            //printf ("%3.2f ", T.matE[mesh.dim * k + j]);
             //T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
         }
+        //printf("\n");
     }
     // Initialize Struct
     T.E = T.matE.memptr();
     T.absDet = absDet(T.E, mesh);
     T.signDet = signDet(T.E, mesh);
     T.label = mesh.LabelTriangles(Tdx);
+
     //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
     //T.dim = dim;
     T.dim = mesh.dim;

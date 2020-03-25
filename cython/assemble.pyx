@@ -83,7 +83,6 @@ def assemble(
     cdef double[:] vertices = mesh.vertices.flatten()
     cdef double[:] ptrAd = Ad
     cdef double[:] ptrfd = fd
-
     cdef string model_kernel_ = model_kernel.encode('UTF-8')
     cdef string model_f_ = model_f.encode('UTF-8')
     cdef string integration_method_ = integration_method.encode('UTF-8')

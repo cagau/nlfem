@@ -2,9 +2,10 @@
 // Created by klar on 11.03.20.
 //
 #include "armadillo"
+#include "MeshTypes.h"
 // #include <MeshBuilder.h>
 // #include <Cassemble2D.h>
-// #include "Cassemble.h"
+#include "Cassemble.h"
 #include "iostream"
 #include "cstdio"
 
@@ -91,23 +92,31 @@ int read_configuration(string path){
     string path_mesh = path + "/mesh.conf";
     string path_verts = path + "/mesh.verts";
     string path_elemt = path + "/mesh.elemt";
+    string path_elelb = path + "/mesh.elelb";
     string path_neigh = path + "/mesh.neigh";
+    string path_Px = path + "/quad.Px";
+    string path_Py = path + "/quad.Py";
+    string path_dx = path + "/quad.dx";
+    string path_dy = path + "/quad.dy";
+    string path_Ad = path + "/result.Ad";
+    string path_fd = path + "/result.fd";
 
     int K_Omega, K,J, J_Omega, L, L_Omega, is_DiscontinuousGalerkin,
         is_NeumannBoundary, dim, dVertex, is_PlacePointOnCap;
     double sqdelta;
-    string model_kernel, model_f, integration_method;
+    string str_model_kernel, str_model_f, str_integration_method;
 
 
     // Read general Configuration
     f.open(path_conf.c_str(), ios::in);
     if (f.is_open()) {
-        model_kernel = safereads("model_kernel", f);
-        model_f = safereads("model_f", f);
-        integration_method = safereads("integration_method", f);
+        printf(" \nReading Configuration ---------------------------------------------------------------------\n");
+        str_model_kernel = safereads("model_kernel", f);
+        str_model_f = safereads("model_f", f);
+        str_integration_method = safereads("integration_method", f);
         is_PlacePointOnCap = safereadb("is_PlacePointOnCap", f);
     }  else {
-        printf("Error in read_configuration(): Could not open file %s/conf.", path);
+        cout << "Error in read_configuration(): Could not open file " << path << "/conf." << endl;
         abort();
     }
     f.close();
@@ -116,7 +125,7 @@ int read_configuration(string path){
     f.open(path_mesh.c_str(), ios::in);
     if (f.is_open()){
         string fline;
-        printf("Reading Configuration file ---------------------------------------------\n");
+        printf(" \nReading Mesh Configuration ----------------------------------------------------------------\n");
         printf("path %s/mesh.conf\n\n", path.c_str());
         K_Omega = safereadi("K_Omega", f);
         K = safereadi("K", f);
@@ -130,32 +139,53 @@ int read_configuration(string path){
         dim = safereadi("dim", f);
         dVertex = dim+1;
     } else {
-        printf("Error in read_configuration(): Could not open file %s/mesh.conf.", path);
+        cout << "Error in read_configuration(): Could not open file " << path << "/mesh.conf." << endl;
         abort();
     }
     f.close();
 
     // Read Mesh Data
-    arma::mat elements;
+    printf( " \nReading Mesh Data ----------------------------------------------------------------------------\n");
+    arma::Mat<long> elements;
+    arma::Mat<long> elementLabels;
     arma::mat vertices;
     arma::Mat<long> neighbours;
     elements.load(path_elemt.c_str(), arma::raw_binary);
+    elementLabels.load(path_elelb.c_str(), arma::raw_binary);
     vertices.load(path_verts.c_str(), arma::raw_binary);
     neighbours.load(path_neigh.c_str(), arma::raw_binary);
 
 
+    arma::mat Px;
+    arma::mat Py;
+    arma::vec dx;
+    arma::vec dy;
+    Px.load(path_Px.c_str(), arma::raw_binary);
+    Py.load(path_Py.c_str(), arma::raw_binary);
+    dx.load(path_dx.c_str(), arma::raw_binary);
+    dy.load(path_dy.c_str(), arma::raw_binary);
 
-    //MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
-    //                 L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
-    //                 is_NeumannBoundary, dim, dim+1};
 
+    MeshType mesh = {K_Omega, K, elements.memptr(), elementLabels.memptr(), vertices.memptr(), J, J_Omega,
+                     L, L_Omega, sqdelta, neighbours.memptr(), is_DiscontinuousGalerkin,
+                     is_NeumannBoundary, dim, dim + 1};
 
+    QuadratureType quadRule = {Px.memptr(), Py.memptr(), dx.memptr(), dy.memptr(),
+                               static_cast<int>(dx.n_elem), static_cast<int>(dy.n_elem), dim};
+    ConfigurationType conf = {str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+
+    arma::mat Ad(K, K_Omega);
+    arma::vec fd(K_Omega);
+    par_assemble( Ad.memptr(), fd.memptr(), mesh, quadRule, conf);
+
+    Ad.save(path_Ad.c_str(), arma::raw_binary);
+    fd.save(path_fd.c_str(), arma::raw_binary);
 
     return 0;
-
 }
 
 int main() {
+    /*
     arma::mat A;
     if (A.load("examples/RatesScipy3D/results/A.bin", arma::raw_binary)){
         cout << A(0,0) << endl;
@@ -168,8 +198,9 @@ int main() {
     B(1,1) = 2.0;
     B(2,2)  =4.0;
 
-    //B.save("examples/RatesScipy3D/results/B.bin");
-    string path = "examples/RatesScipy3D/results";
+    B.save("examples/RatesScipy3D/results/B.bin");
+    */
+    string path = "examples/RatesScipy3D/data";
     read_configuration(path);
 
     /*
