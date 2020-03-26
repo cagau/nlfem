@@ -52,7 +52,7 @@ int main(){
         //Ad.save("data/Ad", arma::arma_ascii);
         arma::vec gd(coarseMesh.K - coarseMesh.K_Omega, arma::fill::zeros);
         for (k=0; k<coarseMesh.K - coarseMesh.K_Omega; k++){
-        x = coarseMesh.Verts.col(k+coarseMesh.K_Omega);
+            x = coarseMesh.Verts.col(k+coarseMesh.K_Omega);
             gd(k) = uExact(x);
             coarseGrid.DataVdx(coarseGrid.sortIndex(k+coarseMesh.K_Omega)) = gd(k);
         }

@@ -180,6 +180,23 @@ def constructAdjaciencyGraph(long [:,:] Elements):
                     bTdxFilter[bTdx] = False
     return np.array(Neighbours)
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
+from Cassemble cimport method_retriangulate
+def py_retriangulate(
+        double [:] x_center,
+        double [:] TE,
+        double delta,
+        int is_placePointOnCaps,
+        pp
+    ):
+
+    TriangleList =  np.zeros(9*3*2)
+    cdef:
+        double sqdelta = pow(delta,2)
+        double [:] cTriangleList = TriangleList
+    Rdx = method_retriangulate(&x_center[0], &TE[0], sqdelta, &cTriangleList[0], is_placePointOnCaps)
+
+    return Rdx, TriangleList
+
 """
 from Cassemble cimport retriangulate
 from Cassemble cimport toRef, model_basisFunction

@@ -5,6 +5,7 @@ from scipy.interpolate import LinearNDInterpolator
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import meshzoo
 from assemble import constructAdjaciencyGraph
 
 class RegMesh2D:
@@ -14,59 +15,35 @@ class RegMesh2D:
         self.n = n
         self.dim = dim
         self.delta = delta
+        self.h = np.round((1+2*delta)/n, decimals=4)
 
         # Construct Meshgrid -------------------------------------------------------------
         if self.dim == 2:
-            line1d = np.linspace(-delta,1+delta,self.n+1)
-            self.h = np.abs(line1d[0]- line1d[1])
-            X,Y = np.meshgrid(line1d,line1d, indexing="ij")
-            x = X.flatten()
-            y = Y.flatten()
-            self.vertices = np.array([x,y]).transpose()
+            self.vertices, self.elements = meshzoo.rectangle(
+                xmin=-delta, xmax=1+delta,
+                ymin=-delta, ymax=1+delta,
+                nx=n+1, ny=n+1,
+                zigzag=False)
+            self.elements = np.array(self.elements, dtype=np.int)
+            self.vertices = self.vertices[:, :2]
 
         if self.dim == 3:
-            line1d = np.linspace(-delta,1+delta,self.n+1)
-            self.h = np.abs(line1d[0]- line1d[1])
-            X, Y, Z = np.meshgrid(line1d,line1d, line1d, indexing="ij")
-            x = X.flatten()
-            y = Y.flatten()
-            z = Z.flatten()
-            self.vertices = np.array([x,y,z]).transpose()
-
-#       # Construct and Sort Vertices ----------------------------------------------------
-#
-#        self.vertexLabels = np.array([self.get_vertexLabel(v) for v in self.vertices])
-#        self.argsort_labels = np.argsort(self.vertexLabels)
-#        self.vertices = self.vertices[self.argsort_labels]
-#        self.vertexLabels = self.vertexLabels[self.argsort_labels]
-#
-#        # Get Number of Vertices in Omega ------------------------------------------------
-#        self.omega = np.where(self.vertexLabels == 1)[0]
-#        self.nV = self.vertices.shape[0]
-#        self.nV_Omega = self.omega.shape[0]
-#
-#        # Set up Delaunay Triangulation --------------------------------------------------
-#        self.triangulation = Delaunay(self.vertices)
-#        self.elements = np.array(self.triangulation.simplices, dtype=np.int)
-
-
-
-
-        # Set up Delaunay Triangulation --------------------------------------------------
-        self.elements = self.get_triangulation2D()
+            self.vertices, self.elements = meshzoo.cube(-delta, 1+delta, -delta, 1+delta, nx=n+1, ny=n+1, nz=n+1)
 
         # Construct and Sort Vertices ----------------------------------------------------
+
         self.vertexLabels = np.array([self.get_vertexLabel(v) for v in self.vertices])
         self.argsort_labels = np.argsort(self.vertexLabels)
         self.vertices = self.vertices[self.argsort_labels]
         self.vertexLabels = self.vertexLabels[self.argsort_labels]
 
-        self.reorderElements()
-
         # Get Number of Vertices in Omega ------------------------------------------------
         self.omega = np.where(self.vertexLabels == 1)[0]
         self.nV = self.vertices.shape[0]
         self.nV_Omega = self.omega.shape[0]
+
+        # Set up Delaunay Triangulation --------------------------------------------------
+        self.remapElements()
 
         # Get Triangle Labels ------------------------------------------------------------
         self.nE = self.elements.shape[0]
@@ -82,6 +59,7 @@ class RegMesh2D:
             self.neighbours = None
         #self.neighbours = np.array(self.triangulation.neighbors, dtype=np.int)
         #self.neighbours = np.where(self.neighbours != -1, self.neighbours, self.nE)
+
 
         # Set Matrix Dimensions ----------------------------------------------------------
         # In case of Neumann conditions we assemble a Maitrx over Omega + OmegaI.
@@ -111,7 +89,8 @@ class RegMesh2D:
                 self.set_u_exact(ufunc)
 
         if coarseMesh is not None:
-            self.interpolator = LinearNDInterpolator(coarseMesh.vertices, coarseMesh.ud)
+            self.interpolator = LinearNDInterpolator(coarseMesh.vertices,
+                                                     coarseMesh.ud)
             self.ud = self.interpolator(self.vertices)
 
     def set_u_exact(self, ufunc):
@@ -139,29 +118,8 @@ class RegMesh2D:
             if self.vertexLabels[vdx] == 1:
                 return 1
         return 2
-    def get_triangulation2D(self):
-        k=0
-        n = self.n
-        elements = np.ones(((n*2)**2, self.dim+1), dtype=np.int)
-        #neighbours = np.ones(((n*2)**2, self.dim+1))
 
-        for i in range(n):
-            for j in range(n):
-                elements[k] = np.array([
-                    i+      (n+1)*j,
-                    i+1 +   (n+1)*j,
-                    i+    (n+1)*(j+1)
-                ])
-                elements[k+1] = np.array([
-                    i+1+    (n+1)*j,
-                    i+1 +   (n+1)*(j+1),
-                    i+      (n+1)*(j+1)
-                ])
-
-                k+=2
-
-        return elements
-    def reorderElements(self):
+    def remapElements(self):
         def invert_permutation(p):
             """
             The function inverts a given permutation.
@@ -177,9 +135,13 @@ class RegMesh2D:
 
     def plot_ud(self, pp=None):
         if self.dim == 2:
-            plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud)
+            if self.u_exact is None:
+                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud)
+            else:
+                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud-self.u_exact)
             plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
-            #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+            #plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements[np.where(self.elementLabels==1)[0]], lw=1, color='white', alpha=.4)
+            #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "white", alpha=1)
             if pp is None:
                 plt.show()
             else:
@@ -189,7 +151,8 @@ class RegMesh2D:
         if self.dim == 2:
             plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.u_exact)
             plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
-            #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+            plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements[np.where(self.elementLabels==1)[0]], lw=1, color='white', alpha=1)
+            plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "white", alpha=1)
             if pp is None:
                 plt.show()
             else:
@@ -216,12 +179,6 @@ def testInterpolation2D():
     pp.close()
 
 if __name__ == "__main__":
-    u_exact = lambda x: x[0] ** 2 * x[1] + x[1] ** 2
-
-    delta = .1
     n = 12
-    mesh = RegMesh2D(delta, n, ufunc=u_exact, dim=3)
-
-    n = 13
-    mesh = RegMesh2D(delta, n, coarseMesh=mesh, dim=3)
-    print(mesh.dim)
+    M = meshzoo.cube(-0.1, 1.1, -.1, 1.1, nx=n+1, ny=n+1, nz=n+1)
+    print(M)

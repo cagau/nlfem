@@ -467,6 +467,7 @@ void par_assemble( double * ptrAd, double * fd,
                                 // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
+//printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
                                 for (a = 0; a < mesh.dVertex; a++) {
                                     // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
                                     if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {

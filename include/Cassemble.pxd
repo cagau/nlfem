@@ -32,19 +32,12 @@ cdef extern from "Cassemble.h" nogil:
                         const int is_PlacePointOnCap,
                         const int dim
     ) nogil
-    # void par_assembleMass(double *, long *, double *, int, int, int, double *, double *) nogil
-    # void check_par_assemble(double *, long *, double *, int, int, int, double *, double *, double, long *) nogil
 
     # Mass matrix evaluation ----------------------------------------------------------------------------------------------
     void par_evaluateMass(double *vd, double *ud, long *Triangles, long *TriangleLabels, double *Verts, int K_Omega, int J,
                           int nP, double *P, double *dx) nogil
 
     # DEBUG Helpers and test functions
-    # int retriangulate(double *, double *, double, double *, int) nogil
-    # double model_f(double *) nogil
-    # void toPhys(double *, double *, double *) nogil
-    # void toRef(double *, double *, double *) nogil
-    # void model_basisFunction(double *, double *) nogil
-
-
-
+    int method_retriangulate(const double * x_center, const double * TE,
+                           const double sqdelta, double * re_Triangle_list,
+                           int is_placePointOnCap) nogil

@@ -10,6 +10,7 @@ import scipy.sparse as ss
 from pathos.multiprocessing import ProcessingPool as Pool
 import examples.Rates2D_reg.conf as conf
 import examples.Rates2D_reg.bib3 as bib
+from matplotlib.backends.backend_pdf import PdfPages
 
 def source(x):
     return -2. * (x[1] + 1)
@@ -92,8 +93,10 @@ def main(num_fem_sols):
         #                       PLOT                                  #
         #-------------------------------------------------------------#
         if plot:
+            pp = PdfPages("results/diffu"+str(h)+".pdf")
+
             exactSol = np.array(list(map(g_d,mesh.verts[nodes_inner[0]:nodes_inner[-1]+1])))
-            bib.plot_all(mesh, np.concatenate((u, list(map(g_d, mesh.verts[nodes_rest])))), title = 'u'+params+ '   APPROX')
+            #bib.plot_all(mesh, np.concatenate((u, list(map(g_d, mesh.verts[nodes_rest])))), title = 'u'+params+ '   APPROX')
             bib.plot_all(mesh, np.concatenate( (exactSol - u, np.zeros(len(nodes_rest)))), title = 'u'+params+ '   APPROX')
 
             labels_domain = np.sort(np.unique(mesh.triangles[:,0])).tolist()
@@ -101,7 +104,11 @@ def main(num_fem_sols):
                omega = mesh.triangles[np.where(mesh.triangles[:,0] == label)[0]]
                #plot_tri(omega[:,1:], closed = True, fill = False, color = 'black')
             plt.axis('equal')
-            plt.show()
+
+            plt.savefig(pp, format='pdf')
+            plt.close()
+            pp.close()
+            #plt.show()
 
         #####
         u_exact = np.array(list(map(g_d, mesh.verts[nodes_inner])))

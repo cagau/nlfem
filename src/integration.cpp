@@ -433,4 +433,126 @@ int method_retriangulate(const double * x_center, const ElementType & T,
         return Rdx - 2; // So that, it acutally contains the number of triangles in the retriangulation
     }
 }
+
+
+int method_retriangulate(const double * x_center, const double * TE,
+                         const double sqdelta, double * re_Triangle_list,
+                         int is_placePointOnCap){
+    // C Variables and Arrays.
+    int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
+    double v=0, lam1=0, lam2=0, term1=0, term2=0;
+    double nu_a[2], nu_b[2], nu_c[2]; // Normals
+    arma::vec p(2);
+    arma::vec q(2);
+    arma::vec a(2);
+    arma::vec b(2);
+    arma::vec y1(2);
+    arma::vec y2(2);
+    arma::vec vec_x_center(x_center, 2);
+    double orientation;
+
+    bool is_onEdge=false, is_firstPointLiesOnVertex=true;
+    // The upper bound for the number of required points is 9
+    // Hence 9*3 is an upper bound to encode all resulting triangles
+    // Hence we can hardcode how much space needs to bee allocated
+    // (This upper bound is thight! Check Christian Vollmann's thesis for more information.)
+
+    double R[9*2]; // Vector containing all intersection points.
+    doubleVec_tozero(R, 9*2);
+
+    // Compute Normals of the Triangle
+    orientation = -signDet(TE);
+    rightNormal(&TE[0], &TE[2], orientation, nu_a);
+    rightNormal(&TE[2], &TE[4], orientation, nu_b);
+    rightNormal(&TE[4], &TE[0], orientation, nu_c);
+
+    for (k=0; k<3; k++){
+        edgdx0 = k;
+        edgdx1 = (k+1) % 3;
+
+        doubleVec_copyTo(&TE[2*edgdx0], &p[0], 2);
+        doubleVec_copyTo(&TE[2*edgdx1], &q[0], 2);
+
+        a = q - vec_x_center;
+        b = p - q;
+
+        if (vec_sqL2dist(&p[0], x_center, 2) <= sqdelta){
+            doubleVec_copyTo(&p[0], &R[2*Rdx], 2);
+            is_onEdge = false; // This point does not lie on the edge.
+            Rdx += 1;
+        }
+        // PQ-Formula to solve quadratic problem
+        v = pow( dot(a, b), 2) - (dot(a, a) - sqdelta) * dot(b, b);
+        // If there is no sol to the quadratic problem, there is nothing to do.
+        if (v >= 0){
+            term1 = - dot(a, b) / dot(b, b);
+            term2 = sqrt(v) / dot(b, b);
+
+            // Vieta's Formula for computing the roots
+            if (term1 > 0){
+                lam1 = term1 + term2;
+                lam2 = 1/lam1*(dot(a, a) - sqdelta) / dot(b, b);
+            } else {
+                lam2 = term1 - term2;
+                lam1 = 1/lam2*(dot(a, a) - sqdelta) / dot(b, b);
+            }
+            y1 = lam1*b + q;
+            y2 = lam2*b + q;
+
+            // Check whether the first lambda "lies on the Triangle".
+            if ((0 <= lam1) && (lam1 <= 1)){
+                is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
+                // Check whether the predecessor lied on the edge
+                if (is_onEdge && is_placePointOnCap){
+                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                }
+                // Append y1
+                doubleVec_copyTo(&y1[0], &R[2*Rdx], 2);
+                is_onEdge = true; // This point lies on the edge.
+                Rdx += 1;
+            }
+            // Check whether the second lambda "lies on the Triangle".
+            if ((0 <= lam2) && (lam2 <= 1) && (scal_sqL2dist(lam1, lam2) > 0)){
+                is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
+
+                // Check whether the predecessor lied on the edge
+                if (is_onEdge && is_placePointOnCap){
+                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                }
+                // Append y2
+                doubleVec_copyTo(&y2[0], &R[2*Rdx], 2);
+                is_onEdge = true; // This point lies on the edge.
+                Rdx += 1;
+            }
+        }
+    }
+    //[DEBUG]
+    //(len(RD)>1) cares for the case that either the first and the last point lie on an endge
+    // and there is no other point at all.
+    //shift=1;
+    if (is_onEdge && (!is_firstPointLiesOnVertex && Rdx > 1) && is_placePointOnCap){
+        Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+    }
+
+    // Construct List of Triangles from intersection points
+    if (Rdx < 3){
+        // In this case the content of the array out_RE will not be touched.
+        return 0;
+    } else {
+
+        for (k=0; k < (Rdx - 2); k++){
+            for (i=0; i<2; i++){
+                // i is the index which runs first, then h (which does not exist here), then k
+                // hence if we increase i, the *-index (of the pointer) inreases in the same way.
+                // if we increase k, there is quite a 'jump'
+                re_Triangle_list[2 * (3 * k + 0) + i] = R[i];
+                re_Triangle_list[2 * (3 * k + 1) + i] = R[2 * (k + 1) + i];
+                re_Triangle_list[2 * (3 * k + 2) + i] = R[2 * (k + 2) + i];
+            }
+        }
+        // Excessing the bound out_Rdx will not lead to an error but simply to corrupted data!
+
+        return Rdx - 2; // So that, it acutally contains the number of triangles in the retriangulation
+    }
+}
 #endif //NONLOCAL_ASSEMBLY_INTEGRATION_CPP

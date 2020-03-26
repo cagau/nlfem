@@ -491,14 +491,16 @@ def write_output(data):
 
     # Write Plots
 
-    pp = PdfPages("assemblyTime" + ".pdf")
+    pp = PdfPages("results/assemblyTime" + ".pdf")
+
     plt.plot(data["h"], data["Assembly Time"], c="b")
     plt.scatter(data["h"], data["Assembly Time"], c="b")
     plt.xlabel("h")
     plt.ylabel("time [sec]")
     plt.title("Assembly Time")
-    plt.savefig("results/assemblyTime.pdf")
+    plt.savefig(pp, format='pdf')
     plt.close()
+
     pp.close()
 
     # Write Table

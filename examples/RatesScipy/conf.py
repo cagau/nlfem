@@ -7,15 +7,16 @@ boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
 model_kernel = "constant" # "labeled" #
 integration_method = "baryCenter" # "retriangulate" # "baryCenter" #
-is_PlacePointOnCap = True
+is_PlacePointOnCap = False
 quadrule_outer = "16"
 quadrule_inner = "1"
 
 n_start = 12
-n_layers = 3
+n_layers = 4
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4
-u_exact = lambda x: x[0] ** 2 * x[1] + x[1] ** 2
+def u_exact(x):
+    return x[0] ** 2 * x[1] + x[1] ** 2
 fnames = {"triPlot.pdf": "results/auto_plot.pdf",
           "rates.md": "results/auto_rates.md",
           "rates.pdf": "results/auto_rates.pdf",

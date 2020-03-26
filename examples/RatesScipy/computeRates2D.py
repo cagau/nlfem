@@ -41,6 +41,7 @@ def main():
         mesh.plot_ud(pp)
         mesh = RegMesh2D(conf.delta, conf.N_fine, ufunc=conf.u_exact, coarseMesh=mesh,
                          is_constructAdjaciencyGraph=False)
+
         # Evaluate L2 Error ---------------------------------------------------------------
         u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
         Mu_udiff = assemble.evaluateMass(mesh, u_diff, conf.py_Px, conf.dx)
@@ -59,8 +60,16 @@ def main():
     pp.close()
     return conf.data
 
+def justPlotit():
+    import examples.RatesScipy.conf as conf
 
+    pp = PdfPages(conf.fnames["triPlot.pdf"])
+    for n in conf.N:
+        mesh=RegMesh2D(conf.delta, n, ufunc=conf.u_exact)
+        mesh.plot_u_exact(pp)
+    pp.close()
 
 if __name__ == "__main__":
     data = main()
     helpers.write_output(data)
+    #justPlotit()

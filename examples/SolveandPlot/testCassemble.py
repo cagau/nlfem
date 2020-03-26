@@ -45,7 +45,9 @@ def test_retriangulate():
                np.array([.3,.7]),
                np.array([.25,.6])]
 
-    TE = np.array([[0,0],[1,1],[0,1]], dtype=float)
+    #TE = np.array([[0,0],[1,1],[0,1]], dtype=float)
+    #TE = np.array([[1,1],[0,0],[0,1]], dtype=float)
+    TE = np.array([[0,0],[0,1],[1,1]], dtype=float)
     c_TE = TE.flatten("C")
     print("Triangle: ", c_TE)
 
@@ -54,7 +56,6 @@ def test_retriangulate():
         print("Page ", i + 1)
         delta  = deltaList[i]
         x_center = x_centerList[i]
-        # retriangulate(double * x_center, double * TE, double sqdelta, double * out_reTriangle_list, int is_placePointOnCap)
         Rdx, RD = py_retriangulate(x_center, c_TE, delta, 1, pp)
         print("Rdx ", Rdx,"\n", RD)
         RD = RD.reshape((-1,2))
@@ -137,6 +138,5 @@ def test_interfacedependendKernel():
     print("Stop")
 
 if __name__ == "__main__":
-    pass
     #test_interfacedependendKernel()
-    #test_retriangulate()
+    test_retriangulate()
