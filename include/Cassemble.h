@@ -21,9 +21,9 @@ void par_assemble(double *ptrAd, int K_Omega, int K, double *fd, const long *ptr
 void par_assemble( double * ptrAd, double * fd, MeshType & mesh, QuadratureType & quadRule, ConfigurationType & conf);
 
 // Mass matrix evaluation ----------------------------------------------------------------------------------------------
-void par_evaluateMass(double *vd, double *ud, long *Triangles, long *TriangleLabels, double *Verts, int K_Omega, int J,
-                 int nP, double *P, double *dx);
-
+void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
+                 double *P, double *dx, const int dim);
+void constructAdjaciencyGraph(const int dim, const int nE, const long * elements, long * neighbours);
 //[DEBUG]
 
 

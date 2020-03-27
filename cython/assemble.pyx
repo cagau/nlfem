@@ -110,6 +110,7 @@ def assemble(
 
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
     return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
+
 def evaluateMass(
       # Mesh information ------------------------------------
             mesh,
@@ -118,25 +119,23 @@ def evaluateMass(
             # Weights for quadrature rule
             double [:] dx
         ):
-        vd = np.zeros(mesh.K_Omega)
-        cdef double[:] ptrvd = vd
+    vd = np.zeros(mesh.K_Omega)
+    cdef double[:] ptrvd = vd
+    cdef long[:] elements = mesh.elements.flatten()
+    cdef long [:] elementLabels = mesh.elementLabels.flatten()
+    cdef double[:] vertices = mesh.vertices.flatten()
 
-        cdef long[:] elements = mesh.elements.flatten()
-        cdef long [:] elementLabels = mesh.elementLabels.flatten()
-        cdef double[:] vertices = mesh.vertices.flatten()
+    Cassemble.par_evaluateMass(
+            &ptrvd[0],
+            &ud[0],
+            &elements[0],
+            &elementLabels[0],
+            &vertices[0],
+            mesh.K_Omega,
+            mesh.nE_Omega,
+            Px.shape[0], &Px[0,0], &dx[0], mesh.dim)
+    return vd
 
-        Cassemble.par_evaluateMass(
-                &ptrvd[0],
-                &ud[0],
-                &elements[0],
-                &elementLabels[0],
-                &vertices[0],
-                mesh.K_Omega,
-                mesh.nE_Omega,
-                Px.shape[0], &Px[0,0], &dx[0]
-        )
-
-        return vd
 cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, const long dVerts):
     cdef int n=0, i,j
     for i in range(dVerts):
@@ -146,6 +145,15 @@ cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, con
     return n == (dVerts-1)
 
 def constructAdjaciencyGraph(long [:,:] Elements):
+    print("Constructing adjaciency graph...")
+    cdef int nE = Elements.shape[0]
+    cdef int dim = Elements.shape[1]-1
+    cdef long[:,:] Neighbours = np.ones((nE, dim+1), dtype=int)#*nE
+
+    Cassemble.constructAdjaciencyGraph(dim, nE, &Elements[0,0], &Neighbours[0,0])
+    return np.array(Neighbours)
+
+def sequential_constructAdjaciencyGraph(long [:,:] Elements):
     print("Constructing adjaciency graph...")
     cdef int nE = Elements.shape[0]
     cdef int dVerts = Elements.shape[1]

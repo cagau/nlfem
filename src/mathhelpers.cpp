@@ -15,10 +15,11 @@ void rightNormal(const double * y0, const double * y1, double orientation, doubl
 
 // Double
 double absDet(const double * E);                                         // Compute determinant
-double absDet(const double * E, const MeshType & mesh);
+double absDet(const double * E, const int dim);
 double signDet(const double * E);
 double signDet(const double * E, const MeshType & mesh);
 void baryCenter(const double * E, double * bary);                        // Bary Center
+void baryCenter(const int dim, const double * E, double * bary);
 void toRef(const double * E, const double * phys_x, double * ref_p);     // Pull point to Reference Element (performs 2x2 Solve)
 void toPhys(const double * E, const double * p, double * out_x);         // Push point to Physical Element
 void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x);
@@ -105,16 +106,18 @@ double absDet(const double * E){
     return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
 }
 
-double absDet(const double * E, const MeshType & mesh){
+double absDet(const double * E, const int dim){
     // Let a,b,c,d be the Verticies of a Tetrahedon (3D)
     // Then M will be the 3x3 matrix containg [b-a,c-a,d-a]
-    arma::mat M(mesh.dim, mesh.dim, arma::fill::zeros);
+    int dVertex = dim+1;
+
+    arma::mat M(dim, dim, arma::fill::zeros);
 
     // Copy Values
     int i=0, j=0;
-    for (i = 1; i < mesh.dVertex; i++) {
-        for (j = 0; j < mesh.dim; j++) {
-            M(j,i-1) += (E[j + mesh.dim*i] - E[j + 0]);
+    for (i = 1; i < dVertex; i++) {
+        for (j = 0; j < dim; j++) {
+            M(j,i-1) += (E[j + dim*i] - E[j + 0]);
             //printf("%3.2f ", M(j,i-1));
         }
         //printf("\n");
@@ -174,6 +177,21 @@ void baryCenter(const double * E, double * bary){
     bary[0] = bary[0]/3;
     bary[1] = bary[1]/3;
 }
+
+void baryCenter(const int dim, const double * E, double * bary){
+    int i=0, j=0;
+    int dVert = dim+1;
+    doubleVec_tozero(bary, dim);
+
+    for (j=0; j<dim; j++){
+        for  (i=0; i<dVert; i++) {
+            bary[j] += E[dim * i + j];
+            //bary[1] += E[2*i+1];
+        }
+    bary[j] = bary[j]/ static_cast<double>(dVert);
+    }
+}
+
 void baryCenter_polygone(const double * P, const int nVerticies, double * bary){
     int k=0;
     bary[0] = 0;

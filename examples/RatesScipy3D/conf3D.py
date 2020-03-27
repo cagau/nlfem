@@ -1,5 +1,6 @@
 #-*- coding:utf-8 -*-
 import numpy as np
+import quadpy
 
 delta = .1
 ansatz = "CG"
@@ -8,11 +9,11 @@ model_f = "linear" # "constant" #
 model_kernel = "constant" # "labeled" #
 integration_method = "baryCenter" # "retriangulate" # "baryCenter" #
 is_PlacePointOnCap = True
-quadrule_outer = "8"
-quadrule_inner = "8"
+quadrule_outer = "stroud_1961"
+quadrule_inner = "stroud_1961"
 
 n_start = 12
-n_layers = 1
+n_layers = 3
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*2
 u_exact = lambda x: x[0] ** 2 * x[1] + x[1] ** 2
@@ -30,23 +31,19 @@ data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": [
 
 # Quadrature rules -----------------------------------------------------------------------------------------------------
 quadrules = {
-    "8" :  [
-            np.array([[1.        , 0.        , 0. ],
-                        [0.        , 1.        , 0. ],
-                        [0.        , 0.        , 1. ],
-                        [0.        , 0.        , 0. ],
-                        [0.33333333, 0.33333333, 0.33333333],
-                        [0.33333333, 0.33333333, 0.        ],
-                        [0.33333333, 0.        , 0.33333333],
-                        [0.        , 0.33333333, 0.33333333]]),
-            np.array([ 0.025, 0.025, 0.025, 0.025, 0.225, 0.225, 0.225, 0.225])
-            ]
+    "stroud_1961":
+        quadpy.nsimplex.stroud_1961(3),
+    "hammer_stroud_1a":
+        quadpy.nsimplex.hammer_stroud_1a(3),
+    "walkington_7":
+        quadpy.nsimplex.walkington_7(3)
 }
 
-py_Px = quadrules[quadrule_outer][0]
-dx =  quadrules[quadrule_outer][1]
-py_Py = quadrules[quadrule_inner][0]
-dy = quadrules[quadrule_inner][1]
+#scheme = quadpy.nsimplex.walkington_7(3)
+py_Px = quadrules[quadrule_outer].points[1:,:1]
+dx =  quadrules[quadrule_outer].weights
+py_Py = quadrules[quadrule_inner].points[1:,:1]
+dy = quadrules[quadrule_inner].weights
 
 def writeattr(file, attr_name):
     file.write(attr_name+"\n")
