@@ -5,8 +5,6 @@ from scipy.interpolate import LinearNDInterpolator
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-import meshzoo
-from assemble import constructAdjaciencyGraph
 
 class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
@@ -15,21 +13,26 @@ class RegMesh2D:
         self.n = n
         self.dim = dim
         self.delta = delta
-        self.h = np.round((1+2*delta)/n, decimals=4)
 
         # Construct Meshgrid -------------------------------------------------------------
         if self.dim == 2:
-            self.vertices, self.elements = meshzoo.rectangle(
-                xmin=-delta, xmax=1+delta,
-                ymin=-delta, ymax=1+delta,
-                nx=n+1, ny=n+1,
-                zigzag=False)
-            self.elements = np.array(self.elements, dtype=np.int)
-            self.vertices = self.vertices[:, :2]
+            line1d = np.linspace(-delta,1+delta,self.n+1)
+            self.h = np.abs(line1d[0]- line1d[1])
+            X,Y = np.meshgrid(line1d,line1d, indexing="ij")
+            x = X.flatten()
+            y = Y.flatten()
+            self.vertices = np.array([x,y]).transpose()
 
         if self.dim == 3:
-            self.vertices, self.elements = meshzoo.cube(-delta, 1+delta, -delta, 1+delta, nx=n+1, ny=n+1, nz=n+1)
+            line1d = np.linspace(-delta,1+delta,self.n+1)
+            self.h = np.abs(line1d[0]- line1d[1])
+            X, Y, Z = np.meshgrid(line1d,line1d, line1d, indexing="ij")
+            x = X.flatten()
+            y = Y.flatten()
+            z = Z.flatten()
+            self.vertices = np.array([x,y,z]).transpose()
 
+        # Set up Delaunay Triangulation --------------------------------------------------
         # Construct and Sort Vertices ----------------------------------------------------
 
         self.vertexLabels = np.array([self.get_vertexLabel(v) for v in self.vertices])
@@ -43,7 +46,10 @@ class RegMesh2D:
         self.nV_Omega = self.omega.shape[0]
 
         # Set up Delaunay Triangulation --------------------------------------------------
-        self.remapElements()
+        self.triangulation = Delaunay(self.vertices)
+        self.elements = np.array(self.triangulation.simplices, dtype=np.int)
+
+        #self.reorderElements()
 
         # Get Triangle Labels ------------------------------------------------------------
         self.nE = self.elements.shape[0]
@@ -54,12 +60,10 @@ class RegMesh2D:
 
         # Read adjaciency list
         if is_constructAdjaciencyGraph:
-            self.neighbours = constructAdjaciencyGraph(self.elements)
+            self.neighbours = np.array(self.triangulation.neighbors, dtype=np.int)
+            self.neighbours = np.where(self.neighbours != -1, self.neighbours, self.nE)
         else:
             self.neighbours = None
-        #self.neighbours = np.array(self.triangulation.neighbors, dtype=np.int)
-        #self.neighbours = np.where(self.neighbours != -1, self.neighbours, self.nE)
-
 
         # Set Matrix Dimensions ----------------------------------------------------------
         # In case of Neumann conditions we assemble a Maitrx over Omega + OmegaI.
@@ -89,8 +93,7 @@ class RegMesh2D:
                 self.set_u_exact(ufunc)
 
         if coarseMesh is not None:
-            self.interpolator = LinearNDInterpolator(coarseMesh.vertices,
-                                                     coarseMesh.ud)
+            self.interpolator = LinearNDInterpolator(coarseMesh.vertices, coarseMesh.ud)
             self.ud = self.interpolator(self.vertices)
 
     def set_u_exact(self, ufunc):
@@ -119,29 +122,11 @@ class RegMesh2D:
                 return 1
         return 2
 
-    def remapElements(self):
-        def invert_permutation(p):
-            """
-            The function inverts a given permutation.
-            :param p: nd.array, shape (m,) The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1.
-            :return: nd.array, shape (m,) Returns an array s, where s[i] gives the index of i in p.
-            """
-            s = np.empty(p.size, p.dtype)
-            s[p] = np.arange(p.size)
-            return s
-        piVdx_invargsort = invert_permutation(self.argsort_labels)
-        piVdx = lambda dx: piVdx_invargsort[dx]  # Permutation definieren
-        self.elements = piVdx(self.elements)
-
     def plot_ud(self, pp=None):
         if self.dim == 2:
-            if self.u_exact is None:
-                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud)
-            else:
-                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud-self.u_exact)
+            plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud)
             plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
-            #plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements[np.where(self.elementLabels==1)[0]], lw=1, color='white', alpha=.4)
-            #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "white", alpha=1)
+            #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
             if pp is None:
                 plt.show()
             else:
@@ -151,13 +136,13 @@ class RegMesh2D:
         if self.dim == 2:
             plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.u_exact)
             plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
-            plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements[np.where(self.elementLabels==1)[0]], lw=1, color='white', alpha=1)
-            plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "white", alpha=1)
+            #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
             if pp is None:
                 plt.show()
             else:
                 plt.savefig(pp, format='pdf')
                 plt.close()
+
 
 def testInterpolation2D():
     delta = .1
