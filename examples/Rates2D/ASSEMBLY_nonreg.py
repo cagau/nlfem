@@ -102,8 +102,8 @@ def main():
                                      conf.dx, conf.dy, conf.delta,
                                      model_f=conf.model_f,
                                      model_kernel=conf.model_kernel,
-                                     integration_method=conf.integration_method,
-                                     is_PlacePointOnCap = conf.is_PlacePointOnCap)
+                                     integration_method=conf2.integration_method,
+                                     is_PlacePointOnCap = conf2.is_PlacePointOnCap)
 
             # A = bib.assembly_coupling_full_standard(mesh, conf2.gam, bib.retriangulate_dict[conf2.ball], bib.norm_dict[conf2.Norm], conf2.num_cores, hash_onthefly = 1)
             # A = bib.assembly_coupling_full_bary(mesh, conf2.gam, bib.retriangulate_dict[conf2.ball], bib.norm_dict[conf2.Norm], conf2.num_cores, hash_onthefly = 1)

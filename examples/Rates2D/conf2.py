@@ -2,34 +2,40 @@ import numpy as np
 import conf
 
 
-
-# folder = 'withcaps_a2_b2/'
-folder = 'TEST/'
-folder = 'results/' + folder
+integration_method = "baryCenterRT" #"retriangulate" # "baryCenter" #
+is_PlacePointOnCap = 0  # 0 = nocaps, 1 = withcaps
 
 
-transform_switch = 0
-gmsh = 0
+folder = 'bary_nocaps_gmsh_3/'
+
+gmsh = 1
 geofile = "unit_square_3"
 
+
+transform_switch = 1
+
+if gmsh:
+    transform_switch = 0
+
 h1, h2 = 0.1, 0.1
-num_grids = 4
-num_grids_mat = 6
+num_grids = 5
+num_grids_mat = 5
+
 num_grids_mat_l2rates = 6
 H1 = [h1 * 2 ** -k for k in range(0, max(num_grids, num_grids_mat))]
 H2 = [h2 * 2 ** -k for k in range(0, max(num_grids, num_grids_mat))]
 
 plot_solve = 0
-plot_mesh = 0
+plot_mesh =0
 
 
 def transform(x):
-    a = 2
-    b = 2
+    a = 3
+    b = 3
     y1 = (1. - np.exp(-a * x[0])) / (1. - np.exp(-a))
     y2 = np.sin(np.pi * x[1] / 2) ** b
-    return np.array([y1, y2])
-    # return np.array([x[0], x[1]**2])
+    # return np.array([y1, y2])
+    return np.array([x[0], x[1]**2])
 
 
 def source(x):
@@ -50,7 +56,7 @@ Norm = 'L2'  # choose from ['L1', 'L2', 'Linf']
 ball = 'exact_L2'
 Ball = [ball]
 approx = 0
-
+folder = 'results/' + folder
 # Kernel
 def phi(r):
     return 1  # (1 - ((r/delta )**2) )

@@ -13,6 +13,8 @@ import conf, conf2
 import MESH_nonreg
 import xlwt
 import scipy.interpolate as interp
+from assemble import evaluateMass
+import nlocal
 
 def main():
     numgrids = len(conf2.H1)
@@ -51,6 +53,7 @@ def main():
         mesh = MESH_nonreg.Mesh(np.load(output_mesh_data, allow_pickle=True))
         nodes_inner = list(range(len(mesh.nodes) - len(mesh.boundary)))
         verts_finest = mesh.verts[nodes_inner]
+
     else:
         n1, n2 = int(1./h1_finest)+1, int(1./h2_finest)+1 # int(1./h)+1
         n1, n2 = int(np.ceil(1. / h1_finest)) + 1, int(np.ceil(1. / h2_finest)) + 1  # int(1./h)+1
@@ -67,6 +70,9 @@ def main():
     ##=================#
     def dist_L2(u,v):
         return np.sqrt( np.dot(u-v, massmat.dot(u-v) ) )
+        # aux = evaluateMass(nlocal.Mesh(mesh, conf.ansatz, conf.boundaryConditionType), u-v, conf.py_Px, conf.dx)
+        # return np.sqrt( np.dot(u-v, aux ) )
+
     error_l2 = np.zeros(len(U))
     for i in range(len(U)):
         error_l2[i] = dist_L2(U[i].__call__(verts_finest), solution)
@@ -104,7 +110,8 @@ def main():
     header = ["min(diam)", "max(diam)","h1", "h2", "L2-Error", "Rate", "time [s]"]  # , "time-Rate"]
     output_ass_time = conf2.folder + 'ass_time' + '.npy'
     ass_time = np.array(np.load(output_ass_time))
-    data = np.concatenate((np.around(gridsizes, decimals=7),np.array(conf2.H1[0:conf2.num_grids])[:, np.newaxis], np.array(conf2.H2[0:conf2.num_grids])[:, np.newaxis],
+
+    data = np.concatenate((np.around(gridsizes, decimals=7), np.array(conf2.H1[0:conf2.num_grids])[:, np.newaxis], np.array(conf2.H2[0:conf2.num_grids])[:, np.newaxis],
                            np.around(error_l2[:, np.newaxis], decimals=7), np.around(rates_l2[:, np.newaxis], decimals=2),
                             np.around(ass_time[:, np.newaxis])), axis=1)
 

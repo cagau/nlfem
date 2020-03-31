@@ -1,15 +1,16 @@
 #-*- coding:utf-8 -*-
 import numpy as np
+# import conf2
+# integration_method = "baryCenterRT" #"retriangulate" # "baryCenter" #
+# is_PlacePointOnCap = 0  # 0 = nocaps, 1 = withcaps
 
 delta = 0.1
 ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
 model_kernel = "constant" # "labeled" #
-integration_method = "baryCenterRT" #"retriangulate" # "baryCenter" #
 quadrule_outer = "7"
 quadrule_inner = "1"
-is_PlacePointOnCap = 0 # 0 = nocaps, 1 = withcaps
 
 # Quadrature rules -----------------------------------------------------------------------------------------------------
 quadrules = {
