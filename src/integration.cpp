@@ -157,7 +157,7 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
                 // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
                 toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, physical_quad);
                 // Determinant of Triangle of retriangulation
-                rTdet = absDet(bT.E);
+                rTdet = absDet(bT.E, mesh.dim);
                 // inner Local integral with ker
                 innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] * rTdet; // Local Term
                 // Evaluate ker on physical quad (note this is ker')
@@ -253,8 +253,8 @@ int method_baryCenter(const double * x_center, const ElementType & T, const Mesh
     int i,k;
     double distance;
     arma::vec baryC(mesh.dim);
-
-    baryCenter(T.E, &baryC[0]);
+    //void baryCenter(const int dim, const double * E, double * bary);
+    baryCenter(mesh.dim, T.E, &baryC[0]);
     distance = vec_sqL2dist(x_center, &baryC[0], mesh.dim);
 
     if (distance > mesh.sqdelta){

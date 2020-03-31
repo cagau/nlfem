@@ -1,4 +1,4 @@
-from examples.RatesScipy3D.mesh import RegMesh, RegMesh2D
+from examples.RatesScipy3D.mesh import RegMesh2D
 import examples.RatesScipy3D.helpers as helpers
 import numpy as np
 import assemble
@@ -10,11 +10,9 @@ def rates():
     err_ = None
     dim = 3
 
-    #mesh_exact = RegMesh(conf.delta, conf.N_fine, conf.u_exact, dim=3)
-
     for n in conf.N:
         print()
-        mesh = RegMesh(conf.delta, n, dim=3)
+        mesh = RegMesh2D(conf.delta, n, dim=3)
         conf.data["h"].append(mesh.h)
         conf.data["nV_Omega"].append(mesh.nV_Omega)
 
@@ -26,8 +24,8 @@ def rates():
                                  integration_method=conf.integration_method,
                                  is_PlacePointOnCap=conf.is_PlacePointOnCap)
         conf.data["Assembly Time"].append(time() - start)
-        plt.imsave("results/A.pdf", A )
-        raise KeyboardInterrupt
+        #plt.imsave("results/A.pdf", A )
+        #raise KeyboardInterrupt
         A_O = A[:,:mesh.K_Omega]
         A_I = A[:,mesh.K_Omega:]
         g = np.apply_along_axis(conf.u_exact, 1, mesh.vertices[mesh.K_Omega:])
@@ -35,17 +33,17 @@ def rates():
 
         # Solve ---------------------------------------------------------------------------
         print("Solve...")
-        mesh.write_u(np.linalg.solve(A_O,f), conf.u_exact)
+        mesh.write_ud(np.linalg.solve(A_O,f), conf.u_exact)
 
 
         # Refine to N_fine ----------------------------------------------------------------
-        mesh = RegMesh(conf.delta, conf.N_fine, coarseMesh=mesh, dim=3, is_constructAdjaciencyGraph=False)
+        mesh = RegMesh2D(conf.delta, conf.N_fine, coarseMesh=mesh, dim=3, is_constructAdjaciencyGraph=False)
 
         # Evaluate L2 Error ---------------------------------------------------------------
-        u_diff = (mesh_exact.u - mesh.u)[:mesh_exact.K_Omega]
-        Mu_udiff = assemble.evaluateMass(mesh_exact, u_diff, conf.py_Px, conf.dx)
+        u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
+        Mu_udiff = assemble.evaluateMass(mesh, u_diff, conf.py_Px, conf.dx)
         err = np.sqrt(u_diff @ Mu_udiff)
-        mesh.plot3D(pp)
+        mesh.plot3D(conf.fnames["tetPlot.vtk"])
         # Print Rates ---------------------------------------------------------------------
         print("L2 Error: ", err)
         conf.data["L2 Error"].append(err)
@@ -57,7 +55,6 @@ def rates():
             conf.data["Rates"].append(0)
 
         err_ = err
-    pp.close()
     return conf.data
 
 
@@ -98,5 +95,5 @@ def main():
     #mesh.plot3D(conf.fnames["tetPlot.vtk"])
 
 if __name__ == "__main__":
-    main()
-    #rates()
+    #main()
+    rates()

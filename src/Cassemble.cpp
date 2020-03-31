@@ -76,7 +76,7 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     }
     // Initialize Struct
     T.E = T.matE.memptr();
-    T.absDet = absDet(T.E, mesh);
+    T.absDet = absDet(T.E, mesh.dim);
     T.signDet = signDet(T.E, mesh);
     T.label = mesh.LabelTriangles(Tdx);
 
@@ -85,7 +85,38 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     T.dim = mesh.dim;
 }
 
+void constructAdjaciencyGraph(const int dim, const int nE, const long * elements, long * neighbours){
+    int aTdx=0;
+    const int dVertex = dim+1;
+    const int sqdVertex = pow(dVertex, 2);
+    #pragma omp parallel
+    {
+    int i=0, nEqualVerts=0, nNeighsFound=0, bTdx=0;
+    #pragma omp for
+    for (aTdx=0; aTdx < nE; aTdx++) {
+        for (i = 0; i < dVertex; i++) {
+            neighbours[aTdx * dVertex + i] = static_cast<long>(nE);
+        }
+        nNeighsFound = 0;
 
+        for(bTdx=0; bTdx<nE; bTdx++) {
+            nEqualVerts = 0;
+            for (i = 0; i < sqdVertex; i++) {
+                nEqualVerts += (elements[aTdx*dVertex + (i % dVertex)] == elements[bTdx*dVertex + static_cast<int>(i / dVertex)]);
+            }
+            //cout << nEqualVerts << endl;
+            if (nEqualVerts == dim){
+                neighbours[aTdx*dVertex + nNeighsFound] = bTdx;
+                nNeighsFound+=1;
+                if (nNeighsFound==dVertex){
+                    bTdx = nE;
+                }
+            }
+        }
+    }
+}
+
+}
 // Compute A and f -----------------------------------------------------------------------------------------------------
 void compute_f(     const ElementType & aT,
                     const QuadratureType &quadRule,
@@ -157,59 +188,70 @@ void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega
 }
 
 void
-par_evaluateMass(double *vd, double *ud, long *Triangles, long *TriangleLabels, double *Verts, int K_Omega, int J,
-                 int nP, double *P, double *dx) {
-    int aTdx=0, a=0, b=0, j=0;
-    double aTE[2*3];
-    double aTdet;
-    double tmp_psi[3];
-    long * aAdx;
+par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
+                 double *P, double *dx, const int dim) {
+    int k=0, kk=0;
+    const int dVerts = dim+1;
 
-    double *psi = (double *) malloc(3*nP*sizeof(double));
 
-    for(j=0; j<nP; j++){
-       model_basisFunction(&P[2*j], &tmp_psi[0]);
-       psi[nP*0+j] = tmp_psi[0];
-       psi[nP*1+j] = tmp_psi[1];
-       psi[nP*2+j] = tmp_psi[2];
+    double tmp_psi[dVerts];
+    double *psi = (double *) malloc((dVerts)*nP*sizeof(double));
+
+    for(k=0; k<nP; k++){
+       model_basisFunction(&P[dim*k], &tmp_psi[0]);
+       for (kk=0; kk<dVerts; kk++) {
+           psi[nP * kk + k] = tmp_psi[kk];
+           //psi[nP * 1 + j] = tmp_psi[1];
+           //psi[nP * 2 + j] = tmp_psi[2];
+       }
     }
 
-    #pragma omp parallel for private(aAdx, a, b, aTE, aTdet, j)
-    for (aTdx=0; aTdx < J; aTdx++){
-        if (TriangleLabels[aTdx] == 1) {
-            // Get index of ansatz functions in matrix compute_A.-------------------
-            // Continuous Galerkin
-            aAdx = &Triangles[4 * aTdx + 1];
-            // Discontinuous Galerkin
-            // - Not implemented -
+    #pragma omp parallel
+    {
+    //private(aAdx, a, b, aTE, aTdet, j)
+        double aTdet;
+        long * aAdx;
+        int a=0, b=0, j=0, jj=0, aTdx=0;
+        double aTE[dim*(dVerts)];
+        #pragma omp for
+        for (aTdx=0; aTdx < J; aTdx++){
+            if (ElementLabels[aTdx] == 1) {
+                // Get index of ansatz functions in matrix compute_A.-------------------
+                // Continuous Galerkin
+                aAdx = &Elements[dVerts* aTdx];
+                // Discontinuous Galerkin
+                // - Not implemented -
 
-            // Prepare Triangle information aTE and aTdet ------------------
-            // Copy coordinates of Triange a to aTE.
-            // this is done fore convenience only, actually those are unnecessary copies!
-            for (j = 0; j < 2; j++) {
-                aTE[2 * 0 + j] = Verts[2 * Triangles[4 * aTdx + 1] + j];
-                aTE[2 * 1 + j] = Verts[2 * Triangles[4 * aTdx + 2] + j];
-                aTE[2 * 2 + j] = Verts[2 * Triangles[4 * aTdx + 3] + j];
-            }
-            // compute Determinant
-            aTdet = absDet(&aTE[0]);
+                // Prepare Triangle information aTE and aTdet ------------------
+                // Copy coordinates of Triange a to aTE.
+                // this is done fore convenience only, actually those are unnecessary copies!
+                for (jj=0; jj<dVerts; jj++){
+                    for (j = 0; j < dim; j++) {
+                        aTE[dim * jj + j] = Verts[dim *aAdx[jj] + j];
+                    }
+                    //aTE[2 * 0 + j] = Verts[2 * Elements[4 * aTdx + 1] + j];
+                    //aTE[2 * 1 + j] = Verts[2 * Elements[4 * aTdx + 2] + j];
+                    //aTE[2 * 2 + j] = Verts[2 * Elements[4 * aTdx + 3] + j];
+                }
+                // compute Determinant
+                aTdet = absDet(&aTE[0], dim);
 
-            for (a = 0; a < 3; a++) {
-                if (aAdx[a] < K_Omega) {
-                    for (b = 0; b < 3; b++) {
-                        if (aAdx[b] < K_Omega) {
-                            for (j = 0; j < nP; j++) {
-                                // Evaluation
-                                #pragma omp atomic update
-                                vd[aAdx[a]] += psi[nP * a + j] * psi[nP * b + j] * aTdet * dx[j] * ud[aAdx[b]];
+                for (a = 0; a < dVerts; a++) {
+                    if (aAdx[a] < K_Omega) {
+                        for (b = 0; b < dVerts; b++) {
+                            if (aAdx[b] < K_Omega) {
+                                for (j = 0; j < nP; j++) {
+                                    // Evaluation
+                                    #pragma omp atomic update
+                                    vd[aAdx[a]] += psi[nP * a + j] * psi[nP * b + j] * aTdet * dx[j] * ud[aAdx[b]];
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
-
+    } // Pragma Omp Parallel
 }
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------

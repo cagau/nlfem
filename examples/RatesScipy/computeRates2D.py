@@ -13,7 +13,6 @@ def main():
     pp = PdfPages(conf.fnames["triPlot.pdf"])
     for n in conf.N:
         mesh=RegMesh2D(conf.delta, n, ufunc=conf.u_exact)
-
         print("\n h: ", mesh.h)
         conf.data["h"].append(mesh.h)
         conf.data["nV_Omega"].append(mesh.nV_Omega)
