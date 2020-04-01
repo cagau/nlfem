@@ -15,11 +15,11 @@ void rightNormal(const double * y0, const double * y1, double orientation, doubl
 
 // Double
 double absDet(const double * E);                                         // Compute determinant
-double absDet(const double * E, const int dim);
+double absDet(const double * E, int dim);
 double signDet(const double * E);
 double signDet(const double * E, const MeshType & mesh);
 void baryCenter(const double * E, double * bary);                        // Bary Center
-void baryCenter(const int dim, const double * E, double * bary);
+void baryCenter(int dim, const double * E, double * bary);
 void toRef(const double * E, const double * phys_x, double * ref_p);     // Pull point to Reference Element (performs 2x2 Solve)
 void toPhys(const double * E, const double * p, double * out_x);         // Push point to Physical Element
 void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x);
