@@ -1,4 +1,8 @@
 #-*- coding:utf-8 -*-
+"""@package docstring
+Documentation for this module.
+"""
+
 import numpy as np
 import meshio
 import assemble
@@ -259,19 +263,8 @@ class dummyMesh:
             self.K_Omega = self.nE_Omega*3
             self.ansatz = "DG"
         self.boundaryConditionType = boundaryConditionType
+
 class Mesh:
-    """ **Mesh Class**
-
-    Let :math:`K` be the number of basis functions and :math:`J` the number of finite elements. The ordering of the vertices
-    V is such that the first :math:`K_{\Omega}` vertices lie in the interior of :math:`\Omega`.
-
-    :ivar vertices: nd.array, real, shape (K, 2) List of vertices in the 2D plane
-    :ivar triangles: nd.array, int, shape (J, 3) List of indices mapping an index Tdx to 3 corresponding vertices of V.
-    :ivar K: Number of basis functions.
-    :ivar K_Omega: Number if basis functions in the interior of :math:`\Omega`.
-    :ivar nE: Number of finite elements :math:`\Omega`.
-    :ivar nE_Omega: Number of finite elements in
-    """
     def __init__(self, mesh_data, ansatz, boundaryConditionType="Dirichlet", is_DiscontinuousGalerkin=0, is_NeumannBoundary=0):
         """Constructor
 
