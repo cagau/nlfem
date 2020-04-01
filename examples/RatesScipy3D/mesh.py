@@ -176,7 +176,10 @@ class RegMesh2D:
             #        info=None,
             #):
             m = meshio.Mesh(points  = self.vertices, cells = [("tetra", self.elements)],
-                            point_data= {"u_exact": self.u_exact, "ud": self.ud,  "labels": self.vertexLabels},
+                            point_data= {"u_exact": self.u_exact,
+                                         "ud": self.ud,
+                                         "u_diff": self.u_exact-self.ud,
+                                         "labels": self.vertexLabels},
                             cell_data={"labels": self.elementLabels}   )
             meshio.write(filename, m, file_format="vtk")
 
@@ -205,7 +208,7 @@ class RegMesh2D:
         self.elementLabels.tofile(path+"/mesh.elelb")
 
 class RegMesh:
-    def __init__(self, delta, n, ufunc=None, coarseMesh=None, dim=2, ansatz="CG", boundaryConditionType="Dirichlet"):
+    def __init__(self, delta, n, ufunc=None, coarseMesh=None, dim=2, ansatz="CG", boundaryConditionType="Dirichlet", **kwargs):
         self.n = n
         self.dim = dim
         self.delta = delta
@@ -219,6 +222,7 @@ class RegMesh:
             x = X.flatten()
             y = Y.flatten()
             self.vertices = np.array([x,y]).transpose()
+
         if self.dim == 3:
             line1d = np.linspace(-delta,1+delta,self.n+1)
             self.h = np.abs(line1d[0]- line1d[1])
@@ -229,7 +233,6 @@ class RegMesh:
             self.vertices = np.array([x,y,z]).transpose()
 
         # Construct and Sort Vertices ----------------------------------------------------
-
         self.vertexLabels = np.array([self.get_vertexLabel(v) for v in self.vertices])
         self.argsort_labels = np.argsort(self.vertexLabels)
         self.vertices = self.vertices[self.argsort_labels]
@@ -276,23 +279,29 @@ class RegMesh:
             self.K_Omega = self.nV_Omega
             self.is_DiscontinuousGalerkin = False
 
+
         # Set Mesh Data if provided ------------------------------------------------------
-        self.u = None
+        self.u_exact = None# np.zeros(self.vertices.shape[0])
+        self.ud = np.zeros(self.vertices.shape[0])
+
         if ufunc is not None:
             if hasattr(ufunc, '__call__'):
-                self.set_u(ufunc)
-        elif coarseMesh is not None:
-            self.interpolator = LinearNDInterpolator(coarseMesh.triangulation, coarseMesh.u)
-            self.u = self.interpolator(self.vertices)
+                self.set_u_exact(ufunc)
 
-    def set_u(self,ufunc):
-        self.u = np.zeros(self.vertices.shape[0])
+        if coarseMesh is not None:
+            self.interpolator = LinearNDInterpolator(coarseMesh.vertices,
+                                                     coarseMesh.ud)
+            self.ud = self.interpolator(self.vertices)
+
+    def set_u_exact(self, ufunc):
+        self.u_exact = np.zeros(self.vertices.shape[0])
         for i, x in enumerate(self.vertices):
-            self.u[i] = ufunc(x)
+            self.u_exact[i] = ufunc(x)
 
-    def write_u(self, udata, ufunc):
-        self.set_u(ufunc)
-        self.u[:self.K_Omega] = udata
+    def write_ud(self, udata, ufunc):
+        for i, x in enumerate(self.vertices):
+            self.ud[i] = ufunc(x)
+        self.ud[:self.K_Omega] = udata
 
     def get_vertexLabel(self, v):
         if np.max(np.abs(v - 0.5)) < 0.5:
@@ -336,7 +345,10 @@ class RegMesh:
             #        info=None,
             #):
             m = meshio.Mesh(points  = self.vertices, cells = [("tetra", self.elements)],
-                            point_data= {"u": self.u, "labels": self.vertexLabels},
+                            point_data= {"u_exact": self.u_exact,
+                                         "ud": self.ud,
+                                         "u_diff": self.u_exact-self.ud,
+                                         "labels": self.vertexLabels},
                             cell_data={"labels": self.elementLabels}   )
             meshio.write(filename, m, file_format="vtk")
 

@@ -1,5 +1,5 @@
 #include <Cassemble.h>
-#include <math.h>
+#include <cmath>
 #include <queue>
 #include <iostream>
 #include <integration.cpp>
@@ -12,12 +12,14 @@ void lookup_configuration(ConfigurationType & conf){
 
     // Lookup right hand side ------------------------------------------------------------------------------------------
     cout << "Right hand side: " << conf.model_f << endl;
-    if (conf.model_f == "linear"){
+    if (conf.model_f == "linear") {
         model_f = f_linear;
+    } else if (conf.model_f == "linear3D") {
+        model_f = f_linear3D;
     } else if (conf.model_f == "constant"){
         model_f = f_constant;
     } else {
-        cout << "Error in par:assemblele. Right hand side: " << conf.model_f << " is not implemented." << endl;
+        cout << "Error in par:assemble. Right hand side: " << conf.model_f << " is not implemented." << endl;
         abort();
     }
 
@@ -25,10 +27,12 @@ void lookup_configuration(ConfigurationType & conf){
     cout << "Kernel: " << conf.model_kernel << endl;
     if (conf.model_kernel == "constant"){
         model_kernel = kernel_constant;
-    } else if (conf.model_kernel == "labeled"){
+    } else if (conf.model_kernel == "labeled") {
         model_kernel = kernel_labeled;
+    } else if (conf.model_kernel == "constant3D") {
+        model_kernel = kernel_constant3D;
     } else {
-        cout << "Error in par:assemblele. Kernel " << conf.model_kernel << " is not implemented." << endl;
+        cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;
         abort();
     }
 
@@ -43,7 +47,7 @@ void lookup_configuration(ConfigurationType & conf){
         integrate = integrate_retriangulate;
         printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
     } else {
-        cout << "Error in par:assemblele. Integration method " << conf.integration_method <<
+        cout << "Error in par:assemble. Integration method " << conf.integration_method <<
              " is not implemented." << endl;
         abort();
     }
@@ -52,15 +56,13 @@ void lookup_configuration(ConfigurationType & conf){
 void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     // Copy coordinates of Triange b to bTE.
 
-    // Tempalte of Triangle Point data -------------------------------------------------
+    // Tempalte of Triangle Point data.
     // 2D Case, a, b, c are the vertices of a triangle
-    //         _____________________________
     // T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
-    // Hence, if one wnats to put T.E into col major order matrix it would be of shape
-    //                              ______________
+    // Hence, if one wants to put T.E into col major order matrix it would be of shape\
     //                             | a1 | b1 | c1 |
     // M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
-    //  --------------------------------------------------------------------------------
+    //
 
     int j, k, Vdx;
     //T.matE = arma::vec(dim*(dim+1));
@@ -77,7 +79,7 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     // Initialize Struct
     T.E = T.matE.memptr();
     T.absDet = absDet(T.E, mesh.dim);
-    T.signDet = signDet(T.E, mesh);
+    T.signDet = static_cast<int>(signDet(T.E, mesh));
     T.label = mesh.LabelTriangles(Tdx);
 
     //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
@@ -389,9 +391,6 @@ void par_assemble( double * ptrAd, double * fd,
                 aAdx = aDGdx;
             } else {
                 // Continuous Galerkin
-                // The first entry (index 0) of each row in triangles contains the Label of each point!
-                // Hence, in order to get an pointer to the three Triangle idices, which we need here
-                // we choose &Triangles[4*aTdx+1];
                 aAdx = &mesh.Triangles(0, aTdx);
             }
             // Prepare Triangle information aTE and aTdet ------------------

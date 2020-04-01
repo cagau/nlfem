@@ -7,7 +7,31 @@
 #include "cstring"
 using namespace std;
 
-struct ElementStruct{
+struct ElementStruct
+/*!
+ * Struct containing all necessary data of one finite element.
+ *
+ *  Template of Triangle Point data
+ *
+ *   2D Case, a, b, c are the vertices of a triangle
+ *
+*/
+{
+    /*!
+     *
+     *   T.E is of ordered the following way:
+     *   | 0 | 1 | 2 | 3 | 4 | 5 |
+     *   | -- | -- | -- | -- | -- | -- |
+     *   | a1 | a2 | b1 | b2 | c1 | c2 |
+     *
+     *   Hence, if one wants to put T.E into cloumn major order matrix it would be of shape
+     *   *M(mesh.dim, mesh.dVerts)* =
+     *
+     *    | 0   | 1   | 2   |
+     *    | --- | --- | --- |
+     *    | a1  | b1  | c1  |
+     *    | a2  | b2  | c2  |
+     */
     arma::vec matE;
     double * E;
     int dim;

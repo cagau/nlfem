@@ -29,6 +29,7 @@ find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(Cassemble PRIVATE OpenMP::OpenMP_CXX)
 endif()
+
 add_subdirectory(./examples/Rates2DCpp)
 add_subdirectory(./examples/CompareCodes)
 # Add tests to project

@@ -1,24 +1,29 @@
 #-*- coding:utf-8 -*-
 import numpy as np
 import quadpy
+import datetime
+import os
 
 delta = .1
 ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
-model_f = "linear" # "constant" #
-model_kernel = "constant" # "labeled" #
+model_f = "linear3D" # "constant" #
+model_kernel = "constant3D" # "labeled" #
 integration_method = "baryCenter" # "retriangulate" # "baryCenter" #
 is_PlacePointOnCap = True
-quadrule_outer = "stroud_1961"
-quadrule_inner = "stroud_1961"
+quadrule_outer = "keast_9"
+quadrule_inner = "keast_4"
 
 n_start = 12
-n_layers = 3
+n_layers = 1
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*2
-u_exact = lambda x: x[0] ** 2 * x[1] + x[1] ** 2
+u_exact = lambda x: x[0]**2 * x[1] + x[1]**2 + x[2]**2
 
-outputdir = "results"
+
+outputdir = datetime.datetime.now().strftime("%m.%d_%H-%M-%S")+"_results"
+os.mkdir(outputdir)
+
 fnames = {
           "triPlot.pdf": outputdir+"/auto_plot.pdf",
           "tetPlot.vtk": outputdir+"/auto_plot.vtk",
@@ -31,19 +36,33 @@ data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": [
 
 # Quadrature rules -----------------------------------------------------------------------------------------------------
 quadrules = {
-    "stroud_1961":
-        quadpy.nsimplex.stroud_1961(3),
-    "hammer_stroud_1a":
-        quadpy.nsimplex.hammer_stroud_1a(3),
-    "walkington_7":
-        quadpy.nsimplex.walkington_7(3)
+    "keast_1":
+        quadpy.tetrahedron.keast_1(),
+     "keast_4":
+        quadpy.tetrahedron.keast_4(),
+    "keast_8":
+        quadpy.tetrahedron.keast_8(),
+    "keast_9":
+        quadpy.tetrahedron.keast_9(),
+    #"stroud_1961":
+    #    quadpy.nsimplex.stroud_1961(3),
+    #"hammer_stroud_1a":
+    #    quadpy.nsimplex.hammer_stroud_1a(3),
+    #"walkington_7":
+    #    quadpy.nsimplex.walkington_7(3)
 }
+#
+#py_Px = quadrules[quadrule_outer].points[1:,:3]
+#dx =  quadrules[quadrule_outer].weights/6
+#py_Py = quadrules[quadrule_inner].points[1:,:3]
+#dy = quadrules[quadrule_inner].weights/6
 
 #scheme = quadpy.nsimplex.walkington_7(3)
-py_Px = quadrules[quadrule_outer].points[1:,:1]
-dx =  quadrules[quadrule_outer].weights
-py_Py = quadrules[quadrule_inner].points[1:,:1]
-dy = quadrules[quadrule_inner].weights
+py_Px = quadrules[quadrule_outer].points[:, :3]
+dx =  quadrules[quadrule_outer].weights/6.
+
+py_Py = quadrules[quadrule_inner].points[:, :3]
+dy = quadrules[quadrule_inner].weights/6.
 
 def writeattr(file, attr_name):
     file.write(attr_name+"\n")

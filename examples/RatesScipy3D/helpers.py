@@ -17,7 +17,6 @@ def write_output(data):
     import numpy as np
     import os
 
-
     # Write Plots
 
     pp = PdfPages(conf.fnames["timePlot.pdf"])

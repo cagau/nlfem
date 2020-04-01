@@ -1,4 +1,4 @@
-from examples.RatesScipy3D.mesh import RegMesh2D
+from examples.RatesScipy3D.mesh import RegMesh2D as RegMesh
 import examples.RatesScipy3D.helpers as helpers
 import numpy as np
 import assemble
@@ -12,7 +12,7 @@ def rates():
 
     for n in conf.N:
         print()
-        mesh = RegMesh2D(conf.delta, n, dim=3)
+        mesh = RegMesh(conf.delta, n, dim=3)
         conf.data["h"].append(mesh.h)
         conf.data["nV_Omega"].append(mesh.nV_Omega)
 
@@ -37,7 +37,7 @@ def rates():
 
 
         # Refine to N_fine ----------------------------------------------------------------
-        mesh = RegMesh2D(conf.delta, conf.N_fine, coarseMesh=mesh, dim=3, is_constructAdjaciencyGraph=False)
+        mesh = RegMesh(conf.delta, conf.N_fine, coarseMesh=mesh, ufunc=conf.u_exact, dim=3, is_constructAdjaciencyGraph=False)
 
         # Evaluate L2 Error ---------------------------------------------------------------
         u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
@@ -61,12 +61,12 @@ def rates():
 
 def main():
     import examples.RatesScipy3D.conf3D as conf
-    u_exact = lambda x: x[0]*2 + x[1] *3 - x[2]*10 + 10
+    u_exact = lambda x: (x[0]-0.5)**2 + (x[1]-0.5)**2 + (x[2]-0.5)**2 - 0.75
     err_ = None
     dim = 3
     conf.delta = 0.5
     conf.n_start = 4
-    mesh = RegMesh2D(conf.delta,conf.n_start, dim=3, ufunc=u_exact)
+    mesh = RegMesh(conf.delta,conf.n_start, dim=3, ufunc=u_exact)
     conf.data["h"].append(mesh.h)
     conf.data["nV_Omega"].append(mesh.nV_Omega)
     conf.save("data")
@@ -96,4 +96,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    rates()
+    data = rates()
+    helpers.write_output(data)
