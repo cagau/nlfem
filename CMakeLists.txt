@@ -6,7 +6,7 @@ project(nonlocal_assembly)
 
 # flags ----------------------------------------------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 14)
-add_compile_options("-O3")
+add_compile_options("-O0")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # Equivalent to -fPIC option in the compiler
 
 # files ----------------------------------------------------------------------------------------------------------------
