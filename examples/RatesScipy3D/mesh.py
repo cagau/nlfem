@@ -159,27 +159,18 @@ class RegMesh2D:
             else:
                 plt.savefig(pp, format='pdf')
                 plt.close()
-    def plot3D(self, filename="foo.vtk"):
+    def plot3D(self, filename="foo.vtk", dataDict={}):
         import meshio
         if self.dim == 3:
-            #class Mesh:
-            #def __init__(
-            #        self,
-            #        points, (ndarray)
-            #        cells, (list of tuple (celltype, data))
-            #        point_data=None, (dict)
-            #        cell_data=None, (dict)
-            #        field_data=None,
-            #        point_sets=None,
-            #        cell_sets=None,
-            #        gmsh_periodic=None,
-            #        info=None,
-            #):
+
+            point_data = {"u_exact": self.u_exact,
+                          "ud": self.ud,
+                          "u_diff": self.u_exact-self.ud,
+                          "labels": self.vertexLabels}
+            point_data.update(dataDict)
+
             m = meshio.Mesh(points  = self.vertices, cells = [("tetra", self.elements)],
-                            point_data= {"u_exact": self.u_exact,
-                                         "ud": self.ud,
-                                         "u_diff": self.u_exact-self.ud,
-                                         "labels": self.vertexLabels},
+                            point_data= point_data,
                             cell_data={"labels": self.elementLabels}   )
             meshio.write(filename, m, file_format="vtk")
 

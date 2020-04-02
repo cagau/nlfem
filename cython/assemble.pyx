@@ -144,7 +144,7 @@ cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, con
                 n += 1
     return n == (dVerts-1)
 
-def constructAdjaciencyGraph(long [:,:] Elements):
+def par_constructAdjaciencyGraph(long [:,:] Elements):
     print("Constructing adjaciency graph...")
     cdef int nE = Elements.shape[0]
     cdef int dim = Elements.shape[1]-1
@@ -153,7 +153,7 @@ def constructAdjaciencyGraph(long [:,:] Elements):
     Cassemble.constructAdjaciencyGraph(dim, nE, &Elements[0,0], &Neighbours[0,0])
     return np.array(Neighbours)
 
-def sequential_constructAdjaciencyGraph(long [:,:] Elements):
+def constructAdjaciencyGraph(long [:,:] Elements):
     print("Constructing adjaciency graph...")
     cdef int nE = Elements.shape[0]
     cdef int dVerts = Elements.shape[1]

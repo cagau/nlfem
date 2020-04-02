@@ -4,12 +4,42 @@ import numpy as np
 import assemble
 from time import time
 import matplotlib.pyplot as plt
+def compareRHS():
+    import examples.RatesScipy3D.conf3D as conf
+    dim = 3
+    n = conf.n_start
+    def source(x):
+        return 1.#2.*(x[1] + 2.)
+
+    mesh = RegMesh(conf.delta, n, dim=3, boundaryConditionType="Neumann")
+    # Assembly ------------------------------------------------------------------------
+    A, ffromAssemble = assemble.assemble(mesh, conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta,
+                             model_kernel=conf.model_kernel,
+                             model_f=conf.model_f,
+                             integration_method=conf.integration_method,
+                             is_PlacePointOnCap=conf.is_PlacePointOnCap)
+
+    ffromMass_K  = np.zeros(mesh.K)
+    sourceData = np.array([source(v) for v in mesh.vertices])
+
+
+    if mesh.is_NeumannBoundary:
+        ffromAssemble_K = ffromAssemble
+
+        ffromMass_K = assemble.evaluateMass(mesh, sourceData, conf.py_Px, conf.dx)
+    else:
+        ffromAssemble_K = np.zeros(mesh.K)
+        ffromAssemble_K[:mesh.K_Omega] = ffromAssemble
+
+        ffromMass_K[:mesh.K_Omega] = assemble.evaluateMass(mesh, sourceData, conf.py_Px, conf.dx)
+
+
+    mesh.plot3D(conf.fnames["tetPlot.vtk"], dataDict={"ffromAssemble": ffromAssemble_K, "ffromMass": ffromMass_K})
 
 def rates():
     import examples.RatesScipy3D.conf3D as conf
     err_ = None
     dim = 3
-
     for n in conf.N:
         print()
         mesh = RegMesh(conf.delta, n, dim=3)
@@ -40,6 +70,7 @@ def rates():
         mesh = RegMesh(conf.delta, conf.N_fine, coarseMesh=mesh, ufunc=conf.u_exact, dim=3, is_constructAdjaciencyGraph=False)
 
         # Evaluate L2 Error ---------------------------------------------------------------
+
         u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
         Mu_udiff = assemble.evaluateMass(mesh, u_diff, conf.py_Px, conf.dx)
         err = np.sqrt(u_diff @ Mu_udiff)
@@ -97,4 +128,5 @@ def main():
 if __name__ == "__main__":
     #main()
     data = rates()
-    helpers.write_output(data)
+    #helpers.write_output(data)
+    #compareRHS()

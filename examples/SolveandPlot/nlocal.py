@@ -120,9 +120,7 @@ class MeshIO(meshio._mesh.Mesh):
             parentMesh = meshio.read(mesh_data + ".msh")
         # Run Constructor of Parent Class
         super(MeshIO, self).__init__(parentMesh.points, parentMesh.cells, parentMesh.point_data,
-                      parentMesh.cell_data, parentMesh.field_data,
-                      parentMesh.node_sets, parentMesh.element_sets,
-                      parentMesh.gmsh_periodic, parentMesh.info)
+                      parentMesh.cell_data)
 
         # DIMENSION + Number of Elements and Verts ---------------------------------------------------------------------
         # Identify in which dimension we work in and set Elements

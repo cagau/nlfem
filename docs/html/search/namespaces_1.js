@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['bib3',['bib3',['../namespacebib3.html',1,'']]]
+  ['depricated_5fassembly',['DEPRICATED_ASSEMBLY',['../namespaceDEPRICATED__ASSEMBLY.html',1,'']]]
 ];

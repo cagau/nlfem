@@ -1,5 +1,11 @@
 var searchData=
 [
-  ['k',['K',['../classnlocal_1_1_mesh_i_o.html#a234833eba63084231c9dd6a307f5c601',1,'nlocal.MeshIO.K()'],['../classnlocal_1_1dummy_mesh.html#a70f7a54bfcafb4b88c52765b4b24b58b',1,'nlocal.dummyMesh.K()'],['../classnlocal_1_1_mesh.html#a468a106939a4e6a995c0856009bb1613',1,'nlocal.Mesh.K()'],['../struct_mesh_struct.html#afb324ed3d120cd8cfd30d19c50aa3d29',1,'MeshStruct::K()']]],
-  ['k_5fomega',['K_Omega',['../classnlocal_1_1_mesh_i_o.html#ad20038d103bf73bc1c026c22898f539f',1,'nlocal.MeshIO.K_Omega()'],['../classnlocal_1_1dummy_mesh.html#a0cb57bfad792cc21ab30c8935588a599',1,'nlocal.dummyMesh.K_Omega()'],['../classnlocal_1_1_mesh.html#a55430d73ec0703c26765f8a89cef3903',1,'nlocal.Mesh.K_Omega()'],['../struct_mesh_struct.html#a54b4d8bba3174780997c0037fd51d604',1,'MeshStruct::K_Omega()']]]
+  ['n',['N',['../classGrid.html#a3991f919af6b36bc33638fda34db2607',1,'Grid']]],
+  ['n_5fomega',['N_Omega',['../classGrid.html#a41b448410513b1a1de29f1f25916878c',1,'Grid']]],
+  ['n_5fomegai',['N_OmegaI',['../classGrid.html#ac8210a6f5414efcf487ee6ba4da383cb',1,'Grid']]],
+  ['ne',['nE',['../classGrid.html#a2696409efa3137ffc6d82876d5f51216',1,'Grid']]],
+  ['neighbours',['Neighbours',['../structMeshStruct.html#a970c7e969086bd70dc2faf32329e41a6',1,'MeshStruct']]],
+  ['npx',['nPx',['../structQuadratureStruct.html#a2dd8f7d8b8c2f49febf9f9be4cb13819',1,'QuadratureStruct']]],
+  ['npy',['nPy',['../structQuadratureStruct.html#a8b5fccb30b85cd0cb9976ab389b1040c',1,'QuadratureStruct']]],
+  ['nv',['nV',['../classGrid.html#ae23dd2b2e5712ce71f941c87c3af973c',1,'Grid']]]
 ];

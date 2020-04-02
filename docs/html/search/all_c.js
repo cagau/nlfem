@@ -1,24 +1,4 @@
 var searchData=
 [
-  ['l',['L',['../struct_mesh_struct.html#a96e48b23103d3265ff4319566f2bf1f1',1,'MeshStruct']]],
-  ['l2_5frates',['L2_rates',['../namespace_l2__rates.html',1,'']]],
-  ['l2_5frates_2epy',['L2_rates.py',['../_l2__rates_8py.html',1,'']]],
-  ['l_5fbfgs',['L_BFGS',['../namespacebib3.html#a8e814acf838d5d1654161b8d707f6ed5',1,'bib3']]],
-  ['l_5fomega',['L_Omega',['../struct_mesh_struct.html#aec8d7e5206f63bca01f10d2f33bdbf1b',1,'MeshStruct']]],
-  ['label',['label',['../struct_element_struct.html#a45a21f495c5e350aeb0fab3cbe47f624',1,'ElementStruct']]],
-  ['label_5fi',['label_i',['../namespacebib3.html#add21683991d29671e1e35ee2bd6cf1af',1,'bib3']]],
-  ['label_5fj',['label_j',['../namespacebib3.html#a17a3c14ddc86a5cf307de5ef2f204af0',1,'bib3']]],
-  ['labeltriangles',['LabelTriangles',['../struct_mesh_struct.html#ae3603034fb1a0770ba05cb7fd4396f27',1,'MeshStruct']]],
-  ['laplace',['Laplace',['../namespacebib3.html#a2a6b014909ed015eb45fbc0bf49558d4',1,'bib3']]],
-  ['laplace_5f1d',['Laplace_1d',['../namespacebib3.html#a29a352b72f82b8a0de0c0930cffbffcc',1,'bib3']]],
-  ['laplace_5fpara',['Laplace_para',['../namespacebib3.html#a2e58bc426349a6d16fb35f38dbe72b0f',1,'bib3']]],
-  ['leftomegaigrid',['leftOmegaIGrid',['../class_grid.html#ad591c756ad96a9a34c4f29a01575ff53',1,'Grid']]],
-  ['linelas_5fassembly',['LinElas_assembly',['../namespacebib3.html#abfb389cf1373fd7aa3cca7729669d29c',1,'bib3']]],
-  ['linelas_5fmassmat',['LinElas_massmat',['../namespacebib3.html#aa53e87049c479e128c03f4ba1a2d2c2b',1,'bib3']]],
-  ['lines',['lines',['../classbib3_1_1_mesh.html#a34ade7d2a37a28958d092ba0d9ddb2eb',1,'bib3::Mesh']]],
-  ['linewidth',['linewidth',['../namespacebib3.html#a743b4315af1e4073954bfc54bbf8661c',1,'bib3']]],
-  ['load_5fsparse_5fcsr',['load_sparse_csr',['../namespacebib3.html#a3b64f4c4085a1a32544f218675ed76d9',1,'bib3']]],
-  ['longvec_5fall',['longVec_all',['../mathhelpers_8cpp.html#a28c93cca22ae50e05e5f7662672f62e3',1,'mathhelpers.cpp']]],
-  ['longvec_5fany',['longVec_any',['../mathhelpers_8cpp.html#a69b102b8c61961efb80d643d45c50e7c',1,'mathhelpers.cpp']]],
-  ['lookup_5fconfiguration',['lookup_configuration',['../_cassemble_8cpp.html#ab588dea595a5952c01be199e6199a4af',1,'Cassemble.cpp']]]
+  ['omegagrid',['omegaGrid',['../classGrid.html#ad498b1e89b1d8a5ad35275e437a962e3',1,'Grid']]]
 ];

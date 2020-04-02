@@ -1,5 +1,7 @@
 var searchData=
 [
-  ['j',['J',['../struct_mesh_struct.html#aa1408212b34a196cd11963ab7ea04713',1,'MeshStruct::J()'],['../namespacebib3.html#a8f3e45f2f411bc3dc2f4adf15abce940',1,'bib3.j()']]],
-  ['j_5fomega',['J_Omega',['../struct_mesh_struct.html#a23effce3b1afe12aa67f4b330f0cb266',1,'MeshStruct']]]
+  ['m',['M',['../classGrid.html#a2bfebba9fe1bc0db5f8474dc4944ba97',1,'Grid']]],
+  ['mate',['matE',['../structElementStruct.html#ac31f971b9222f1497962ab0bd9cefd51',1,'ElementStruct']]],
+  ['model_5ff',['model_f',['../structConfigurationStruct.html#a942321c24cf95a1ca30f213160dd6908',1,'ConfigurationStruct']]],
+  ['model_5fkernel',['model_kernel',['../structConfigurationStruct.html#a8fd86bb43546f3e7fa1f5d1b07798647',1,'ConfigurationStruct']]]
 ];

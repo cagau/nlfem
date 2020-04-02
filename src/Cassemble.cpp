@@ -200,7 +200,8 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
     double *psi = (double *) malloc((dVerts)*nP*sizeof(double));
 
     for(k=0; k<nP; k++){
-       model_basisFunction(&P[dim*k], &tmp_psi[0]);
+        //model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals){
+       model_basisFunction(&P[dim*k], dim, &tmp_psi[0]);
        for (kk=0; kk<dVerts; kk++) {
            psi[nP * kk + k] = tmp_psi[kk];
            //psi[nP * 1 + j] = tmp_psi[1];
@@ -290,11 +291,11 @@ void par_assemble( double * ptrAd, double * fd,
     Ad.zeros();
     for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
-        model_basisFunction(& quadRule.Px[mesh.dim*h], mesh,& quadRule.psix[mesh.dVertex * h]);
+        model_basisFunction(& quadRule.Px[mesh.dim*h], mesh.dim, & quadRule.psix[mesh.dVertex * h]);
     }
     for(h=0; h<quadRule.nPy; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
-        model_basisFunction(& quadRule.Py[mesh.dim*h], mesh,& quadRule.psiy[mesh.dVertex * h]);
+        model_basisFunction(& quadRule.Py[mesh.dim*h], mesh.dim,& quadRule.psiy[mesh.dVertex * h]);
     }
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     // Contains one row more than number of verticies as label information is contained here
@@ -442,6 +443,7 @@ void par_assemble( double * ptrAd, double * fd,
 
                         // Check whether bTdx is already visited.
                         if (visited[bTdx] == 0) {
+                            //cout << aTdx << ", " << bTdx << endl;
 
                             // Retriangulation and integration ------------------------
                             if (mesh.is_DiscontinuousGalerkin) {

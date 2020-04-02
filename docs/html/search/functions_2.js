@@ -1,11 +1,7 @@
 var searchData=
 [
-  ['barycenter',['baryCenter',['../mathhelpers_8cpp.html#a97cc792055584a605cba04c3604ebe30',1,'mathhelpers.cpp']]],
-  ['barycenter_5fpolygone',['baryCenter_polygone',['../_cassemble2_d_8cpp.html#a8b782143c0f3e15db22c8a0b33f67951',1,'baryCenter_polygone(double *P, int nVerticies, double *bary):&#160;Cassemble2D.cpp'],['../mathhelpers_8cpp.html#a1d47890b50e95ecafb427ea57c934e39',1,'baryCenter_polygone(const double *P, const int nVerticies, double *bary):&#160;mathhelpers.cpp']]],
-  ['basis',['basis',['../classnlocal_1_1_mesh.html#a5c4bed0bd0f9ebfd0c453b556ebb97a6',1,'nlocal.Mesh.basis(self, ansatz)'],['../classnlocal_1_1_mesh.html#a5c4bed0bd0f9ebfd0c453b556ebb97a6',1,'nlocal.Mesh.basis(self, ansatz)'],['../namespacebib3.html#ae3c6712a5b6d25db2afab566a20d2402',1,'bib3.BASIS()']]],
-  ['basis_5f0',['basis_0',['../namespacebib3.html#ab8d57a9e917dd4e723c64c4c2a641799',1,'bib3']]],
-  ['basis_5f1',['basis_1',['../namespacebib3.html#aef690535ea598e67e57f6d19f995b9d3',1,'bib3']]],
-  ['basis_5f1d',['BASIS_1d',['../namespacebib3.html#a6a8baefa2839c7053aa34baa0b13f909',1,'bib3']]],
-  ['basis_5f2',['basis_2',['../namespacebib3.html#ac6a61bb33a30c844f06a182110fb7242',1,'bib3']]],
-  ['basis_5f3',['basis_3',['../namespacebib3.html#a472768384183a5af9d84f241cafe1700',1,'bib3']]]
+  ['grid',['Grid',['../classGrid.html#afdca6240dde4a2ffe1dcbf5325fd3234',1,'Grid']]],
+  ['grid1d',['Grid1D',['../classGrid1D.html#aa24c8c8021526a620a8494c5f27adfe5',1,'Grid1D']]],
+  ['grid2d',['Grid2D',['../classGrid2D.html#a8eaf25a820272e67f5a25d104aa42950',1,'Grid2D::Grid2D(long N_Omega, double delta)'],['../classGrid2D.html#a931911d4459c86671e8d4887ba5f045e',1,'Grid2D::Grid2D(const Grid2D *grid)']]],
+  ['grid3d',['Grid3D',['../classGrid3D.html#a9e015a351534cef5296af8b6f8a65c51',1,'Grid3D']]]
 ];
