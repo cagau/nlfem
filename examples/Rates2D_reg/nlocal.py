@@ -311,10 +311,12 @@ class Mesh:
         #import matplotlib.pyplot as plt
         #plt.triplot(self.vertices[:,0], self.vertices[:,1], self.elements)
         #plt.triplot(self.vertices[:,0], self.vertices[:,1], self.elements[:self.nE_Omega,:])
-        #tList= [1,0,2,244,1,21,203,3,23,201,225,20,22,200,202,4,244]
+        #tList= self.neighbours_par[0]
         #for t in tList:
-        #    plt.scatter(self.vertices[self.elements[t], 0], self.vertices[self.elements[t], 1])
+        #    if t<self.nE:
+        #        plt.scatter(self.vertices[self.elements[t], 0], self.vertices[self.elements[t], 1])
         #plt.show()
+        #print("Plots")
 
     def get_state_dict(self):
         return {"Verts": self.vertices, "Triangles": self.elements, "J":self.nE, "J_Omega":self.nE_Omega,

@@ -12,10 +12,10 @@ model_kernel = "constant3D" # "labeled" #
 integration_method = "baryCenter" # "retriangulate" # "baryCenter" #
 is_PlacePointOnCap = True
 quadrule_outer = "keast_9"
-quadrule_inner = "keast_4"
+quadrule_inner = "keast_1"
 
 n_start = 12
-n_layers = 2
+n_layers = 3
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*2
 u_exact = lambda x: x[0]**2 * x[1] + x[1]**2 + x[2]**2
@@ -60,10 +60,10 @@ quadrules = {
 
 #scheme = quadpy.nsimplex.walkington_7(3)
 py_Px = quadrules[quadrule_outer].points[:, :3]
-dx =  quadrules[quadrule_outer].weights
+dx =  quadrules[quadrule_outer].weights/6.
 
 py_Py = quadrules[quadrule_inner].points[:, :3]
-dy = quadrules[quadrule_inner].weights
+dy = quadrules[quadrule_inner].weights/6.
 
 def writeattr(file, attr_name):
     file.write(attr_name+"\n")

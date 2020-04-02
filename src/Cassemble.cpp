@@ -88,26 +88,39 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
 }
 
 void constructAdjaciencyGraph(const int dim, const int nE, const long * elements, long * neighbours){
-    int aTdx=0;
+    //int aTdx=0;
     const int dVertex = dim+1;
     const int sqdVertex = pow(dVertex, 2);
     #pragma omp parallel
     {
-    int i=0, nEqualVerts=0, nNeighsFound=0, bTdx=0;
     #pragma omp for
-    for (aTdx=0; aTdx < nE; aTdx++) {
-        for (i = 0; i < dVertex; i++) {
+    for (int aTdx=0; aTdx < nE; aTdx++) {
+        //cout << "aTdx " << aTdx << endl;
+        //cout << "Init neighbours " << endl;
+        for (int i = 0; i < dVertex; i++) {
             neighbours[aTdx * dVertex + i] = static_cast<long>(nE);
+            //cout << elements[aTdx * dVertex + i] << " " ;
         }
-        nNeighsFound = 0;
+        //cout << endl;
 
-        for(bTdx=0; bTdx<nE; bTdx++) {
-            nEqualVerts = 0;
-            for (i = 0; i < sqdVertex; i++) {
+        int nNeighsFound = 0;
+
+        for(int bTdx=0; bTdx<nE; bTdx++) {
+            //cout << "bTdx " << bTdx << endl;
+            int nEqualVerts = 0;
+            //cout << "Compare " << endl;
+            //cout << elements[bTdx * dVertex + 0] << " " << elements[bTdx * dVertex + 1] << " " << elements[bTdx * dVertex + 2] << endl ;
+            for (int i = 0; i < sqdVertex; i++) {
+                //cout << "aVdx " <<(i % dVertex) << endl;
+                //cout << "bVdx " << aTdx*dVertex +  bTdx*dVertex +  static_cast<int>(i / dVertex)<< endl;
                 nEqualVerts += (elements[aTdx*dVertex + (i % dVertex)] == elements[bTdx*dVertex + static_cast<int>(i / dVertex)]);
+
             }
+            //cout << "nEqualVerts " << nEqualVerts << endl;
             //cout << nEqualVerts << endl;
+
             if (nEqualVerts == dim){
+                //cout << "Ndx " << aTdx*dVertex + nNeighsFound << endl;
                 neighbours[aTdx*dVertex + nNeighsFound] = bTdx;
                 nNeighsFound+=1;
                 if (nNeighsFound==dVertex){
@@ -115,6 +128,7 @@ void constructAdjaciencyGraph(const int dim, const int nE, const long * elements
                 }
             }
         }
+        //abort();
     }
 }
 
