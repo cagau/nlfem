@@ -3,7 +3,7 @@ image: alpine
 pages:
   script:
   - apk update && apk add doxygen graphviz ttf-freefont
-  - doxygen docs/doxygen.conf
+  - doxygen docs/Doxyfile
   - mv docs/html/ public/
   artifacts:
     paths:
