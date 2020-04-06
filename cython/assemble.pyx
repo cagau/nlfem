@@ -15,6 +15,7 @@ import numpy as np
 import time
 from libc.math cimport pow
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
+import scipy.sparse as sparse
 
 def assemble2D(
         # Mesh information ------------------------------------
@@ -157,50 +158,78 @@ cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, con
                 n += 1
     return n == (dVerts-1)
 
-def constructAdjaciencyGraph(Elements):
+def constructAdjaciencyGraph(long[:,:] elements):
     print("Constructing adjaciency graph...")
-    cdef int nE = Elements.shape[0]
-    cdef int dim = Elements.shape[1]-1
-    cdef long[:,:] Neighbours = np.ones((nE, dim+1), dtype=int)#*nE
-    cdef long[:] Elements_flat = Elements.flatten()
+    nE = elements.shape[0]
+    nV = np.max(elements)+1
+    cdef int dVerts = elements.shape[1]
+    cdef int dim = dVerts-1
 
-    Cassemble.constructAdjaciencyGraph(dim, nE, &Elements_flat[0], &Neighbours[0,0])
-    return np.array(Neighbours)
+    neigs = np.ones((nE, dim+1), dtype=np.int)*nE
+    grph_elements = sparse.lil_matrix((nV, nE), dtype=np.int)
 
-def seq_constructAdjaciencyGraph(long [:,:] Elements):
-    print("Constructing adjaciency graph...")
-    cdef int nE = Elements.shape[0]
-    cdef int dVerts = Elements.shape[1]
-    cdef long[:,:] Neighbours = np.ones((nE, dVerts), dtype=int)*nE
-    cdef long [:] neighbourCounter = np.zeros(nE, dtype=int)
-    cdef int aTdx, bTdx
+    for Tdx, Vdx in enumerate(elements):
+        for d in range(dVerts):
+            grph_elements[Vdx[d], Tdx] = 1
+    grph_neigs = ((grph_elements.transpose() @ grph_elements) == dim)
+    elemenIndices, neighbourIndices = grph_neigs.nonzero()
 
-    #print(dVerts)
-    bTdxFilter = np.ones(nE, dtype=bool)
+    neigs[elemenIndices[0],0] = neighbourIndices[0]
+    cdef int colj = 0
+    cdef int k
 
-    # Outer For Loop,
-    # Find all neighbours of Triangle aT
-    for aTdx in range(nE):
-        #print("\na", aTdx)
-        # No triangle can be its own neighbour
-        # and all of its neighbours will be found
-        bTdxFilter[aTdx] = False
-        # If a triangle index was already in the outer loop,
-        # Traverse all triangles bT
-        # which do not have dVerts neighbours yet
-        for bTdx in range(nE):
-            if bTdxFilter[bTdx] and is_neighbour(aTdx, bTdx, Elements, dVerts):
-                #print("b", bTdx, "c", neighbourCounter[bTdx])
-                #print("aT:", np.array(Elements[aTdx]))
-                #print("bT:", np.array(Elements[bTdx]))
-                Neighbours[aTdx, neighbourCounter[aTdx]] = bTdx
-                neighbourCounter[aTdx] += 1
-                Neighbours[bTdx, neighbourCounter[bTdx]] = aTdx
-                neighbourCounter[bTdx] += 1
-                if neighbourCounter[bTdx] == dVerts:
-                    #print(bTdx)
-                    bTdxFilter[bTdx] = False
-    return np.array(Neighbours)
+    for k in range(1, len(elemenIndices)):
+        colj *= ((elemenIndices[k-1]-elemenIndices[k])==0)
+        colj += ((elemenIndices[k-1]-elemenIndices[k])==0)
+        neigs[elemenIndices[k], colj] =  neighbourIndices[k]
+    return neigs
+
+# DEPRECATED #
+#def par_constructAdjaciencyGraph(Elements):
+#    print("Constructing adjaciency graph...")
+#    cdef int nE = Elements.shape[0]
+#    cdef int dim = Elements.shape[1]-1
+#    cdef long[:,:] Neighbours = np.ones((nE, dim+1), dtype=int)#*nE
+#    cdef long[:] Elements_flat = Elements.flatten()
+#
+#    Cassemble.constructAdjaciencyGraph(dim, nE, &Elements_flat[0], &Neighbours[0,0])
+#    return np.array(Neighbours)
+#
+#def seq_constructAdjaciencyGraph(long [:,:] Elements):
+#    print("Constructing adjaciency graph...")
+#    cdef int nE = Elements.shape[0]
+#    cdef int dVerts = Elements.shape[1]
+#    cdef long[:,:] Neighbours = np.ones((nE, dVerts), dtype=int)*nE
+#    cdef long [:] neighbourCounter = np.zeros(nE, dtype=int)
+#    cdef int aTdx, bTdx
+#
+#    #print(dVerts)
+#    bTdxFilter = np.ones(nE, dtype=bool)
+#
+#    # Outer For Loop,
+#    # Find all neighbours of Triangle aT
+#    for aTdx in range(nE):
+#        #print("\na", aTdx)
+#        # No triangle can be its own neighbour
+#        # and all of its neighbours will be found
+#        bTdxFilter[aTdx] = False
+#        # If a triangle index was already in the outer loop,
+#        # Traverse all triangles bT
+#        # which do not have dVerts neighbours yet
+#        for bTdx in range(nE):
+#            if bTdxFilter[bTdx] and is_neighbour(aTdx, bTdx, Elements, dVerts):
+#                #print("b", bTdx, "c", neighbourCounter[bTdx])
+#                #print("aT:", np.array(Elements[aTdx]))
+#                #print("bT:", np.array(Elements[bTdx]))
+#                Neighbours[aTdx, neighbourCounter[aTdx]] = bTdx
+#                neighbourCounter[aTdx] += 1
+#                Neighbours[bTdx, neighbourCounter[bTdx]] = aTdx
+#                neighbourCounter[bTdx] += 1
+#                if neighbourCounter[bTdx] == dVerts:
+#                    #print(bTdx)
+#                    bTdxFilter[bTdx] = False
+#    return np.array(Neighbours)
+
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
 from Cassemble cimport method_retriangulate
 def py_retriangulate(
