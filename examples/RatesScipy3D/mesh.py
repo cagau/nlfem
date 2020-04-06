@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import meshzoo
-from assemble import constructAdjaciencyGraph as constructAdjaciencyGraph
+from assemble import constructAdjaciencyGraph
 
 class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
