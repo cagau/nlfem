@@ -34,8 +34,10 @@ def main():
 
         # Solve ---------------------------------------------------------------------------
         print("Solve...")
-        mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
-
+        #mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
+        solution = assemble.solve_cg(A_O, f, f)
+        print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
+        mesh.write_ud(solution["x"], conf.u_exact)
         # Refine to N_fine ----------------------------------------------------------------
         mesh.plot_ud(pp)
         mesh = RegMesh2D(conf.delta, conf.N_fine, ufunc=conf.u_exact, coarseMesh=mesh,

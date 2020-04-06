@@ -303,6 +303,7 @@ void par_assemble( double * ptrAd, double * fd,
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
     Ad.zeros();
+
     for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(& quadRule.Px[mesh.dim*h], mesh.dim, & quadRule.psix[mesh.dVertex * h]);

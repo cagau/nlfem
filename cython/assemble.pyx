@@ -16,6 +16,7 @@ import time
 from libc.math cimport pow
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import scipy.sparse as sparse
+cimport numpy as c_np
 
 def assemble2D(
         # Mesh information ------------------------------------
@@ -184,6 +185,26 @@ def constructAdjaciencyGraph(long[:,:] elements):
         neigs[elemenIndices[k], colj] =  neighbourIndices[k]
     return neigs
 
+def solve_cg(c_np.ndarray Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 500):
+    cdef int n = b.size
+    cdef int k=0
+
+    cdef double beta = 0.0
+    cdef c_np.ndarray p = np.zeros(n)
+    cdef c_np.ndarray r = Q.dot(x) - b
+    cdef double res_new  = np.linalg.norm(r)
+
+    while res_new >= tol and k < max_it:
+        k+=1
+        p = -r + beta*p
+        alpha = res_new**2 / p.dot(Q.dot(p))
+        x = x + alpha*p
+        r = r + alpha*Q.dot(p)
+        res_old = res_new
+        res_new = np.linalg.norm(r)
+        beta = res_new**2/res_old**2
+
+    return {"x": x, "its": k, "res": res_new}
 # DEPRECATED #
 #def par_constructAdjaciencyGraph(Elements):
 #    print("Constructing adjaciency graph...")
