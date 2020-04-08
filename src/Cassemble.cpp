@@ -302,8 +302,10 @@ void par_assemble( double * ptrAd, double * fd,
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
-    arma::sp_mat sp_Mtx(mesh.K, mesh.K_Omega);
     Ad.zeros();
+    //arma::sp_mat sp_Ad(mesh.K, mesh.K_Omega);
+    arma::vec values_all;
+    arma::umat indices_all(2,0);
 
     for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
@@ -323,6 +325,13 @@ void par_assemble( double * ptrAd, double * fd,
 
     #pragma omp parallel
     {
+    int vec_size=mesh.K*3;
+    int vec_resize_buffer = 2*mesh.dVertex*mesh.dVertex;
+    int vec_resize_trigger = vec_size-vec_resize_buffer;
+    arma::vec values(vec_size, arma::fill::zeros);
+    arma::umat indices(2, vec_size, arma::fill::zeros);
+    int i_nnz=0;
+
     // General Loop Indices ---------------------------------------
     int j=0, bTdx=0;
 
@@ -364,7 +373,7 @@ void par_assemble( double * ptrAd, double * fd,
     //[End DEBUG]
 
 
-    #pragma omp for
+    #pragma omp for nowait
     for (aTdx=0; aTdx<mesh.J; aTdx++) {
         if (mesh.LabelTriangles[aTdx] == 1) {
             // It would be nice, if in future there is no dependency on the element ordering...
@@ -422,7 +431,7 @@ void par_assemble( double * ptrAd, double * fd,
                 // Again, Triangles contains the labels as first entry! Hence, we start with a=1 here!
                 // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
                 if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
-#pragma omp atomic update
+                    #pragma omp atomic update
                     fd[aAdx[a]] += termf[a];
                 }
             }
@@ -527,17 +536,28 @@ void par_assemble( double * ptrAd, double * fd,
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
 //printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
+                                if (i_nnz >= vec_resize_trigger){
+                                    vec_size += vec_size;
+                                    vec_resize_trigger = vec_size-vec_resize_buffer;
+
+                                    values.resize(vec_size);
+                                    indices.resize(2, vec_size);
+                                }
                                 for (a = 0; a < mesh.dVertex; a++) {
                                     // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
                                     if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
                                         for (b = 0; b < mesh.dVertex; b++) {
                                             // Element access is ineficcient für sparse, use batch insertion!
-                                            // Race condition!
-//#pragma omp critical
-//{
-                                                sp_Mtx(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
-                                                sp_Mtx(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
-//}
+                                            indices(0, i_nnz) = aAdx[b];
+                                            indices(1, i_nnz) = aAdx[a];
+                                            values(i_nnz) = termLocal[mesh.dVertex * a + b];
+                                            i_nnz++;
+                                            //Ad(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
+                                            indices(0, i_nnz) = bAdx[b];
+                                            indices(1, i_nnz) = aAdx[a];
+                                            values(i_nnz) = -termNonloc[mesh.dVertex * a + b];
+                                            i_nnz++;
+                                            //Ad(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
                                         }
                                     }
                                 }
@@ -552,14 +572,19 @@ void par_assemble( double * ptrAd, double * fd,
             //}// End if Label of (aTdx == 1)
         }// End if LabelTriangles == 1
     }// End parallel for
+
+    //abort();
+    #pragma omp critical
+    {
+        values_all = arma::join_cols(values_all, values);
+        indices_all = arma::join_rows(indices_all, indices);
+    }
+
     }// End pragma omp parallel
 
-    //sp_Mtx.save("sp_Ad");
-    //arma::sp_mat sp_Test(3, 3);
-    //sp_Test(0,0) += 1.;
-    //sp_Test(1,0) = 2.;
-    //sp_Test(2,0) = 3.;
-    //sp_Test.save("sp_Test");
+    arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
+    sp_Ad.save("sp_Ad");
+
 
 }// End function par_assemble
 

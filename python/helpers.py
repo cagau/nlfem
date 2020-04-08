@@ -37,9 +37,9 @@ def read_arma_spMat(path, is_verbose=False):
 
     A = sp.csc_matrix((values, row_index, col_pointer), shape=(n_rows, n_cols))
     A = A.tocsr() # This is efficient, linearly in n_nonzeros.
-    #if is_verbose: print(A.todense())
+    if is_verbose: print(A.todense())
     return A
 
 
 if __name__=="__main__":
-    read_arma_spMat("../sp_Test", True)
+    read_arma_spMat("../sp_Ad", True)
