@@ -100,7 +100,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
                     // Evaluate ker on physical quad (note this is ker')
                     ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
                     // Evaluate basis function on resulting reference quadrature point
-                    model_basisFunction(reference_quad, mesh, psi_value);
+                    model_basisFunction(reference_quad, mesh.dim, psi_value);
                     for (b = 0; b < mesh.dVertex; b++) {
                         innerNonloc[b] += psi_value[b] * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
                     }

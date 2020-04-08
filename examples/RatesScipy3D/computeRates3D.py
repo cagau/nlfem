@@ -1,18 +1,48 @@
-from examples.RatesScipy3D.mesh import RegMesh2D
+from examples.RatesScipy3D.mesh import RegMesh2D as RegMesh
 import examples.RatesScipy3D.helpers as helpers
 import numpy as np
 import assemble
 from time import time
 import matplotlib.pyplot as plt
+def compareRHS():
+    import examples.RatesScipy3D.conf3D as conf
+    dim = 3
+    n = conf.n_start
+    def source(x):
+        return 1.#2.*(x[1] + 2.)
+
+    mesh = RegMesh(conf.delta, n, dim=3, boundaryConditionType="Neumann")
+    # Assembly ------------------------------------------------------------------------
+    A, ffromAssemble = assemble.assemble(mesh, conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta,
+                             model_kernel=conf.model_kernel,
+                             model_f=conf.model_f,
+                             integration_method=conf.integration_method,
+                             is_PlacePointOnCap=conf.is_PlacePointOnCap)
+
+    ffromMass_K  = np.zeros(mesh.K)
+    sourceData = np.array([source(v) for v in mesh.vertices])
+
+
+    if mesh.is_NeumannBoundary:
+        ffromAssemble_K = ffromAssemble
+
+        ffromMass_K = assemble.evaluateMass(mesh, sourceData, conf.py_Px, conf.dx)
+    else:
+        ffromAssemble_K = np.zeros(mesh.K)
+        ffromAssemble_K[:mesh.K_Omega] = ffromAssemble
+
+        ffromMass_K[:mesh.K_Omega] = assemble.evaluateMass(mesh, sourceData, conf.py_Px, conf.dx)
+
+
+    mesh.plot3D(conf.fnames["tetPlot.vtk"], dataDict={"ffromAssemble": ffromAssemble_K, "ffromMass": ffromMass_K})
 
 def rates():
     import examples.RatesScipy3D.conf3D as conf
     err_ = None
     dim = 3
-
     for n in conf.N:
         print()
-        mesh = RegMesh2D(conf.delta, n, dim=3)
+        mesh = RegMesh(conf.delta, n, dim=3)
         conf.data["h"].append(mesh.h)
         conf.data["nV_Omega"].append(mesh.nV_Omega)
 
@@ -33,13 +63,16 @@ def rates():
 
         # Solve ---------------------------------------------------------------------------
         print("Solve...")
-        mesh.write_ud(np.linalg.solve(A_O,f), conf.u_exact)
-
+        #mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
+        solution = assemble.solve_cg(A_O, f, f)
+        print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
+        mesh.write_ud(solution["x"], conf.u_exact)
 
         # Refine to N_fine ----------------------------------------------------------------
-        mesh = RegMesh2D(conf.delta, conf.N_fine, coarseMesh=mesh, dim=3, is_constructAdjaciencyGraph=False)
+        mesh = RegMesh(conf.delta, conf.N_fine, coarseMesh=mesh, ufunc=conf.u_exact, dim=3, is_constructAdjaciencyGraph=False)
 
         # Evaluate L2 Error ---------------------------------------------------------------
+
         u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
         Mu_udiff = assemble.evaluateMass(mesh, u_diff, conf.py_Px, conf.dx)
         err = np.sqrt(u_diff @ Mu_udiff)
@@ -61,12 +94,12 @@ def rates():
 
 def main():
     import examples.RatesScipy3D.conf3D as conf
-    u_exact = lambda x: x[0]*2 + x[1] *3 - x[2]*10 + 10
+    u_exact = lambda x: (x[0]-0.5)**2 + (x[1]-0.5)**2 + (x[2]-0.5)**2 - 0.75
     err_ = None
     dim = 3
     conf.delta = 0.5
     conf.n_start = 4
-    mesh = RegMesh2D(conf.delta,conf.n_start, dim=3, ufunc=u_exact)
+    mesh = RegMesh(conf.delta,conf.n_start, dim=3, ufunc=u_exact)
     conf.data["h"].append(mesh.h)
     conf.data["nV_Omega"].append(mesh.nV_Omega)
     conf.save("data")
@@ -96,4 +129,6 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    rates()
+    data = rates()
+    #helpers.write_output(data)
+    #compareRHS()

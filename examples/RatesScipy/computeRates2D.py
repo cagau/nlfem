@@ -34,8 +34,10 @@ def main():
 
         # Solve ---------------------------------------------------------------------------
         print("Solve...")
-        mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
-
+        #mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
+        solution = assemble.solve_cg(A_O, f, f)
+        print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
+        mesh.write_ud(solution["x"], conf.u_exact)
         # Refine to N_fine ----------------------------------------------------------------
         mesh.plot_ud(pp)
         mesh = RegMesh2D(conf.delta, conf.N_fine, ufunc=conf.u_exact, coarseMesh=mesh,
@@ -68,7 +70,30 @@ def justPlotit():
         mesh.plot_u_exact(pp)
     pp.close()
 
+def plotRHS():
+    import examples.RatesScipy.conf as conf
+    import matplotlib.pyplot as plt
+
+    n = conf.n_start
+    mesh=RegMesh2D(conf.delta, n, ufunc=conf.u_exact)
+    print("\n h: ", mesh.h)
+    conf.data["h"].append(mesh.h)
+    conf.data["nV_Omega"].append(mesh.nV_Omega)
+
+    # Assembly ------------------------------------------------------------------------
+    A, f = assemble.assemble(mesh, conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta,
+                             model_kernel=conf.model_kernel,
+                             model_f=conf.model_f,
+                             integration_method=conf.integration_method,
+                             is_PlacePointOnCap=conf.is_PlacePointOnCap)
+    fd = np.zeros(mesh.K)
+    fd[:mesh.K_Omega] = f
+
+    plt.tricontourf(mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.elements, fd)
+    plt.show()
+
 if __name__ == "__main__":
     data = main()
     helpers.write_output(data)
+    #plotRHS()
     #justPlotit()

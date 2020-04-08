@@ -1,5 +1,5 @@
 #include <Cassemble.h>
-#include <math.h>
+#include <cmath>
 #include <queue>
 #include <iostream>
 #include <integration.cpp>
@@ -12,12 +12,14 @@ void lookup_configuration(ConfigurationType & conf){
 
     // Lookup right hand side ------------------------------------------------------------------------------------------
     cout << "Right hand side: " << conf.model_f << endl;
-    if (conf.model_f == "linear"){
+    if (conf.model_f == "linear") {
         model_f = f_linear;
+    } else if (conf.model_f == "linear3D") {
+        model_f = f_linear3D;
     } else if (conf.model_f == "constant"){
         model_f = f_constant;
     } else {
-        cout << "Error in par:assemblele. Right hand side: " << conf.model_f << " is not implemented." << endl;
+        cout << "Error in par:assemble. Right hand side: " << conf.model_f << " is not implemented." << endl;
         abort();
     }
 
@@ -25,10 +27,12 @@ void lookup_configuration(ConfigurationType & conf){
     cout << "Kernel: " << conf.model_kernel << endl;
     if (conf.model_kernel == "constant"){
         model_kernel = kernel_constant;
-    } else if (conf.model_kernel == "labeled"){
+    } else if (conf.model_kernel == "labeled") {
         model_kernel = kernel_labeled;
+    } else if (conf.model_kernel == "constant3D") {
+        model_kernel = kernel_constant3D;
     } else {
-        cout << "Error in par:assemblele. Kernel " << conf.model_kernel << " is not implemented." << endl;
+        cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;
         abort();
     }
 
@@ -43,7 +47,7 @@ void lookup_configuration(ConfigurationType & conf){
         integrate = integrate_retriangulate;
         printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
     } else {
-        cout << "Error in par:assemblele. Integration method " << conf.integration_method <<
+        cout << "Error in par:assemble. Integration method " << conf.integration_method <<
              " is not implemented." << endl;
         abort();
     }
@@ -52,15 +56,13 @@ void lookup_configuration(ConfigurationType & conf){
 void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     // Copy coordinates of Triange b to bTE.
 
-    // Tempalte of Triangle Point data -------------------------------------------------
+    // Tempalte of Triangle Point data.
     // 2D Case, a, b, c are the vertices of a triangle
-    //         _____________________________
     // T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
-    // Hence, if one wnats to put T.E into col major order matrix it would be of shape
-    //                              ______________
+    // Hence, if one wants to put T.E into col major order matrix it would be of shape\
     //                             | a1 | b1 | c1 |
     // M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
-    //  --------------------------------------------------------------------------------
+    //
 
     int j, k, Vdx;
     //T.matE = arma::vec(dim*(dim+1));
@@ -77,7 +79,7 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     // Initialize Struct
     T.E = T.matE.memptr();
     T.absDet = absDet(T.E, mesh.dim);
-    T.signDet = signDet(T.E, mesh);
+    T.signDet = static_cast<int>(signDet(T.E, mesh));
     T.label = mesh.LabelTriangles(Tdx);
 
     //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
@@ -86,26 +88,39 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
 }
 
 void constructAdjaciencyGraph(const int dim, const int nE, const long * elements, long * neighbours){
-    int aTdx=0;
+    //int aTdx=0;
     const int dVertex = dim+1;
     const int sqdVertex = pow(dVertex, 2);
     #pragma omp parallel
     {
-    int i=0, nEqualVerts=0, nNeighsFound=0, bTdx=0;
     #pragma omp for
-    for (aTdx=0; aTdx < nE; aTdx++) {
-        for (i = 0; i < dVertex; i++) {
+    for (int aTdx=0; aTdx < nE; aTdx++) {
+        //cout << "aTdx " << aTdx << endl;
+        //cout << "Init neighbours " << endl;
+        for (int i = 0; i < dVertex; i++) {
             neighbours[aTdx * dVertex + i] = static_cast<long>(nE);
+            //cout << elements[aTdx * dVertex + i] << " " ;
         }
-        nNeighsFound = 0;
+        //cout << endl;
 
-        for(bTdx=0; bTdx<nE; bTdx++) {
-            nEqualVerts = 0;
-            for (i = 0; i < sqdVertex; i++) {
+        int nNeighsFound = 0;
+
+        for(int bTdx=0; bTdx<nE; bTdx++) {
+            //cout << "bTdx " << bTdx << endl;
+            int nEqualVerts = 0;
+            //cout << "Compare " << endl;
+            //cout << elements[bTdx * dVertex + 0] << " " << elements[bTdx * dVertex + 1] << " " << elements[bTdx * dVertex + 2] << endl ;
+            for (int i = 0; i < sqdVertex; i++) {
+                //cout << "aVdx " <<(i % dVertex) << endl;
+                //cout << "bVdx " << aTdx*dVertex +  bTdx*dVertex +  static_cast<int>(i / dVertex)<< endl;
                 nEqualVerts += (elements[aTdx*dVertex + (i % dVertex)] == elements[bTdx*dVertex + static_cast<int>(i / dVertex)]);
+
             }
+            //cout << "nEqualVerts " << nEqualVerts << endl;
             //cout << nEqualVerts << endl;
+
             if (nEqualVerts == dim){
+                //cout << "Ndx " << aTdx*dVertex + nNeighsFound << endl;
                 neighbours[aTdx*dVertex + nNeighsFound] = bTdx;
                 nNeighsFound+=1;
                 if (nNeighsFound==dVertex){
@@ -113,6 +128,7 @@ void constructAdjaciencyGraph(const int dim, const int nE, const long * elements
                 }
             }
         }
+        //abort();
     }
 }
 
@@ -198,7 +214,8 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
     double *psi = (double *) malloc((dVerts)*nP*sizeof(double));
 
     for(k=0; k<nP; k++){
-       model_basisFunction(&P[dim*k], &tmp_psi[0]);
+        //model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals){
+       model_basisFunction(&P[dim*k], dim, &tmp_psi[0]);
        for (kk=0; kk<dVerts; kk++) {
            psi[nP * kk + k] = tmp_psi[kk];
            //psi[nP * 1 + j] = tmp_psi[1];
@@ -286,13 +303,14 @@ void par_assemble( double * ptrAd, double * fd,
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
     Ad.zeros();
+
     for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
-        model_basisFunction(& quadRule.Px[mesh.dim*h], mesh,& quadRule.psix[mesh.dVertex * h]);
+        model_basisFunction(& quadRule.Px[mesh.dim*h], mesh.dim, & quadRule.psix[mesh.dVertex * h]);
     }
     for(h=0; h<quadRule.nPy; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
-        model_basisFunction(& quadRule.Py[mesh.dim*h], mesh,& quadRule.psiy[mesh.dVertex * h]);
+        model_basisFunction(& quadRule.Py[mesh.dim*h], mesh.dim,& quadRule.psiy[mesh.dVertex * h]);
     }
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     // Contains one row more than number of verticies as label information is contained here
@@ -389,9 +407,6 @@ void par_assemble( double * ptrAd, double * fd,
                 aAdx = aDGdx;
             } else {
                 // Continuous Galerkin
-                // The first entry (index 0) of each row in triangles contains the Label of each point!
-                // Hence, in order to get an pointer to the three Triangle idices, which we need here
-                // we choose &Triangles[4*aTdx+1];
                 aAdx = &mesh.Triangles(0, aTdx);
             }
             // Prepare Triangle information aTE and aTdet ------------------
@@ -443,6 +458,7 @@ void par_assemble( double * ptrAd, double * fd,
 
                         // Check whether bTdx is already visited.
                         if (visited[bTdx] == 0) {
+                            //cout << aTdx << ", " << bTdx << endl;
 
                             // Retriangulation and integration ------------------------
                             if (mesh.is_DiscontinuousGalerkin) {

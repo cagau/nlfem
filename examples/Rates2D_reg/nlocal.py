@@ -308,6 +308,16 @@ class Mesh:
         self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
         self.dim = 2
 
+        #import matplotlib.pyplot as plt
+        #plt.triplot(self.vertices[:,0], self.vertices[:,1], self.elements)
+        #plt.triplot(self.vertices[:,0], self.vertices[:,1], self.elements[:self.nE_Omega,:])
+        #tList= self.neighbours_par[0]
+        #for t in tList:
+        #    if t<self.nE:
+        #        plt.scatter(self.vertices[self.elements[t], 0], self.vertices[self.elements[t], 1])
+        #plt.show()
+        #print("Plots")
+
     def get_state_dict(self):
         return {"Verts": self.vertices, "Triangles": self.elements, "J":self.nE, "J_Omega":self.nE_Omega,
                 "L":self.nV, "L_Omega":self.nV_Omega, "K":self.K, "K_Omega":self.K_Omega}

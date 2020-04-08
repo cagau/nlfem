@@ -14,6 +14,10 @@ double kernel_constant(const double * x, const long labelx, const double * y, co
     return 4 / (M_PI * pow(sqdelta, 2));
 }
 
+double kernel_constant3D(const double * x, const long labelx, const double * y, const long labely, const double sqdelta){
+    return 15 / (M_PI * 4 * pow(sqrt(sqdelta), 5));
+}
+
 double kernel_labeled(const double * x, const long labelx, const double * y, const long labely, const double sqdelta){
     double dist;
     long label;
@@ -49,7 +53,9 @@ double f_constant(const double * x){
 double f_linear(const double * x){
     return -2. * (x[1] + 1.);
 }
-
+double f_linear3D(const double * x){
+    return -2. * (x[1] + 2.);
+}
 // ### BASIS FUNCTION ##################################################################################################
 
 void model_basisFunction(const double * p, double *psi_vals){
@@ -58,11 +64,11 @@ void model_basisFunction(const double * p, double *psi_vals){
     psi_vals[2] = p[1];
 }
 
-void model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals){
+void model_basisFunction(const double * p, const int dim, double *psi_vals){
     int i=0;
 
     psi_vals[0] = 1;
-    for (i=0; i<mesh.dim; i++){
+    for (i=0; i<dim; i++){
         psi_vals[0] -= p[i];
         psi_vals[i+1] = p[i];
     }
