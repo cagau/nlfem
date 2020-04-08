@@ -17,6 +17,7 @@ from libc.math cimport pow
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import scipy.sparse as sparse
 cimport numpy as c_np
+cimport armadillo
 
 def assemble2D(
         # Mesh information ------------------------------------

@@ -4,6 +4,7 @@ import numpy as np
 import assemble
 from time import time
 import matplotlib.pyplot as plt
+
 def compareRHS():
     import examples.RatesScipy3D.conf3D as conf
     dim = 3
@@ -76,7 +77,7 @@ def rates():
         u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
         Mu_udiff = assemble.evaluateMass(mesh, u_diff, conf.py_Px, conf.dx)
         err = np.sqrt(u_diff @ Mu_udiff)
-        mesh.plot3D(conf.fnames["tetPlot.vtk"])
+        #mesh.plot3D(conf.fnames["tetPlot.vtk"])
         # Print Rates ---------------------------------------------------------------------
         print("L2 Error: ", err)
         conf.data["L2 Error"].append(err)
@@ -128,7 +129,7 @@ def main():
     #mesh.plot3D(conf.fnames["tetPlot.vtk"])
 
 if __name__ == "__main__":
-    #main()
+#    #main()
     data = rates()
-    #helpers.write_output(data)
-    #compareRHS()
+    helpers.write_output(data)
+#    #compareRHS()

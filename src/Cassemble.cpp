@@ -302,6 +302,7 @@ void par_assemble( double * ptrAd, double * fd,
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
+    arma::sp_mat sp_Mtx(mesh.K, mesh.K_Omega);
     Ad.zeros();
 
     for(h=0; h<quadRule.nPx; h++){
@@ -530,10 +531,13 @@ void par_assemble( double * ptrAd, double * fd,
                                     // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
                                     if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
                                         for (b = 0; b < mesh.dVertex; b++) {
-#pragma omp atomic update
-                                            Ad(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
-#pragma omp atomic update
-                                            Ad(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
+                                            // Element access is ineficcient für sparse, use batch insertion!
+                                            // Race condition!
+//#pragma omp critical
+//{
+                                                sp_Mtx(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
+                                                sp_Mtx(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
+//}
                                         }
                                     }
                                 }
@@ -549,6 +553,14 @@ void par_assemble( double * ptrAd, double * fd,
         }// End if LabelTriangles == 1
     }// End parallel for
     }// End pragma omp parallel
+
+    //sp_Mtx.save("sp_Ad");
+    //arma::sp_mat sp_Test(3, 3);
+    //sp_Test(0,0) += 1.;
+    //sp_Test(1,0) = 2.;
+    //sp_Test(2,0) = 3.;
+    //sp_Test.save("sp_Test");
+
 }// End function par_assemble
 
 // [DEBUG] _____________________________________________________________________________________________________________
