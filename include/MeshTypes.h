@@ -41,10 +41,11 @@ struct ElementStruct
 };
 typedef ElementStruct ElementType;
 
-struct ConfigurationStruct{
+struct ConfigurationStruct {
+    const string path_spAd;
     const string model_kernel;
-    const string  model_f;
-    const string  integration_method;
+    const string model_f;
+    const string integration_method;
     const bool is_placePointOnCap;
 };
 typedef ConfigurationStruct ConfigurationType;

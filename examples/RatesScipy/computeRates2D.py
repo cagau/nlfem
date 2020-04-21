@@ -2,6 +2,7 @@ from examples.RatesScipy.mesh import RegMesh2D
 from scipy.spatial.distance import  euclidean as l2dist
 import examples.RatesScipy.helpers as helpers
 from matplotlib.backends.backend_pdf import PdfPages
+from python.helpers import read_arma_spMat
 import numpy as np
 import assemble
 from time import time
@@ -19,12 +20,13 @@ def main():
 
         # Assembly ------------------------------------------------------------------------
         start = time()
-        A, f = assemble.assemble(mesh, conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta,
+        f = assemble.assemble("Ad_sp", mesh, conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta,
                                  model_kernel=conf.model_kernel,
                                  model_f=conf.model_f,
                                  integration_method=conf.integration_method,
                                  is_PlacePointOnCap=conf.is_PlacePointOnCap)
         conf.data["Assembly Time"].append(time() - start)
+        A = read_arma_spMat("Ad_sp")
 
         A_O = A[:,:mesh.K_Omega]
         A_I = A[:,mesh.K_Omega:]

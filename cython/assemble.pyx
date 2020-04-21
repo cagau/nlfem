@@ -17,7 +17,7 @@ from libc.math cimport pow
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import scipy.sparse as sparse
 cimport numpy as c_np
-cimport armadillo
+#cimport armadillo
 
 def assemble2D(
         # Mesh information ------------------------------------
@@ -66,6 +66,7 @@ def assemble2D(
     return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
 
 def assemble(
+        path_spAd,
         # Mesh information ------------------------------------
         mesh,
         Px,
@@ -80,19 +81,21 @@ def assemble(
         is_PlacePointOnCap = 1
     ):
 
-    Ad = np.zeros(mesh.K*mesh.K_Omega)
+    #Ad = np.zeros(mesh.K*mesh.K_Omega)
     fd = np.zeros(mesh.K_Omega)
 
     cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
     cdef long[:] elements = mesh.elements.flatten()
     cdef long[:] elementLabels = mesh.elementLabels.flatten()
     cdef double[:] vertices = mesh.vertices.flatten()
-    cdef double[:] ptrAd = Ad
+    #cdef double[:] ptrAd = Ad
     cdef double[:] ptrfd = fd
     cdef string model_kernel_ = model_kernel.encode('UTF-8')
     cdef string model_f_ = model_f.encode('UTF-8')
     cdef string integration_method_ = integration_method.encode('UTF-8')
+    cdef string path_spAd_ = path_spAd.encode('UTF-8')
     cdef int is_PlacePointOnCap_ = is_PlacePointOnCap
+
 
     cdef double [:] ptrPx = Px.flatten()
     cdef double [:] ptrPy = Py.flatten()
@@ -102,7 +105,7 @@ def assemble(
     start = time.time()
     # Compute Assembly -------------------------------------------
 
-    Cassemble.par_assemble( &ptrAd[0], mesh.K_Omega, mesh.K,
+    Cassemble.par_assemble( path_spAd_, mesh.K_Omega, mesh.K,
                         &ptrfd[0], &elements[0], &elementLabels[0], &vertices[0],
                         mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
                         &ptrPx[0], Px.shape[0], &ptrdx[0],
@@ -120,7 +123,7 @@ def assemble(
     total_time = time.time() - start
 
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
-    return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
+    return fd#np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
 
 def evaluateMass(
       # Mesh information ------------------------------------
@@ -186,7 +189,7 @@ def constructAdjaciencyGraph(long[:,:] elements):
         neigs[elemenIndices[k], colj] =  neighbourIndices[k]
     return neigs
 
-def solve_cg(c_np.ndarray Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 500):
+def solve_cg(Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 500):
     cdef int n = b.size
     cdef int k=0
 

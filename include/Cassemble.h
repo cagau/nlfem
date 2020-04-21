@@ -18,7 +18,7 @@ int method_retriangulate(const double * x_center, const double * TE,
  * in the parameter list where the underlying data is expected to be in C-contiguous
  * (i.e. row-major) order. We denote the dimension of the domain by d.
  *
- * @param ptrAd <B>(K_Omega, K)</B> Pointer to empty double array to store the resulting stiffness matrix
+ * @param path_spAd <B>(K_Omega, K)</B> Pointer to empty double array to store the resulting stiffness matrix
  * @param K_Omega Number of rows of Ad
  * @param K Number of Columns of Ad
  * @param fd <B>(K_Omega,)</B> Pointer to empty double array to store resulting right hand side
@@ -45,14 +45,14 @@ int method_retriangulate(const double * x_center, const double * TE,
  * @param is_PlacePointOnCap Switch for withcaps parameter in retriangulation
  * @param dim Dimension of the domain
  */
-void par_assemble(double *ptrAd, int K_Omega, int K, double *fd, const long *ptrTriangles,
-                  const long *ptrLabelTriangles, const double *ptrVerts, int J, int J_Omega, int L,
-                  int L_Omega, const double *Px, int nPx, const double *dx, const double *Py, int nPy,
-                  const double *dy, double sqdelta, const long *ptrNeighbours, int is_DiscontinuousGalerkin,
-                  int is_NeumannBoundary, string str_model_kernel, string str_model_f,
-                  string str_integration_method, int is_PlacePointOnCap, int dim);
+void par_assemble(const string path_spAd, const int K_Omega, const int K, double *fd, const long *ptrTriangles,
+                  const long *ptrLabelTriangles, const double *ptrVerts, const int J, const int J_Omega, const int L,
+                  const int L_Omega, const double *Px, const int nPx, const double *dx, const double *Py, const int nPy,
+                  const double *dy, const double sqdelta, const long *ptrNeighbours, const int is_DiscontinuousGalerkin,
+                  const int is_NeumannBoundary, const string str_model_kernel, const string str_model_f,
+                  const string str_integration_method, const int is_PlacePointOnCap, const int dim);
 
-void par_assemble( double * ptrAd, double * fd, MeshType & mesh, QuadratureType & quadRule, ConfigurationType & conf);
+void par_assemble(double *fd, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 
 // Mass matrix evaluation ----------------------------------------------------------------------------------------------
 void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,

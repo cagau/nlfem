@@ -272,7 +272,7 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
 }
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-void par_assemble(double *ptrAd, const int K_Omega, const int K, double *fd, const long *ptrTriangles,
+void par_assemble(const string path_spAd, const int K_Omega, const int K, double *fd, const long *ptrTriangles,
                   const long *ptrLabelTriangles, const double *ptrVerts, const int J, const int J_Omega, const int L,
                   const int L_Omega, const double *Px, const int nPx, const double *dx, const double *Py, const int nPy,
                   const double *dy, const double sqdelta, const long *ptrNeighbours, const int is_DiscontinuousGalerkin,
@@ -283,14 +283,11 @@ void par_assemble(double *ptrAd, const int K_Omega, const int K, double *fd, con
                      L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, dim+1};
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
-    ConfigurationType conf = {str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
-    par_assemble( ptrAd, fd, mesh, quadRule, conf);
+    ConfigurationType conf = {path_spAd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+    par_assemble(fd, mesh, quadRule, conf);
 }
 
-void par_assemble( double * ptrAd, double * fd,
-                    MeshType & mesh,
-                    QuadratureType & quadRule,
-                    ConfigurationType & conf){
+void par_assemble(double *fd, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
     printf("Function: par_assemble (generic)\n");
     printf("Mesh dimension: %i\n", mesh.dim);
@@ -301,8 +298,8 @@ void par_assemble( double * ptrAd, double * fd,
     int aTdx=0, h=0;
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
-    arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
-    Ad.zeros();
+    //arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
+    //Ad.zeros();
     //arma::sp_mat sp_Ad(mesh.K, mesh.K_Omega);
     arma::vec values_all;
     arma::umat indices_all(2,0);
@@ -583,7 +580,7 @@ void par_assemble( double * ptrAd, double * fd,
     }// End pragma omp parallel
 
     arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
-    sp_Ad.save("sp_Ad");
+    sp_Ad.save(conf.path_spAd);
 
 
 }// End function par_assemble
