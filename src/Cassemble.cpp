@@ -6,6 +6,10 @@
 #include <mathhelpers.cpp>
 #include <model.cpp>
 #include <armadillo>
+#include "map"
+#include "list"
+#include "iterator"
+
 using namespace std;
 
 void lookup_configuration(ConfigurationType & conf){
@@ -303,6 +307,7 @@ void par_assemble(double *fd, MeshType &mesh, QuadratureType &quadRule, Configur
     //arma::sp_mat sp_Ad(mesh.K, mesh.K_Omega);
     arma::vec values_all;
     arma::umat indices_all(2,0);
+    int nnz_total=0;
 
     for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
@@ -322,12 +327,8 @@ void par_assemble(double *fd, MeshType &mesh, QuadratureType &quadRule, Configur
 
     #pragma omp parallel
     {
-    int vec_size=mesh.K*3;
-    int vec_resize_buffer = 2*mesh.dVertex*mesh.dVertex;
-    int vec_resize_trigger = vec_size-vec_resize_buffer;
-    arma::vec values(vec_size, arma::fill::zeros);
-    arma::umat indices(2, vec_size, arma::fill::zeros);
-    int i_nnz=0;
+    map<int, double> Ad;
+    int Adx;
 
     // General Loop Indices ---------------------------------------
     int j=0, bTdx=0;
@@ -370,7 +371,7 @@ void par_assemble(double *fd, MeshType &mesh, QuadratureType &quadRule, Configur
     //[End DEBUG]
 
 
-    #pragma omp for nowait
+    #pragma omp for schedule(dynamic)
     for (aTdx=0; aTdx<mesh.J; aTdx++) {
         if (mesh.LabelTriangles[aTdx] == 1) {
             // It would be nice, if in future there is no dependency on the element ordering...
@@ -532,29 +533,17 @@ void par_assemble(double *fd, MeshType &mesh, QuadratureType &quadRule, Configur
                                 // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
-//printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
-                                if (i_nnz >= vec_resize_trigger){
-                                    vec_size += vec_size;
-                                    vec_resize_trigger = vec_size-vec_resize_buffer;
-
-                                    values.resize(vec_size);
-                                    indices.resize(2, vec_size);
-                                }
+                                //printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
                                 for (a = 0; a < mesh.dVertex; a++) {
                                     // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
                                     if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
                                         for (b = 0; b < mesh.dVertex; b++) {
-                                            // Element access is ineficcient für sparse, use batch insertion!
-                                            indices(0, i_nnz) = aAdx[b];
-                                            indices(1, i_nnz) = aAdx[a];
-                                            values(i_nnz) = termLocal[mesh.dVertex * a + b];
-                                            i_nnz++;
-                                            //Ad(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
-                                            indices(0, i_nnz) = bAdx[b];
-                                            indices(1, i_nnz) = aAdx[a];
-                                            values(i_nnz) = -termNonloc[mesh.dVertex * a + b];
-                                            i_nnz++;
-                                            //Ad(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
+                                            //Adx.i = aAdx[b]; Adx.j = aAdx[a];
+                                            Adx = aAdx[a]*mesh.K + aAdx[b];
+                                            Ad[Adx] += termLocal[mesh.dVertex * a + b];
+                                            //Adx.i = bAdx[b]; Adx.j =  aAdx[a];
+                                            Adx = aAdx[a]*mesh.K + bAdx[b];
+                                            Ad[Adx] += -termNonloc[mesh.dVertex * a + b];
                                         }
                                     }
                                 }
@@ -570,15 +559,40 @@ void par_assemble(double *fd, MeshType &mesh, QuadratureType &quadRule, Configur
         }// End if LabelTriangles == 1
     }// End parallel for
 
-    //abort();
+    int nnz_start = 0;
     #pragma omp critical
     {
-        values_all = arma::join_cols(values_all, values);
-        indices_all = arma::join_rows(indices_all, indices);
+        int nnz_current = static_cast<int>(Ad.size());
+        nnz_start = nnz_total;
+        nnz_total +=nnz_current;
+        //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
+    }
+    #pragma omp barrier
+    #pragma omp single
+    {
+        //cout << "Nonzero Total "<< nnz_total << endl;
+        values_all.set_size(nnz_total);
+        indices_all.reshape(2, nnz_total);
+    }
+    #pragma omp barrier
+    //#pragma omp critical
+    {
+        //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
+        int k = 0;
+        for (map<int, double>::iterator it = Ad.begin(); it != Ad.end(); it++) {
+            int Adx = it->first;
+            double value = it->second;
+            values_all(nnz_start + k) = value;
+            // column major format of transposed matrix Ad
+            indices_all(0, nnz_start + k) = Adx % mesh.K;
+            indices_all(1, nnz_start + k) = Adx / mesh.K;
+            k++;
+        }
     }
 
     }// End pragma omp parallel
 
+    cout << arma::max(indices_all.row(1)) << endl;
     arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
     sp_Ad.save(conf.path_spAd);
 

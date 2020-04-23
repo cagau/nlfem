@@ -8,7 +8,7 @@
 #include "Cassemble.h"
 #include "iostream"
 #include "cstdio"
-
+#include "map"
 using namespace std;
 
 double uExact(arma::vec x){

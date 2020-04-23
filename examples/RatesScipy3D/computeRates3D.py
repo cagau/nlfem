@@ -48,6 +48,7 @@ def rates():
         conf.data["nV_Omega"].append(mesh.nV_Omega)
 
         # Assembly ------------------------------------------------------------------------
+        print("Start assembly...")
         start = time()
         A, f = assemble.assemble(mesh, conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta,
                                  model_kernel=conf.model_kernel,
@@ -63,18 +64,20 @@ def rates():
         f -= A_I@g
 
         # Solve ---------------------------------------------------------------------------
-        print("Solve...")
+        print("Solve (CG)...")
         #mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
         solution = assemble.solve_cg(A_O, f, f)
-        print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
+        print("Iterations: ", solution["its"], "\tError: ", solution["res"])
         mesh.write_ud(solution["x"], conf.u_exact)
 
         # Refine to N_fine ----------------------------------------------------------------
+        print("Interpolate solution to fine grid...")
         mesh = RegMesh(conf.delta, conf.N_fine, coarseMesh=mesh, ufunc=conf.u_exact, dim=3, is_constructAdjaciencyGraph=False)
 
         # Evaluate L2 Error ---------------------------------------------------------------
 
         u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
+        print("Compute L2 distance...")
         Mu_udiff = assemble.evaluateMass(mesh, u_diff, conf.py_Px, conf.dx)
         err = np.sqrt(u_diff @ Mu_udiff)
         #mesh.plot3D(conf.fnames["tetPlot.vtk"])

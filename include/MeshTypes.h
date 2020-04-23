@@ -93,4 +93,48 @@ struct QuadratureStruct{
 };
 typedef QuadratureStruct QuadratureType;
 
+//class sp_index {
+//public:
+    //int i;
+    //int j;
+    // Needed for (ordered) std::map
+    /*bool operator<(const sp_index &other) const {
+        if (i < other.i) return true;
+        if (other.i < i) return false;
+        return (j < other.j);
+    }*/
+    // Needed for std::unoredered_map
+    /*bool operator==(const sp_index &other) const {
+        return (i == other.i) && (j == other.j);
+    }*/
+//};
+// Hashing function for unordered map
+// https://en.cppreference.com/w/cpp/utility/hash
+// https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
+/*namespace std {
+    template <>
+    struct hash<sp_index>
+    {
+        std::size_t operator()(const sp_index& dx) const
+        {
+            using std::size_t;
+            using std::hash;
+
+            // Compute individual hash values for first,
+            // second and third and combine them using XOR
+            // and bit shifting:
+
+            return ((hash<int>()(dx.i) ^ (hash<int>()(dx.j) << 1)) >> 1);
+        }
+    };
+
+}
+
+struct sp_reduce {
+    int threadID;
+    int start;
+    int end;
+};
+typedef sp_reduce sp_reduceType;
+*/
 #endif //NONLOCAL_ASSEMBLY_MESHTYPES_H

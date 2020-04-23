@@ -65,8 +65,53 @@ def assemble2D(
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
     return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
 
+def read_arma_spMat(path, is_verbose=False):
+    """
+    Read sparse Matrix in armadillo spMat format from file.
+
+    :param path: string, Path to file.
+    :param is_verbose: bool, Verbose mode.
+    :return: scipy.csr_matrix, Matrix of double.
+    """
+
+    import scipy.sparse as sp
+    import numpy as np
+
+    sizeof_double = 8
+
+    f = open(path, "rb")
+    # Read Armadillo header
+    arma_header = f.readline()
+    if arma_header != b'ARMA_SPM_BIN_FN008\n':
+        raise ValueError("in read_arma_spMat(), input file is of wrong format.")
+    # Get shape of sparse matrix
+    arma_shape = f.readline()
+    n_rows, n_cols, n_nonzero = tuple([int(x) for x in arma_shape.decode("utf-8").split()])
+    if is_verbose: print("Shape (", n_rows, ", ", n_cols, ")", sep="")
+    # Raw binary of sparse Matrix in csc-format
+    b_data = f.read()
+    b_values = b_data[:sizeof_double * n_nonzero]
+    b_pointers = b_data[sizeof_double * n_nonzero:]
+
+    values = np.frombuffer(b_values)
+    if is_verbose: print("Values ", values)
+
+    pointers = np.frombuffer(b_pointers, dtype=np.uint)
+    row_index = pointers[:n_nonzero]
+    if is_verbose: print("Row index", row_index)
+    col_pointer = pointers[n_nonzero:]
+    if is_verbose: print("Column pointer", col_pointer)
+
+    A = sp.csc_matrix((values, row_index, col_pointer), shape=(n_rows, n_cols)).transpose()
+    A = A.tocsr() # This is efficient, linearly in n_nonzeros.
+    if is_verbose: print(A.todense())
+    return A
+
+def remove_arma_spMat(path):
+    import os
+    os.remove(path)
+
 def assemble(
-        path_spAd,
         # Mesh information ------------------------------------
         mesh,
         Px,
@@ -75,13 +120,19 @@ def assemble(
         dx,
         dy,
         double delta,
+        path_spAd=None,
         model_kernel="constant",
         model_f = "constant",
         integration_method = "retriangulate",
         is_PlacePointOnCap = 1
     ):
 
-    #Ad = np.zeros(mesh.K*mesh.K_Omega)
+    is_tmpAd = False
+    if path_spAd is None:
+        is_tmpAd = True
+        path_spAd = "tmp_spAd"
+    cdef string path_spAd_ = path_spAd.encode('UTF-8')
+
     fd = np.zeros(mesh.K_Omega)
 
     cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
@@ -93,7 +144,6 @@ def assemble(
     cdef string model_kernel_ = model_kernel.encode('UTF-8')
     cdef string model_f_ = model_f.encode('UTF-8')
     cdef string integration_method_ = integration_method.encode('UTF-8')
-    cdef string path_spAd_ = path_spAd.encode('UTF-8')
     cdef int is_PlacePointOnCap_ = is_PlacePointOnCap
 
 
@@ -123,7 +173,11 @@ def assemble(
     total_time = time.time() - start
 
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
-    return fd#np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
+
+    Ad = read_arma_spMat(path_spAd)
+    if is_tmpAd:
+        remove_arma_spMat(path_spAd)
+    return Ad, fd
 
 def evaluateMass(
       # Mesh information ------------------------------------
@@ -154,14 +208,6 @@ def evaluateMass(
             mesh.nE_Omega,
             Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim)
     return vd
-
-cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, const long dVerts):
-    cdef int n=0, i,j
-    for i in range(dVerts):
-        for j in range(dVerts):
-            if (Elements[aTdx, i] == Elements[bTdx, j]):
-                n += 1
-    return n == (dVerts-1)
 
 def constructAdjaciencyGraph(long[:,:] elements):
     print("Constructing adjaciency graph...")
@@ -209,7 +255,15 @@ def solve_cg(Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 5
         beta = res_new**2/res_old**2
 
     return {"x": x, "its": k, "res": res_new}
+
 # DEPRECATED #
+#cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, const long dVerts):
+#    cdef int n=0, i,j
+#    for i in range(dVerts):
+#        for j in range(dVerts):
+#            if (Elements[aTdx, i] == Elements[bTdx, j]):
+#                n += 1
+#    return n == (dVerts-1)
 #def par_constructAdjaciencyGraph(Elements):
 #    print("Constructing adjaciency graph...")
 #    cdef int nE = Elements.shape[0]
