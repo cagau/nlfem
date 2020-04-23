@@ -1,13 +1,11 @@
-image: python
+image: alpine
 
 pages:
   script:
-  - pip3 install sphinx numpy cvxopt datetime matplotlib
-  - pip3 install sphinx_rtd_theme
+  - apk update && apk add doxygen graphviz ttf-freefont
   - cd docs
-  - make html
-  - mv build/html ../public
-  
+  - doxygen Doxyfile
+  - mv html/ ../public/
   artifacts:
     paths:
     - public
