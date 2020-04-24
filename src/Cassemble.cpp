@@ -58,15 +58,16 @@ void lookup_configuration(ConfigurationType & conf){
 }
 
 void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
-    // Copy coordinates of Triange b to bTE.
+    /*
+    Copy coordinates of Triange b to bTE.
 
-    // Tempalte of Triangle Point data.
-    // 2D Case, a, b, c are the vertices of a triangle
-    // T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
-    // Hence, if one wants to put T.E into col major order matrix it would be of shape\
-    //                             | a1 | b1 | c1 |
-    // M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
-    //
+     Tempalte of Triangle Point data.
+     2D Case, a, b, c are the vertices of a triangle
+     T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
+     Hence, if one wants to put T.E into col major order matrix it would be of shape\
+                                 | a1 | b1 | c1 |
+     M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
+    */
 
     int j, k, Vdx;
     //T.matE = arma::vec(dim*(dim+1));

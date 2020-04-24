@@ -30,7 +30,7 @@ if __name__ == "__main__":
     #mesh.vertices = np.load("../compare_data/Verts_Chris.npy")
 
     import sys
-    #sys.path.insert(1, '../nonlocal-assembly-chris')
+    #sys.path.insert(1, '../assemble-chris')
     #mesh = Mesh(pkl.load(open( "../compare_data/mesh.pkl", "rb" )), ansatz)
 
     confDict = {"domainPhysicalName": 1, "boundaryPhysicalName": 9, "interactiondomainPhysicalName": 2,

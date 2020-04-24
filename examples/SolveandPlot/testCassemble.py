@@ -70,7 +70,7 @@ def test_interfacedependendKernel():
     import pickle as pkl
     import sys
     # insert at 1, 0 is the script path (or '' in REPL)
-    sys.path.insert(1, '../nonlocal-assembly-chris')
+    sys.path.insert(1, '../assemble-chris')
 
     try:
         mesh = Mesh(pkl.load(open("../compare_data/mesh.pkl", "rb")), ansatz, boundaryConditionType = boundaryConditionType)
