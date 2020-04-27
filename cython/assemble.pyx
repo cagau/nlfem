@@ -126,7 +126,6 @@ def assemble(
         integration_method = "retriangulate",
         is_PlacePointOnCap = 1
     ):
-
     is_tmpAd = False
     if path_spAd is None:
         is_tmpAd = True
