@@ -8,7 +8,7 @@ import assemble
 from time import time
 
 def main():
-    import examples.RatesScipy.conf2D as conf
+    import examples.RatesScipy.conf as conf
     err_ = None
 
     pp = PdfPages(conf.fnames["triPlot.pdf"])

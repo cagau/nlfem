@@ -5,6 +5,8 @@ from scipy.interpolate import LinearNDInterpolator
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from assemble import constructAdjaciencyGraph
+import meshzoo
 
 class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
@@ -16,25 +18,18 @@ class RegMesh2D:
 
         # Construct Meshgrid -------------------------------------------------------------
         if self.dim == 2:
-            line1d = np.linspace(-delta,1+delta,self.n+1)
-            self.h = np.abs(line1d[0]- line1d[1])
-            X,Y = np.meshgrid(line1d,line1d, indexing="ij")
-            x = X.flatten()
-            y = Y.flatten()
-            self.vertices = np.array([x,y]).transpose()
+            self.h = 12/n/10
+            points, cells = meshzoo.rectangle(
+                xmin=-self.delta, xmax=1.0+self.delta,
+                ymin=-self.delta, ymax=1.0+self.delta,
+                nx=n+1, ny=n+1,
+                zigzag=False
+            )
+            self.vertices = np.array(points[:,:2])
 
-        if self.dim == 3:
-            line1d = np.linspace(-delta,1+delta,self.n+1)
-            self.h = np.abs(line1d[0]- line1d[1])
-            X, Y, Z = np.meshgrid(line1d,line1d, line1d, indexing="ij")
-            x = X.flatten()
-            y = Y.flatten()
-            z = Z.flatten()
-            self.vertices = np.array([x,y,z]).transpose()
 
         # Set up Delaunay Triangulation --------------------------------------------------
         # Construct and Sort Vertices ----------------------------------------------------
-
         self.vertexLabels = np.array([self.get_vertexLabel(v) for v in self.vertices])
         self.argsort_labels = np.argsort(self.vertexLabels)
         self.vertices = self.vertices[self.argsort_labels]
@@ -46,10 +41,8 @@ class RegMesh2D:
         self.nV_Omega = self.omega.shape[0]
 
         # Set up Delaunay Triangulation --------------------------------------------------
-        self.triangulation = Delaunay(self.vertices)
-        self.elements = np.array(self.triangulation.simplices, dtype=np.int)
-
-        #self.reorderElements()
+        self.elements = np.array(cells, dtype=np.int)
+        self.remapElements()
 
         # Get Triangle Labels ------------------------------------------------------------
         self.nE = self.elements.shape[0]
@@ -60,8 +53,7 @@ class RegMesh2D:
 
         # Read adjaciency list
         if is_constructAdjaciencyGraph:
-            self.neighbours = np.array(self.triangulation.neighbors, dtype=np.int)
-            self.neighbours = np.where(self.neighbours != -1, self.neighbours, self.nE)
+            self.neighbours = constructAdjaciencyGraph(self.elements)
         else:
             self.neighbours = None
 
@@ -95,6 +87,20 @@ class RegMesh2D:
         if coarseMesh is not None:
             self.interpolator = LinearNDInterpolator(coarseMesh.vertices, coarseMesh.ud)
             self.ud = self.interpolator(self.vertices)
+
+    def remapElements(self):
+        def invert_permutation(p):
+            """
+            The function inverts a given permutation.
+            :param p: nd.array, shape (m,) The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1.
+            :return: nd.array, shape (m,) Returns an array s, where s[i] gives the index of i in p.
+            """
+            s = np.empty(p.size, p.dtype)
+            s[p] = np.arange(p.size)
+            return s
+        piVdx_invargsort = invert_permutation(self.argsort_labels)
+        piVdx = lambda dx: piVdx_invargsort[dx]  # Permutation definieren
+        self.elements = piVdx(self.elements)
 
     def set_u_exact(self, ufunc):
         self.u_exact = np.zeros(self.vertices.shape[0])

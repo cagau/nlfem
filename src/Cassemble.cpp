@@ -593,7 +593,7 @@ void par_assemble(double *fd, MeshType &mesh, QuadratureType &quadRule, Configur
 
     }// End pragma omp parallel
 
-    cout << arma::max(indices_all.row(1)) << endl;
+    //cout << arma::max(indices_all.row(1)) << endl;
     arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
     sp_Ad.save(conf.path_spAd);
 
