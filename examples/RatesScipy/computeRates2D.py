@@ -1,5 +1,5 @@
 from examples.RatesScipy.mesh import RegMesh2D
-from scipy.spatial.distance import  euclidean as l2dist
+from scipy.spatial.distance import euclidean as l2dist
 import examples.RatesScipy.helpers as helpers
 from matplotlib.backends.backend_pdf import PdfPages
 from python.helpers import read_arma_spMat
