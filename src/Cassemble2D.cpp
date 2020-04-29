@@ -587,7 +587,7 @@ void par_assemble2D( double * Ad,
                     const long * Neighbours,
                     int is_DiscontinuousGalerkin,
                     int is_NeumannBoundary) {
-    cout << "par_assemble 2D" << endl;
+    cout << "par_system 2D" << endl;
     int aTdx, h=0;
     double tmp_psi[3];
     double *psix = (double *) malloc(3*nPx*sizeof(double));

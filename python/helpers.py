@@ -40,6 +40,76 @@ def read_arma_spMat(path, is_verbose=False):
     if is_verbose: print(A.todense())
     return A
 
+def read_arma_mat(path, is_verbose=False):
+    """
+    Read armadillo vector format from file.
+
+    :param path: string, Path to file.
+    :param is_verbose: bool, Verbose mode.
+    :return: np.ndarray, Vector of double.
+    """
+    import numpy as np
+
+    sizeof_double = 8
+
+    f = open(path, "rb")
+    # Read Armadillo header
+    arma_header = f.readline()
+    if arma_header != b'ARMA_MAT_BIN_FN008\n':
+        raise ValueError("in read_arma_mat(), input file is of wrong format.")
+    # Get shape of sparse matrix
+    arma_shape = f.readline()
+    n_rows, n_cols = tuple([int(x) for x in arma_shape.decode("utf-8").split()])
+    if is_verbose: print("Shape (", n_rows, ", ", n_cols, ")", sep="")
+    # Raw binary of sparse Matrix in csc-format
+    b_data = f.read()
+    f.close()
+
+    b_values = b_data[:sizeof_double * n_rows * n_cols]
+    values = np.array(np.frombuffer(b_values)).reshape((n_rows, n_cols), order="F")
+    if is_verbose: print("Values ", values)
+    if is_verbose: print(values)
+
+    return values
+
+def read_arma_Mat_uword(path, is_verbose=False):
+    """
+    Read armadillo vector format from file.
+
+    :param path: string, Path to file.
+    :param is_verbose: bool, Verbose mode.
+    :return: np.ndarray, Vector of double.
+    """
+    import numpy as np
+
+    sizeof_long = 8
+
+    f = open(path, "rb")
+    # Read Armadillo header
+    arma_header = f.readline()
+    if arma_header != b'ARMA_MAT_BIN_IU008\n':
+        raise ValueError("in read_arma_Mat_uword(), input file is of wrong format.")
+    # Get shape of sparse matrix
+    arma_shape = f.readline()
+    n_rows, n_cols = tuple([int(x) for x in arma_shape.decode("utf-8").split()])
+    if is_verbose: print("Shape (", n_rows, ", ", n_cols, ")", sep="")
+    # Raw binary of sparse Matrix in csc-format
+    b_data = f.read()
+    f.close()
+
+    b_values = b_data[:sizeof_long * n_rows * n_cols]
+    values = np.array(np.frombuffer(b_values, dtype=np.uint)).reshape((n_rows, n_cols), order="F")
+    if is_verbose: print("Values ", values)
+    if is_verbose: print(values)
+
+    return values
 
 if __name__=="__main__":
-    read_arma_spMat("../sp_Ad", True)
+    import numpy as np
+
+    print("\nIndices")
+    indices = read_arma_Mat_uword("../examples/RatesScipy/indices_all", True)
+    print(indices.shape)
+    print(np.max(indices))
+    print("\nValues")
+    values = read_arma_mat("../examples/RatesScipy/values_all", True)

@@ -65,6 +65,38 @@ def assemble2D(
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
     return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
 
+def read_arma_mat(path, is_verbose=False):
+    """
+    Read armadillo vector format from file.
+
+    :param path: string, Path to file.
+    :param is_verbose: bool, Verbose mode.
+    :return: np.ndarray, Vector of double.
+    """
+    import numpy as np
+
+    sizeof_double = 8
+
+    f = open(path, "rb")
+    # Read Armadillo header
+    arma_header = f.readline()
+    if arma_header != b'ARMA_MAT_BIN_FN008\n':
+        raise ValueError("in read_arma_mat(), input file is of wrong format.")
+    # Get shape of sparse matrix
+    arma_shape = f.readline()
+    n_rows, n_cols = tuple([int(x) for x in arma_shape.decode("utf-8").split()])
+    if is_verbose: print("Shape (", n_rows, ", ", n_cols, ")", sep="")
+    # Raw binary of sparse Matrix in csc-format
+    b_data = f.read()
+    f.close()
+
+    b_values = b_data[:sizeof_double * n_rows * n_cols]
+    values = np.array(np.frombuffer(b_values)).reshape((n_rows, n_cols), order="F")
+    if is_verbose: print("Values ", values)
+    if is_verbose: print(values)
+
+    return values
+
 def read_arma_spMat(path, is_verbose=False):
     """
     Read sparse Matrix in armadillo spMat format from file.
@@ -92,6 +124,7 @@ def read_arma_spMat(path, is_verbose=False):
     b_data = f.read()
     b_values = b_data[:sizeof_double * n_nonzero]
     b_pointers = b_data[sizeof_double * n_nonzero:]
+    f.close()
 
     values = np.frombuffer(b_values)
     if is_verbose: print("Values ", values)
@@ -107,7 +140,7 @@ def read_arma_spMat(path, is_verbose=False):
     if is_verbose: print(A.todense())
     return A
 
-def remove_arma_spMat(path):
+def remove_arma_tmp(path):
     import os
     os.remove(path)
 
@@ -121,6 +154,8 @@ def assemble(
         dy,
         double delta,
         path_spAd=None,
+        path_fd=None,
+        compute="systemforcing", # "forcing", "system"
         model_kernel="constant",
         model_f = "constant",
         integration_method = "retriangulate",
@@ -131,8 +166,14 @@ def assemble(
         is_tmpAd = True
         path_spAd = "tmp_spAd"
     cdef string path_spAd_ = path_spAd.encode('UTF-8')
+    Ad = None
 
-    fd = np.zeros(mesh.K_Omega)
+    is_tmpfd = False
+    if path_fd is None:
+        is_tmpfd = True
+        path_fd = "tmp_fd"
+    cdef string path_fd_ = path_fd.encode('UTF-8')
+    fd = None
 
     cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
     cdef long[:] elements = mesh.elements.flatten()
@@ -143,6 +184,9 @@ def assemble(
     cdef string model_kernel_ = model_kernel.encode('UTF-8')
     cdef string model_f_ = model_f.encode('UTF-8')
     cdef string integration_method_ = integration_method.encode('UTF-8')
+
+    cdef string compute_system_ = "system".encode('UTF-8')
+    cdef string compute_forcing_ = "forcing".encode('UTF-8')
     cdef int is_PlacePointOnCap_ = is_PlacePointOnCap
 
 
@@ -151,31 +195,53 @@ def assemble(
     cdef double [:] ptrdx = dx.flatten()
     cdef double [:] ptrdy = dy.flatten()
 
-    start = time.time()
+
     # Compute Assembly -------------------------------------------
+    if (compute=="system" or compute=="systemforcing"):
+        start = time.time()
+        Cassemble.par_assemble( compute_system_, path_spAd_, path_fd_, mesh.K_Omega, mesh.K,
+                            &elements[0], &elementLabels[0], &vertices[0],
+                            mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
+                            &ptrPx[0], Px.shape[0], &ptrdx[0],
+                            &ptrPy[0], Py.shape[0], &ptrdy[0],
+                            delta**2,
+                            &neighbours[0],
+                            mesh.is_DiscontinuousGalerkin,
+                            mesh.is_NeumannBoundary,
+                            &model_kernel_[0],
+                            &model_f_[0],
+                            &integration_method_[0],
+                            is_PlacePointOnCap_,
+                            mesh.dim)
 
-    Cassemble.par_assemble( path_spAd_, mesh.K_Omega, mesh.K,
-                        &ptrfd[0], &elements[0], &elementLabels[0], &vertices[0],
-                        mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
-                        &ptrPx[0], Px.shape[0], &ptrdx[0],
-                        &ptrPy[0], Py.shape[0], &ptrdy[0],
-                        delta**2,
-                        &neighbours[0],
-                        mesh.is_DiscontinuousGalerkin,
-                        mesh.is_NeumannBoundary,
-                        &model_kernel_[0],
-                        &model_f_[0],
-                        &integration_method_[0],
-                        is_PlacePointOnCap_,
-                        mesh.dim)
+        total_time = time.time() - start
+        print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 
-    total_time = time.time() - start
+        Ad = read_arma_spMat(path_spAd)
+        if is_tmpAd:
+            remove_arma_tmp(path_spAd)
 
-    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+    if (compute=="forcing" or compute =="systemforcing"):
+        print("")
+        Cassemble.par_assemble( compute_forcing_, path_spAd_, path_fd_, mesh.K_Omega, mesh.K,
+                            &elements[0], &elementLabels[0], &vertices[0],
+                            mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
+                            &ptrPx[0], Px.shape[0], &ptrdx[0],
+                            &ptrPy[0], Py.shape[0], &ptrdy[0],
+                            delta**2,
+                            &neighbours[0],
+                            mesh.is_DiscontinuousGalerkin,
+                            mesh.is_NeumannBoundary,
+                            &model_kernel_[0],
+                            &model_f_[0],
+                            &integration_method_[0],
+                            is_PlacePointOnCap_,
+                            mesh.dim)
 
-    Ad = read_arma_spMat(path_spAd)
-    if is_tmpAd:
-        remove_arma_spMat(path_spAd)
+        fd = read_arma_mat(path_fd)[:,0]
+        if is_tmpfd:
+            remove_arma_tmp(path_fd)
+
     return Ad, fd
 
 def evaluateMass(

@@ -3,6 +3,7 @@
 //
 #ifndef NONLOCAL_ASSEMBLY_MODEL_CPP
 #define NONLOCAL_ASSEMBLY_MODEL_CPP
+
 #include <mathhelpers.cpp>
 
 // ### KERNEL ##########################################################################################################

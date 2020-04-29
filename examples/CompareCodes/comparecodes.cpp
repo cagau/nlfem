@@ -172,11 +172,11 @@ int read_configuration(string path){
 
     QuadratureType quadRule = {Px.memptr(), Py.memptr(), dx.memptr(), dy.memptr(),
                                static_cast<int>(dx.n_elem), static_cast<int>(dy.n_elem), dim};
-    ConfigurationType conf = {"sp_Ad", str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+    ConfigurationType conf = {"sp_Ad", "fd", str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
 
     //arma::mat Ad(K, K_Omega);
     arma::vec fd(K_Omega);
-    par_assemble(fd.memptr(), mesh, quadRule, conf);
+    par_system(mesh, quadRule, conf);
 
     //Ad.save(path_Ad.c_str(), arma::raw_binary);
     fd.save(path_fd.c_str(), arma::raw_binary);
@@ -245,7 +245,7 @@ int main() {
                        false,
                        false);
     } else {
-        par_assemble(Ad.memptr(),
+        par_system(Ad.memptr(),
                      coarseMesh.K_Omega,
                      coarseMesh.K,
                      fd.memptr(),

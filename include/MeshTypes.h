@@ -43,6 +43,7 @@ typedef ElementStruct ElementType;
 
 struct ConfigurationStruct {
     const string path_spAd;
+    const string path_fd;
     const string model_kernel;
     const string model_f;
     const string integration_method;

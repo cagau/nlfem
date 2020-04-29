@@ -3,16 +3,18 @@
 //
 #ifndef NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
 #define NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
+
 using namespace std;
 
 // ___ MATH HELERPS DECLARATION ________________________________________________________________________________________
+const double EPSILON=1e-8;
 
 // Miscellaneous helpers ###############################################################################################
 void solve2x2(const double *, const double *, double *);                 // Solve 2x2 System with LU
 void rightNormal(const double * y0, const double * y1, double orientation, double * normal);
+int faculty(int n);
 
 // Matrix operations ###################################################################################################
-
 // Double
 double absDet(const double * E);                                         // Compute determinant
 double absDet(const double * E, int dim);
@@ -29,6 +31,7 @@ void toPhys(const double * E, const double * p, const MeshType & mesh, double * 
 // Double
 double vec_sqL2dist(const double * x, const double * y, int len);      // L2 Distance
 double vec_dot(const double * x, const double * y, int len);           // Scalar Product
+double vec_sum(const double *x, int len);                               // Vector Sum
 int doubleVec_any(const double * vec, int len);                        // Any
 void doubleVec_tozero(double *, int);               // Reset to zero
 void doubleVec_subtract(const double * vec1, const double * vec2, double * out, int len);
@@ -46,6 +49,7 @@ void intVec_tozero(int *, int);                    // Reset to zero
 
 // Scalar operations ###################################################################################################
 double absolute(double);                                  // Get absolute value
+bool double_eq(double x, double y);                 // Compare to double values
 double scal_sqL2dist(double x, double y);           // L2 Distance
 
 
@@ -84,7 +88,6 @@ void solve2x2(const double * A, const double * b, double * x){
     // LU Solve
     x[1] = (b[dx1] - l*b[dx0])/u;
     x[0] = (b[dx0] - A[2*dx0+1]*x[1])/A[2*dx0];
-    return;
 }
 
 // Normal which looks to the right w.r.t the vector from y0 to y1.
@@ -92,6 +95,14 @@ void rightNormal(const double * y0, const double * y1, const double orientation,
     normal[0] = y1[1] - y0[1];
     normal[1] = y0[0] - y1[0];
     doubleVec_scale(orientation, normal, normal, 2);
+}
+
+int faculty(int n){
+    int fac=1;
+    for(int i=n; i>1; i--){
+        fac*=i;
+    }
+    return fac;
 }
 
 // ### MATRIX OPERATIONS ###############################################################################################
@@ -260,6 +271,13 @@ double vec_dot(const double * x, const double * y, const int len){
     return r;
 }
 
+double vec_sum(const double *x, const int len){
+    double sum=0;
+    for(int i=0; i<len; i++){
+        sum+=x[i];
+    }
+    return sum;
+}
 double vec_sqL2dist(const double * x, const double * y, const int len){
     double r=0;
     int i=0;
@@ -349,6 +367,11 @@ double absolute(const double value){
     } else {
         return value;
     }
+}
+
+bool double_eq(double x, double y){
+    double diff = absolute(x-y);
+    return (diff < EPSILON);
 }
 
 double scal_sqL2dist(const double x, const double y){

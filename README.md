@@ -13,7 +13,7 @@ In order to use this code perform the following steps.
 The model is defined in the file Cassemble.cpp
 - The Kernel function is called <code>  model_kernel() </code>.
 - The right side is called <code>  model_f() </code>.
-- The function where the assembly happens is called <code> par_assemble </code>
+- The function where the assembly happens is called <code> par_system </code>
 
 ### Build and Install Python package assemble
 - This step translates assemble.pyx to assemble.cpp (Cython) and compiles the C++ code to machine code.

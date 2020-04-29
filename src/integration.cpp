@@ -266,7 +266,7 @@ int method_baryCenter(const double * x_center, const ElementType & T, const Mesh
             }
         }
         return -1;
-    };
+    }
 }
 
 // Retriangulation Method ----------------------------------------------------------------------------------------------
