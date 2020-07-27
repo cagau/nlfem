@@ -3,7 +3,7 @@
 //
 #ifndef NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
 #define NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
-
+#include <cassert>
 using namespace std;
 
 // ___ MATH HELERPS DECLARATION ________________________________________________________________________________________
@@ -24,7 +24,7 @@ void baryCenter(const double * E, double * bary);                        // Bary
 void baryCenter(int dim, const double * E, double * bary);
 void toRef(const double * E, const double * phys_x, double * ref_p);     // Pull point to Reference Element (performs 2x2 Solve)
 void toPhys(const double * E, const double * p, double * out_x);         // Push point to Physical Element
-void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x);
+void toPhys(const double * E, const double * p, int dim, double * out_x);
 
 // Vector operations ###################################################################################################
 
@@ -68,11 +68,14 @@ void solve2x2(const double * A, const double * b, double * x){
     }
 
     // Check invertibility
+    /*
     if (A[2*dx0] == 0){
         // raise LinAlgError("in solve2x2. Matrix not invertible.")
         cout << "in solve2x2. Matrix not invertible." << endl;
         abort();
     }
+    */
+    assert((!double_eq(A[2*dx0], 0) && "in solve2x2. Matrix not invertible."));
 
     // LU Decomposition
     l = A[2*dx1]/A[2*dx0];
@@ -222,12 +225,11 @@ void toPhys(const double * E, const double * p, double * out_x){
     }
 }
 
-void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x) {
-    int i = 0, j = 0;
-    doubleVec_tozero(out_x, mesh.dim);
-    for (i=0; i<mesh.dim;i++){
-        for(j=0; j<mesh.dim;j++){
-            out_x[i] += p[j]*(E[mesh.dim*(j+1)+i] - E[i]);
+void toPhys(const double * E, const double * p, const int dim, double * out_x) {
+    doubleVec_tozero(out_x, dim);
+    for (int i=0; i<dim;i++){
+        for(int j=0; j<dim;j++){
+            out_x[i] += p[j]*(E[dim*(j+1)+i] - E[i]);
         }
         out_x[i] += E[i];
     }
@@ -246,7 +248,6 @@ void toRef(const double * E, const double * phys_x, double * ref_p){
     b[1] = phys_x[1] - E[1];
 
     solve2x2(&M[0], &b[0], &ref_p[0]);
-    return;
 }
 
 // ### VECTOR OPERATIONS ###############################################################################################

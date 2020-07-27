@@ -6,13 +6,13 @@ ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
 model_kernel = "constant" # "labeled" #
-integration_method = "baryCenter" # "retriangulate" # "baryCenter" #
-is_PlacePointOnCap = True
+integration_method = "retriangulate" # "retriangulate" # "baryCenter" #
+is_PlacePointOnCap = False
 quadrule_outer = "16"
 quadrule_inner = "1"
 
 n_start = 12
-n_layers = 1
+n_layers = 2
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4
 def u_exact(x):

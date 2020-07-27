@@ -54,7 +54,9 @@ def rates():
                                  model_kernel=conf.model_kernel,
                                  model_f=conf.model_f,
                                  integration_method=conf.integration_method,
-                                 is_PlacePointOnCap=conf.is_PlacePointOnCap)
+                                 is_PlacePointOnCap=conf.is_PlacePointOnCap,
+                                 path_spAd = "spAd_"+str(n),
+                                 path_fd = "fd_"+str(n))
         conf.data["Assembly Time"].append(time() - start)
         #plt.imsave("results/A.pdf", A )
         #raise KeyboardInterrupt
@@ -94,8 +96,26 @@ def rates():
         err_ = err
     return conf.data
 
+def matrixComputation():
+    import examples.RatesScipy3D.conf3D as conf
+    for n in conf.N:
+        print()
+        mesh = RegMesh(conf.delta, n, dim=3)
+        conf.data["h"].append(mesh.h)
+        conf.data["nV_Omega"].append(mesh.nV_Omega)
 
-
+        # Assembly ------------------------------------------------------------------------
+        print("Start assembly...")
+        start = time()
+        assemble.assemble(mesh, conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta,
+                                 model_kernel=conf.model_kernel,
+                                 model_f=conf.model_f,
+                                 integration_method=conf.integration_method,
+                                 is_PlacePointOnCap=conf.is_PlacePointOnCap,
+                                 path_spAd = conf.outputdir+"/spAd_"+str(n),
+                                 path_fd = conf.outputdir+"/fd_"+str(n))
+        conf.data["Assembly Time"].append(time() - start)
+    return conf.data
 def main():
     import examples.RatesScipy3D.conf3D as conf
     u_exact = lambda x: (x[0]-0.5)**2 + (x[1]-0.5)**2 + (x[2]-0.5)**2 - 0.75
@@ -133,6 +153,6 @@ def main():
 
 if __name__ == "__main__":
 #    #main()
-    data = rates()
+    data = matrixComputation()
     helpers.write_output(data)
 #    #compareRHS()

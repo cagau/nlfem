@@ -150,7 +150,7 @@ void compute_f(     const ElementType & aT,
 
     for (a=0; a<mesh.dVertex; a++){
         for (i=0; i<quadRule.nPx; i++){
-            toPhys(aT.E, &(quadRule.Px[mesh.dim * i]),  mesh,&x[0]);
+            toPhys(aT.E, &(quadRule.Px[mesh.dim * i]),  mesh.dim,&x[0]);
             termf[a] += quadRule.psix(a, i) * model_f(&x[0]) * aT.absDet * quadRule.dx[i];
         }
     }
@@ -285,12 +285,14 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
-                  const int dim) {
+                  const int dim, const long * ptrCeta, const long nCeta) {
+    //const long * ptrCeta;
+    //cout << "nCeta is" << nCeta << endl;
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
                      L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, dim+1};
-
+                     is_NeumannBoundary, dim, dim+1, ptrCeta, nCeta};
+    chk_Mesh(mesh);
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
     chk_QuadratureRule(quadRule);
     ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
@@ -338,6 +340,32 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.J);
     //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
+    // Empty Map of double ist 0 by default (like sparse lil)
+    map<unsigned long, double> Ceta;
+    if (mesh.nCeta > 0) {
+        arma::Mat<long> Ceta_mat = arma::Mat<long>(mesh.ptrCeta, 3, mesh.nCeta);
+        //cout << "Hello " << mesh.nCeta << endl;
+        //cout << "Entrys " << Ceta_mat(0,0) << endl;
+        long aT, bT;
+        double valCeta;
+        for(int it=0; it < mesh.nCeta; it++){
+            aT = Ceta_mat(0, it);
+            bT = Ceta_mat(1, it);
+            valCeta = static_cast<double> (Ceta_mat(2, it));
+            Ceta[aT*mesh.J + bT] = valCeta;
+            /*valCeta =  1/Ceta[aT*mesh.J + bT];
+            cout << valCeta << endl;
+            valCeta = (valCeta==0.) ? (1.) : (1./valCeta);
+            cout << valCeta << endl;
+            valCeta =  Ceta[2];
+            cout << "spannend!!" << valCeta << endl;
+            valCeta = (valCeta==0.) ? (1.) : (1./valCeta);
+            cout << valCeta << endl;
+            */
+            //cout << "Index " << aT*mesh.J + bT << endl;
+            //cout << "Value " << Ceta[2] << endl;
+        }
+    }
     #pragma omp parallel
     {
     map<unsigned long, double> Ad;
@@ -384,7 +412,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //[End DEBUG]
 
 
-    #pragma omp for schedule(dynamic)
+    #pragma omp for
     for (aTdx=0; aTdx<mesh.J; aTdx++) {
         if (mesh.LabelTriangles[aTdx] == 1) {
             // It would be nice, if in future there is no dependency on the element ordering...
@@ -533,6 +561,10 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             */
                             //[End DEBUG]
 
+                            // Domain decomposition. If Ceta is empty, we obtain only zero values here
+                            double weight = Ceta[aTdx*mesh.J + bTdx];
+                            // In that case nothing happens. Entries are natural naumbers.
+                            weight = (weight==0.) ? (1.) : (1./weight);
 
                             if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) ||
                                 doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)) {
@@ -551,10 +583,10 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                         for (b = 0; b < mesh.dVertex; b++) {
                                             //Adx.i = aAdx[b]; Adx.j = aAdx[a];
                                             Adx = aAdx[a]*mesh.K + aAdx[b];
-                                            Ad[Adx] += termLocal[mesh.dVertex * a + b];
+                                            Ad[Adx] += termLocal[mesh.dVertex * a + b]*weight;
                                             //Adx.i = bAdx[b]; Adx.j =  aAdx[a];
                                             Adx = aAdx[a]*mesh.K + bAdx[b];
-                                            Ad[Adx] += -termNonloc[mesh.dVertex * a + b];
+                                            Ad[Adx] += -termNonloc[mesh.dVertex * a + b]*weight;
                                         }
                                     }
                                 }

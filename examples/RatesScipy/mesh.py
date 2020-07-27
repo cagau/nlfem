@@ -12,6 +12,12 @@ class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
                  dim=2, ansatz="CG", boundaryConditionType="Dirichlet",
                  is_constructAdjaciencyGraph=True):
+        ### TEST 27.07.2020
+        self.Ceta = np.arange(12, dtype=np.int).reshape(4,3)
+
+        #####
+
+
         self.n = n
         self.dim = dim
         self.delta = delta

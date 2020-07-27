@@ -71,9 +71,14 @@ struct MeshStruct{
     const int dim;
     const int dVertex;
 
+    const long * ptrCeta;
+    const long nCeta;
+
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->L)};
     const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->dVertex, this->J)};
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->J)};
+    // Label of Triangles inside Omega = 1
+    // Label of Triangles in OmegaI = 2
     const arma::Col<long> LabelTriangles{arma::Col<long>(this->ptrLabelTriangles, this->J)};
 };
 typedef MeshStruct MeshType;

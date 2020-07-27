@@ -195,6 +195,20 @@ def assemble(
     cdef double [:] ptrdx = dx.flatten()
     cdef double [:] ptrdy = dy.flatten()
 
+    cdef long [:] Ceta
+    cdef long * ptrCeta = NULL
+    cdef long nCeta
+
+    try:
+        nCeta = mesh.Ceta.shape[0]
+        Ceta = mesh.Ceta.flatten()
+        if nCeta > 0:
+            ptrCeta = &Ceta[0]
+
+    except AttributeError:
+        print("Ceta not found.")
+        nCeta = 0
+
 
     # Compute Assembly -------------------------------------------
     if (compute=="system" or compute=="systemforcing"):
@@ -212,7 +226,7 @@ def assemble(
                             &model_f_[0],
                             &integration_method_[0],
                             is_PlacePointOnCap_,
-                            mesh.dim)
+                            mesh.dim, ptrCeta, nCeta)
 
         total_time = time.time() - start
         print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -236,7 +250,7 @@ def assemble(
                             &model_f_[0],
                             &integration_method_[0],
                             is_PlacePointOnCap_,
-                            mesh.dim)
+                            mesh.dim, ptrCeta, nCeta)
 
         fd = read_arma_mat(path_fd)[:,0]
         if is_tmpfd:
@@ -321,59 +335,6 @@ def solve_cg(Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 5
 
     return {"x": x, "its": k, "res": res_new}
 
-# DEPRECATED #
-#cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, const long dVerts):
-#    cdef int n=0, i,j
-#    for i in range(dVerts):
-#        for j in range(dVerts):
-#            if (Elements[aTdx, i] == Elements[bTdx, j]):
-#                n += 1
-#    return n == (dVerts-1)
-#def par_constructAdjaciencyGraph(Elements):
-#    print("Constructing adjaciency graph...")
-#    cdef int nE = Elements.shape[0]
-#    cdef int dim = Elements.shape[1]-1
-#    cdef long[:,:] Neighbours = np.ones((nE, dim+1), dtype=int)#*nE
-#    cdef long[:] Elements_flat = Elements.flatten()
-#
-#    Cassemble.constructAdjaciencyGraph(dim, nE, &Elements_flat[0], &Neighbours[0,0])
-#    return np.array(Neighbours)
-#
-#def seq_constructAdjaciencyGraph(long [:,:] Elements):
-#    print("Constructing adjaciency graph...")
-#    cdef int nE = Elements.shape[0]
-#    cdef int dVerts = Elements.shape[1]
-#    cdef long[:,:] Neighbours = np.ones((nE, dVerts), dtype=int)*nE
-#    cdef long [:] neighbourCounter = np.zeros(nE, dtype=int)
-#    cdef int aTdx, bTdx
-#
-#    #print(dVerts)
-#    bTdxFilter = np.ones(nE, dtype=bool)
-#
-#    # Outer For Loop,
-#    # Find all neighbours of Triangle aT
-#    for aTdx in range(nE):
-#        #print("\na", aTdx)
-#        # No triangle can be its own neighbour
-#        # and all of its neighbours will be found
-#        bTdxFilter[aTdx] = False
-#        # If a triangle index was already in the outer loop,
-#        # Traverse all triangles bT
-#        # which do not have dVerts neighbours yet
-#        for bTdx in range(nE):
-#            if bTdxFilter[bTdx] and is_neighbour(aTdx, bTdx, Elements, dVerts):
-#                #print("b", bTdx, "c", neighbourCounter[bTdx])
-#                #print("aT:", np.array(Elements[aTdx]))
-#                #print("bT:", np.array(Elements[bTdx]))
-#                Neighbours[aTdx, neighbourCounter[aTdx]] = bTdx
-#                neighbourCounter[aTdx] += 1
-#                Neighbours[bTdx, neighbourCounter[bTdx]] = aTdx
-#                neighbourCounter[bTdx] += 1
-#                if neighbourCounter[bTdx] == dVerts:
-#                    #print(bTdx)
-#                    bTdxFilter[bTdx] = False
-#    return np.array(Neighbours)
-
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
 from Cassemble cimport method_retriangulate
 def py_retriangulate(
@@ -392,6 +353,36 @@ def py_retriangulate(
 
     return Rdx, TriangleList
 
+from Cassemble cimport toRef
+def py_toRef(
+    double [:] TE,
+    double [:] phys_x):
+    ref_p = np.zeros(2)
+    cdef double [:] cref_p = ref_p
+     # void toRef(const double * E, const double * phys_x, double * ref_p);
+    toRef(&TE[0], &phys_x[0], &cref_p[0]);
+    return ref_p
+
+from Cassemble cimport toPhys
+def py_toPhys(
+    double [:] TE,
+    double [:] p):
+    out_x = np.zeros(2)
+    cdef double [:] cout_x = out_x
+     # void toPhys(const double * E, const double * p, int dim, double * out_x)
+    toPhys(&TE[0], &p[0], 2, &cout_x[0]);
+    return out_x
+
+from Cassemble cimport solve2x2
+def py_solve2x2(
+    double [:] A,
+    double [:] b
+    ):
+    x = np.zeros(2)
+    cdef double [:] cx = x
+    # void solve2x2(const double * A, const double * b, double * x)
+    solve2x2(&A[0], &b[0], &cx[0])
+    return x
 """
 from Cassemble cimport retriangulate
 from Cassemble cimport toRef, model_basisFunction

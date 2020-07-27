@@ -9,6 +9,10 @@ using namespace std;
 int method_retriangulate(const double * x_center, const double * TE,
                          double sqdelta, double * re_Triangle_list,
                          int is_placePointOnCap);
+void toRef(const double * E, const double * phys_x, double * ref_p);     // Pull point to Reference Element (performs 2x2 Solve)
+void toPhys(const double * E, const double * p, double * out_x);         // Push point to Physical Element
+void toPhys(const double * E, const double * p, int dim, double * out_x);
+void solve2x2(const double * A, const double * b, double * x);
 
 ////// Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 /*!
@@ -23,7 +27,7 @@ int method_retriangulate(const double * x_center, const double * TE,
  * @param path_fd   Save path for forcing (armadillo binary)
  * @param K_Omega Number of rows of Ad
  * @param K Number of Columns of Ad
- * @param ptrTriangles <B>(J, d+1)</B> Pointer to elements
+ * @param ptrTriangles <B>(J, d+1)</B> Pointer to elements. Label 1 for elements in Omega, Label 2 for elements in OmegaI.
  * @param ptrLabelTriangles <B>(J,)</B> Pointer to element labels
  * @param ptrVerts <B>(L, d)</B> Pointer to vertices
  * @param J         Number of elements
@@ -45,6 +49,8 @@ int method_retriangulate(const double * x_center, const double * TE,
  * @param str_integration_method Name of integration method
  * @param is_PlacePointOnCap Switch for withcaps parameter in retriangulation
  * @param dim Dimension of the domain
+ * @param ptrCeta Pointer to overlap counter of decomposed Mesh (optional)
+ * @param nCeta Number of rows of Ceta
  */
 void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int J,
@@ -52,7 +58,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
-                  const int dim);
+                  const int dim, const long * ptrCeta = nullptr, const long nCeta = 0);
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 
