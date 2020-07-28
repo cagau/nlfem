@@ -1,11 +1,17 @@
-#include <Cassemble.h>
+#include <iostream>
 #include <cmath>
 #include <queue>
-#include <iostream>
-#include <integration.cpp>
-#include <mathhelpers.cpp>
-#include <model.cpp>
 #include <armadillo>
+#include <map>
+
+#include <Cassemble.h>
+
+#include "integration.cpp"
+#include "mathhelpers.cpp"
+#include "model.cpp"
+#include "checks.cpp"
+
+
 using namespace std;
 
 void lookup_configuration(ConfigurationType & conf){
@@ -54,15 +60,16 @@ void lookup_configuration(ConfigurationType & conf){
 }
 
 void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
-    // Copy coordinates of Triange b to bTE.
+    /*
+    Copy coordinates of Triange b to bTE.
 
-    // Tempalte of Triangle Point data.
-    // 2D Case, a, b, c are the vertices of a triangle
-    // T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
-    // Hence, if one wants to put T.E into col major order matrix it would be of shape\
-    //                             | a1 | b1 | c1 |
-    // M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
-    //
+     Tempalte of Triangle Point data.
+     2D Case, a, b, c are the vertices of a triangle
+     T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
+     Hence, if one wants to put T.E into col major order matrix it would be of shape\
+                                 | a1 | b1 | c1 |
+     M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
+    */
 
     int j, k, Vdx;
     //T.matE = arma::vec(dim*(dim+1));
@@ -143,7 +150,7 @@ void compute_f(     const ElementType & aT,
 
     for (a=0; a<mesh.dVertex; a++){
         for (i=0; i<quadRule.nPx; i++){
-            toPhys(aT.E, &(quadRule.Px[mesh.dim * i]),  mesh,&x[0]);
+            toPhys(aT.E, &(quadRule.Px[mesh.dim * i]),  mesh.dim,&x[0]);
             termf[a] += quadRule.psix(a, i) * model_f(&x[0]) * aT.absDet * quadRule.dx[i];
         }
     }
@@ -272,28 +279,38 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
 }
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
-void par_assemble(double *ptrAd, const int K_Omega, const int K, double *fd, const long *ptrTriangles,
-                  const long *ptrLabelTriangles, const double *ptrVerts, const int J, const int J_Omega, const int L,
-                  const int L_Omega, const double *Px, const int nPx, const double *dx, const double *Py, const int nPy,
-                  const double *dy, const double sqdelta, const long *ptrNeighbours, const int is_DiscontinuousGalerkin,
-                  const int is_NeumannBoundary, const string str_model_kernel, const string str_model_f,
-                  const string str_integration_method, const int is_PlacePointOnCap, const int dim) {
+void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
+                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int J,
+                  const int J_Omega, const int L, const int L_Omega, const double *Px, const int nPx, const double *dx,
+                  const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
+                  const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
+                  const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
+                  const int dim, const long * ptrCeta, const long nCeta) {
+    //const long * ptrCeta;
+    //cout << "nCeta is" << nCeta << endl;
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
                      L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, dim+1};
+                     is_NeumannBoundary, dim, dim+1, ptrCeta, nCeta};
+    chk_Mesh(mesh);
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
-    ConfigurationType conf = {str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
-    par_assemble( ptrAd, fd, mesh, quadRule, conf);
+    chk_QuadratureRule(quadRule);
+    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+
+
+    if (compute=="system") {
+        par_system(mesh, quadRule, conf);
+    }
+    if (compute=="forcing") {
+        par_forcing(mesh, quadRule, conf);
+    }
 }
 
-void par_assemble( double * ptrAd, double * fd,
-                    MeshType & mesh,
-                    QuadratureType & quadRule,
-                    ConfigurationType & conf){
+void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
-    printf("Function: par_assemble (generic)\n");
+    printf("Function: par_system (generic)\n");
     printf("Mesh dimension: %i\n", mesh.dim);
+    printf("Recieved Ceta for DD: %s\n", (mesh.nCeta > 0) ? "true" : "false");
     lookup_configuration(conf);
     printf("Quadrule outer: %i\n", quadRule.nPx);
     printf("Quadrule inner: %i\n", quadRule.nPy);
@@ -301,8 +318,12 @@ void par_assemble( double * ptrAd, double * fd,
     int aTdx=0, h=0;
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
-    arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
-    Ad.zeros();
+    //arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
+    //Ad.zeros();
+    //arma::sp_mat sp_Ad(mesh.K, mesh.K_Omega);
+    arma::vec values_all;
+    arma::umat indices_all(2,0);
+    int nnz_total=0;
 
     for(h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
@@ -312,6 +333,7 @@ void par_assemble( double * ptrAd, double * fd,
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(& quadRule.Py[mesh.dim*h], mesh.dim,& quadRule.psiy[mesh.dVertex * h]);
     }
+    chk_BasisFunction(quadRule);
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     // Contains one row more than number of verticies as label information is contained here
     //const arma::Mat<long> Triangles(mesh.ptrTriangles, mesh.dVertex+1, mesh.J);
@@ -320,8 +342,22 @@ void par_assemble( double * ptrAd, double * fd,
     //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.J);
     //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
+    // Read Ceta for Domain Decomposition.
+    // If nCeta == 0 nothing happens.
+    if (mesh.nCeta > 0) {
+        long aT, bT;
+        for(int it=0; it < mesh.nCeta; it++){
+            aT = mesh.ptrCeta[3*it]; //Ceta_mat(0, it);
+            bT = mesh.ptrCeta[3*it+1]; //Ceta_mat(1, it);
+            mesh.Ceta[aT*mesh.J + bT] = static_cast<double> (mesh.ptrCeta[3*it+2]);
+        }
+    }
+
     #pragma omp parallel
     {
+    map<unsigned long, double> Ad;
+    unsigned long Adx;
+
     // General Loop Indices ---------------------------------------
     int j=0, bTdx=0;
 
@@ -352,7 +388,7 @@ void par_assemble( double * ptrAd, double * fd,
     long bDGdx[mesh.dVertex];
 
     // Buffers for integration solutions
-    double termf[mesh.dVertex];
+    //double termf[mesh.dVertex];
     double termLocal[mesh.dVertex*mesh.dVertex];
     double termNonloc[mesh.dVertex*mesh.dVertex];
     //[DEBUG]
@@ -413,18 +449,16 @@ void par_assemble( double * ptrAd, double * fd,
             initializeTriangle(aTdx, mesh, aT);
             // Assembly of right side ---------------------------------------
             // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
-            doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
-            compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
+            //doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
+            //compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
             // Add content of buffer to the right side.
-            for (a = 0; a < mesh.dVertex; a++) {
+            //for (a = 0; a < mesh.dVertex; a++) {
                 // Assembly happens in the interior of Omega only, so we throw away some values
-                // Again, Triangles contains the labels as first entry! Hence, we start with a=1 here!
-                // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
-                if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
-#pragma omp atomic update
-                    fd[aAdx[a]] += termf[a];
-                }
-            }
+            //    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
+            //        #pragma omp atomic update
+            //        fd[aAdx[a]] += termf[a];
+            //    }
+            //}
             // Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
             // on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
 
@@ -514,6 +548,10 @@ void par_assemble( double * ptrAd, double * fd,
                             */
                             //[End DEBUG]
 
+                            // Domain decomposition. If Ceta is empty, the weight is set to 1.
+                            // as double maps are initialized with 0.
+                            double cetaValue = mesh.Ceta[aTdx*mesh.J + bTdx];
+                            double weight = (cetaValue>0) ? 1./(1. + cetaValue) : 1.;
 
                             if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) ||
                                 doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)) {
@@ -525,15 +563,17 @@ void par_assemble( double * ptrAd, double * fd,
                                 // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
-//printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
+                                //printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
                                 for (a = 0; a < mesh.dVertex; a++) {
                                     // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
                                     if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
                                         for (b = 0; b < mesh.dVertex; b++) {
-#pragma omp atomic update
-                                            Ad(aAdx[b], aAdx[a]) += termLocal[mesh.dVertex * a + b];
-#pragma omp atomic update
-                                            Ad(bAdx[b], aAdx[a]) -= termNonloc[mesh.dVertex * a + b];
+                                            //Adx.i = aAdx[b]; Adx.j = aAdx[a];
+                                            Adx = aAdx[a]*mesh.K + aAdx[b];
+                                            Ad[Adx] += termLocal[mesh.dVertex * a + b]*weight;
+                                            //Adx.i = bAdx[b]; Adx.j =  aAdx[a];
+                                            Adx = aAdx[a]*mesh.K + bAdx[b];
+                                            Ad[Adx] += -termNonloc[mesh.dVertex * a + b]*weight;
                                         }
                                     }
                                 }
@@ -548,8 +588,111 @@ void par_assemble( double * ptrAd, double * fd,
             //}// End if Label of (aTdx == 1)
         }// End if LabelTriangles == 1
     }// End parallel for
+
+    int nnz_start = 0;
+    #pragma omp critical
+    {
+        int nnz_current = static_cast<int>(Ad.size());
+        nnz_start = nnz_total;
+        nnz_total +=nnz_current;
+        //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
+    }
+    #pragma omp barrier
+    #pragma omp single
+    {
+        //cout << "Nonzero Total "<< nnz_total << endl;
+        values_all.set_size(nnz_total);
+        indices_all.reshape(2, nnz_total);
+    }
+    #pragma omp barrier
+    //#pragma omp critical
+    {
+        //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
+        int k = 0;
+        for (map<unsigned long, double>::iterator it = Ad.begin(); it != Ad.end(); it++) {
+            unsigned long Adx = it->first;
+            double value = it->second;
+            values_all(nnz_start + k) = value;
+            // column major format of transposed matrix Ad
+            indices_all(0, nnz_start + k) = Adx % mesh.K;
+            indices_all(1, nnz_start + k) = Adx / mesh.K;
+            k++;
+        }
+    }
+
     }// End pragma omp parallel
-}// End function par_assemble
+    //indices_all.save("indices_all");
+    //values_all.save("values_all");
+    cout << "K_Omega " << mesh.K_Omega << endl;
+    cout << "K " << mesh.K << endl;
+    cout << "NNZ " << nnz_total << endl;
+    //cout << arma::max(indices_all.row(1)) << endl;
+    arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
+    sp_Ad.save(conf.path_spAd);
+
+
+}// End function par_system
+
+void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
+    arma::vec fd(mesh.K_Omega, arma::fill::zeros);
+
+    printf("Function: par_forcing (generic)\n");
+    printf("Mesh dimension: %i\n", mesh.dim);
+    lookup_configuration(conf);
+    printf("Quadrule outer: %i\n", quadRule.nPx);
+    //printf("Quadrule inner: %i\n", quadRule.nPy);
+
+    int aTdx = 0, h = 0;
+    for (h = 0; h < quadRule.nPx; h++) {
+        // This works due to Column Major ordering of Armadillo Matricies!
+        model_basisFunction(&quadRule.Px[mesh.dim * h], mesh.dim, &quadRule.psix[mesh.dVertex * h]);
+    }
+
+    #pragma omp parallel
+    {
+        // General Loop Indices ---------------------------------------
+        int j = 0;
+        // Vector containing the coordinates of the vertices of a Triangle
+        ElementType aT;
+        aT.matE = arma::vec(mesh.dim * (mesh.dim + 1));
+        int a = 0;
+        // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
+        const long *aAdx;
+        long aDGdx[mesh.dVertex]; // Index for discontinuous Galerkin
+        // Buffers for integration solutions
+        double termf[mesh.dVertex];
+        #pragma omp for schedule(dynamic)
+        for (aTdx = 0; aTdx < mesh.J; aTdx++) {
+            if (mesh.LabelTriangles[aTdx] == 1) {
+                // Get index of ansatz functions in matrix compute_A.-------------------
+                if (mesh.is_DiscontinuousGalerkin) {
+                    // Discontinuous Galerkin
+                    for (j = 0; j < mesh.dVertex; j++) {
+                        aDGdx[j] = mesh.dVertex * aTdx + j;
+                    }
+                    aAdx = aDGdx;
+                } else {
+                    // Continuous Galerkin
+                    aAdx = &mesh.Triangles(0, aTdx);
+                }
+                // Prepare Triangle information aTE and aTdet ------------------
+                initializeTriangle(aTdx, mesh, aT);
+                // Assembly of right side ---------------------------------------
+                // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
+                doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
+                compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
+                // Add content of buffer to the right side.
+                for (a = 0; a < mesh.dVertex; a++) {
+                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
+                        #pragma omp atomic update
+                        fd[aAdx[a]] += termf[a];
+                    }
+                }// end for rhs
+            }// end outer if (mesh.LabelTriangles[aTdx] == 1)
+        }// end outer for loop (aTdx=0; aTdx<mesh.J; aTdx++)
+    }// end pragma omp parallel
+    fd.save(conf.path_fd);
+}// end par_righthandside
 
 // [DEBUG] _____________________________________________________________________________________________________________
 /*

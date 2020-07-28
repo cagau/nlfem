@@ -12,9 +12,17 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from examples.SolveandPlot.plot import plot_mesh_DG, plot_mesh_CG
 
+def test_solve():
+    from assemble import py_solve2x2
+    A = np.random.rand(2,2)
+    b = np.random.rand(2)
+    x = py_solve2x2(A.flatten(), b)
+    print("b ", b)
+    print("Ax", A@x)
 
 def test_retriangulate():
     from assemble import py_retriangulate
+    from assemble import py_toRef, py_toPhys
     from examples.SolveandPlot.conf import  py_Px, OUTPUT_PATH
     py_P = py_Px
 
@@ -30,6 +38,12 @@ def test_retriangulate():
             plt.scatter(RD[:, 0], RD[:, 1], s=5, color="b", alpha=1)
         for k in range(Rdx):
             plt.fill(RD[(3*k):(3*k+3), 0], RD[(3*k):(3*k+3), 1], edgecolor='b', fill=False, alpha=.3)
+            RT = RD[(3*k):(3*k+3)].copy().flatten()
+            for p in py_P:
+                x = py_toPhys(RT, p)
+                plt.scatter(x[0], x[1], s=1, c="blue", alpha=.1)
+                ref_p = py_toRef(TE.flatten(), x)
+                plt.scatter(ref_p[0], ref_p[1], s=1, c="green", alpha=.5)
         plt.savefig(pp, format='pdf')
         plt.close()
 
@@ -45,9 +59,16 @@ def test_retriangulate():
                np.array([.3,.7]),
                np.array([.25,.6])]
 
-    #TE = np.array([[0,0],[1,1],[0,1]], dtype=float)
+    #TE = np.array([[0,0],[1,0],[0,1]], dtype=float)
+    #TE = np.array([[0,1],[0,0],[1,0]], dtype=float)
+    #TE = np.array([[1,0],[0,0],[0,1]], dtype=float)
+    #TE = np.array([[1,0],[0,1],[0,0]], dtype=float)
+    #TE = np.array([[0,0],[0,1],[1,0]], dtype=float)
+
+
+    TE = np.array([[0,0],[1,1],[0,1]], dtype=float)
     #TE = np.array([[1,1],[0,0],[0,1]], dtype=float)
-    TE = np.array([[0,0],[0,1],[1,1]], dtype=float)
+    #TE = np.array([[0,0],[0,1],[1,1]], dtype=float)
     c_TE = TE.flatten("C")
     print("Triangle: ", c_TE)
 
@@ -70,7 +91,7 @@ def test_interfacedependendKernel():
     import pickle as pkl
     import sys
     # insert at 1, 0 is the script path (or '' in REPL)
-    sys.path.insert(1, '../nonlocal-assembly-chris')
+    sys.path.insert(1, '../assemble-chris')
 
     try:
         mesh = Mesh(pkl.load(open("../compare_data/mesh.pkl", "rb")), ansatz, boundaryConditionType = boundaryConditionType)
@@ -140,3 +161,4 @@ def test_interfacedependendKernel():
 if __name__ == "__main__":
     #test_interfacedependendKernel()
     test_retriangulate()
+    test_solve()

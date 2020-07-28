@@ -17,6 +17,7 @@ from libc.math cimport pow
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import scipy.sparse as sparse
 cimport numpy as c_np
+#cimport armadillo
 
 def assemble2D(
         # Mesh information ------------------------------------
@@ -64,6 +65,85 @@ def assemble2D(
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
     return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
 
+def read_arma_mat(path, is_verbose=False):
+    """
+    Read armadillo vector format from file.
+
+    :param path: string, Path to file.
+    :param is_verbose: bool, Verbose mode.
+    :return: np.ndarray, Vector of double.
+    """
+    import numpy as np
+
+    sizeof_double = 8
+
+    f = open(path, "rb")
+    # Read Armadillo header
+    arma_header = f.readline()
+    if arma_header != b'ARMA_MAT_BIN_FN008\n':
+        raise ValueError("in read_arma_mat(), input file is of wrong format.")
+    # Get shape of sparse matrix
+    arma_shape = f.readline()
+    n_rows, n_cols = tuple([int(x) for x in arma_shape.decode("utf-8").split()])
+    if is_verbose: print("Shape (", n_rows, ", ", n_cols, ")", sep="")
+    # Raw binary of sparse Matrix in csc-format
+    b_data = f.read()
+    f.close()
+
+    b_values = b_data[:sizeof_double * n_rows * n_cols]
+    values = np.array(np.frombuffer(b_values)).reshape((n_rows, n_cols), order="F")
+    if is_verbose: print("Values ", values)
+    if is_verbose: print(values)
+
+    return values
+
+def read_arma_spMat(path, is_verbose=False):
+    """
+    Read sparse Matrix in armadillo spMat format from file.
+
+    :param path: string, Path to file.
+    :param is_verbose: bool, Verbose mode.
+    :return: scipy.csr_matrix, Matrix of double.
+    """
+
+    import scipy.sparse as sp
+    import numpy as np
+
+    sizeof_double = 8
+
+    f = open(path, "rb")
+    # Read Armadillo header
+    arma_header = f.readline()
+    if arma_header != b'ARMA_SPM_BIN_FN008\n':
+        raise ValueError("in read_arma_spMat(), input file is of wrong format.")
+    # Get shape of sparse matrix
+    arma_shape = f.readline()
+    n_rows, n_cols, n_nonzero = tuple([int(x) for x in arma_shape.decode("utf-8").split()])
+    if is_verbose: print("Shape (", n_rows, ", ", n_cols, ")", sep="")
+    # Raw binary of sparse Matrix in csc-format
+    b_data = f.read()
+    b_values = b_data[:sizeof_double * n_nonzero]
+    b_pointers = b_data[sizeof_double * n_nonzero:]
+    f.close()
+
+    values = np.frombuffer(b_values)
+    if is_verbose: print("Values ", values)
+
+    pointers = np.frombuffer(b_pointers, dtype=np.uint)
+    row_index = pointers[:n_nonzero]
+    if is_verbose: print("Row index", row_index)
+    col_pointer = pointers[n_nonzero:]
+    if is_verbose: print("Column pointer", col_pointer)
+
+    A = sp.csc_matrix((values, row_index, col_pointer), shape=(n_rows, n_cols)).transpose()
+    A = A.tocsr() # This is efficient, linearly in n_nonzeros.
+    if is_verbose: print(A.todense())
+    return A
+
+def remove_arma_tmp(path):
+    import os
+    os.remove(path)
+
 def assemble(
         # Mesh information ------------------------------------
         mesh,
@@ -73,53 +153,110 @@ def assemble(
         dx,
         dy,
         double delta,
+        path_spAd=None,
+        path_fd=None,
+        compute="systemforcing", # "forcing", "system"
         model_kernel="constant",
         model_f = "constant",
         integration_method = "retriangulate",
         is_PlacePointOnCap = 1
     ):
+    is_tmpAd = False
+    if path_spAd is None:
+        is_tmpAd = True
+        path_spAd = "tmp_spAd"
+    cdef string path_spAd_ = path_spAd.encode('UTF-8')
+    Ad = None
 
-    Ad = np.zeros(mesh.K*mesh.K_Omega)
-    fd = np.zeros(mesh.K_Omega)
+    is_tmpfd = False
+    if path_fd is None:
+        is_tmpfd = True
+        path_fd = "tmp_fd"
+    cdef string path_fd_ = path_fd.encode('UTF-8')
+    fd = None
 
     cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
     cdef long[:] elements = mesh.elements.flatten()
     cdef long[:] elementLabels = mesh.elementLabels.flatten()
     cdef double[:] vertices = mesh.vertices.flatten()
-    cdef double[:] ptrAd = Ad
+    #cdef double[:] ptrAd = Ad
     cdef double[:] ptrfd = fd
     cdef string model_kernel_ = model_kernel.encode('UTF-8')
     cdef string model_f_ = model_f.encode('UTF-8')
     cdef string integration_method_ = integration_method.encode('UTF-8')
+
+    cdef string compute_system_ = "system".encode('UTF-8')
+    cdef string compute_forcing_ = "forcing".encode('UTF-8')
     cdef int is_PlacePointOnCap_ = is_PlacePointOnCap
+
 
     cdef double [:] ptrPx = Px.flatten()
     cdef double [:] ptrPy = Py.flatten()
     cdef double [:] ptrdx = dx.flatten()
     cdef double [:] ptrdy = dy.flatten()
 
-    start = time.time()
+    cdef long [:] Ceta
+    cdef long * ptrCeta = NULL
+    cdef long nCeta
+
+    try:
+        nCeta = mesh.Ceta.shape[0]
+        Ceta = mesh.Ceta.flatten()
+        if nCeta > 0:
+            ptrCeta = &Ceta[0]
+
+    except AttributeError:
+        print("Ceta not found.")
+        nCeta = 0
+
+
     # Compute Assembly -------------------------------------------
+    if (compute=="system" or compute=="systemforcing"):
+        start = time.time()
+        Cassemble.par_assemble( compute_system_, path_spAd_, path_fd_, mesh.K_Omega, mesh.K,
+                            &elements[0], &elementLabels[0], &vertices[0],
+                            mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
+                            &ptrPx[0], Px.shape[0], &ptrdx[0],
+                            &ptrPy[0], Py.shape[0], &ptrdy[0],
+                            delta**2,
+                            &neighbours[0],
+                            mesh.is_DiscontinuousGalerkin,
+                            mesh.is_NeumannBoundary,
+                            &model_kernel_[0],
+                            &model_f_[0],
+                            &integration_method_[0],
+                            is_PlacePointOnCap_,
+                            mesh.dim, ptrCeta, nCeta)
 
-    Cassemble.par_assemble( &ptrAd[0], mesh.K_Omega, mesh.K,
-                        &ptrfd[0], &elements[0], &elementLabels[0], &vertices[0],
-                        mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
-                        &ptrPx[0], Px.shape[0], &ptrdx[0],
-                        &ptrPy[0], Py.shape[0], &ptrdy[0],
-                        delta**2,
-                        &neighbours[0],
-                        mesh.is_DiscontinuousGalerkin,
-                        mesh.is_NeumannBoundary,
-                        &model_kernel_[0],
-                        &model_f_[0],
-                        &integration_method_[0],
-                        is_PlacePointOnCap_,
-                        mesh.dim)
+        total_time = time.time() - start
+        print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 
-    total_time = time.time() - start
+        Ad = read_arma_spMat(path_spAd)
+        if is_tmpAd:
+            remove_arma_tmp(path_spAd)
 
-    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
-    return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
+    if (compute=="forcing" or compute =="systemforcing"):
+        print("")
+        Cassemble.par_assemble( compute_forcing_, path_spAd_, path_fd_, mesh.K_Omega, mesh.K,
+                            &elements[0], &elementLabels[0], &vertices[0],
+                            mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
+                            &ptrPx[0], Px.shape[0], &ptrdx[0],
+                            &ptrPy[0], Py.shape[0], &ptrdy[0],
+                            delta**2,
+                            &neighbours[0],
+                            mesh.is_DiscontinuousGalerkin,
+                            mesh.is_NeumannBoundary,
+                            &model_kernel_[0],
+                            &model_f_[0],
+                            &integration_method_[0],
+                            is_PlacePointOnCap_,
+                            mesh.dim, ptrCeta, nCeta)
+
+        fd = read_arma_mat(path_fd)[:,0]
+        if is_tmpfd:
+            remove_arma_tmp(path_fd)
+
+    return Ad, fd
 
 def evaluateMass(
       # Mesh information ------------------------------------
@@ -151,14 +288,6 @@ def evaluateMass(
             Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim)
     return vd
 
-cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, const long dVerts):
-    cdef int n=0, i,j
-    for i in range(dVerts):
-        for j in range(dVerts):
-            if (Elements[aTdx, i] == Elements[bTdx, j]):
-                n += 1
-    return n == (dVerts-1)
-
 def constructAdjaciencyGraph(long[:,:] elements):
     print("Constructing adjaciency graph...")
     nE = elements.shape[0]
@@ -185,7 +314,7 @@ def constructAdjaciencyGraph(long[:,:] elements):
         neigs[elemenIndices[k], colj] =  neighbourIndices[k]
     return neigs
 
-def solve_cg(c_np.ndarray Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 500):
+def solve_cg(Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 500):
     cdef int n = b.size
     cdef int k=0
 
@@ -205,51 +334,6 @@ def solve_cg(c_np.ndarray Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, i
         beta = res_new**2/res_old**2
 
     return {"x": x, "its": k, "res": res_new}
-# DEPRECATED #
-#def par_constructAdjaciencyGraph(Elements):
-#    print("Constructing adjaciency graph...")
-#    cdef int nE = Elements.shape[0]
-#    cdef int dim = Elements.shape[1]-1
-#    cdef long[:,:] Neighbours = np.ones((nE, dim+1), dtype=int)#*nE
-#    cdef long[:] Elements_flat = Elements.flatten()
-#
-#    Cassemble.constructAdjaciencyGraph(dim, nE, &Elements_flat[0], &Neighbours[0,0])
-#    return np.array(Neighbours)
-#
-#def seq_constructAdjaciencyGraph(long [:,:] Elements):
-#    print("Constructing adjaciency graph...")
-#    cdef int nE = Elements.shape[0]
-#    cdef int dVerts = Elements.shape[1]
-#    cdef long[:,:] Neighbours = np.ones((nE, dVerts), dtype=int)*nE
-#    cdef long [:] neighbourCounter = np.zeros(nE, dtype=int)
-#    cdef int aTdx, bTdx
-#
-#    #print(dVerts)
-#    bTdxFilter = np.ones(nE, dtype=bool)
-#
-#    # Outer For Loop,
-#    # Find all neighbours of Triangle aT
-#    for aTdx in range(nE):
-#        #print("\na", aTdx)
-#        # No triangle can be its own neighbour
-#        # and all of its neighbours will be found
-#        bTdxFilter[aTdx] = False
-#        # If a triangle index was already in the outer loop,
-#        # Traverse all triangles bT
-#        # which do not have dVerts neighbours yet
-#        for bTdx in range(nE):
-#            if bTdxFilter[bTdx] and is_neighbour(aTdx, bTdx, Elements, dVerts):
-#                #print("b", bTdx, "c", neighbourCounter[bTdx])
-#                #print("aT:", np.array(Elements[aTdx]))
-#                #print("bT:", np.array(Elements[bTdx]))
-#                Neighbours[aTdx, neighbourCounter[aTdx]] = bTdx
-#                neighbourCounter[aTdx] += 1
-#                Neighbours[bTdx, neighbourCounter[bTdx]] = aTdx
-#                neighbourCounter[bTdx] += 1
-#                if neighbourCounter[bTdx] == dVerts:
-#                    #print(bTdx)
-#                    bTdxFilter[bTdx] = False
-#    return np.array(Neighbours)
 
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
 from Cassemble cimport method_retriangulate
@@ -269,6 +353,36 @@ def py_retriangulate(
 
     return Rdx, TriangleList
 
+from Cassemble cimport toRef
+def py_toRef(
+    double [:] TE,
+    double [:] phys_x):
+    ref_p = np.zeros(2)
+    cdef double [:] cref_p = ref_p
+     # void toRef(const double * E, const double * phys_x, double * ref_p);
+    toRef(&TE[0], &phys_x[0], &cref_p[0]);
+    return ref_p
+
+from Cassemble cimport toPhys
+def py_toPhys(
+    double [:] TE,
+    double [:] p):
+    out_x = np.zeros(2)
+    cdef double [:] cout_x = out_x
+     # void toPhys(const double * E, const double * p, int dim, double * out_x)
+    toPhys(&TE[0], &p[0], 2, &cout_x[0]);
+    return out_x
+
+from Cassemble cimport solve2x2
+def py_solve2x2(
+    double [:] A,
+    double [:] b
+    ):
+    x = np.zeros(2)
+    cdef double [:] cx = x
+    # void solve2x2(const double * A, const double * b, double * x)
+    solve2x2(&A[0], &b[0], &cx[0])
+    return x
 """
 from Cassemble cimport retriangulate
 from Cassemble cimport toRef, model_basisFunction

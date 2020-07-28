@@ -1,7 +1,8 @@
 from examples.RatesScipy.mesh import RegMesh2D
-from scipy.spatial.distance import  euclidean as l2dist
+from scipy.spatial.distance import euclidean as l2dist
 import examples.RatesScipy.helpers as helpers
 from matplotlib.backends.backend_pdf import PdfPages
+from python.helpers import read_arma_spMat
 import numpy as np
 import assemble
 from time import time
@@ -23,7 +24,8 @@ def main():
                                  model_kernel=conf.model_kernel,
                                  model_f=conf.model_f,
                                  integration_method=conf.integration_method,
-                                 is_PlacePointOnCap=conf.is_PlacePointOnCap)
+                                 is_PlacePointOnCap=conf.is_PlacePointOnCap,
+                                 compute="systemforcing")
         conf.data["Assembly Time"].append(time() - start)
 
         A_O = A[:,:mesh.K_Omega]

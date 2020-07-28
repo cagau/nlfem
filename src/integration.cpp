@@ -61,7 +61,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
     //printf("\nouterInt_full----------------------------------------\n");
     for (k=0; k<quadRule.nPx; k++){
         //printf("k %i, quadRule.nPx %i\n", k, quadRule.nPx);
-        toPhys(aT.E, &(quadRule.Px[dim*k]), mesh, x);
+        toPhys(aT.E, &(quadRule.Px[dim*k]), mesh.dim, x);
         //printf("\nInner Integral, Iterate %i\n", k);
         //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
         //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
@@ -148,14 +148,14 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
     for (k=0; k<quadRule.nPx; k++){
-        toPhys(aT.E, &(quadRule.Px[dim*k]), mesh, x);
+        toPhys(aT.E, &(quadRule.Px[dim*k]), mesh.dim, x);
 
         innerLocal = 0.0;
         doubleVec_tozero(innerNonloc, mesh.dVertex);
         if(method_baryCenter(x, bT, mesh, reTriangle_list, false)){
             for (i = 0; i < quadRule.nPy; i++) {
                 // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
-                toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, physical_quad);
+                toPhys(bT.E, &(quadRule.Py[dim * i]), mesh.dim, physical_quad);
                 // Determinant of Triangle of retriangulation
                 rTdet = absDet(bT.E, mesh.dim);
                 // inner Local integral with ker
@@ -211,7 +211,7 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
             rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
 
             for (k = 0; k < quadRule.nPx; k++) {
-                toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Px[dim * k]), mesh, physical_quad);
+                toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Px[dim * k]), mesh.dim, physical_quad);
 
                 // Compute Integral over Triangle bT
                 innerLocal = 0.0;
@@ -219,7 +219,7 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
 
                 for (i = 0; i < quadRule.nPy; i++) {
                     // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
-                    toPhys(bT.E, &(quadRule.Py[dim * i]), mesh, y);
+                    toPhys(bT.E, &(quadRule.Py[dim * i]), mesh.dim, y);
                     // inner Local integral with ker
                     // Local Term
                     innerLocal += model_kernel(physical_quad, aT.label, y, bT.label, mesh.sqdelta) * quadRule.dy[i] * bTdet;
@@ -266,7 +266,7 @@ int method_baryCenter(const double * x_center, const ElementType & T, const Mesh
             }
         }
         return -1;
-    };
+    }
 }
 
 // Retriangulation Method ----------------------------------------------------------------------------------------------

@@ -15,15 +15,15 @@ quadrule_outer = "keast_9"
 quadrule_inner = "keast_4"
 
 n_start = 12
-n_layers = 2
+n_layers = 4
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*2
 u_exact = lambda x: x[0]**2 * x[1] + x[1]**2 + x[2]**2
 
 
-#outputdir = datetime.datetime.now().strftime("%m.%d_%H-%M-%S")+"_results"
-#os.mkdir(outputdir)
-outputdir = "results"
+outputdir = datetime.datetime.now().strftime("%m.%d_%H-%M-%S")+"_results"
+os.mkdir(outputdir)
+#outputdir = "results"
 
 fnames = {
           "triPlot.pdf": outputdir+"/auto_plot.pdf",

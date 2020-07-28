@@ -41,10 +41,12 @@ struct ElementStruct
 };
 typedef ElementStruct ElementType;
 
-struct ConfigurationStruct{
+struct ConfigurationStruct {
+    const string path_spAd;
+    const string path_fd;
     const string model_kernel;
-    const string  model_f;
-    const string  integration_method;
+    const string model_f;
+    const string integration_method;
     const bool is_placePointOnCap;
 };
 typedef ConfigurationStruct ConfigurationType;
@@ -69,9 +71,17 @@ struct MeshStruct{
     const int dim;
     const int dVertex;
 
+    // Weights for Domain decomposition
+    // Empty Map of double ist 0 by default (like sparse lil)
+    const long * ptrCeta;
+    const long nCeta;
+
+    map<unsigned long, double> Ceta;
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->L)};
     const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->dVertex, this->J)};
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->J)};
+    // Label of Triangles inside Omega = 1
+    // Label of Triangles in OmegaI = 2
     const arma::Col<long> LabelTriangles{arma::Col<long>(this->ptrLabelTriangles, this->J)};
 };
 typedef MeshStruct MeshType;
@@ -92,4 +102,48 @@ struct QuadratureStruct{
 };
 typedef QuadratureStruct QuadratureType;
 
+//class sp_index {
+//public:
+    //int i;
+    //int j;
+    // Needed for (ordered) std::map
+    /*bool operator<(const sp_index &other) const {
+        if (i < other.i) return true;
+        if (other.i < i) return false;
+        return (j < other.j);
+    }*/
+    // Needed for std::unoredered_map
+    /*bool operator==(const sp_index &other) const {
+        return (i == other.i) && (j == other.j);
+    }*/
+//};
+// Hashing function for unordered map
+// https://en.cppreference.com/w/cpp/utility/hash
+// https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
+/*namespace std {
+    template <>
+    struct hash<sp_index>
+    {
+        std::size_t operator()(const sp_index& dx) const
+        {
+            using std::size_t;
+            using std::hash;
+
+            // Compute individual hash values for first,
+            // second and third and combine them using XOR
+            // and bit shifting:
+
+            return ((hash<int>()(dx.i) ^ (hash<int>()(dx.j) << 1)) >> 1);
+        }
+    };
+
+}
+
+struct sp_reduce {
+    int threadID;
+    int start;
+    int end;
+};
+typedef sp_reduce sp_reduceType;
+*/
 #endif //NONLOCAL_ASSEMBLY_MESHTYPES_H
