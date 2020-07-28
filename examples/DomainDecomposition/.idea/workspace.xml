@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="858176fd-9de6-4000-994a-241677ae5bb7" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/.idea/DomainDecomposition.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/SubdivideMesh.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/bib3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/mesh/DD_simple.geo" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/mesh/DD_simple.msh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/mesh/circle.geo" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/mesh/circle.msh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/mesh/circle_large.msh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/mesh/init_shape.geo" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/mesh/init_shape.msh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/mesh/target_shape.geo" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/mesh/target_shape.msh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../DomainDecomposition_/test_gmsh_DD.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../Rates2D/L2_rates_nonreg_NEW.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Rates2D/ASSEMBLY_nonreg.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Rates2D/ASSEMBLY_nonreg.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Rates2D/L2_rates_nonreg_scipyinterp.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Rates2D/L2_rates_nonreg_scipyinterp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Rates2D/MAIN_2d.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Rates2D/MAIN_2d.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Rates2D/MESH_nonreg.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Rates2D/MESH_nonreg.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Rates2D/bib3.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Rates2D/bib3.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Rates2D/conf2.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Rates2D/conf2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Rates2D/preparemesh_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Rates2D/preparemesh_test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Rates2D/test_gmsh.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Rates2D/test_gmsh.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/../DomainDecomposition_/SubdivideMesh.py" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="ProjectId" id="1fIuoDaviq3EeeGW40W96vIsEvE" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.SubdivideMesh">
+    <configuration name="SubdivideMesh" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="DomainDecomposition" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/SubdivideMesh.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="test_gmsh_DD" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="DomainDecomposition" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_gmsh_DD.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.test_gmsh_DD" />
+      <item itemvalue="Python.SubdivideMesh" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.SubdivideMesh" />
+        <item itemvalue="Python.test_gmsh_DD" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="858176fd-9de6-4000-994a-241677ae5bb7" name="Default Changelist" comment="" />
+      <created>1595918101004</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1595918101004</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="2382" y="877" width="666" height="819" key="#SubdivideMesh" timestamp="1595920498153">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state x="2382" y="877" width="666" height="819" key="#SubdivideMesh/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595920498153" />
+    <state x="2178" y="945" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1595918208600">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state x="2178" y="945" key="#com.intellij.execution.impl.EditConfigurationsDialog/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595918208600" />
+    <state x="2259" y="835" width="912" height="904" key="CommitChangelistDialog2" timestamp="1595932215306">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state x="2259" y="835" width="912" height="904" key="CommitChangelistDialog2/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595932215306" />
+    <state width="2537" height="462" key="GridCell.Tab.0.bottom" timestamp="1595929690176">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state width="2537" height="462" key="GridCell.Tab.0.bottom/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595929690176" />
+    <state width="2537" height="462" key="GridCell.Tab.0.center" timestamp="1595929690176">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state width="2537" height="462" key="GridCell.Tab.0.center/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595929690176" />
+    <state width="2537" height="462" key="GridCell.Tab.0.left" timestamp="1595929690176">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state width="2537" height="462" key="GridCell.Tab.0.left/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595929690176" />
+    <state width="2537" height="462" key="GridCell.Tab.0.right" timestamp="1595929690176">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state width="2537" height="462" key="GridCell.Tab.0.right/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595929690176" />
+    <state width="2537" height="462" key="GridCell.Tab.1.bottom" timestamp="1595929690176">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state width="2537" height="462" key="GridCell.Tab.1.bottom/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595929690176" />
+    <state width="2537" height="462" key="GridCell.Tab.1.center" timestamp="1595929690176">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state width="2537" height="462" key="GridCell.Tab.1.center/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595929690176" />
+    <state width="2537" height="462" key="GridCell.Tab.1.left" timestamp="1595929690176">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state width="2537" height="462" key="GridCell.Tab.1.left/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595929690176" />
+    <state width="2537" height="462" key="GridCell.Tab.1.right" timestamp="1595929690176">
+      <screen x="1440" y="587" width="2560" height="1440" />
+    </state>
+    <state width="2537" height="462" key="GridCell.Tab.1.right/1440.587.2560.1440/0.614.1440.1348@1440.587.2560.1440" timestamp="1595929690176" />
+  </component>
+</project>
