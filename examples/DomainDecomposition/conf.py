@@ -14,6 +14,8 @@ is_PlacePointOnCap = False
 quadrule_outer = "16"
 quadrule_inner = "1"
 
+def eval_g(x):
+    return 0;
 # Quadrature rules -----------------------------------------------------------------------------------------------------
 quadrules = {
     "7":    [

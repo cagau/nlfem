@@ -4,6 +4,7 @@ Documentation for this module.
 """
 
 import numpy as np
+from scipy.sparse import coo_matrix
 import meshio
 import assemble
 
@@ -48,32 +49,9 @@ class MeshIO(meshio._mesh.Mesh):
         self.nV = vertices.shape[0]
         print("In nlocal.MeshIO, Dimension assumed to be {}D.".format(self.dim))
 
-        # READ LABEL INFO FROM CONF  -----------------------------------------------------------------------------------
-        # Read Physical Names of Gmsh File
-        boundaryName = kwargs["boundaryPhysicalName"] # If this fails we stop with an error!
-        labelEntry = self.field_data.get(boundaryName, None)
-        if (labelEntry is not None) and (labelEntry[1] == self.dim-1):
-            boundaryLabel = labelEntry[0]
-        else:
-            boundaryLabel = kwargs["boundaryPhysicalName"]
-        print("Label of dOmega", boundaryLabel)
-
-        domainName = kwargs["domainPhysicalName"] # If this fails we stop with an error!
-        labelEntry = self.field_data.get(domainName, None)
-        if (labelEntry is not None) and (labelEntry[1] == self.dim):
-            domainLabel = labelEntry[0]
-        else:
-            domainLabel = kwargs["domainPhysicalName"]
-        print("Label of Omega", domainLabel)
-
-        interactionName = kwargs["interactiondomainPhysicalName"] # If this fails we stop with an error!
-        labelEntry = self.field_data.get(interactionName, None)
-        if (labelEntry is not None) and (labelEntry[1] == self.dim):
-            interactionLabel = labelEntry[0]
-        else:
-            interactionLabel = kwargs["interactiondomainPhysicalName"]
-        print("Label of OmegaI", interactionLabel)
-
+        # Labels are hard coded in C++ Code
+        interactionLabel = 2
+        domainLabel = 1
 
         # ELEMENT LABELS + Number of Elements in Omega -----------------------------------------------------------------
         self.elementLabels = np.array(self.cell_data["gmsh:physical"][1], dtype=np.int)
@@ -81,7 +59,7 @@ class MeshIO(meshio._mesh.Mesh):
         # we label each node in the complement by the interactionLabel
         VertexLabels = np.full(self.nV, domainLabel)
         for i, label in enumerate(self.elementLabels):
-            if label == interactionLabel:
+            if label == interactionLabel: # label of Interaction domain
                 Vdx = elements[i]
                 VertexLabels[Vdx] = interactionLabel
         self.point_data["vertexLabels"] = VertexLabels.copy()
@@ -103,7 +81,7 @@ class MeshIO(meshio._mesh.Mesh):
         self.boundaryConditionType = kwargs["boundaryConditionType"]
         if kwargs["boundaryConditionType"] == "Dirichlet":
             self.is_NeumannBoundary = 0
-        else:# mesh.boundaryConditionType == "Neumann": #
+        else:
             self.is_NeumannBoundary = 1
             # In case of Neumann conditions we assemble a Maitrx over Omega + OmegaI.
             # In order to achieve that we "redefine" Omega := Omega + OmegaI
@@ -116,6 +94,7 @@ class MeshIO(meshio._mesh.Mesh):
             self.K = self.nE*3
             self.K_Omega = self.nE_Omega*3
             self.is_DiscontinuousGalerkin=1
+
         elif kwargs["ansatz"] =="CG":
             self.K = self.nV
             self.K_Omega = self.nV_Omega
@@ -128,11 +107,21 @@ class MeshIO(meshio._mesh.Mesh):
         if kwargs.get("isNeighbours", True):
             self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
         # built in Neighbour Routine of MeshBulder yields mbNeighbours.
-        #self.neighbours = mbNeighbours.T
 
         self.baryCenter = np.zeros((self.nE, self.dim))
         for i in range(self.nE):
             corners = self.vertices[self.elements[i]]
             bC = np.sum(corners, 0)/(self.dim+1)
             self.baryCenter[i] = bC
+
+        # Ceta Test
+        self.nCeta = 10
+        G = np.eye(self.nCeta)
+        G = coo_matrix(G)
+
+        self.Ceta = np.zeros((self.nCeta, 3), dtype=np.int)
+        self.Ceta[:, 0] = G.row[:]
+        self.Ceta[:, 1] = G.col[:]
+        self.Ceta[:, 2] = G.data[:]
+
         print("Done [Constructing Mesh]\n")

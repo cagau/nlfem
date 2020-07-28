@@ -53,8 +53,8 @@ void chk_Mesh(MeshType & mesh){
     assert((mesh.J_Omega == chk_nE_Omega && "Number of elements with label!=2 does not coincide with nE_Omega."));
 
     for(long k=0; k < nCeta; k++){
-        assert((mesh.ptrCeta[k] >= 0 && mesh.ptrCeta[k+1] >= 0 && mesh.ptrCeta[k+2] >= 0 && "Some entries in Ceta are negative."));
-        assert((mesh.ptrCeta[k] < nE && mesh.ptrCeta[k+1] < nE && mesh.ptrCeta[k+2] < nE && "Some entries in Ceta exceed the number of triangles."));
+        assert((mesh.ptrCeta[3*k] >= 0 && mesh.ptrCeta[3*k+1] >= 0 && mesh.ptrCeta[3*k+2] >= 0 && "Some entries in Ceta are negative."));
+        assert((mesh.ptrCeta[3*k] < nE && mesh.ptrCeta[3*k+1] < nE && mesh.ptrCeta[3*k+2] < nE && "Some entries in Ceta exceed the number of triangles."));
     }
 }
 #endif //NONLOCAL_ASSEMBLY_CHECKS_CPP
