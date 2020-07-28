@@ -29,11 +29,48 @@ class MeshfromDict(meshio._mesh.Mesh):
         self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
         self.vertexLabels = np.ones(self.nV)
         self.vertexLabels[:self.nV_Omega] = 0
+        self.nCeta = 0
+        self.Ceta = None
+
         super(MeshfromDict, self).__init__(self.vertices, [["triangle", self.elements]],
                                            point_data={"vertexLabels": self.vertexLabels},
                                            cell_data={"elementLabels": self.elementLabels,
                                                       "subdomainLabels": self.subdomainLabels}
                                            )
+
+def setCeta(mesh_list):
+    projection_list = []
+    submesh_map = np.zeros((mesh_list[0].nE, 2), dtype=np.int)
+    n_submeshes = len(mesh_list) -1
+    for k in range(n_submeshes):
+        subm = mesh_list[k+1]
+        projection_list.append(-np.ones(mesh_list[0].nE, dtype=np.int))
+        for aT in range(subm.nE):
+            parent_aT = subm.embedding_elements[aT]
+            projection_list[k][parent_aT] = aT
+            submesh_map[parent_aT, k] += 1
+    subsets = submesh_map @ submesh_map.T-1
+    subsets *= subsets > 0
+    G = coo_matrix(subsets)
+
+    nCeta = G.nnz
+    Ceta =  np.zeros((nCeta, 3), dtype=np.int)
+    Ceta[:, 0] = G.row[:]
+    Ceta[:, 1] = G.col[:]
+    Ceta[:, 2] = G.data[:]
+    Ceta_list = [Ceta]
+
+    for k in range(n_submeshes):
+        isOmegak = submesh_map[:, k]
+        subm = mesh_list[k+1]
+        subm.nCeta = Ceta.shape[0]
+        subm.Ceta = Ceta.copy()
+        subm.Ceta[:, 0] = projection_list[k][Ceta[:, 0]]
+        subm.Ceta[:, 1] = projection_list[k][Ceta[:, 1]]
+        subm.cell_data["Ceta"] = np.zeros(subm.nE, dtype=np.int)
+        subm.cell_data["Ceta"][subm.Ceta[:, 0]] = 1
+
+    return mesh_list
 
 class MeshIO(meshio._mesh.Mesh):
     def __init__(self, mesh_data, **kwargs):

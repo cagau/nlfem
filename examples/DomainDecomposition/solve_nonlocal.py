@@ -5,9 +5,9 @@
 # we add the current project path == working directory to sys-path
 
 from examples.DomainDecomposition.conf import *
-from examples.DomainDecomposition.nlocal import MeshIO, MeshfromDict
+from examples.DomainDecomposition.nlocal import setCeta, MeshfromDict
 from examples.DomainDecomposition.SubdivideMesh import mesh_data, submesh_data
-
+from scipy.sparse import coo_matrix
 try:
     from assemble import assemble, solve_cg
 except ImportError:
@@ -16,39 +16,50 @@ except ImportError:
 
 if __name__ == "__main__":
     # Mesh construction ------------------------------------------------------------------------------------------------
-    #mesh = MeshIO(DATA_PATH + mesh_name, boundaryConditionType=boundaryConditionType, ansatz=ansatz)
-    elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat, mesh_dict = mesh_data(geofile, element_size, delta)
-    mesh = MeshfromDict(mesh_dict)
+    elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat, mesh_dict = \
+        mesh_data(geofile, element_size, delta)
     submesh, submesh_dicts = submesh_data(elements, vertices, lines, subdomainLabels, diam)
-    mesh_child = [MeshfromDict(mdict) for mdict in submesh_dicts]
+
+    mesh_list = [MeshfromDict(mesh_dict)]
+    mesh_list += [MeshfromDict(subm) for subm in submesh_dicts]
+    mesh_list = setCeta(mesh_list)
+
     print("Delta: ", delta, "\t Mesh: ", mesh_name)
-    print("Number of basis functions: ", mesh.K)
 
-    mesh = mesh_child[0]
-    mesh.write(OUTPUT_PATH + mesh_name + ".vtk")
+    A_list = []
+    f_list = []
+    u_list = []
 
-    # Assemble and solve -----------------------------------------------------------------------------------------------
-    A, f = assemble(mesh, py_Px, py_Py, dx, dy, delta,
-                      path_spAd=None,
-                      path_fd=None,
-                      compute="systemforcing", # "forcing", "system"
-                      model_kernel="constant",
-                      model_f = "constant",
-                      integration_method="retriangulate",
-                      is_PlacePointOnCap=1)
-    A_O = A[:, :mesh.K_Omega]
-    A_I = A[:, mesh.K_Omega:]
+    for k, mesh in enumerate(mesh_list):
+        print("Number of basis functions: ", mesh.K)
+        # Assemble and solve -----------------------------------------------------------------------------------------------
+        A, f = assemble(mesh, py_Px, py_Py, dx, dy, delta,
+                          path_spAd=None,
+                          path_fd=None,
+                          compute="systemforcing", # "forcing", "system"
+                          model_kernel="constant",
+                          model_f = "constant",
+                          integration_method="retriangulate",
+                          is_PlacePointOnCap=1)
+        A_list.append(A.copy())
+        f_list.append(f.copy())
 
-    g = np.apply_along_axis(eval_g, 1, mesh.vertices[mesh.K_Omega:])
-    f -= A_I@g
+        A_O = A[:, :mesh.K_Omega]
+        A_I = A[:, mesh.K_Omega:]
 
-    # Solve ------------------------------------------------------------------------------------------------------------
-    print("Solve...")
-    solution = solve_cg(A_O, f, f)
-    print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
+        g = np.apply_along_axis(eval_g, 1, mesh.vertices[mesh.K_Omega:])
+        f -= A_I@g
 
-    # Write output to Paraview -----------------------------------------------------------------------------------------
-    u = np.zeros(mesh.K)
-    u[:mesh.K_Omega] = solution["x"]
-    mesh.point_data["ud"] = u
-    mesh.write(OUTPUT_PATH + mesh_name + ".vtk")
+        # Solve ------------------------------------------------------------------------------------------------------------
+        print("Solve...")
+        solution = solve_cg(A_O, f, f)
+        print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
+
+        # Write output to Paraview -----------------------------------------------------------------------------------------
+        u = np.zeros(mesh.K)
+        u[:mesh.K_Omega] = solution["x"]
+        u_list.append(u.copy())
+        mesh.point_data["ud"] = u
+        mesh.write(OUTPUT_PATH + mesh_name + str(k) + ".vtk")
+
+    # Compare ...

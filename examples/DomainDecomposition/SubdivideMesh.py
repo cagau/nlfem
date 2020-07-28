@@ -244,21 +244,6 @@ def submesh_data(elements, vertices, lines, subdomainLabels, diam):
         #dim = 2
         #is_DiscontinuosGalerkin = False
         #is_NeumannBoundary = False
-        submesh_dicts.append({
-            "K": len(vertices_i),
-            "K_Omega": K_Omega_i,
-            "nE": len(elements_i),
-            "nE_Omega": len(np.where(elements_labels_i != labels[-1])[0]),# number of elements with label 1
-            "nV": len(vertices_i),
-            "nV_Omega": K_Omega_i, # since CG
-            "dim": 2,
-            "is_DiscontinuousGalerkin": False,
-            "is_NeumannBoundary": False,
-            "vertices": vertices_i,
-            "elements": elements_i,
-            "elementLabels": np.array(elements_labels_i, dtype=np.int),
-            "subdomainLabels": subdomainLabels_i
-        })
         # -----------------------------------------------------------------------------------------------------------
 
         ##### SORT VERTICES and ADAPT ELEMENTS (so that vertices in child Omega_I are at the end)
@@ -275,6 +260,24 @@ def submesh_data(elements, vertices, lines, subdomainLabels, diam):
         # -------------------------------------------------------------------------------------------------------------------
         submesh_k = [elements_i, vertices_i, elements_labels_i, subdomainLabels_i, embedding_vertices_i, embedding_elements_i, K_Omega_i]
         submeshes_data += [submesh_k]
+
+        submesh_dicts.append({
+            "K": len(vertices_i),
+            "K_Omega": K_Omega_i,
+            "nE": len(elements_i),
+            "nE_Omega": np.sum(elements_labels_i),# number of elements with label 1
+            "nV": len(vertices_i),
+            "nV_Omega": K_Omega_i, # since CG
+            "dim": 2,
+            "is_DiscontinuousGalerkin": False,
+            "is_NeumannBoundary": False,
+            "vertices": vertices_i.copy(),
+            "elements": elements_i.copy(),
+            "elementLabels": np.array(elements_labels_i, dtype=np.int).copy(),
+            "subdomainLabels": subdomainLabels_i.copy(),
+            "embedding_vertices": embedding_vertices_i.copy(),
+            "embedding_elements": embedding_elements_i.copy()
+        })
 
     return submeshes_data, submesh_dicts
 #-----------------------------------------------------------------------------------------------------------------------

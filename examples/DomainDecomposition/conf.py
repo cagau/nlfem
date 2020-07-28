@@ -3,8 +3,9 @@ import numpy as np
 
 DATA_PATH = "data/"
 OUTPUT_PATH = "output/"
-mesh_name = "circle"
+#mesh_name = "circle"
 geofile = "DD_simple" # .geo file
+mesh_name = geofile
 
 element_size = 0.05 # to control grid size via gmsh (element size factor)
 delta = .1  # interaction horizon (attention: here only l2-norm)

@@ -50,7 +50,7 @@ void chk_Mesh(MeshType & mesh){
             chk_nE_Omega++;
         }
     }
-    assert((mesh.J_Omega == chk_nE_Omega && "Number of elements with label!=2 does not coincide with nE_Omega."));
+    assert((mesh.J_Omega == chk_nE_Omega && "Number of elements with label!=1 does not coincide with nE_Omega."));
 
     for(long k=0; k < nCeta; k++){
         assert((mesh.ptrCeta[3*k] >= 0 && mesh.ptrCeta[3*k+1] >= 0 && mesh.ptrCeta[3*k+2] >= 0 && "Some entries in Ceta are negative."));
