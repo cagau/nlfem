@@ -23,6 +23,18 @@ def invert_permutation(p):
     s[p] = np.arange(p.size)
     return s
 
+class MeshfromDict(meshio._mesh.Mesh):
+    def __init__(self, iterable=(), **kwargs):
+        self.__dict__.update(iterable, **kwargs)
+        self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
+        self.vertexLabels = np.ones(self.nV)
+        self.vertexLabels[:self.nV_Omega] = 0
+        super(MeshfromDict, self).__init__(self.vertices, [["triangle", self.elements]],
+                                           point_data={"vertexLabels": self.vertexLabels},
+                                           cell_data={"elementLabels": self.elementLabels,
+                                                      "subdomainLabels": self.subdomainLabels}
+                                           )
+
 class MeshIO(meshio._mesh.Mesh):
     def __init__(self, mesh_data, **kwargs):
         print("Constructing Mesh\n")
@@ -118,7 +130,7 @@ class MeshIO(meshio._mesh.Mesh):
             self.baryCenter[i] = bC
 
         # Ceta Test
-        self.nCeta = 0
+        self.nCeta = 4
         G = np.eye(self.nCeta)
         G = coo_matrix(G)
 

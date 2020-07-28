@@ -350,6 +350,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
             aT = mesh.ptrCeta[3*it]; //Ceta_mat(0, it);
             bT = mesh.ptrCeta[3*it+1]; //Ceta_mat(1, it);
             mesh.Ceta[aT*mesh.J + bT] = static_cast<double> (mesh.ptrCeta[3*it+2]);
+            //cout << aT << ",    " << bT << ",   " << mesh.Ceta[aT*mesh.J + bT] << endl;
         }
     }
 

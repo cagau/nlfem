@@ -5,7 +5,8 @@
 # we add the current project path == working directory to sys-path
 
 from examples.DomainDecomposition.conf import *
-from examples.DomainDecomposition.nlocal import MeshIO
+from examples.DomainDecomposition.nlocal import MeshIO, MeshfromDict
+from examples.DomainDecomposition.SubdivideMesh import mesh_data, submesh_data
 
 try:
     from assemble import assemble, solve_cg
@@ -15,10 +16,16 @@ except ImportError:
 
 if __name__ == "__main__":
     # Mesh construction ------------------------------------------------------------------------------------------------
-    mesh = MeshIO(DATA_PATH + mesh_name, boundaryConditionType=boundaryConditionType, ansatz=ansatz)
-
+    #mesh = MeshIO(DATA_PATH + mesh_name, boundaryConditionType=boundaryConditionType, ansatz=ansatz)
+    elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat, mesh_dict = mesh_data(geofile, element_size, delta)
+    mesh = MeshfromDict(mesh_dict)
+    submesh, submesh_dicts = submesh_data(elements, vertices, lines, subdomainLabels, diam)
+    mesh_child = [MeshfromDict(mdict) for mdict in submesh_dicts]
     print("Delta: ", delta, "\t Mesh: ", mesh_name)
     print("Number of basis functions: ", mesh.K)
+
+    mesh = mesh_child[0]
+    mesh.write(OUTPUT_PATH + mesh_name + ".vtk")
 
     # Assemble and solve -----------------------------------------------------------------------------------------------
     A, f = assemble(mesh, py_Px, py_Py, dx, dy, delta,
@@ -43,5 +50,5 @@ if __name__ == "__main__":
     # Write output to Paraview -----------------------------------------------------------------------------------------
     u = np.zeros(mesh.K)
     u[:mesh.K_Omega] = solution["x"]
-    mesh.point_data["ud"] = u[mesh.piVdx_invargsort]
+    mesh.point_data["ud"] = u
     mesh.write(OUTPUT_PATH + mesh_name + ".vtk")

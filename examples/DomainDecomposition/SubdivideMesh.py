@@ -139,16 +139,6 @@ def mesh_data(geofile, element_size, delta):
     elements = elements[:,1:] # delete first column in <elements>
     # vertices = set above
     # lines = set above
-    K = len(vertices)
-    # K_Omega = set above
-    nE = len(elements)
-    nE_Omega = len(np.where(elementLabels != labels[-1])[0]) # number of elements with label 1
-    nV = len(vertices)
-    nV_Omega = K_Omega # since CG
-    dim = 2
-    is_DiscontinuosGalerkin = False
-    is_NeumannBoundary = False
-
     # Gamma_hat
     Gamma_hat = []
     bary = (vertices[elements[:, 0]] + vertices[elements[:, 1]] + vertices[elements[:, 2]]) / 3.
@@ -157,8 +147,24 @@ def mesh_data(geofile, element_size, delta):
         Gamma_hat += np.where(np.linalg.norm(bary - np.tile(vertices[i], (len(bary), 1)), axis=1) <= delta / 2. + diam)[0].tolist()
     Gamma_hat = list(set(Gamma_hat).difference(set(np.where(subdomainLabels == labels[-1])[0].tolist())))
 
+    mesh_dict = {
+        "K": len(vertices),
+        "K_Omega": K_Omega,
+        "nE": len(elements),
+        "nE_Omega": len(np.where(elementLabels != labels[-1])[0]),# number of elements with label 1
+        "nV": len(vertices),
+        "nV_Omega": K_Omega, # since CG
+        "dim": 2,
+        "is_DiscontinuousGalerkin": False,
+        "is_NeumannBoundary": False,
+        "vertices": vertices,
+        "elements": elements,
+        "elementLabels": elementLabels,
+        #"Gamma_hat": np.array(Gamma_hat),
+        "subdomainLabels": subdomainLabels
+    }
 
-    return elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat
+    return elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat, mesh_dict
 #-----------------------------------------------------------------------------------------------------------------------
 
 
@@ -173,6 +179,7 @@ def submesh_data(elements, vertices, lines, subdomainLabels, diam):
 
     labels = list(np.unique(subdomainLabels)) # unique list of all labels used except for the interaction domain
     submeshes_data = [] # we collect all submesh_data as a list in the list submeshes_data
+    submesh_dicts = []
     for k in range(len(labels)-1): # run through all labels
         ## compute the interaction domain of the subdomain
         boundary_i = np.unique(lines[np.where(lines[:, 0] == 11 * (k + 1))][:, 1:]).tolist() # all vertices on the boundary of subdomain label[k]
@@ -226,17 +233,32 @@ def submesh_data(elements, vertices, lines, subdomainLabels, diam):
         #subdomainLabels_i = set above
         #elements_labels_i = set above
         # vertices = set above
-        K_i = len(vertices_i)
+        #K_i = len(vertices_i)
         aux = elements_i[np.where(subdomainLabels_i == labels[-1])]
         aux = np.unique(aux.reshape(3 * len(aux)))  # = indices of vertices which lie in child interaction domain
         K_Omega_i = len(vertices_i) - len(aux)
-        nE_i = len(elements[elements_i]) # number of child elements
-        nE_Omega_i = len(np.where(elements_labels_i != labels[-1])[0])  # number of elements with label 1
-        nV_i = len(vertices_i)
-        nV_Omega_i = K_Omega_i  # since CG
-        dim = 2
-        is_DiscontinuosGalerkin = False
-        is_NeumannBoundary = False
+        #nE_i = len(elements[elements_i]) # number of child elements
+        #nE_Omega_i = len(np.where(elements_labels_i != labels[-1])[0])  # number of elements with label 1
+        #nV_i = len(vertices_i)
+        #nV_Omega_i = K_Omega_i  # since CG
+        #dim = 2
+        #is_DiscontinuosGalerkin = False
+        #is_NeumannBoundary = False
+        submesh_dicts.append({
+            "K": len(vertices_i),
+            "K_Omega": K_Omega_i,
+            "nE": len(elements_i),
+            "nE_Omega": len(np.where(elements_labels_i != labels[-1])[0]),# number of elements with label 1
+            "nV": len(vertices_i),
+            "nV_Omega": K_Omega_i, # since CG
+            "dim": 2,
+            "is_DiscontinuousGalerkin": False,
+            "is_NeumannBoundary": False,
+            "vertices": vertices_i,
+            "elements": elements_i,
+            "elementLabels": np.array(elements_labels_i, dtype=np.int),
+            "subdomainLabels": subdomainLabels_i
+        })
         # -----------------------------------------------------------------------------------------------------------
 
         ##### SORT VERTICES and ADAPT ELEMENTS (so that vertices in child Omega_I are at the end)
@@ -254,67 +276,68 @@ def submesh_data(elements, vertices, lines, subdomainLabels, diam):
         submesh_k = [elements_i, vertices_i, elements_labels_i, subdomainLabels_i, embedding_vertices_i, embedding_elements_i, K_Omega_i]
         submeshes_data += [submesh_k]
 
-    return submeshes_data
+    return submeshes_data, submesh_dicts
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-### PLOT the meshes
 
 
-# mother mesh
-elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat = mesh_data(geofile, element_size, delta)
-PlotMesh(elements, vertices, subdomainLabels, title = "Mother Mesh")
+if __name__=="__main__":
+    ### PLOT the meshes
+    # mother mesh
+    elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat, mesh_dict = mesh_data(geofile, element_size, delta)
+    PlotMesh(elements, vertices, subdomainLabels, title = "Mother Mesh")
 
-# plot Gamma_hat
-for i in Gamma_hat:
-    plt.gca().add_patch(plt.Polygon(vertices[elements[i]], closed=True, fill=True, color='yellow', alpha=0.25))
+    # plot Gamma_hat
+    for i in Gamma_hat:
+        plt.gca().add_patch(plt.Polygon(vertices[elements[i]], closed=True, fill=True, color='yellow', alpha=0.25))
 
-
-# plot vertices
-# plt.plot(vertices[0:K_Omega, 0], vertices[0:K_Omega, 1], 'ro')
-# plt.plot(vertices[K_Omega:, 0], vertices[K_Omega:, 1], 'bo')
-
-# test elements embedding
-# for i in range(len(elements)):
-#     bary_i = vertices[elements[i]].sum(axis=0) / 3.
-#     plt.annotate(str(i), (bary_i[0], bary_i[1]), size=10)
-
-# test vertices embedding
-# for i in range(len(vertices)):
-#     plt.annotate(str(i), (vertices[i,0], vertices[i,1]), size=10)
-
-
-
-
-# submeshes
-labels = list(np.unique(subdomainLabels))
-submeshes_data = submesh_data(elements, vertices, lines, subdomainLabels, diam)
-for k in range(len(labels)-1):
-    submesh = submeshes_data[k]
-    elements_i = submesh[0]
-    vertices_i = submesh[1]
-    element_Labels_i = submesh[2]
-    subdomainLabels_i = submesh[3]
-    embedding_vertices_i = submesh[4]
-    embedding_elements_i = submesh[5]
-    K_Omega_i = submesh[6]
-
-    PlotMesh(elements_i, vertices_i, element_Labels_i, title="Child Mesh"+str(labels[k]))
 
     # plot vertices
-    # plt.plot(vertices_i[0:K_Omega_i, 0], vertices_i[0:K_Omega_i, 1], 'ro')
-    # plt.plot(vertices_i[K_Omega_i:, 0], vertices_i[K_Omega_i:, 1], 'bo')
+    # plt.plot(vertices[0:K_Omega, 0], vertices[0:K_Omega, 1], 'ro')
+    # plt.plot(vertices[K_Omega:, 0], vertices[K_Omega:, 1], 'bo')
 
     # test elements embedding
-    # for i in range(len(elements_i)):
-    #     bary_i = vertices_i[elements_i[i]].sum(axis=0) / 3.
-    #     plt.annotate(str(embedding_elements_i[i]), (bary_i[0], bary_i[1]), size = 10)
+    # for i in range(len(elements)):
+    #     bary_i = vertices[elements[i]].sum(axis=0) / 3.
+    #     plt.annotate(str(i), (bary_i[0], bary_i[1]), size=10)
 
     # test vertices embedding
-    # for i in range(len(vertices_i)):
-    #     plt.annotate(str(embedding_vertices_i[i]), (vertices_i[i,0], vertices_i[i,1]), size = 10)
+    # for i in range(len(vertices)):
+    #     plt.annotate(str(i), (vertices[i,0], vertices[i,1]), size=10)
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+
+
+    # submeshes
+    labels = list(np.unique(subdomainLabels))
+    submeshes_data, submeshes_dict = submesh_data(elements, vertices, lines, subdomainLabels, diam)
+    for k in range(len(labels)-1):
+        submesh = submeshes_data[k]
+        elements_i = submesh[0]
+        vertices_i = submesh[1]
+        element_Labels_i = submesh[2]
+        subdomainLabels_i = submesh[3]
+        embedding_vertices_i = submesh[4]
+        embedding_elements_i = submesh[5]
+        K_Omega_i = submesh[6]
+
+        PlotMesh(elements_i, vertices_i, element_Labels_i, title="Child Mesh"+str(labels[k]))
+
+        # plot vertices
+        # plt.plot(vertices_i[0:K_Omega_i, 0], vertices_i[0:K_Omega_i, 1], 'ro')
+        # plt.plot(vertices_i[K_Omega_i:, 0], vertices_i[K_Omega_i:, 1], 'bo')
+
+        # test elements embedding
+        # for i in range(len(elements_i)):
+        #     bary_i = vertices_i[elements_i[i]].sum(axis=0) / 3.
+        #     plt.annotate(str(embedding_elements_i[i]), (bary_i[0], bary_i[1]), size = 10)
+
+        # test vertices embedding
+        # for i in range(len(vertices_i)):
+        #     plt.annotate(str(embedding_vertices_i[i]), (vertices_i[i,0], vertices_i[i,1]), size = 10)
+
+    #-----------------------------------------------------------------------------------------------------------------------
 
 
 

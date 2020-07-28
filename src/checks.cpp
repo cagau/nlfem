@@ -41,7 +41,7 @@ void chk_Mesh(MeshType & mesh){
     const long nCeta = mesh.nCeta;
 
     for(long k=0; k<nE; k++){
-        if (mesh.LabelTriangles(k)==2) {
+        if (mesh.LabelTriangles(k)!=1) {
             for (unsigned long i = 0; i < d; i++) {
                 // For description of element labels see MeshTypes.h
                 assert((mesh.Triangles(i, k) >= nV_Omega && "Incorrect vertex order or incorrect element label."));

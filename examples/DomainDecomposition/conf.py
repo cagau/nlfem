@@ -4,8 +4,10 @@ import numpy as np
 DATA_PATH = "data/"
 OUTPUT_PATH = "output/"
 mesh_name = "circle"
+geofile = "DD_simple" # .geo file
 
-delta = .1
+element_size = 0.05 # to control grid size via gmsh (element size factor)
+delta = .1  # interaction horizon (attention: here only l2-norm)
 ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
@@ -16,7 +18,7 @@ quadrule_outer = "16"
 quadrule_inner = "1"
 
 def eval_g(x):
-    return 0;
+    return 0
 # Quadrature rules -----------------------------------------------------------------------------------------------------
 quadrules = {
     "7":    [
