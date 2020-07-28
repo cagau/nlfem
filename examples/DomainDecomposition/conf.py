@@ -2,6 +2,7 @@
 import numpy as np
 
 DATA_PATH = "data/"
+OUTPUT_PATH = "output/"
 mesh_name = "circle"
 
 delta = .1

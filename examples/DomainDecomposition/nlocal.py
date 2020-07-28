@@ -63,12 +63,15 @@ class MeshIO(meshio._mesh.Mesh):
                 Vdx = elements[i]
                 VertexLabels[Vdx] = interactionLabel
         self.point_data["vertexLabels"] = VertexLabels.copy()
+
         self.nE_Omega = np.sum(self.elementLabels == domainLabel) # mesh.nE_Omega
         self.nV_Omega = np.sum(VertexLabels == domainLabel) # mesh.nV_Omega
 
         # VERTEX AND ELEMENT ORDER -------------------------------------------------------------------------------------
         piVdx_argsort = np.argsort(VertexLabels, kind="mergesort")  # Permutation der der Vertex indizes
+        self.piVdx_argsort = piVdx_argsort
         piVdx_invargsort = invert_permutation(piVdx_argsort)
+        self.piVdx_invargsort = piVdx_invargsort
         piVdx = lambda dx: piVdx_invargsort[dx]  # Permutation definieren
         # Wende die Permutation auf Verts, Lines und Triangles an
         self.vertices = vertices[piVdx_argsort] # Vorwärts Permutieren
@@ -115,7 +118,7 @@ class MeshIO(meshio._mesh.Mesh):
             self.baryCenter[i] = bC
 
         # Ceta Test
-        self.nCeta = 10
+        self.nCeta = 0
         G = np.eye(self.nCeta)
         G = coo_matrix(G)
 
