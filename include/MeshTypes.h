@@ -71,9 +71,12 @@ struct MeshStruct{
     const int dim;
     const int dVertex;
 
+    // Weights for Domain decomposition
+    // Empty Map of double ist 0 by default (like sparse lil)
     const long * ptrCeta;
     const long nCeta;
 
+    map<unsigned long, double> Ceta;
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->L)};
     const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->dVertex, this->J)};
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->J)};

@@ -297,6 +297,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     chk_QuadratureRule(quadRule);
     ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
 
+
     if (compute=="system") {
         par_system(mesh, quadRule, conf);
     }
@@ -309,6 +310,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
     printf("Function: par_system (generic)\n");
     printf("Mesh dimension: %i\n", mesh.dim);
+    printf("Recieved Ceta for DD: %s\n", (mesh.nCeta > 0) ? "true" : "false");
     lookup_configuration(conf);
     printf("Quadrule outer: %i\n", quadRule.nPx);
     printf("Quadrule inner: %i\n", quadRule.nPy);
@@ -340,32 +342,17 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.J);
     //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
-    // Empty Map of double ist 0 by default (like sparse lil)
-    map<unsigned long, double> Ceta;
+    // Read Ceta for Domain Decomposition.
+    // If nCeta == 0 nothing happens.
     if (mesh.nCeta > 0) {
-        arma::Mat<long> Ceta_mat = arma::Mat<long>(mesh.ptrCeta, 3, mesh.nCeta);
-        //cout << "Hello " << mesh.nCeta << endl;
-        //cout << "Entrys " << Ceta_mat(0,0) << endl;
         long aT, bT;
-        double valCeta;
         for(int it=0; it < mesh.nCeta; it++){
-            aT = Ceta_mat(0, it);
-            bT = Ceta_mat(1, it);
-            valCeta = static_cast<double> (Ceta_mat(2, it));
-            Ceta[aT*mesh.J + bT] = valCeta;
-            /*valCeta =  1/Ceta[aT*mesh.J + bT];
-            cout << valCeta << endl;
-            valCeta = (valCeta==0.) ? (1.) : (1./valCeta);
-            cout << valCeta << endl;
-            valCeta =  Ceta[2];
-            cout << "spannend!!" << valCeta << endl;
-            valCeta = (valCeta==0.) ? (1.) : (1./valCeta);
-            cout << valCeta << endl;
-            */
-            //cout << "Index " << aT*mesh.J + bT << endl;
-            //cout << "Value " << Ceta[2] << endl;
+            aT = mesh.ptrCeta[3*it]; //Ceta_mat(0, it);
+            bT = mesh.ptrCeta[3*it+1]; //Ceta_mat(1, it);
+            mesh.Ceta[aT*mesh.J + bT] = static_cast<double> (mesh.ptrCeta[3*it+2]);
         }
     }
+
     #pragma omp parallel
     {
     map<unsigned long, double> Ad;
@@ -561,10 +548,10 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             */
                             //[End DEBUG]
 
-                            // Domain decomposition. If Ceta is empty, we obtain only zero values here
-                            double weight = Ceta[aTdx*mesh.J + bTdx];
-                            // In that case nothing happens. Entries are natural naumbers.
-                            weight = (weight==0.) ? (1.) : (1./weight);
+                            // Domain decomposition. If Ceta is empty, the weight is set to 1.
+                            // as double maps are initialized with 0.
+                            double cetaValue = mesh.Ceta[aTdx*mesh.J + bTdx];
+                            double weight = (cetaValue>0) ? 1./(1. + cetaValue) : 1.;
 
                             if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) ||
                                 doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)) {
