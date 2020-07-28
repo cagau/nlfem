@@ -61,10 +61,10 @@ Physical Line(1122) = {1, 6, 5, 4, 3, 2};
 Physical Line(12) = {11};
 
 // boundary of Omega_1
-Physical Line(11) = {1, 2,6, 11};
+Physical Line(11) = {1, 2,6};
 
 // boundary of Omega_2
-Physical Line(22) = {5, 3, 4, 11};
+Physical Line(22) = {5, 3, 4};
 
 // Omega_1
 Physical Surface(1) = {13};
