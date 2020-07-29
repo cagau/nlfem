@@ -25,6 +25,23 @@ def invert_permutation(p):
 
 class MeshfromDict(meshio._mesh.Mesh):
     def __init__(self, iterable=(), **kwargs):
+        self.K = None
+        self.K_Omega = None
+        self.nE = None
+        self.nE_Omega = None
+        self.nV = None
+        self.nV_Omega = None
+        self.dim = None
+        self.is_DiscontinuousGalerkin = None
+        self.is_NeumannBoundary = None
+        self.vertices = None
+        self.elements = None
+        self.elementLabels = None
+        self.subdomainLabels = None
+        self.embedding_vertices = None
+        self.embedding_elements = None
+        self.Gamma_hat = None
+
         self.__dict__.update(iterable, **kwargs)
         self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
         self.vertexLabels = np.ones(self.nV)

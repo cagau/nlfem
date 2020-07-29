@@ -160,7 +160,7 @@ def mesh_data(geofile, element_size, delta):
         "vertices": vertices,
         "elements": elements,
         "elementLabels": elementLabels,
-        #"Gamma_hat": np.array(Gamma_hat),
+        "Gamma_hat": np.array(Gamma_hat),
         "subdomainLabels": subdomainLabels
     }
 

@@ -14,55 +14,7 @@ except ImportError:
     print("\nCan't import assemble.\nTry: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/libCassemble.\n")
     raise ImportError
 
-if __name__ == "__main__":
-    # Mesh construction ------------------------------------------------------------------------------------------------
-    elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat, mesh_dict = \
-        mesh_data(geofile, element_size, delta)
-    submesh, submesh_dicts = submesh_data(elements, vertices, lines, subdomainLabels, diam)
-    n_submesh = len(submesh)
-
-    M = [MeshfromDict(mesh_dict)]
-    M += [MeshfromDict(subm) for subm in submesh_dicts]
-    M = setCeta(M)
-
-    print("Delta: ", delta, "\t Mesh: ", mesh_name)
-
-    A_list = []
-    f_list = []
-    u_list = []
-
-    for k, mesh in enumerate(M):
-        print("Number of basis functions: ", mesh.K)
-        # Assemble and solve -----------------------------------------------------------------------------------------------
-        A, f = assemble(mesh, py_Px, py_Py, dx, dy, delta,
-                          path_spAd=None,
-                          path_fd=None,
-                          compute="systemforcing", # "forcing", "system"
-                          model_kernel="constant",
-                          model_f = "constant",
-                          integration_method="retriangulate",
-                          is_PlacePointOnCap=1)
-        A_list.append(coo_matrix(A))
-        f_list.append(f.copy())
-
-        A_O = A[:, :mesh.K_Omega]
-        A_I = A[:, mesh.K_Omega:]
-
-        g = np.apply_along_axis(eval_g, 1, mesh.vertices[mesh.K_Omega:])
-        f -= A_I@g
-
-        # Solve ------------------------------------------------------------------------------------------------------------
-        print("Solve...")
-        solution = solve_cg(A_O, f, f)
-        print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
-
-        # Write output to Paraview -----------------------------------------------------------------------------------------
-        u = np.zeros(mesh.K)
-        u[:mesh.K_Omega] = solution["x"]
-        u_list.append(u.copy())
-        mesh.point_data["ud"] = u
-        mesh.write(OUTPUT_PATH + mesh_name + str(k) + ".vtk")
-
+def quick_compare():
     # Compare ...
     main_mesh = M[0]
     B = np.zeros((main_mesh.K, main_mesh.K))
@@ -93,3 +45,109 @@ if __name__ == "__main__":
     main_mesh.write(OUTPUT_PATH + mesh_name + "compare" + ".vtk")
 
     print("Difference", np.linalg.norm(u_list[0] - u_list[-1]))
+
+def solve_KKT(M, A_list, u_list):
+    import matplotlib.pyplot as plt
+    main = M[0]
+    sub1 = M[1]
+    sub2 = M[2]
+
+    # Setup KKT-System
+
+    A1 = A_list[1][:sub1.K_Omega, :sub1.K_Omega]
+    n1 = sub1.K_Omega
+    A2 = A_list[2][:sub2.K_Omega, :sub2.K_Omega]
+    n2 = sub2.K_Omega
+
+    embed1 = np.zeros((main.nV, n1))
+    embed1[sub1.embedding_vertices[:n1], np.arange(n1)] = 1.
+    embed1 = embed1[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
+
+    embed2 = np.zeros((main.nV, n2))
+    embed2[sub2.embedding_vertices[:n2], np.arange(n2)] = 1.
+    embed2 = embed2[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
+
+    row_filter = np.array((np.sum(embed1, axis=1) > 0)*(np.sum(embed2, axis=1) > 0), dtype=bool)
+    P1 = embed1[row_filter, :]
+    P2 = embed2[row_filter, :]
+    n3 = np.sum(row_filter)
+
+    nkkt = n1 + n2 + n3
+    KKT = np.zeros((nkkt, nkkt))
+    KKT[:n1, :n1] = A1
+    KKT[n1:n2+n1, n1:n2+n1] = A2
+    KKT[:n1, -n3:] = P1.T
+    KKT[n1:n2+n1, -n3:] = -P2.T
+    KKT[-n3:, :n1] = P1
+    KKT[-n3:, n1:n2+n1] = -P2
+
+    rhs = np.concatenate((f_list[1], f_list[2], np.zeros(n3)))
+    x0 = np.concatenate((u_list[1], u_list[2], np.ones(n3)))
+    sol = solve_cg(KKT, rhs, x0)
+    x = sol["x"]
+
+    u1 = x[:n1]
+    u2 = x[n1:n1+n2]
+
+    print(sol)
+
+    u = np.zeros(sub1.K)
+    u[:sub1.K_Omega] = x[:n1]
+    sub1.point_data["ud_kkt"] = u
+    sub1.write(OUTPUT_PATH + mesh_name + str(1) + ".vtk")
+
+    u = np.zeros(sub2.K)
+    u[:sub2.K_Omega] = x[n1:n2+n1]
+    sub2.point_data["ud_kkt"] = u
+    sub2.write(OUTPUT_PATH + mesh_name + str(2) + ".vtk")
+
+if __name__ == "__main__":
+    # Mesh construction ------------------------------------------------------------------------------------------------
+    elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat, mesh_dict = \
+        mesh_data(geofile, element_size, delta)
+    submesh, submesh_dicts = submesh_data(elements, vertices, lines, subdomainLabels, diam)
+    n_submesh = len(submesh)
+
+    M = [MeshfromDict(mesh_dict)]
+    M += [MeshfromDict(subm) for subm in submesh_dicts]
+    M = setCeta(M)
+
+    print("Delta: ", delta, "\t Mesh: ", mesh_name)
+
+    A_list = []
+    f_list = []
+    u_list = []
+
+    for k, mesh in enumerate(M):
+        print("Number of basis functions: ", mesh.K)
+        # Assemble and solve -----------------------------------------------------------------------------------------------
+        A, f = assemble(mesh, py_Px, py_Py, dx, dy, delta,
+                          path_spAd=None,
+                          path_fd=None,
+                          compute="systemforcing", # "forcing", "system"
+                          model_kernel="constant",
+                          model_f = "constant",
+                          integration_method="retriangulate",
+                          is_PlacePointOnCap=1)
+        A_list.append(A.todense())
+        f_list.append(f.copy())
+
+        A_O = A[:, :mesh.K_Omega]
+        A_I = A[:, mesh.K_Omega:]
+
+        g = np.apply_along_axis(eval_g, 1, mesh.vertices[mesh.K_Omega:])
+        f -= A_I@g
+
+        # Solve ------------------------------------------------------------------------------------------------------------
+        print("Solve...")
+        solution = solve_cg(A_O, f, f)
+        print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
+
+        # Write output to Paraview -----------------------------------------------------------------------------------------
+
+        u = np.zeros(mesh.K)
+        u[:mesh.K_Omega] = solution["x"]
+        u_list.append(solution["x"].copy())
+        mesh.point_data["ud"] = u
+        #mesh.write(OUTPUT_PATH + mesh_name + str(k) + ".vtk")
+    solve_KKT(M, A_list, u_list)
