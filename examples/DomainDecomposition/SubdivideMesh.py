@@ -78,6 +78,7 @@ def PlotMesh(elements, vertices, subdomainLabels, title = "Mesh"):
 
 def mesh_data(geofile, element_size, delta):
 
+
     ### Correct the geo file with correct delta
     geofile_correction(geofile, delta)
 
