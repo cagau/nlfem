@@ -157,7 +157,7 @@ def FETI_invertible(M, A_list, u_list, f_list):
     sub2.write(OUTPUT_PATH + mesh_name + str(2) + ".vtk")
 
 def FETI_floating(M, A_list, u_list, f_list):
-        main = M[0]
+    main = M[0]
     sub1 = M[1]
     sub2 = M[2]
 
@@ -178,10 +178,16 @@ def FETI_floating(M, A_list, u_list, f_list):
     embed2 = embed2[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
 
     row_filter = np.array((np.sum(embed1, axis=1) > 0)*(np.sum(embed2, axis=1) > 0), dtype=bool)
-
+    n3 = np.sum(row_filter, dtype=np.int)
+    # Notation see Mathew
+    # Z2 = 0
+    Z1 =  np.ones((n1, 1)) # Kernel of floating subdomain
     # Sub-blocks of M = [P1, -P2]
     P1 = embed1[row_filter, :]
     P2 = embed2[row_filter, :]
+    # G = MZ
+    G = -P1@Z1
+    P0 = np.eye(n3) - G @ pinvh (G.T @ G ) @ G.T
 
     pinvA1 = pinvh(A1)
     pinvA2 = pinvh(A2)
@@ -190,17 +196,44 @@ def FETI_floating(M, A_list, u_list, f_list):
     K2 = P2 @ pinvA2 @ P2.T # Actually -P2, but that makes no difference here.
     K = K1 + K2  # Coupling!
 
-    # 1. Compute e, g = 0 -----------------------------
+    # 1. Compute e, g -----------------------------
     e1 = (P1 @ pinvA1) @ f1
     e2 = -(P2 @ pinvA2) @ f2
     e = e1 + e2  # Coupling!
 
+    g = Z1.T@ f1
     # Due to the invertibility of the blocks in A we can find lambda in one step
-    lambda0 = np.linalg.solve(K, e)
+    lambda0 = G@ pinv(G.T@G) @ g + P0@np.ones(n3)
+    r = e - K @ lambda0
+    beta = 0
+    y_ = r # without effect
+    q_ = r # without effect
+    p_ = r # without effect
+
+    for k in range(0):
+        q = P0.T @ r # Project
+        z = q # Precodnitioning
+        y = P0 @ z # Project
+        if k > 0:
+            beta = (y.dot(q))/(y_.dot(q_))
+        else:
+            beta = 0.
+        p = y + beta*p_
+        alpha = (y.dot(q))/(p.dot(K@p))
+        lambda0 = lambda0 + alpha*p
+        r = r - alpha*K@p
+
+        y_ = y
+        q_ = q
+        p_ = p
+
+    # Deduce alpha (This has nothing to do with the alpha above
+    # I took the above iteration from Widlund.
+    alpha = pinv(G.T @ G) @ G.T @ (K @ lambda0 - e)
 
     # Deduce u1 and u2
-    u1 = pinvA1 @ (f1 - P1.T @ lambda0)
-    u2 = pinvA2 @ (f2 + P2.T @ lambda0)
+    u1 = pinvA1 @ (f1 - P1.T @ lambda0) + alpha*Z1[:,0]
+    u2 = pinvA2 @ (f2 + P2.T @ lambda0) + 0
 
     u = np.zeros(sub1.K)
     u[:sub1.K_Omega] = u1
@@ -247,8 +280,8 @@ if __name__ == "__main__":
         A_O = A[:, :mesh.K_Omega]
         A_I = A[:, mesh.K_Omega:]
 
-        g = np.apply_along_axis(eval_g, 1, mesh.vertices[mesh.K_Omega:])
-        f -= A_I@g
+#        g = np.apply_along_axis(eval_g, 1, mesh.vertices[mesh.K_Omega:])
+#        f -= A_I@g
 
         # Solve ------------------------------------------------------------------------------------------------------------
         print("Solve...")
@@ -263,4 +296,5 @@ if __name__ == "__main__":
         mesh.point_data["ud"] = u
         #mesh.write(OUTPUT_PATH + mesh_name + str(k) + ".vtk")
     #solve_KKT(M, A_list, u_list, f_list)
-    FETI_invertible(M, A_list, u_list, f_list)
+    FETI_floating(M, A_list, u_list, f_list)
+    #FETI_invertible(M, A_list, u_list, f_list)
