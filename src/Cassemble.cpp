@@ -344,14 +344,11 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
     // Read Ceta for Domain Decomposition.
     // If nCeta == 0 nothing happens.
-    if (mesh.nCeta > 0) {
-        long aT, bT;
-        for(int it=0; it < mesh.nCeta; it++){
-            aT = mesh.ptrCeta[3*it]; //Ceta_mat(0, it);
-            bT = mesh.ptrCeta[3*it+1]; //Ceta_mat(1, it);
-            mesh.Ceta[aT*mesh.J + bT] = static_cast<double> (mesh.ptrCeta[3*it+2]);
-            //cout << aT << ",    " << bT << ",   " << mesh.Ceta[aT*mesh.J + bT] << endl;
-        }
+    for(int it=0; it < mesh.nCeta; it++) {
+        long aT = mesh.ptrCeta[3 * it]; //Ceta_mat(0, it);
+        long bT = mesh.ptrCeta[3 * it + 1]; //Ceta_mat(1, it);
+        mesh.Ceta[aT * mesh.J + bT] = &mesh.ptrCeta[3 * it + 2];
+        //cout << aT << ",    " << bT << ",   val" << mesh.Ceta[aT*mesh.J + bT][0] << endl;
     }
 
     #pragma omp parallel
@@ -550,9 +547,16 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             //[End DEBUG]
 
                             // Domain decomposition. If Ceta is empty, the weight is set to 1.
-                            // as double maps are initialized with 0.
-                            double cetaValue = mesh.Ceta[aTdx*mesh.J + bTdx];
-                            double weight = (cetaValue>0) ? 1./(1. + cetaValue) : 1.;
+                            // Caution: -----------------------------------------------
+                            // map[k] If k does not match the key of any element in the container,
+                            // the []-method inserts a new element with that key and
+                            // returns a reference to its mapped value.
+                            // >> This eats up memory unnecessarily if you want to read only!
+                            double weight = 1.;
+                            map<long, const long *>::iterator it = mesh.Ceta.find(aTdx*mesh.J + bTdx);
+                            if(it != mesh.Ceta.end()){
+                                weight=1./(1. + (it->second)[0]);
+                            }
 
                             if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) ||
                                 doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)) {
@@ -575,6 +579,12 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                             //Adx.i = bAdx[b]; Adx.j =  aAdx[a];
                                             Adx = aAdx[a]*mesh.K + bAdx[b];
                                             Ad[Adx] += -termNonloc[mesh.dVertex * a + b]*weight;
+
+                                            // Caution: -----------------------------------------------
+                                            // If k does not match the key of any element in the container,
+                                            // the []-method inserts a new element with that key and
+                                            // returns a reference to its mapped value.
+                                            // >> This unnecessarily eats up memory, if you want to read only. Use find().
                                         }
                                     }
                                 }
@@ -611,12 +621,12 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
         //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
         int k = 0;
         for (map<unsigned long, double>::iterator it = Ad.begin(); it != Ad.end(); it++) {
-            unsigned long Adx = it->first;
+            unsigned long adx = it->first;
             double value = it->second;
             values_all(nnz_start + k) = value;
             // column major format of transposed matrix Ad
-            indices_all(0, nnz_start + k) = Adx % mesh.K;
-            indices_all(1, nnz_start + k) = Adx / mesh.K;
+            indices_all(0, nnz_start + k) = adx % mesh.K;
+            indices_all(1, nnz_start + k) = adx / mesh.K;
             k++;
         }
     }
@@ -639,6 +649,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
 
     printf("Function: par_forcing (generic)\n");
     printf("Mesh dimension: %i\n", mesh.dim);
+    printf("Recieved Ceta for DD: %s\n", (mesh.nCeta > 0) ? "true" : "false");
     lookup_configuration(conf);
     printf("Quadrule outer: %i\n", quadRule.nPx);
     //printf("Quadrule inner: %i\n", quadRule.nPy);
@@ -647,6 +658,15 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
     for (h = 0; h < quadRule.nPx; h++) {
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(&quadRule.Px[mesh.dim * h], mesh.dim, &quadRule.psix[mesh.dVertex * h]);
+    }
+
+    // Read Ceta for Domain Decomposition.
+    // If nCeta == 0 nothing happens.
+    for(int it=0; it < mesh.nCeta; it++) {
+        long aT = mesh.ptrCeta[3 * it]; //Ceta_mat(0, it);
+        long bT = mesh.ptrCeta[3 * it + 1]; //Ceta_mat(1, it);
+        mesh.Ceta[aT * mesh.J + bT] = &mesh.ptrCeta[3 * it + 2];
+        //cout << aT << ",    " << bT << ",   val" << mesh.Ceta[aT*mesh.J + bT][0] << endl;
     }
 
     #pragma omp parallel
@@ -683,10 +703,18 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                 doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
                 compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
                 // Add content of buffer to the right side.
+
+                // Domain decomposition. If Ceta is empty, the weight is set to 1.
+                double weight = 1.;
+                map<long, const long *>::iterator it = mesh.Ceta.find(aTdx*mesh.J + aTdx);
+                if(it != mesh.Ceta.end()){
+                    weight=1./(1. + (it->second)[0]);
+                }
+
                 for (a = 0; a < mesh.dVertex; a++) {
                     if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
                         #pragma omp atomic update
-                        fd[aAdx[a]] += termf[a];
+                        fd[aAdx[a]] += termf[a]*weight;
                     }
                 }// end for rhs
             }// end outer if (mesh.LabelTriangles[aTdx] == 1)

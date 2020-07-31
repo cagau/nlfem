@@ -7,7 +7,8 @@
 from examples.DomainDecomposition.conf import *
 from examples.DomainDecomposition.nlocal import setCeta, MeshfromDict
 from examples.DomainDecomposition.SubdivideMesh import mesh_data, submesh_data
-from scipy.sparse import coo_matrix
+from scipy.linalg import pinvh, solve, pinv
+
 try:
     from assemble import assemble, solve_cg
 except ImportError:
@@ -46,7 +47,7 @@ def quick_compare():
 
     print("Difference", np.linalg.norm(u_list[0] - u_list[-1]))
 
-def solve_KKT(M, A_list, u_list):
+def solve_KKT(M, A_list, u_list, f_list):
     import matplotlib.pyplot as plt
     main = M[0]
     sub1 = M[1]
@@ -82,24 +83,135 @@ def solve_KKT(M, A_list, u_list):
     KKT[-n3:, n1:n2+n1] = -P2
 
     rhs = np.concatenate((f_list[1], f_list[2], np.zeros(n3)))
-    x0 = np.concatenate((u_list[1], u_list[2], np.ones(n3)))
-    sol = solve_cg(KKT, rhs, x0)
-    x = sol["x"]
+    x0 = np.concatenate((u_list[1], u_list[2], np.zeros(n3)))
+    x = np.linalg.solve(KKT, rhs)
+    #x = sol["x"]
 
     u1 = x[:n1]
     u2 = x[n1:n1+n2]
 
-    print(sol)
-
     u = np.zeros(sub1.K)
     u[:sub1.K_Omega] = x[:n1]
     sub1.point_data["ud_kkt"] = u
-    sub1.write(OUTPUT_PATH + mesh_name + str(1) + ".vtk")
 
     u = np.zeros(sub2.K)
     u[:sub2.K_Omega] = x[n1:n2+n1]
     sub2.point_data["ud_kkt"] = u
+    sub1.write(OUTPUT_PATH + mesh_name + str(1) + ".vtk")
     sub2.write(OUTPUT_PATH + mesh_name + str(2) + ".vtk")
+
+def FETI_invertible(M, A_list, u_list, f_list):
+    main = M[0]
+    sub1 = M[1]
+    sub2 = M[2]
+
+    f1 = f_list[1]
+    f2 = f_list[2]
+
+    A1 = A_list[1][:sub1.K_Omega, :sub1.K_Omega]
+    n1 = sub1.K_Omega
+    A2 = A_list[2][:sub2.K_Omega, :sub2.K_Omega]
+    n2 = sub2.K_Omega
+
+    embed1 = np.zeros((main.nV, n1))
+    embed1[sub1.embedding_vertices[:n1], np.arange(n1)] = 1.
+    embed1 = embed1[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
+
+    embed2 = np.zeros((main.nV, n2))
+    embed2[sub2.embedding_vertices[:n2], np.arange(n2)] = 1.
+    embed2 = embed2[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
+
+    row_filter = np.array((np.sum(embed1, axis=1) > 0)*(np.sum(embed2, axis=1) > 0), dtype=bool)
+
+    # Sub-blocks of M = [P1, -P2]
+    P1 = embed1[row_filter, :]
+    P2 = embed2[row_filter, :]
+
+    pinvA1 = pinvh(A1)
+    pinvA2 = pinvh(A2)
+
+    K1 = P1 @ pinvA1 @ P1.T
+    K2 = P2 @ pinvA2 @ P2.T # Actually -P2, but that makes no difference here.
+    K = K1 + K2  # Coupling!
+
+    # 1. Compute e, g = 0 -----------------------------
+    e1 = (P1 @ pinvA1) @ f1
+    e2 = -(P2 @ pinvA2) @ f2
+    e = e1 + e2  # Coupling!
+
+    # Due to the invertibility of the blocks in A we can find lambda in one step
+    lambda0 = np.linalg.solve(K, e)
+
+    # Deduce u1 and u2
+    u1 = pinvA1 @ (f1 - P1.T @ lambda0)
+    u2 = pinvA2 @ (f2 + P2.T @ lambda0)
+
+    u = np.zeros(sub1.K)
+    u[:sub1.K_Omega] = u1
+    sub1.point_data["ud_feti"] = u
+    u = np.zeros(sub2.K)
+    u[:sub2.K_Omega] = u2
+    sub2.point_data["ud_feti"] = u
+
+    sub1.write(OUTPUT_PATH + mesh_name + str(1) + ".vtk")
+    sub2.write(OUTPUT_PATH + mesh_name + str(2) + ".vtk")
+
+def FETI_floating(M, A_list, u_list, f_list):
+        main = M[0]
+    sub1 = M[1]
+    sub2 = M[2]
+
+    f1 = f_list[1]
+    f2 = f_list[2]
+
+    A1 = A_list[1][:sub1.K_Omega, :sub1.K_Omega]
+    n1 = sub1.K_Omega
+    A2 = A_list[2][:sub2.K_Omega, :sub2.K_Omega]
+    n2 = sub2.K_Omega
+
+    embed1 = np.zeros((main.nV, n1))
+    embed1[sub1.embedding_vertices[:n1], np.arange(n1)] = 1.
+    embed1 = embed1[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
+
+    embed2 = np.zeros((main.nV, n2))
+    embed2[sub2.embedding_vertices[:n2], np.arange(n2)] = 1.
+    embed2 = embed2[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
+
+    row_filter = np.array((np.sum(embed1, axis=1) > 0)*(np.sum(embed2, axis=1) > 0), dtype=bool)
+
+    # Sub-blocks of M = [P1, -P2]
+    P1 = embed1[row_filter, :]
+    P2 = embed2[row_filter, :]
+
+    pinvA1 = pinvh(A1)
+    pinvA2 = pinvh(A2)
+
+    K1 = P1 @ pinvA1 @ P1.T
+    K2 = P2 @ pinvA2 @ P2.T # Actually -P2, but that makes no difference here.
+    K = K1 + K2  # Coupling!
+
+    # 1. Compute e, g = 0 -----------------------------
+    e1 = (P1 @ pinvA1) @ f1
+    e2 = -(P2 @ pinvA2) @ f2
+    e = e1 + e2  # Coupling!
+
+    # Due to the invertibility of the blocks in A we can find lambda in one step
+    lambda0 = np.linalg.solve(K, e)
+
+    # Deduce u1 and u2
+    u1 = pinvA1 @ (f1 - P1.T @ lambda0)
+    u2 = pinvA2 @ (f2 + P2.T @ lambda0)
+
+    u = np.zeros(sub1.K)
+    u[:sub1.K_Omega] = u1
+    sub1.point_data["ud_feti"] = u
+    u = np.zeros(sub2.K)
+    u[:sub2.K_Omega] = u2
+    sub2.point_data["ud_feti"] = u
+
+    sub1.write(OUTPUT_PATH + mesh_name + str(1) + ".vtk")
+    sub2.write(OUTPUT_PATH + mesh_name + str(2) + ".vtk")
+
 
 if __name__ == "__main__":
     # Mesh construction ------------------------------------------------------------------------------------------------
@@ -150,4 +262,5 @@ if __name__ == "__main__":
         u_list.append(solution["x"].copy())
         mesh.point_data["ud"] = u
         #mesh.write(OUTPUT_PATH + mesh_name + str(k) + ".vtk")
-    solve_KKT(M, A_list, u_list)
+    #solve_KKT(M, A_list, u_list, f_list)
+    FETI_invertible(M, A_list, u_list, f_list)
