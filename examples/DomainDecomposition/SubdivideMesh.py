@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 
 
 ###### INPUT
-geofile = "DD_simple" # .geo file
-element_size = 0.05 # to control grid size via gmsh (element size factor)
+geofile = "DD_floating" # .geo file
+element_size = 0.025 # to control grid size via gmsh (element size factor)
 delta = 0.1 # interaction horizon (attention: here only l2-norm)
 #-----------------------------------------------------------------------------------------------------------------------
 

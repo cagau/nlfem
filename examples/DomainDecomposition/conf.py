@@ -4,7 +4,7 @@ import numpy as np
 DATA_PATH = "data/"
 OUTPUT_PATH = "output/"
 #mesh_name = "circle"
-geofile = "DD_simple" # .geo file
+geofile = "DD_nonfloating" # .geo file
 mesh_name = geofile
 
 element_size = 0.05 # to control grid size via gmsh (element size factor)
