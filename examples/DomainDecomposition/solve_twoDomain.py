@@ -164,10 +164,17 @@ def FETI_floating(M, A_list, u_list, f_list):
     f1 = f_list[1]
     f2 = f_list[2]
 
-    A1 = A_list[1][:sub1.K_Omega, :sub1.K_Omega]
+    A1 = np.array(A_list[1][:sub1.K_Omega, :sub1.K_Omega])
     n1 = sub1.K_Omega
-    A2 = A_list[2][:sub2.K_Omega, :sub2.K_Omega]
+    A2 = np.array(A_list[2][:sub2.K_Omega, :sub2.K_Omega])
     n2 = sub2.K_Omega
+
+    # Kernel of the floating Domain should be the one-vector
+    #eigvals, eigvecs = np.linalg.eig(A1)
+    #eigdx = np.argsort(eigvals)
+    #oneVector = eigvecs[:, eigdx[0]]*np.sqrt(n1)
+    #print("First eigs", eigvals[eigdx[:4]])
+    #print("Kernel\n", oneVector)
 
     embed1 = np.zeros((main.nV, n1))
     embed1[sub1.embedding_vertices[:n1], np.arange(n1)] = 1.
@@ -186,7 +193,8 @@ def FETI_floating(M, A_list, u_list, f_list):
     P1 = embed1[row_filter, :]
     P2 = embed2[row_filter, :]
     # G = MZ
-    G = -P1@Z1
+    G = P1@Z1
+    P0_G = G @ pinvh (G.T @ G ) @ G.T
     P0 = np.eye(n3) - G @ pinvh (G.T @ G ) @ G.T
 
     pinvA1 = pinvh(A1)
@@ -203,41 +211,62 @@ def FETI_floating(M, A_list, u_list, f_list):
 
     g = Z1.T@ f1
     # Due to the invertibility of the blocks in A we can find lambda in one step
-    lambda0 = G@ pinv(G.T@G) @ g + P0@np.ones(n3)
-    r = e - K @ lambda0
-    beta = 0
-    y_ = r # without effect
-    q_ = r # without effect
-    p_ = r # without effect
+    # Here the dimensions are totally unclear to me!
+    listenToChris = True
 
-    for k in range(0):
-        q = P0.T @ r # Project
-        z = q # Precodnitioning
-        y = P0 @ z # Project
-        if k > 0:
-            beta = (y.dot(q))/(y_.dot(q_))
-        else:
-            beta = 0.
-        p = y + beta*p_
-        alpha = (y.dot(q))/(p.dot(K@p))
-        lambda0 = lambda0 + alpha*p
-        r = r - alpha*K@p
+    if not listenToChris:
+        lambdastar = ( g * G /(G.T @ G)).flatten() # see page 247, special case C=0, G!=0
+        Q = P0  # see page 247
 
-        y_ = y
-        q_ = q
-        p_ = p
+        # Lumped preconditioner
+        A1BB = P1 @ A1 @ P1.T
+        A2BB = P2 @ A2 @ P2.T
+        colfilter = np.sum(P1, axis=0, dtype=bool)
+        M1B = P1[:, colfilter]
+        colfilter = np.sum(P2, axis=0, dtype=bool)
+        M2B = -P2[:, colfilter]
+        L = np.array(M1B @ A1BB @ M1B.T + M2B @ A2BB @ M2B.T) # lumped preconditioner
 
-    # Deduce alpha (This has nothing to do with the alpha above
-    # I took the above iteration from Widlund.
-    alpha = pinv(G.T @ G) @ G.T @ (K @ lambda0 - e)
+        r = P0@(K @ lambdastar - e)
+        print("Lambdastar is in Kernel\n|P0 @ lambdastar|=", np.linalg.norm(P0 @ lambdastar))
+        print("G.T @ lambdastar = ", G.T @ lambdastar, ", and g=", g)
+        beta = 0
+        xi_ = 1.
+        p = np.zeros((n3,))
+        for k in range(10):
+            z = r # No preconditioning
+            y = Q @ z # Projection, here Q = P0
+            xi = r@y
+            p = y + xi/xi_*p
+            nu = xi/(p @ P0 @ K @ p)
+            lambdastar += nu*p
+            r -= nu * P0 @ K @ p
+
+            xi_ = xi
+
+        # Deduce alpha (This has nothing to do with the alpha above
+        # I took the above iteration from Widlund.
+        alpha = pinv(G.T @ G) @ G.T @ (K @ lambdastar - e)
+    else:
+        lambdaAlpha = np.zeros((n3 + 1,))
+        SYS = np.zeros((n3+1, n3+1))
+        SYS[:n3, :n3] = K
+        SYS[:n3, -1] = -G[:,0]
+        SYS[-1, :n3] = G.T[0,:]
+        RHS = np.concatenate((e, g))
+        lambdaAlpha = np.linalg.solve(SYS, RHS)
+        lambdastar = lambdaAlpha[:n3]
+        alpha = lambdaAlpha[-1]
+
 
     # Deduce u1 and u2
-    u1 = pinvA1 @ (f1 - P1.T @ lambda0) + alpha*Z1[:,0]
-    u2 = pinvA2 @ (f2 + P2.T @ lambda0) + 0
+    u1 = pinvA1 @ (f1 - P1.T @ lambdastar) + alpha*Z1[:,0]
+    u2 = pinvA2 @ (f2 + P2.T @ lambdastar) + 0
 
     u = np.zeros(sub1.K)
     u[:sub1.K_Omega] = u1
     sub1.point_data["ud_feti"] = u
+
     u = np.zeros(sub2.K)
     u[:sub2.K_Omega] = u2
     sub2.point_data["ud_feti"] = u
@@ -294,7 +323,7 @@ if __name__ == "__main__":
         u[:mesh.K_Omega] = solution["x"]
         u_list.append(solution["x"].copy())
         mesh.point_data["ud"] = u
-        #mesh.write(OUTPUT_PATH + mesh_name + str(k) + ".vtk")
-    #solve_KKT(M, A_list, u_list, f_list)
+        mesh.write(OUTPUT_PATH + mesh_name + str(k) + ".vtk")
+    solve_KKT(M, A_list, u_list, f_list)
     FETI_floating(M, A_list, u_list, f_list)
     #FETI_invertible(M, A_list, u_list, f_list)

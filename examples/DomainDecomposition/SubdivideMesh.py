@@ -302,7 +302,7 @@ def submesh_data_2(elements, vertices, lines, subdomainLabels, diam):
         for l in boundary_i: # run trough all vertices on the boundary
             IntDomain_i += np.where(np.linalg.norm(bary - np.tile(vertices[l], (len(bary), 1)), axis =1) <= delta + diam)[0].tolist()
         #for i in interface:
-            #IntDomain_i += np.where(np.linalg.norm(bary - np.tile(vertices[i], (len(bary), 1)), axis=1) <= delta / 2. + diam)[0].tolist()
+        #IntDomain_i += np.where(np.linalg.norm(bary - np.tile(vertices[i], (len(bary), 1)), axis=1) <= delta / 2. + diam)[0].tolist()
         IntDomain_i = list(np.unique(np.array(IntDomain_i))) # clearly this list is not unique, since neighboring vertices hit the same elements multiple times
 
         # mark all mother elements True which are in the subdomain \cup its interaction domain

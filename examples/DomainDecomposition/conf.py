@@ -4,11 +4,13 @@ import numpy as np
 DATA_PATH = "data/"
 OUTPUT_PATH = "output/"
 #mesh_name = "circle"
-geofile = "DD_floating" # .geo file
+geofile = "DD_nonfloating_4" # .geo file
 mesh_name = geofile
-
 element_size = 0.05 # to control grid size via gmsh (element size factor)
-delta = .1  # interaction horizon (attention: here only l2-norm)
+delta = 0.1 # interaction horizon (attention: here only l2-norm)
+
+#element_size = 0.0125 # to control grid size via gmsh (element size factor)
+#delta = 0.1 # interaction horizon (attention: here only l2-norm)
 ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
