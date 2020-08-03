@@ -295,7 +295,6 @@ def submesh_data_2(elements, vertices, lines, subdomainLabels, diam):
     submesh_dicts = []
     for k in range(len(labels)-1): # run through all labels
         ## compute the interaction domain of the subdomain
-        print(11 * (k + 1))
         boundary_i = np.unique(lines[np.where(lines[:, 0] == 11 * (k + 1))][:, 1:]).tolist() # all vertices on the boundary of subdomain label[k]
         #interface = np.unique(lines[np.where(lines[:, 0] == 12)][:, 1:]).tolist()
 
@@ -417,8 +416,8 @@ if __name__=="__main__":
     #     plt.annotate(str(i), (bary_i[0], bary_i[1]), size=10)
 
     # test vertices embedding
-    # for i in range(len(vertices)):
-    #     plt.annotate(str(i), (vertices[i,0], vertices[i,1]), size=10)
+    for i in range(len(vertices)):
+        plt.annotate(str(i), (vertices[i,0], vertices[i,1]), size=10)
 
 
 
@@ -448,8 +447,8 @@ if __name__=="__main__":
         #     plt.annotate(str(embedding_elements_i[i]), (bary_i[0], bary_i[1]), size = 10)
 
         # test vertices embedding
-        # for i in range(len(vertices_i)):
-        #     plt.annotate(str(embedding_vertices_i[i]), (vertices_i[i,0], vertices_i[i,1]), size = 10)
+        for i in range(len(vertices_i)):
+            plt.annotate(str(embedding_vertices_i[i]), (vertices_i[i,0], vertices_i[i,1]), size = 10)
 
     #-----------------------------------------------------------------------------------------------------------------------
 
