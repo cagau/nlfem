@@ -33,7 +33,7 @@ void solve2x2(const double * A, const double * b, double * x);
  * @param J         Number of elements
  * @param J_Omega   Number of elements in Omega
  * @param L         Number of vertices
- * @param L_        Omega Number of vertices in Omega
+ * @param L_Omega   Number of vertices in Omega
  * @param Px        <B>(nPx, d)</B> Pointer to quadrature points for the outer integral
  * @param nPx
  * @param dx        <B>(nPx,)</B> Pointer to quadrature weights of the outer integral
@@ -49,8 +49,8 @@ void solve2x2(const double * A, const double * b, double * x);
  * @param str_integration_method Name of integration method
  * @param is_PlacePointOnCap Switch for withcaps parameter in retriangulation
  * @param dim Dimension of the domain
- * @param ptrCeta Pointer to overlap counter of decomposed Mesh (optional)
- * @param nCeta Number of rows of Ceta
+ * @param ptrZeta Pointer to overlap counter of decomposed Mesh (optional)
+ * @param nZeta Number of rows of Zeta
  */
 void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int J,
@@ -58,7 +58,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
-                  const int dim, const long * ptrCeta = nullptr, const long nCeta = 0);
+                  const int dim, const long * ptrZeta = nullptr, const long nZeta = 0);
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 

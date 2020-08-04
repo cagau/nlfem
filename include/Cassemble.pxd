@@ -16,7 +16,7 @@ cdef extern from "Cassemble.h" nogil:
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim,
-                  const long * ptrCeta, const long nCeta) nogil
+                  const long * ptrZeta, const long nZeta) nogil
     # Mass matrix evaluation ----------------------------------------------------------------------------------------------
     void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
                      double *P, double *dx, const int dim) nogil

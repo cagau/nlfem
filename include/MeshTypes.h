@@ -72,17 +72,17 @@ struct MeshStruct{
     const int dVertex;
 
     // Weights for Domain decomposition
-    const long * ptrCeta = nullptr;
-    const long nCeta;
+    const long * ptrZeta = nullptr;
+    const long nZeta;
 
-    // Ceta is an optional parameter. In case we get a Ceta matrix,
+    // Zeta is an optional parameter. In case we get a Zeta matrix,
     // the memory is already allocated we only need a wrapper.
     // Caution: map[k]. If k does not match the key of any element in the container,
     // the function inserts a new element with that key and
     // returns a reference to its mapped value.
     // >> This eats up memory unnecessarily if you want to read only!
     // Note: Armadillo uvec.find() is much slower.
-    map<long, const long *> Ceta;
+    map<long, const long *> Zeta;
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->L)};
     const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->dVertex, this->J)};
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->J)};

@@ -4,14 +4,25 @@ Documentation for this module.
 """
 
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, lil_matrix, csr_matrix, csc_matrix, diags
 import meshio
 import assemble
+import datetime
 
 # Auf Triangles und Lines müssen wir die inverse Permutation anwenden.
 # Der Code wäre mit np.argsort kurz und für Node-Zahl unter 1000 auch schnell, allerdings ist
 # sortieren nicht in der richtigen Effizienzklasse. (Eigentlich muss ja nur eine Matrix transponiert werden)
 # siehe https://stackoverflow.com/questions/11649577/how-to-invert-a-permutation-array-in-numpy
+
+def timestamp():
+    """
+    Returns current timestamp as string.
+
+    :return: string, format %m%d_%H-%M-%S
+    """
+    # Link to strftime Doc
+    # http://strftime.org/
+    return datetime.datetime.now().strftime("%m%d_%H-%M-%S")
 
 def invert_permutation(p):
     """
@@ -46,48 +57,56 @@ class MeshfromDict(meshio._mesh.Mesh):
         self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
         self.vertexLabels = np.ones(self.nV)
         self.vertexLabels[:self.nV_Omega] = 0
-        self.nCeta = 0
-        self.Ceta = None
+        self.nZeta = 0
+        self.Zeta = None
 
         super(MeshfromDict, self).__init__(self.vertices, [["triangle", self.elements]],
                                            point_data={"vertexLabels": self.vertexLabels},
                                            cell_data={"elementLabels": self.elementLabels,
                                                       "subdomainLabels": self.subdomainLabels}
                                            )
+    def add_u(self, u_input, name):
+        u = np.zeros(self.K)
+        u[:self.K_Omega] = u_input
+        self.point_data[name] = u
+        return u
 
-def setCeta(mesh_list):
-    projection_list = []
-    submesh_map = np.zeros((mesh_list[0].nE, 2), dtype=np.int)
-    n_submeshes = len(mesh_list) -1
+def setZeta(mesh_list):
+    print("Setup Zeta")
+    # pi is the list of projections from Omega to Omegai
+    pi = []
+    n_submeshes = len(mesh_list) - 1
+    # indicator is the step function of Omegai in Omega
+    indicator = np.zeros((mesh_list[0].nE, n_submeshes), dtype=np.int)
+    main = mesh_list[0]
     for k in range(n_submeshes):
         subm = mesh_list[k+1]
-        projection_list.append(-np.ones(mesh_list[0].nE, dtype=np.int))
+        pi.append(np.zeros((subm.nE, main.nE), dtype=np.int))
         for aT in range(subm.nE):
-            parent_aT = subm.embedding_elements[aT]
-            projection_list[k][parent_aT] = aT
-            submesh_map[parent_aT, k] += 1
-    subsets = submesh_map @ submesh_map.T-1
+            aT_parent = subm.embedding_elements[aT]
+            pi[k][aT, aT_parent] = 1
+            indicator[aT_parent, k] += 1
+        pi[k] = csr_matrix(pi[k])
+    subsets = indicator @ indicator.T - 1
     subsets *= subsets > 0
-    G = coo_matrix(subsets)
-
-    nCeta = G.nnz
-    Ceta =  np.zeros((nCeta, 3), dtype=np.int)
-    Ceta[:, 0] = G.row[:]
-    Ceta[:, 1] = G.col[:]
-    Ceta[:, 2] = G.data[:]
-    Ceta_list = [Ceta]
+    subsets = csc_matrix(subsets)
 
     for k in range(n_submeshes):
-        isOmegak = submesh_map[:, k]
         subm = mesh_list[k+1]
-        subm.nCeta = Ceta.shape[0]
-        subm.Ceta = Ceta.copy()
-        subm.Ceta[:, 0] = projection_list[k][Ceta[:, 0]]
-        subm.Ceta[:, 1] = projection_list[k][Ceta[:, 1]]
-        subm.cell_data["Ceta"] = np.zeros(subm.nE, dtype=np.int)
-        subm.cell_data["Ceta"][subm.Ceta[:, 0]] = 1
+        subZeta = (pi[k] @ subsets) @ pi[k].T
 
+        # For the plots in paraview
+        subm.cell_data["Zeta"] = np.array([subZeta[k, k] for k in range(subm.nE)], dtype=np.int)
+
+        nZeta = subZeta.getnnz()
+        subZeta = coo_matrix(subZeta)
+        subm.Zeta = np.zeros((nZeta, 3), dtype=np.int)
+        # For the assembly routine
+        subm.Zeta[:, 0] = subZeta.row[:]
+        subm.Zeta[:, 1] = subZeta.col[:]
+        subm.Zeta[:, 2] = subZeta.data[:]
     return mesh_list
+
 
 class MeshIO(meshio._mesh.Mesh):
     def __init__(self, mesh_data, **kwargs):
@@ -183,14 +202,14 @@ class MeshIO(meshio._mesh.Mesh):
             bC = np.sum(corners, 0)/(self.dim+1)
             self.baryCenter[i] = bC
 
-        # Ceta Test
-        self.nCeta = 4
-        G = np.eye(self.nCeta)
+        # Zeta Test
+        self.nZeta = 4
+        G = np.eye(self.nZeta)
         G = coo_matrix(G)
 
-        self.Ceta = np.zeros((self.nCeta, 3), dtype=np.int)
-        self.Ceta[:, 0] = G.row[:]
-        self.Ceta[:, 1] = G.col[:]
-        self.Ceta[:, 2] = G.data[:]
+        self.Zeta = np.zeros((self.nZeta, 3), dtype=np.int)
+        self.Zeta[:, 0] = G.row[:]
+        self.Zeta[:, 1] = G.col[:]
+        self.Zeta[:, 2] = G.data[:]
 
         print("Done [Constructing Mesh]\n")

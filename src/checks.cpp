@@ -38,7 +38,7 @@ void chk_Mesh(MeshType & mesh){
     const long nE = mesh.J;
     long chk_nE_Omega=0;
     const unsigned long d = mesh.dim;
-    const long nCeta = mesh.nCeta;
+    const long nZeta = mesh.nZeta;
 
     for(long k=0; k<nE; k++){
         if (mesh.LabelTriangles(k)!=1) {
@@ -52,9 +52,9 @@ void chk_Mesh(MeshType & mesh){
     }
     assert((mesh.J_Omega == chk_nE_Omega && "Number of elements with label!=1 does not coincide with nE_Omega."));
 
-    for(long k=0; k < nCeta; k++){
-        assert((mesh.ptrCeta[3*k] >= 0 && mesh.ptrCeta[3*k+1] >= 0 && mesh.ptrCeta[3*k+2] >= 0 && "Some entries in Ceta are negative."));
-        assert((mesh.ptrCeta[3*k] < nE && mesh.ptrCeta[3*k+1] < nE && mesh.ptrCeta[3*k+2] < nE && "Some entries in Ceta exceed the number of triangles."));
+    for(long k=0; k < nZeta; k++){
+        assert((mesh.ptrZeta[3*k] >= 0 && mesh.ptrZeta[3*k+1] >= 0 && mesh.ptrZeta[3*k+2] >= 0 && "Some entries in Zeta are negative."));
+        assert((mesh.ptrZeta[3*k] < nE && mesh.ptrZeta[3*k+1] < nE && mesh.ptrZeta[3*k+2] < nE && "Some entries in Zeta exceed the number of triangles."));
     }
 }
 #endif //NONLOCAL_ASSEMBLY_CHECKS_CPP

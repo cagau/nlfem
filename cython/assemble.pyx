@@ -195,19 +195,19 @@ def assemble(
     cdef double [:] ptrdx = dx.flatten()
     cdef double [:] ptrdy = dy.flatten()
 
-    cdef long [:] Ceta
-    cdef long * ptrCeta = NULL
-    cdef long nCeta
+    cdef long [:] Zeta
+    cdef long * ptrZeta = NULL
+    cdef long nZeta
 
     try:
-        nCeta = mesh.Ceta.shape[0]
-        Ceta = mesh.Ceta.flatten()
-        if nCeta > 0:
-            ptrCeta = &Ceta[0]
+        nZeta = mesh.Zeta.shape[0]
+        Zeta = mesh.Zeta.flatten()
+        if nZeta > 0:
+            ptrZeta = &Zeta[0]
 
     except AttributeError:
-        print("Ceta not found.")
-        nCeta = 0
+        print("Zeta not found.")
+        nZeta = 0
 
 
     # Compute Assembly -------------------------------------------
@@ -226,7 +226,7 @@ def assemble(
                             &model_f_[0],
                             &integration_method_[0],
                             is_PlacePointOnCap_,
-                            mesh.dim, ptrCeta, nCeta)
+                            mesh.dim, ptrZeta, nZeta)
 
         total_time = time.time() - start
         print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -250,7 +250,7 @@ def assemble(
                             &model_f_[0],
                             &integration_method_[0],
                             is_PlacePointOnCap_,
-                            mesh.dim, ptrCeta, nCeta)
+                            mesh.dim, ptrZeta, nZeta)
 
         fd = read_arma_mat(path_fd)[:,0]
         if is_tmpfd:

@@ -2,12 +2,6 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import examples.DomainDecomposition.conf as conf
-#-----------------------------------------------------------------------------------------------------------------------
-###### INPUT
-geofile = conf.geofile # .geo file
-element_size = conf.element_size # to control grid size via gmsh (element size factor)
-delta = conf.delta # interaction horizon (attention: here only l2-norm)
-#-----------------------------------------------------------------------------------------------------------------------
 
 
 """ HELPER FUNCTIONS """
@@ -168,7 +162,7 @@ def mesh_data(geofile, element_size, delta):
 
 # GENERATE CHILD MESHES
 
-def submesh_data(elements, vertices, lines, subdomainLabels, diam):
+def submesh_data(elements, vertices, lines, subdomainLabels, diam, element_size, delta):
 
     # COMPUTE BARYCENTERS
     bary = (vertices[elements[:, 0]] + vertices[elements[:, 1]] + vertices[elements[:, 2]]) / 3.
@@ -283,7 +277,7 @@ def submesh_data(elements, vertices, lines, subdomainLabels, diam):
 
 # GENERATE CHILD MESHES
 
-def submesh_data_2(elements, vertices, lines, subdomainLabels, diam):
+def submesh_data_2(elements, vertices, lines, subdomainLabels, diam, element_size, delta):
 
     # COMPUTE BARYCENTERS
     bary = (vertices[elements[:, 0]] + vertices[elements[:, 1]] + vertices[elements[:, 2]]) / 3.
@@ -395,6 +389,13 @@ def submesh_data_2(elements, vertices, lines, subdomainLabels, diam):
 #-----------------------------------------------------------------------------------------------------------------------
 
 if __name__=="__main__":
+    #-------------------------------------------------------------------------------------------------------------------
+    ###### INPUT
+    geofile = conf.geofile # .geo file
+    element_size = conf.element_size # to control grid size via gmsh (element size factor)
+    delta = conf.delta # interaction horizon (attention: here only l2-norm)
+    #-------------------------------------------------------------------------------------------------------------------
+
     ### PLOT the meshes
     # mother mesh
     elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat, mesh_dict = mesh_data(geofile, element_size, delta)
@@ -423,7 +424,7 @@ if __name__=="__main__":
 
     # submeshes
     labels = list(np.unique(subdomainLabels))
-    submeshes_data, submeshes_dict = submesh_data_2(elements, vertices, lines, subdomainLabels, diam)
+    submeshes_data, submeshes_dict = submesh_data_2(elements, vertices, lines, subdomainLabels, diam,  element_size, delta)
     for k in range(len(labels)-1):
         submesh = submeshes_data[k]
         elements_i = submesh[0]

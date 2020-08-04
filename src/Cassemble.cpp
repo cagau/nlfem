@@ -285,13 +285,13 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
-                  const int dim, const long * ptrCeta, const long nCeta) {
-    //const long * ptrCeta;
-    //cout << "nCeta is" << nCeta << endl;
+                  const int dim, const long * ptrZeta, const long nZeta) {
+    //const long * ptrZeta;
+    //cout << "nZeta is" << nZeta << endl;
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
                      L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, dim+1, ptrCeta, nCeta};
+                     is_NeumannBoundary, dim, dim+1, ptrZeta, nZeta};
     chk_Mesh(mesh);
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
     chk_QuadratureRule(quadRule);
@@ -310,7 +310,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
     printf("Function: par_system (generic)\n");
     printf("Mesh dimension: %i\n", mesh.dim);
-    printf("Recieved Ceta for DD: %s\n", (mesh.nCeta > 0) ? "true" : "false");
+    printf("Recieved Zeta for DD: %s\n", (mesh.nZeta > 0) ? "true" : "false");
     lookup_configuration(conf);
     printf("Quadrule outer: %i\n", quadRule.nPx);
     printf("Quadrule inner: %i\n", quadRule.nPy);
@@ -342,13 +342,13 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.J);
     //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
-    // Read Ceta for Domain Decomposition.
-    // If nCeta == 0 nothing happens.
-    for(int it=0; it < mesh.nCeta; it++) {
-        long aT = mesh.ptrCeta[3 * it]; //Ceta_mat(0, it);
-        long bT = mesh.ptrCeta[3 * it + 1]; //Ceta_mat(1, it);
-        mesh.Ceta[aT * mesh.J + bT] = &mesh.ptrCeta[3 * it + 2];
-        //cout << aT << ",    " << bT << ",   val" << mesh.Ceta[aT*mesh.J + bT][0] << endl;
+    // Read Zeta for Domain Decomposition.
+    // If nZeta == 0 nothing happens.
+    for(int it=0; it < mesh.nZeta; it++) {
+        long aT = mesh.ptrZeta[3 * it]; //Zeta_mat(0, it);
+        long bT = mesh.ptrZeta[3 * it + 1]; //Zeta_mat(1, it);
+        mesh.Zeta[aT * mesh.J + bT] = &mesh.ptrZeta[3 * it + 2];
+        //cout << aT << ",    " << bT << ",   val" << mesh.Zeta[aT*mesh.J + bT][0] << endl;
     }
 
     #pragma omp parallel
@@ -546,15 +546,15 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             */
                             //[End DEBUG]
 
-                            // Domain decomposition. If Ceta is empty, the weight is set to 1.
+                            // Domain decomposition. If Zeta is empty, the weight is set to 1.
                             // Caution: -----------------------------------------------
                             // map[k] If k does not match the key of any element in the container,
                             // the []-method inserts a new element with that key and
                             // returns a reference to its mapped value.
                             // >> This eats up memory unnecessarily if you want to read only!
                             double weight = 1.;
-                            map<long, const long *>::iterator it = mesh.Ceta.find(aTdx*mesh.J + bTdx);
-                            if(it != mesh.Ceta.end()){
+                            map<long, const long *>::iterator it = mesh.Zeta.find(aTdx*mesh.J + bTdx);
+                            if(it != mesh.Zeta.end()){
                                 weight=1./(1. + (it->second)[0]);
                             }
 
@@ -649,7 +649,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
 
     printf("Function: par_forcing (generic)\n");
     printf("Mesh dimension: %i\n", mesh.dim);
-    printf("Recieved Ceta for DD: %s\n", (mesh.nCeta > 0) ? "true" : "false");
+    printf("Recieved Zeta for DD: %s\n", (mesh.nZeta > 0) ? "true" : "false");
     lookup_configuration(conf);
     printf("Quadrule outer: %i\n", quadRule.nPx);
     //printf("Quadrule inner: %i\n", quadRule.nPy);
@@ -660,13 +660,13 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
         model_basisFunction(&quadRule.Px[mesh.dim * h], mesh.dim, &quadRule.psix[mesh.dVertex * h]);
     }
 
-    // Read Ceta for Domain Decomposition.
-    // If nCeta == 0 nothing happens.
-    for(int it=0; it < mesh.nCeta; it++) {
-        long aT = mesh.ptrCeta[3 * it]; //Ceta_mat(0, it);
-        long bT = mesh.ptrCeta[3 * it + 1]; //Ceta_mat(1, it);
-        mesh.Ceta[aT * mesh.J + bT] = &mesh.ptrCeta[3 * it + 2];
-        //cout << aT << ",    " << bT << ",   val" << mesh.Ceta[aT*mesh.J + bT][0] << endl;
+    // Read Zeta for Domain Decomposition.
+    // If nZeta == 0 nothing happens.
+    for(int it=0; it < mesh.nZeta; it++) {
+        long aT = mesh.ptrZeta[3 * it]; //Zeta_mat(0, it);
+        long bT = mesh.ptrZeta[3 * it + 1]; //Zeta_mat(1, it);
+        mesh.Zeta[aT * mesh.J + bT] = &mesh.ptrZeta[3 * it + 2];
+        //cout << aT << ",    " << bT << ",   val" << mesh.Zeta[aT*mesh.J + bT][0] << endl;
     }
 
     #pragma omp parallel
@@ -704,10 +704,10 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                 compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
                 // Add content of buffer to the right side.
 
-                // Domain decomposition. If Ceta is empty, the weight is set to 1.
+                // Domain decomposition. If Zeta is empty, the weight is set to 1.
                 double weight = 1.;
-                map<long, const long *>::iterator it = mesh.Ceta.find(aTdx*mesh.J + aTdx);
-                if(it != mesh.Ceta.end()){
+                map<long, const long *>::iterator it = mesh.Zeta.find(aTdx*mesh.J + aTdx);
+                if(it != mesh.Zeta.end()){
                     weight=1./(1. + (it->second)[0]);
                 }
 
