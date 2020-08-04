@@ -1,13 +1,12 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import examples.DomainDecomposition.conf as conf
 #-----------------------------------------------------------------------------------------------------------------------
-
-
 ###### INPUT
-geofile = "DD_nonfloating_4" # .geo file
-element_size = 0.05 # to control grid size via gmsh (element size factor)
-delta = 0.1 # interaction horizon (attention: here only l2-norm)
+geofile = conf.geofile # .geo file
+element_size = conf.element_size # to control grid size via gmsh (element size factor)
+delta = conf.delta # interaction horizon (attention: here only l2-norm)
 #-----------------------------------------------------------------------------------------------------------------------
 
 
