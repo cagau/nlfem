@@ -176,6 +176,7 @@ def assemble(
     fd = None
 
     cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
+    cdef int nNeighbours = mesh.neighbours.shape[1]
     cdef long[:] elements = mesh.elements.flatten()
     cdef long[:] elementLabels = mesh.elementLabels.flatten()
     cdef double[:] vertices = mesh.vertices.flatten()
@@ -220,6 +221,7 @@ def assemble(
                             &ptrPy[0], Py.shape[0], &ptrdy[0],
                             delta**2,
                             &neighbours[0],
+                            nNeighbours,
                             mesh.is_DiscontinuousGalerkin,
                             mesh.is_NeumannBoundary,
                             &model_kernel_[0],
@@ -244,6 +246,7 @@ def assemble(
                             &ptrPy[0], Py.shape[0], &ptrdy[0],
                             delta**2,
                             &neighbours[0],
+                            nNeighbours,
                             mesh.is_DiscontinuousGalerkin,
                             mesh.is_NeumannBoundary,
                             &model_kernel_[0],
@@ -295,13 +298,18 @@ def constructAdjaciencyGraph(long[:,:] elements):
     cdef int dVerts = elements.shape[1]
     cdef int dim = dVerts-1
 
-    neigs = np.ones((nE, dim+1), dtype=np.int)*nE
+    #neigs = np.ones((nE, dim+1), dtype=np.int)*nE
     grph_elements = sparse.lil_matrix((nV, nE), dtype=np.int)
 
     for Tdx, Vdx in enumerate(elements):
         for d in range(dVerts):
             grph_elements[Vdx[d], Tdx] = 1
-    grph_neigs = ((grph_elements.transpose() @ grph_elements) == dim)
+    #grph_neigs = ((grph_elements.transpose() @ grph_elements) == dim)
+    grph_neigs = ((grph_elements.transpose() @ grph_elements) > 0)
+
+    rowsum = np.sum(grph_neigs, axis= 0)
+    nCols = np.max(rowsum)
+    neigs = np.ones((nE, nCols), dtype=np.int)*nE
     elemenIndices, neighbourIndices = grph_neigs.nonzero()
 
     neigs[elemenIndices[0],0] = neighbourIndices[0]
@@ -312,7 +320,7 @@ def constructAdjaciencyGraph(long[:,:] elements):
         colj *= ((elemenIndices[k-1]-elemenIndices[k])==0)
         colj += ((elemenIndices[k-1]-elemenIndices[k])==0)
         neigs[elemenIndices[k], colj] =  neighbourIndices[k]
-    return neigs
+    return neigs#, grph_neigs2
 
 def solve_cg(Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 500):
     cdef int n = b.size

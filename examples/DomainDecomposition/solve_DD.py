@@ -58,36 +58,55 @@ def matrix_compare(M, A_list, u_list, f_list):
 
     relDiff = np.linalg.norm(A_O - B_O)/np.linalg.norm(A_O)
     Diff = np.linalg.norm(A_O - B_O)
+
+    elementWiseDiff = np.abs(A_O - B_O)
+    #anyLargeIndex = np.array(np.where(np.any(elementWiseDiff > 1e-14, axis=0)))[1, :]
+    #problematicIndices = main.vertices[anyLargeIndex]
+
+    #u = np.zeros(main.K)
+    #u[anyLargeIndex] = 1
+    #main.point_data["problematic_nodes"] = u
+
+    #whereLargerZero  = np.array(np.where(elementWiseDiff > 1e-14)).T
+    #largeVals = np.array([elementWiseDiff[dx[0], dx[1]] for dx in whereLargerZero])
+    # argSortVals = np.argsort(-largeVals)
+    # largeValLocation = whereLargerZero[argSortVals[0]]
+    # test2 = elementWiseDiff[largeValLocation[0], largeValLocation[1]]
+
+
+
     print("Relative difference of matrices |A-B|/|A|\n", relDiff)
     print("difference of matrices |A-B|\n", Diff)
-    return relDiff, Diff
+    return relDiff, Diff#, whereLargerZero, elementWiseDiff#problematicIndices
 
 
 def solve_KKT(M, A_list, u_list, f_list):
-    if len(M) > 2:
+    if len(M) > 3:
         raise NotImplementedError("KKT Not implemented for 4 Domain System")
 
     import matplotlib.pyplot as plt
     main = M[0]
-    sub = M[1:]
+    sub1 = M[1]
+    sub2 = M[2]
+
     # Setup KKT-System
-    K_Omega = [mesh.K_Omega for mesh in M]
-    A_O = []
-    for k, k_om in enumerate(K_Omega):
-        A_O.append(A_list[k][:k_om, :k_om])
 
-    psi = []  # Embedding of vertices
-    row_filter = np.ones()
-    for k, sub in enumerate(sub):
-        n = K_Omega[k]
-        psi_ = np.zeros((main.nV, n))
-        psi_[sub.embedding_vertices[:n], np.arange(n)] = 1
-        psi_ = psi_[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
-        psi.append(psi_)
+    A1 = A_list[1][:sub1.K_Omega, :sub1.K_Omega]
+    n1 = sub1.K_Omega
+    A2 = A_list[2][:sub2.K_Omega, :sub2.K_Omega]
+    n2 = sub2.K_Omega
 
-    row_filter = np.array((np.sum(psi1, axis=1) > 0)*(np.sum(psi2, axis=1) > 0), dtype=bool)
-    P1 = psi1[row_filter, :]
-    P2 = psi2[row_filter, :]
+    embed1 = np.zeros((main.nV, n1))
+    embed1[sub1.embedding_vertices[:n1], np.arange(n1)] = 1.
+    embed1 = embed1[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
+
+    embed2 = np.zeros((main.nV, n2))
+    embed2[sub2.embedding_vertices[:n2], np.arange(n2)] = 1.
+    embed2 = embed2[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
+
+    row_filter = np.array((np.sum(embed1, axis=1) > 0)*(np.sum(embed2, axis=1) > 0), dtype=bool)
+    P1 = embed1[row_filter, :]
+    P2 = embed2[row_filter, :]
     n3 = np.sum(row_filter)
 
     nkkt = n1 + n2 + n3
@@ -114,8 +133,27 @@ def solve_KKT(M, A_list, u_list, f_list):
     u = np.zeros(sub2.K)
     u[:sub2.K_Omega] = x[n1:n2+n1]
     sub2.point_data["ud_kkt"] = u
-    sub1.write(OUTPUT_PATH + mesh_name + str(1) + ".vtk")
-    sub2.write(OUTPUT_PATH + mesh_name + str(2) + ".vtk")
+    #sub1.write(OUTPUT_PATH + mesh_name + str(1) + ".vtk")
+    #sub2.write(OUTPUT_PATH + mesh_name + str(2) + ".vtk")
+
+
+    #u_kkt = embed1 @ u1 + (embed2 @ u2)
+    u_kkt = np.zeros(main.nV)
+    u_kkt[sub1.embedding_vertices[:n1]] += u1
+    u_kkt[sub2.embedding_vertices[:n2]] += u2
+    u_kkt = u_kkt[:main.nV_Omega]
+    filter = np.invert(row_filter) + row_filter*0.5
+    u_kkt *= filter
+
+    u = np.zeros(main.K)
+    u[:main.K_Omega] = u_kkt
+    main.point_data["ud_kkt"] = u.copy()
+    u[:main.K_Omega] = u_kkt - u_list[0]
+    main.point_data["ud_dist"] = u.copy()
+
+    ud_diff = u_list[0] - u_kkt
+    l2dist =  np.linalg.norm(ud_diff)
+    return l2dist
 
 def FETI_invertible(M, A_list, u_list, f_list):
     if len(M) > 2:
@@ -132,7 +170,6 @@ def FETI_invertible(M, A_list, u_list, f_list):
     n1 = sub1.K_Omega
     A2 = A_list[2][:sub2.K_Omega, :sub2.K_Omega]
     n2 = sub2.K_Omega
-
     psi1 = np.zeros((main.nV, n1))
     psi1[sub1.embedding_vertices[:n1], np.arange(n1)] = 1.
     psi1 = psi1[:main.nV_Omega] # Due to points which change their status from Dirchlet to Neumann Vertex
@@ -183,8 +220,10 @@ if __name__ == "__main__":
     assemblyTime = []
     relDiffMat = []
     diffMat = []
+    ud_diff = []
 
     for element_size in elSizes:
+        print("\n\nSet up Domain Decomposition...")
         elements, vertices, lines, elementLabels, subdomainLabels, K_Omega, diam, Gamma_hat, mesh_dict = \
             mesh_data(geofile, element_size, delta)
         if geofile[-1] == "4":
@@ -195,6 +234,7 @@ if __name__ == "__main__":
 
         n_submesh = len(submesh)
 
+        print("Create Meshes...")
         M = [MeshfromDict(mesh_dict)]
         M += [MeshfromDict(subm) for subm in submesh_dicts]
         M = setZeta(M)
@@ -234,7 +274,8 @@ if __name__ == "__main__":
             u_list.append(solution["x"].copy())
         assemblyTime.append(subAssemblyTimes.copy())
 
-        #solve_KKT(M, A_list, u_list, f_list)
+        ud_diff_ = solve_KKT(M, A_list, u_list, f_list)
+        ud_diff.append(ud_diff_)
         #FETI_floating(M, A_list, u_list, f_list)
         #FETI_invertible(M, A_list, u_list, f_list)
         relDiff, Diff = matrix_compare(M, A_list, u_list, f_list)
@@ -245,47 +286,66 @@ if __name__ == "__main__":
             mesh.write(OUTPUT_PATH + mesh_name + str(k) + "_" + tmpstp + str(diam) + ".vtk")
 
     diffData = np.array([h, relDiffMat, diffMat])
+
     np.save(OUTPUT_PATH+tmpstp+"diffData.npy", diffData)
     timeData = np.array(assemblyTime)
     np.save(OUTPUT_PATH+tmpstp+"timeData.npy", timeData)
+    isPlot = True
 
-    pp = PdfPages(OUTPUT_PATH + "plot.pdf")
+    if isPlot:
+        pp = PdfPages(OUTPUT_PATH + "plot.pdf")
 
-    plt.yscale("log")
-    plt.xlabel("diameter h")
-    plt.ylabel("difference")
-    plt.plot(h, diffData[1, :])
-    plt.scatter(h, diffData[1, :])
-    plt.title("Relative difference of stiffnes matrix\n |A-B|/|A|")
-    plt.savefig(pp, format='pdf')
-    plt.close()
+        plt.yscale("log")
+        plt.xlabel("diameter h")
+        plt.ylabel("difference")
+        plt.plot(h, diffData[1, :])
+        plt.scatter(h, diffData[1, :])
+        plt.title("Relative difference of stiffnes matrix\n |A-B|/|A|")
+        plt.savefig(pp, format='pdf')
+        plt.close()
 
-    plt.yscale("log")
-    plt.ylabel("difference")
-    plt.xlabel("diameter h")
-    plt.plot(h, diffData[2, :])
-    plt.scatter(h, diffData[2, :])
-    plt.title("Difference of stiffnes matrix\n |A-B|")
-    plt.savefig(pp, format='pdf')
-    plt.close()
+        plt.yscale("log")
+        plt.ylabel("difference")
+        plt.xlabel("diameter h")
+        plt.plot(h, diffData[2, :])
+        plt.scatter(h, diffData[2, :])
+        plt.title("Difference of stiffnes matrix\n |A-B|")
+        plt.savefig(pp, format='pdf')
+        plt.close()
 
-    plt.xlabel("diameter h")
-    plt.ylabel("time [s]")
-    assemblyTime = np.array(assemblyTime).T
-    for k, times in enumerate(assemblyTime):
-        if k == 0:
-            plt.plot(h, times, label="single domain")
-            plt.scatter(h, times)
-        else:
-            plt.plot(h, times)
-            plt.scatter(h, times)
-    plt.title("Assembly Time")
-    plt.legend()
-    plt.savefig(pp, format='pdf')
-    plt.close()
+        plt.xlabel("diameter h")
+        plt.ylabel("time [s]")
+        assemblyTime = np.array(assemblyTime).T
+        for k, times in enumerate(assemblyTime):
+            if k == 0:
+                plt.plot(h, times, label="single domain")
+                plt.scatter(h, times)
+            else:
+                plt.plot(h, times)
+                plt.scatter(h, times)
+        plt.title("Assembly Time")
+        plt.legend()
+        plt.savefig(pp, format='pdf')
+        plt.close()
 
-    pp.close()
+        plt.title("Difference to KKT Solution\n$\ell_2$-dist in $\mathbb{R}^n$")
+        plt.xlabel("diameter h")
+        plt.yscale("log")
+        plt.ylabel("dist")
+        plt.plot(h, ud_diff)
+        plt.scatter(h, ud_diff)
+        plt.savefig(pp, format='pdf')
+        plt.close()
 
+
+        #largeVals = np.array([elementWiseDiff[dx[0], dx[1]] for dx in whereLargerZero])
+        #n_largeVals = len(largeVals)
+        #plt.title(str(n_largeVals))
+        #plt.plot(largeVals)
+        #plt.savefig(pp, format="pdf")
+        #plt.close()
+
+        pp.close()
 
 
 

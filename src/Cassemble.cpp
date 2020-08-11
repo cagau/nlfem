@@ -94,52 +94,6 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     T.dim = mesh.dim;
 }
 
-void constructAdjaciencyGraph(const int dim, const int nE, const long * elements, long * neighbours){
-    //int aTdx=0;
-    const int dVertex = dim+1;
-    const int sqdVertex = pow(dVertex, 2);
-    #pragma omp parallel
-    {
-    #pragma omp for
-    for (int aTdx=0; aTdx < nE; aTdx++) {
-        //cout << "aTdx " << aTdx << endl;
-        //cout << "Init neighbours " << endl;
-        for (int i = 0; i < dVertex; i++) {
-            neighbours[aTdx * dVertex + i] = static_cast<long>(nE);
-            //cout << elements[aTdx * dVertex + i] << " " ;
-        }
-        //cout << endl;
-
-        int nNeighsFound = 0;
-
-        for(int bTdx=0; bTdx<nE; bTdx++) {
-            //cout << "bTdx " << bTdx << endl;
-            int nEqualVerts = 0;
-            //cout << "Compare " << endl;
-            //cout << elements[bTdx * dVertex + 0] << " " << elements[bTdx * dVertex + 1] << " " << elements[bTdx * dVertex + 2] << endl ;
-            for (int i = 0; i < sqdVertex; i++) {
-                //cout << "aVdx " <<(i % dVertex) << endl;
-                //cout << "bVdx " << aTdx*dVertex +  bTdx*dVertex +  static_cast<int>(i / dVertex)<< endl;
-                nEqualVerts += (elements[aTdx*dVertex + (i % dVertex)] == elements[bTdx*dVertex + static_cast<int>(i / dVertex)]);
-
-            }
-            //cout << "nEqualVerts " << nEqualVerts << endl;
-            //cout << nEqualVerts << endl;
-
-            if (nEqualVerts == dim){
-                //cout << "Ndx " << aTdx*dVertex + nNeighsFound << endl;
-                neighbours[aTdx*dVertex + nNeighsFound] = bTdx;
-                nNeighsFound+=1;
-                if (nNeighsFound==dVertex){
-                    bTdx = nE;
-                }
-            }
-        }
-        //abort();
-    }
-}
-
-}
 // Compute A and f -----------------------------------------------------------------------------------------------------
 void compute_f(     const ElementType & aT,
                     const QuadratureType &quadRule,
@@ -283,6 +237,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int J,
                   const int J_Omega, const int L, const int L_Omega, const double *Px, const int nPx, const double *dx,
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
+                  const int nNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim, const long * ptrZeta, const long nZeta) {
@@ -290,7 +245,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     //cout << "nZeta is" << nZeta << endl;
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
-                     L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
+                     L, L_Omega, sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, dim+1, ptrZeta, nZeta};
     chk_Mesh(mesh);
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
@@ -396,9 +351,12 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     */
     //[End DEBUG]
 
-
+    //long debugTdx = 570;
     #pragma omp for
     for (aTdx=0; aTdx<mesh.J; aTdx++) {
+        //if (aTdx == debugTdx){
+        //    cout << "aTdx " << aTdx << endl;
+        //}
         if (mesh.LabelTriangles[aTdx] == 1) {
             // It would be nice, if in future there is no dependency on the element ordering...
             //cout <<  aTdx << endl;
@@ -475,7 +433,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                 NTdx = &mesh.Neighbours(0, sTdx);
                 // Run through the list of neighbours.
                 // 3 at max in 2D, 4 in 3D.
-                for (j = 0; j < mesh.dVertex; j++) {
+                for (j = 0; j < mesh.nNeighbours; j++) {
                     // The next valid neighbour is our candidate for the inner Triangle b.
                     bTdx = NTdx[j];
                     //bTdx = 45;
@@ -485,11 +443,12 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                     // i.e. the total number of Triangles (which cannot be an index).
                     if (bTdx < mesh.J) {
 
-                        // Prepare Triangle information bTE and bTdet ------------------
-                        initializeTriangle(bTdx, mesh, bT);
-
                         // Check whether bTdx is already visited.
                         if (visited[bTdx] == 0) {
+
+                            // Prepare Triangle information bTE and bTdet ------------------
+                            initializeTriangle(bTdx, mesh, bT);
+
                             //cout << aTdx << ", " << bTdx << endl;
 
                             // Retriangulation and integration ------------------------
@@ -556,8 +515,16 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             map<long, const long *>::iterator it = mesh.Zeta.find(aTdx*mesh.J + bTdx);
                             if(it != mesh.Zeta.end()){
                                 weight=1./(1. + (it->second)[0]);
+                                //if (weight != 0.5){
+                                //    cout << "wrong weight" << endl;
+                                //    cout << "aTdx " << aTdx << ", bTdx " << bTdx << endl;
+                                //    cout << "weight " << weight << endl;
+                                //    abort();
+                                //}
                             }
-
+                            //if (aTdx == debugTdx){
+                            //    cout << bTdx << ", ";
+                            //}
                             if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) ||
                                 doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)) {
                                 queue.push(bTdx);
@@ -580,6 +547,11 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                             Adx = aAdx[a]*mesh.K + bAdx[b];
                                             Ad[Adx] += -termNonloc[mesh.dVertex * a + b]*weight;
 
+                                            //if (aTdx == debugTdx){
+                                            //    cout << termLocal[mesh.dVertex * a + b] << ", ";
+                                            //    cout << -termNonloc[mesh.dVertex * a + b] << ", ";
+                                            //}
+
                                             // Caution: -----------------------------------------------
                                             // If k does not match the key of any element in the container,
                                             // the []-method inserts a new element with that key and
@@ -589,6 +561,10 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                     }
                                 }
                             }// End if (doubleVec_any(termNonloc, ...)
+
+                            //if (aTdx == debugTdx){
+                            //    cout << endl;
+                            //}
 
                         }// End if BFS (visited[bTdx] == 0)
                         // Mark bTdx as visited

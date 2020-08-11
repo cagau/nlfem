@@ -65,6 +65,8 @@ struct MeshStruct{
     const int L_Omega;
     const double sqdelta;
     const long * ptrNeighbours;
+    const int nNeighbours;
+
     const int is_DiscontinuousGalerkin;
     const int is_NeumannBoundary;
 
@@ -84,7 +86,7 @@ struct MeshStruct{
     // Note: Armadillo uvec.find() is much slower.
     map<long, const long *> Zeta;
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->L)};
-    const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->dVertex, this->J)};
+    const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->J)};
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->J)};
     // Label of Triangles inside Omega = 1
     // Label of Triangles in OmegaI = 2

@@ -41,3 +41,5 @@ The shared object file can then be dynamically linked to the assemble package.
     - Note, if the installation requires sudo you might want to setup a virtual environment.
 - Check your installation by running solve_nonlocal
     - <code> python3 solve_nonlocal.py </code>
+    
+- If cmake cannot be found try installing it. If it still cannot be found try reloading the CMake Project.

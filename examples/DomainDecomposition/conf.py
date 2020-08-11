@@ -6,7 +6,7 @@ DATA_PATH = "data/"
 OUTPUT_PATH = "output/"
 isOverride = False
 tmpstp = timestamp()
-geofile = "DD_nonfloating_4" # .geo file
+geofile = "DD_nonfloating" # .geo file
 mesh_name = geofile
 
 element_size = 0.05 # to control grid size via gmsh (element size factor)

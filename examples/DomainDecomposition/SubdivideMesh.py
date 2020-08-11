@@ -77,7 +77,7 @@ def mesh_data(geofile, element_size, delta):
     # we sort from smallest to largest label
     # CONVENTION: largest label (if numbers) = interaction domain Omega_I
     # TO DO: labels should better be dictionary?!
-    os.system('gmsh -v 0 mesh/'+geofile+'.geo -2 -clscale '+str(element_size)+' -o mesh/'+geofile+'.msh') # run gmsh
+    os.system('gmsh -v 0 mesh/'+geofile+'.geo -2 -clscale '+ str(element_size)+' -o mesh/'+geofile+'.msh') # run gmsh
     vertices, lines, elements = read_mesh('mesh/' + geofile + '.msh') # read .msh file
     elements = elements[elements[:, 0].argsort()] # smallest to largest label (Convention?!)
     labels = np.sort(np.unique(elements[:, 0])) # smallest to largest label (Convention?!)
@@ -178,7 +178,7 @@ def submesh_data(elements, vertices, lines, subdomainLabels, diam, element_size,
 
         IntDomain_i = [] # to be filled with all triangles in the approximated interaction domain of the subdomain
         for l in boundary_i: # run trough all vertices on the boundary
-            IntDomain_i += np.where(np.linalg.norm(bary - np.tile(vertices[l], (len(bary), 1)), axis =1) <= delta + diam)[0].tolist()
+            IntDomain_i += np.where(np.linalg.norm(bary - np.tile(vertices[l], (len(bary), 1)), axis=1) <= delta + 1.5*diam)[0].tolist()
         for i in interface:
             IntDomain_i += np.where(np.linalg.norm(bary - np.tile(vertices[i], (len(bary), 1)), axis=1) <= delta / 2. + diam)[0].tolist()
         IntDomain_i = list(np.unique(np.array(IntDomain_i))) # clearly this list is not unique, since neighboring vertices hit the same elements multiple times

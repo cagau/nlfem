@@ -13,6 +13,7 @@ cdef extern from "Cassemble.h" nogil:
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int J,
                   const int J_Omega, const int L, const int L_Omega, const double *Px, const int nPx, const double *dx,
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
+                  const int nNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim,
@@ -20,7 +21,6 @@ cdef extern from "Cassemble.h" nogil:
     # Mass matrix evaluation ----------------------------------------------------------------------------------------------
     void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
                      double *P, double *dx, const int dim) nogil
-    void constructAdjaciencyGraph(const int dim, const int nE, const long * elements, long * neighbours) nogil
 
     # DEBUG Helpers and test functions
     int method_retriangulate(const double * x_center, const double * TE,
