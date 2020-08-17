@@ -3,7 +3,7 @@
 In order to use this code you have to meet the following rewuirements
 ## Requirements
 
-The *basic requirements** for python are `numpy` and `scipy`.
+The **basic requirements** for python are `numpy` and `scipy`.
 For **running the examples** you additionally need to install `matplotlib, pathos, meshio, meshzoo, quadpy`.
 If you want to **build the binaries** on your system you also need the
 python package `Cython` as well as `gcc`, and `cmake`.
