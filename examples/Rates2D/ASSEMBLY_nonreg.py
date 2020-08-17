@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # sys.path.append("/home/vollmann/Dropbox/JOB/PYTHON/BIB")
 # sys.path.append("/media/vollmann/1470789c-8ccb-4f32-9a95-12d258c8d70c/Dropbox/JOB/PYTHON/BIB")
 import warnings
-import assemble
+import nlcfem as assemble
 import nlocal
 
 

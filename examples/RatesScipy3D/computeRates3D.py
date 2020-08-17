@@ -1,7 +1,7 @@
 from examples.RatesScipy3D.mesh import RegMesh2D as RegMesh
 import examples.RatesScipy3D.helpers as helpers
 import numpy as np
-import assemble
+import nlcfem as assemble
 from time import time
 import matplotlib.pyplot as plt
 

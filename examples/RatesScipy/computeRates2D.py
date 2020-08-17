@@ -4,7 +4,7 @@ import examples.RatesScipy.helpers as helpers
 from matplotlib.backends.backend_pdf import PdfPages
 from python.helpers import read_arma_spMat
 import numpy as np
-import assemble
+import nlcfem as assemble
 from time import time
 
 def main():

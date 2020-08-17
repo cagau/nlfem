@@ -13,7 +13,7 @@ import conf, conf2
 import MESH_nonreg
 import xlwt
 import scipy.interpolate as interp
-from assemble import evaluateMass
+from nlcfem import evaluateMass
 import nlocal
 
 def main():

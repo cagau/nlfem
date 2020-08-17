@@ -6,7 +6,7 @@ Documentation for this module.
 import numpy as np
 from scipy.sparse import coo_matrix, lil_matrix, csr_matrix, csc_matrix, diags
 import meshio
-import assemble
+import nlcfem
 import datetime
 
 # Auf Triangles und Lines müssen wir die inverse Permutation anwenden.
@@ -54,7 +54,7 @@ class MeshfromDict(meshio._mesh.Mesh):
         self.Gamma_hat = None
 
         self.__dict__.update(iterable, **kwargs)
-        self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
+        self.neighbours = nlcfem.constructAdjaciencyGraph(self.elements)
         self.vertexLabels = np.ones(self.nV)
         self.vertexLabels[:self.nV_Omega] = 0
         self.nZeta = 0
@@ -193,7 +193,7 @@ class MeshIO(meshio._mesh.Mesh):
 
     # Setup adjaciency graph of the mesh --------------------------
         if kwargs.get("isNeighbours", True):
-            self.neighbours = assemble.constructAdjaciencyGraph(self.elements)
+            self.neighbours = nlcfem.constructAdjaciencyGraph(self.elements)
         # built in Neighbour Routine of MeshBulder yields mbNeighbours.
 
         self.baryCenter = np.zeros((self.nE, self.dim))

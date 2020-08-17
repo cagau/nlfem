@@ -1,6 +1,6 @@
 #-*- coding:utf-8 -*-
 import numpy as np
-import assemble
+import nlcfem as assemble
 
 class Mesh:
     """ **Mesh Class**

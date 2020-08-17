@@ -12,11 +12,9 @@ from examples.DomainDecomposition.nlocal import setZeta, MeshfromDict, timestamp
 from examples.DomainDecomposition.SubdivideMesh import mesh_data, submesh_data, submesh_data_2
 from matplotlib.backends.backend_pdf import PdfPages
 
-try:
-    from assemble import assemble, solve_cg
-except ImportError:
-    print("\nCan't import assemble.\nTry: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/libCassemble.\n")
-    raise ImportError
+
+from nlcfem import assemble, solve_cg
+
 
 def matrix_compare(M, A_list, u_list, f_list):
     """Compare the stiffnes matrices of subdivided and single domain problem by reassembling them.
@@ -60,12 +58,15 @@ def matrix_compare(M, A_list, u_list, f_list):
     Diff = np.linalg.norm(A_O - B_O)
 
     elementWiseDiff = np.abs(A_O - B_O)
-    #anyLargeIndex = np.array(np.where(np.any(elementWiseDiff > 1e-14, axis=0)))[1, :]
+    infDiff = np.max(elementWiseDiff)
+    infrelDiff = infDiff/np.max(np.abs(A_O))
+
+    anyLargeIndex = np.array(np.where(np.any(elementWiseDiff > 1e-14, axis=0)))[1, :]
     #problematicIndices = main.vertices[anyLargeIndex]
 
-    #u = np.zeros(main.K)
-    #u[anyLargeIndex] = 1
-    #main.point_data["problematic_nodes"] = u
+    u = np.zeros(main.K)
+    u[anyLargeIndex] = 1
+    main.point_data["problematic_nodes"] = u
 
     #whereLargerZero  = np.array(np.where(elementWiseDiff > 1e-14)).T
     #largeVals = np.array([elementWiseDiff[dx[0], dx[1]] for dx in whereLargerZero])
@@ -77,7 +78,7 @@ def matrix_compare(M, A_list, u_list, f_list):
 
     print("Relative difference of matrices |A-B|/|A|\n", relDiff)
     print("difference of matrices |A-B|\n", Diff)
-    return relDiff, Diff#, whereLargerZero, elementWiseDiff#problematicIndices
+    return relDiff, Diff, infrelDiff, infDiff#, whereLargerZero, elementWiseDiff#problematicIndices
 
 
 def solve_KKT(M, A_list, u_list, f_list):
@@ -121,6 +122,8 @@ def solve_KKT(M, A_list, u_list, f_list):
     rhs = np.concatenate((f_list[1], f_list[2], np.zeros(n3)))
     x0 = np.concatenate((u_list[1], u_list[2], np.zeros(n3)))
     x = np.linalg.solve(KKT, rhs)
+    #sol = solve_cg(KKT, rhs, rhs, tol=1e-12)
+    #print("CG Solve:\nIterations: ", sol["its"], "\tError: ", sol["res"])
     #x = sol["x"]
 
     u1 = x[:n1]
@@ -152,8 +155,9 @@ def solve_KKT(M, A_list, u_list, f_list):
     main.point_data["ud_dist"] = u.copy()
 
     ud_diff = u_list[0] - u_kkt
-    l2dist =  np.linalg.norm(ud_diff)
-    return l2dist
+    l2dist = np.linalg.norm(ud_diff)
+    l2squared = np.sum(ud_diff**2)
+    return l2squared
 
 def FETI_invertible(M, A_list, u_list, f_list):
     if len(M) > 2:
@@ -215,11 +219,13 @@ def FETI_invertible(M, A_list, u_list, f_list):
 
 if __name__ == "__main__":
     # Mesh construction ------------------------------------------------------------------------------------------------
-    elSizes = [0.07, 0.05, 0.04, 0.03, 0.02, 0.01]
+    elSizes = [0.07]#, 0.05, 0.04, 0.03, 0.02, 0.01]
     h = []
     assemblyTime = []
     relDiffMat = []
+    relinfDiffMat = []
     diffMat = []
+    infDiffMat = []
     ud_diff = []
 
     for element_size in elSizes:
@@ -274,18 +280,23 @@ if __name__ == "__main__":
             u_list.append(solution["x"].copy())
         assemblyTime.append(subAssemblyTimes.copy())
 
-        ud_diff_ = solve_KKT(M, A_list, u_list, f_list)
-        ud_diff.append(ud_diff_)
+        #ud_diff_ = solve_KKT(M, A_list, u_list, f_list)
+        #ud_diff.append(ud_diff_)
         #FETI_floating(M, A_list, u_list, f_list)
         #FETI_invertible(M, A_list, u_list, f_list)
-        relDiff, Diff = matrix_compare(M, A_list, u_list, f_list)
+        relDiff, Diff, infrelDiff, infDiff = matrix_compare(M, A_list, u_list, f_list)
+
+        relinfDiffMat.append(infrelDiff)
+        infDiffMat.append(infDiff)
         relDiffMat.append(relDiff)
         diffMat.append(Diff)
+
 
         for k, mesh in enumerate(M):
             mesh.write(OUTPUT_PATH + mesh_name + str(k) + "_" + tmpstp + str(diam) + ".vtk")
 
     diffData = np.array([h, relDiffMat, diffMat])
+    infDiffData = np.array([h, relinfDiffMat, infDiffMat])
 
     np.save(OUTPUT_PATH+tmpstp+"diffData.npy", diffData)
     timeData = np.array(assemblyTime)
@@ -313,6 +324,24 @@ if __name__ == "__main__":
         plt.savefig(pp, format='pdf')
         plt.close()
 
+        plt.yscale("log")
+        plt.xlabel("diameter h")
+        plt.ylabel("difference")
+        plt.plot(h, infDiffData[1, :])
+        plt.scatter(h, infDiffData[1, :])
+        plt.title("Relative difference of stiffnes matrix\n $|A-B|_{\infty}/|A|_{\infty}$")
+        plt.savefig(pp, format='pdf')
+        plt.close()
+
+        plt.yscale("log")
+        plt.ylabel("difference")
+        plt.xlabel("diameter h")
+        plt.plot(h, infDiffData[2, :])
+        plt.scatter(h, infDiffData[2, :])
+        plt.title("Difference of stiffnes matrix\n $|A-B|_\infty$")
+        plt.savefig(pp, format='pdf')
+        plt.close()
+
         plt.xlabel("diameter h")
         plt.ylabel("time [s]")
         assemblyTime = np.array(assemblyTime).T
@@ -328,14 +357,14 @@ if __name__ == "__main__":
         plt.savefig(pp, format='pdf')
         plt.close()
 
-        plt.title("Difference to KKT Solution\n$\ell_2$-dist in $\mathbb{R}^n$")
-        plt.xlabel("diameter h")
-        plt.yscale("log")
-        plt.ylabel("dist")
-        plt.plot(h, ud_diff)
-        plt.scatter(h, ud_diff)
-        plt.savefig(pp, format='pdf')
-        plt.close()
+        #plt.title("Difference to KKT Solution\n$\ell_2$-dist in $\mathbb{R}^n$")
+        #plt.xlabel("diameter h")
+        #plt.yscale("log")
+        #plt.ylabel("dist")
+        #plt.plot(h, ud_diff)
+        #plt.scatter(h, ud_diff)
+        #plt.savefig(pp, format='pdf')
+        #plt.close()
 
 
         #largeVals = np.array([elementWiseDiff[dx[0], dx[1]] for dx in whereLargerZero])

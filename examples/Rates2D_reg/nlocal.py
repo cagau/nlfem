@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 import numpy as np
 import meshio
-import assemble
+import nlcfem as assemble
 
 
 def readMeshBuilder(name):

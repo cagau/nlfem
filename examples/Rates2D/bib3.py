@@ -39,7 +39,7 @@ weightsxy = 0.5 * np.array([0.14431560767779
                        , 0.02723031417443
                        , 0.02723031417443])
 
-#from assemble import assemble
+from nlcfem import assemble
 
 import scipy.sparse as ss
 import matplotlib

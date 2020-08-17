@@ -14,7 +14,7 @@ from examples.SolveandPlot.nlocal import Mesh#, assemble # Mesh class
 from examples.SolveandPlot.aux import filename
 from examples.SolveandPlot.plot import plot
 
-from assemble import py_check_par_assemble
+from nlcfem import py_check_par_assemble
 from matplotlib.backends.backend_pdf import PdfPages
 
 # Necessary definitions for intersection -------------------------------------------------------------------------------

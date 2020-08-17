@@ -5,8 +5,8 @@
 #define NONLOCAL_ASSEMBLY_INTEGRATION_CPP
 
 #include <MeshTypes.h>
-#include <mathhelpers.cpp>
-#include <model.cpp>
+#include "mathhelpers.cpp"
+#include "model.cpp"
 
 // ___ INTEGRATION DECLARATION _________________________________________________________________________________________
 

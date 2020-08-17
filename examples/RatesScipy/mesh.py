@@ -5,7 +5,7 @@ from scipy.interpolate import LinearNDInterpolator
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from assemble import constructAdjaciencyGraph
+from nlcfem import constructAdjaciencyGraph
 import meshzoo
 
 class RegMesh2D:

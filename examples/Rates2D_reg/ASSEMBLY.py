@@ -3,7 +3,7 @@ Created on Mon Feb 25 13:31:10 2019
 
 @author: vollmann
 """
-import assemble
+import nlcfem as assemble
 import numpy as np
 import pickle as pkl
 import scipy.sparse as sp

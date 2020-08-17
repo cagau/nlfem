@@ -13,7 +13,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from examples.SolveandPlot.plot import plot_mesh_DG, plot_mesh_CG
 
 def test_solve():
-    from assemble import py_solve2x2
+    from nlcfem import py_solve2x2
     A = np.random.rand(2,2)
     b = np.random.rand(2)
     x = py_solve2x2(A.flatten(), b)
@@ -21,8 +21,8 @@ def test_solve():
     print("Ax", A@x)
 
 def test_retriangulate():
-    from assemble import py_retriangulate
-    from assemble import py_toRef, py_toPhys
+    from nlcfem import py_retriangulate
+    from nlcfem import py_toRef, py_toPhys
     from examples.SolveandPlot.conf import  py_Px, OUTPUT_PATH
     py_P = py_Px
 
@@ -87,7 +87,7 @@ def test_interfacedependendKernel():
     # This Code compares the output with the output of another code and does not work stand-alone
     from examples.SolveandPlot.conf import py_Px, py_Py, dx, dy, delta, ansatz, boundaryConditionType, OUTPUT_PATH
     from examples.SolveandPlot.nlocal import Mesh
-    from assemble import assemble
+    from nlcfem import assemble
     import pickle as pkl
     import sys
     # insert at 1, 0 is the script path (or '' in REPL)
