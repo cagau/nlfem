@@ -3,21 +3,10 @@
 In order to use this code you have to meet the following rewuirements
 ## Requirements
 
-### Basic
-- numpy, scipy
-
-### Additional requirements for example code
--  matplotlib, pathos, meshio, meshzoo, quadpy
-
-### Additional requirements for build
-If you want to build the binaries on your system you also need the following
-python packages
-
-- Cython
-
-and programs
-
-- gcc, cmake
+The *basic requirements** for python are `numpy` and `scipy`.
+For **running the examples** you additionally need to install `matplotlib, pathos, meshio, meshzoo, quadpy`.
+If you want to **build the binaries** on your system you also need the
+python package `Cython` as well as `gcc`, and `cmake`.
 
 ## Install with pip
 
@@ -66,7 +55,7 @@ The shared object file can then be dynamically linked to the ǹlcfem package.
 Test the code using the examples.
 
 ## Changing the Operator or the right hand side
-If you want to the model you have to alter the file `src/model.cpp`. You find
+If you want to change the model you have to alter the file `src/model.cpp`. You find
 a several options for kernel and forcing functions there. 
 
 - The Kernel function is called <code>  model_kernel() </code>.
