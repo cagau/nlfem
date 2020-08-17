@@ -39,7 +39,7 @@ If you want to install the project as standalone shared object file you have to
     - <code> cmake --build . --target install -- -j 4 </code>
 - `libCassemble.so` will be installed to <code> /home/user/lib </code> add this path via
     - <code> export LD_LIBRARY_PATH="/home/user/lib" </code>
-The shared object file can then be dynamically linked to the ǹlcfem package.
+The shared object file can then be dynamically linked to the nlcfem package.
 
 ### Build and Install nlcfem while dynamically linking Cassemble.so
 - This step translates assemble.pyx to assemble.cpp (Cython) and compiles the C++ code to machine code.
@@ -67,9 +67,9 @@ If you want to change the kernel implement your version
 `mode_kernel`. Do the same thing for the right hand side.
 
 ### Step 2 Adding the option
-Enter `src/Cassemble.cpp` and add an if clause in the function
-`lookup_configuration()` like `conf.model_kernel == "myKernel` in order
-to make the choice available from the outside.
+Open the file `src/Cassemble.cpp` and add an if clause in the function
+`lookup_configuration()` of the type `conf.model_kernel == "myKernel"` in order
+to make your kernel available from the outside.
 The function where the assembly happens is called <code> par_system </code> and
 is also to be found in this file.
 
