@@ -21,7 +21,7 @@ ext_modules = [
         name=name,
         sources=["cython/nlcfem.pyx", "src/Cassemble.cpp", "src/Cassemble2D.cpp"],
         extra_link_args=['-fopenmp', '-llapack', '-lblas', '-larmadillo'],
-        extra_compile_args=['-fopenmp', '-O3'],
+        extra_compile_args=['-fopenmp'],
         language="c++",
         include_dirs=["include"]
     )

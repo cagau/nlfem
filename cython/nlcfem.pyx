@@ -30,7 +30,6 @@ def assemble2D(
         double delta,
         **kwargs
     ):
-
     Ad = np.zeros(mesh.K*mesh.K_Omega)
     fd = np.zeros(mesh.K_Omega)
 
@@ -144,6 +143,30 @@ def remove_arma_tmp(path):
     import os
     os.remove(path)
 
+# Tensor Gauss Quadrature
+class tensorgauss:
+    def __init__(self, deg, dim=4):
+        self.deg = deg
+        self.dim = 4
+        p, w = np.polynomial.legendre.leggauss(deg)
+        #print("Length", len(p), "\np", p, "w", w)
+        self.N = deg**dim
+        self.weights = np.zeros(deg**dim)
+        self.points = np.zeros((dim, deg**dim))
+        l = 0
+        k1 = 0
+        k2 = 0
+        k3 = 0
+        for l in range(deg**4):
+            k0 = l % deg
+            k1 += (not k0) and (bool(l))
+            k1 %= deg
+            k2 += (not (k1 or k0)) and (bool(l))
+            k2 %= deg
+            k3 += (not (k2 or k1 or k0)) and (bool(l))
+            self.weights[l] = w[k0]*w[k1]*w[k2]*w[k3]
+            self.points[:,l] = [p[k0], p[k1], p[k2], p[k3]]
+
 def assemble(
         # Mesh information ------------------------------------
         mesh,
@@ -159,8 +182,10 @@ def assemble(
         model_kernel="constant",
         model_f = "constant",
         integration_method = "retriangulate",
-        is_PlacePointOnCap = 1
+        is_PlacePointOnCap = 1,
+        nPg=0
     ):
+
     is_tmpAd = False
     if path_spAd is None:
         is_tmpAd = True
@@ -205,11 +230,27 @@ def assemble(
         Zeta = mesh.Zeta.flatten()
         if nZeta > 0:
             ptrZeta = &Zeta[0]
-
     except AttributeError:
         print("Zeta not found.")
         nZeta = 0
 
+    try:
+        outdim = mesh.outdim
+    except AttributeError:
+        print("Mesh out dim not found.")
+        outdim = 1
+
+    cdef double [:] Pg
+    cdef const double * ptrPg = NULL
+    cdef double [:] dg
+    cdef const double * ptrdg = NULL
+
+    if nPg != 0:
+        quadgauss = tensorgauss(nPg)
+        Pg = quadgauss.points.flatten()
+        ptrPg = &Pg[0]
+        dg = quadgauss.weights.flatten()
+        ptrdg = &dg[0]
 
     # Compute Assembly -------------------------------------------
     if (compute=="system" or compute=="systemforcing"):
@@ -228,7 +269,8 @@ def assemble(
                             &model_f_[0],
                             &integration_method_[0],
                             is_PlacePointOnCap_,
-                            mesh.dim, ptrZeta, nZeta)
+                            mesh.dim, outdim, ptrZeta, nZeta,
+                            ptrPg, nPg, ptrdg)
 
         total_time = time.time() - start
         print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -253,7 +295,8 @@ def assemble(
                             &model_f_[0],
                             &integration_method_[0],
                             is_PlacePointOnCap_,
-                            mesh.dim, ptrZeta, nZeta)
+                            mesh.dim, outdim, ptrZeta, nZeta,
+                            ptrPg, nPg, ptrdg)
 
         fd = read_arma_mat(path_fd)[:,0]
         if is_tmpfd:

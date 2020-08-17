@@ -17,6 +17,10 @@ The package `nlcfem` can be installed using `pip` via
 You need a personal access toke to allow pip to access gitlab. Find more 
 information under https://gitlab.uni-trier.de/help/api/README.md#personalproject-access-tokens.
 
+### Caution
+In this case the C++ library is linked statically and C++ exceptions will vanish, hence the `asserts`
+in *src/checks.cpp* will simply be ignored. You might want to link the C++ code dynamically (see Build as shared library).
+
 ## Build as static library
 
 You can clone the project and build and install the package via

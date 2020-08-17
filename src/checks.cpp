@@ -52,9 +52,27 @@ void chk_Mesh(MeshType & mesh){
     }
     assert((mesh.J_Omega == chk_nE_Omega && "Number of elements with label!=1 does not coincide with nE_Omega."));
 
+    if (mesh.is_DiscontinuousGalerkin) {
+        assert((mesh.outdim * mesh.J * mesh.dVertex == mesh.K && "Matrix dimension does not match #basis functions and output dimension."));
+    } else {
+        assert((mesh.outdim * mesh.L == mesh.K && "Matrix dimension does not match #basis functions and output dimension."));
+    }
+
     for(long k=0; k < nZeta; k++){
         assert((mesh.ptrZeta[3*k] >= 0 && mesh.ptrZeta[3*k+1] >= 0 && mesh.ptrZeta[3*k+2] >= 0 && "Some entries in Zeta are negative."));
         assert((mesh.ptrZeta[3*k] < nE && mesh.ptrZeta[3*k+1] < nE && mesh.ptrZeta[3*k+2] < nE && "Some entries in Zeta exceed the number of triangles."));
     }
+}
+
+void chk_Conf(MeshType & mesh, ConfigurationType & conf){
+    if (mesh.dim == 3){
+        assert((conf.integration_method == "baryCenter" &&
+        "Only Bary-Center is implemented as integration method for 3D."));
+    } else if (mesh.dim != 2)
+    {
+        cout << "Dimension is not equal to 2 or 3." << endl;
+        abort();
+    }
+
 }
 #endif //NONLOCAL_ASSEMBLY_CHECKS_CPP

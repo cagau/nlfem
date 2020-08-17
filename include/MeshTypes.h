@@ -38,6 +38,7 @@ struct ElementStruct
     long label;
     double absDet;
     int signDet;
+    long Tdx=0;
 };
 typedef ElementStruct ElementType;
 
@@ -71,6 +72,7 @@ struct MeshStruct{
     const int is_NeumannBoundary;
 
     const int dim;
+    const int outdim;
     const int dVertex;
 
     // Weights for Domain decomposition
@@ -101,9 +103,15 @@ struct QuadratureStruct{
     const double * Py;
     const double * dx;
     const double * dy;
+
     const int nPx;
     const int nPy;
     const int dim;
+
+    const double * Pg;
+    const double * dg;
+    const int nPg;
+
     //const interactionMethodType interactionMethod;
     arma::Mat<double> psix{arma::Mat<double>(this->dim +1, this->nPx)};
     arma::Mat<double> psiy{arma::Mat<double>(this->dim +1, this->nPy)};

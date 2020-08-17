@@ -52,7 +52,10 @@ void lookup_configuration(ConfigurationType & conf){
     }  else if (conf.integration_method == "retriangulate") {
         integrate = integrate_retriangulate;
         printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-    } else {
+    } else if (conf.integration_method == "singularity") {
+        integrate = integrate_singularity;
+        printf("Integrate singular kernel");
+    }  else {
         cout << "Error in par:assemble. Integration method " << conf.integration_method <<
              " is not implemented." << endl;
         abort();
@@ -92,6 +95,7 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
     //T.dim = dim;
     T.dim = mesh.dim;
+    T.Tdx = Tdx;
 }
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
@@ -240,18 +244,19 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const int nNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
-                  const int dim, const long * ptrZeta, const long nZeta) {
+                  const int dim, const int outdim, const long * ptrZeta, const long nZeta,
+                  const double * Pg, const int nPg, const double * dg) {
     //const long * ptrZeta;
     //cout << "nZeta is" << nZeta << endl;
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
                      L, L_Omega, sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, dim+1, ptrZeta, nZeta};
+                     is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta};
     chk_Mesh(mesh);
-    QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim};
+    QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, nPg};
     chk_QuadratureRule(quadRule);
     ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
-
+    chk_Conf(mesh, conf);
 
     if (compute=="system") {
         par_system(mesh, quadRule, conf);
@@ -316,7 +321,6 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
     // Breadth First Search --------------------------------------
     arma::Col<int> visited(mesh.J, arma::fill::zeros);
-
 
     // Loop index of current outer triangle in BFS
     int sTdx=0;
@@ -424,6 +428,8 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
             // Initialize vector of visited triangles with 0
             visited.zeros();
 
+            // Tells that we are in the first layer of the BFS
+            bool is_firstbfslayer=true;
             // Check whether BFS is completed.
             while (!queue.empty()) {
                 // Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
@@ -459,7 +465,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                 }
                                 bAdx = bDGdx;
                             } else {
-                                // Get (pointer to) intex of basis function (in Continuous Galerkin)
+                                // Get (pointer to) index of basis function (in Continuous Galerkin)
                                 bAdx = &mesh.Triangles(0, bTdx);
                                 // The first entry (index 0) of each row in triangles contains the Label of each point!
                                 // Hence, in order to get an pointer to the three Triangle idices, which we need here
@@ -469,7 +475,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex); // Initialize Buffer
                             doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex); // Initialize Buffer
                             // Compute integrals and write to buffer
-                            integrate(aT, bT, quadRule, mesh, conf, termLocal, termNonloc);
+                            integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
                             // [DEBUG]
                             //doubleVec_add(termLocal, DEBUG_termTotalLocal, DEBUG_termTotalLocal, 9);
                             //doubleVec_add(termNonloc, DEBUG_termTotalNonloc, DEBUG_termTotalNonloc, 9);
@@ -570,8 +576,9 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                         // Mark bTdx as visited
                         visited[bTdx] = 1;
                     }// End if BFS (bTdx < mesh.J)
-                }//End for loop BFS (j = 0; j < mesh.dVertex; j++)
-            }//End while loo BFS (!queue.empty())
+                }//End for loop BFS (j = 0; j < mesh.nNeighbours; j++)
+                is_firstbfslayer = false;
+            }//End while loop BFS (!queue.empty())
             //}// End if Label of (aTdx == 1)
         }// End if LabelTriangles == 1
     }// End parallel for

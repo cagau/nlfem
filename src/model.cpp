@@ -8,18 +8,21 @@
 
 // ### KERNEL ##########################################################################################################
 // Pointer -------------------------------------------------------------------------------------------------------------
-double (*model_kernel)(const double * x, long labelx, const double * y, long labely, double sqdelta);
+void (*model_kernel)(const double * x, long labelx, const double * y, long labely, double sqdelta, double * kernel_val);
 
 // Implementations -----------------------------------------------------------------------------------------------------
-double kernel_constant(const double * x, const long labelx, const double * y, const long labely, const double sqdelta){
-    return 4 / (M_PI * pow(sqdelta, 2));
+void kernel_constant(const double * x, const long labelx, const double * y, const long labely, const double sqdelta,
+                       double * kernel_val){
+    *kernel_val = 4 / (M_PI * pow(sqdelta, 2));
 }
 
-double kernel_constant3D(const double * x, const long labelx, const double * y, const long labely, const double sqdelta){
-    return 15 / (M_PI * 4 * pow(sqrt(sqdelta), 5));
+void kernel_constant3D(const double * x, const long labelx, const double * y, const long labely, const double sqdelta,
+                         double * kernel_val){
+    *kernel_val = 15 / (M_PI * 4 * pow(sqrt(sqdelta), 5));
 }
 
-double kernel_labeled(const double * x, const long labelx, const double * y, const long labely, const double sqdelta){
+void kernel_labeled(const double * x, const long labelx, const double * y, const long labely, const double sqdelta,
+                      double * kernel_val){
     double dist;
     long label;
 
@@ -31,11 +34,11 @@ double kernel_labeled(const double * x, const long labelx, const double * y, con
         abort();
     }
     if (label <= 12) {
-        return 0.01 * 3. / (4*pow(sqdelta, 2));
+        *kernel_val = 0.01 * 3. / (4*pow(sqdelta, 2));
     } else if (label>=21){
-        return (100 *  3. / (4*pow(sqdelta, 2))) * (1 - (dist/sqdelta) );
+        *kernel_val = (100 *  3. / (4*pow(sqdelta, 2))) * (1 - (dist/sqdelta) );
     } else if (label == 13){
-        return 0.0;
+        *kernel_val = 0.0;
     } else {
         cout << "No such case " << endl;
         abort();

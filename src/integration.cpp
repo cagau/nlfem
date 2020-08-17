@@ -12,18 +12,18 @@
 
 // Integration Routine #################################################################################################
 void (*integrate)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                  const ConfigurationType &conf, double *termLocal, double *termNonloc);
+                  const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
 
 // Integration Methods #################################################################################################
 // Methods -------------------------------------------------------------------------------------------------------------
 void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
-                             const MeshType &mesh, const ConfigurationType &conf, double *termLocal,
+                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc);
-void
-integrate_baryCenter(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                     const ConfigurationType &conf, double *termLocal, double *termNonloc);
+void integrate_baryCenter(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                     const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
 void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
-                            const MeshType &mesh, const ConfigurationType &conf, double *termLocal, double *termNonloc);
+                            const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+                            double *termLocal, double *termNonloc);
 // Helpers -------------------------------------------------------------------------------------------------------------
 int method_baryCenter(const double * x_center, const ElementType & T, const MeshType & mesh, double * reTriangle_list, int is_placePointOnCap);
 int method_retriangulate(const double * x_center, const ElementType & T, const MeshType & mesh, double * re_Triangle_list, int is_placePointOnCap);
@@ -37,9 +37,102 @@ bool inTriangle(const double * y_new, const double * p, const double * q, const 
 // ___ INTEGRATION IMPLEMENTATION ______________________________________________________________________________________
 
 // Integration Methods #################################################################################################
+void traffo11(){
 
+}
+//....
+void traffo36(){
+
+}
+void integrate_tensorgauss(const ElementType &aT_, const ElementType &bT_, const QuadratureType &quadRule,
+                           const MeshType &mesh, const ConfigurationType &conf, int nEqual, bool is_firstbfslayer,
+                           double * termLocal, double * termNonloc){
+
+}
+int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh, ElementType &aT_, ElementType &bT_){
+    cout << "Welcome to join()" << endl;
+    int nEqual = 0;
+    int isEqual[9], AinB[3], BinA[3];
+    const long * aVdx = &(mesh.Triangles(0, aT.Tdx));
+    const long * bVdx = &(mesh.Triangles(0, bT.Tdx));
+    long aVdx_[3], bVdx_[3];
+
+    intVec_tozero(AinB, 3);
+    intVec_tozero(BinA, 3);
+
+    for (int i=0; i<9; i++){
+        if (aVdx[i%3] == bVdx[i/3]) {
+            AinB[i % 3] += 1;
+            BinA[i / 3] += 1;
+            aVdx_[nEqual] = aVdx[i % 3];
+            bVdx_[nEqual] = bVdx[i / 3];
+            nEqual += 1;
+        }
+    }
+    int ia = 0, ib = 0;
+    for (int i=0; i<3; i++){
+        if (!AinB[i]){
+            aVdx_[nEqual+ia] = aVdx[i];
+            ia++;
+        }
+        if (!BinA[i]){
+            bVdx_[nEqual+ib] = bVdx[i];
+            ib++;
+        }
+        cout << aVdx[i] << ", " << bVdx[i];
+        cout << "  |  " << aVdx_[i] << ", " << bVdx_[i] << endl;
+    }
+
+    /* ElementStruct ----
+        arma::vec matE;
+        double * E;
+        int dim;
+        long label;
+        double absDet;
+        int signDet;
+    */
+    for (int k=0; k<mesh.dVertex; k++) {
+        //Vdx = mesh.Triangles(k, Tdx);
+        for (int j = 0; j < mesh.dim; j++) {
+
+            aT_.matE[mesh.dim * k + j] = mesh.Verts(j, aVdx_[k]);
+            bT_.matE[mesh.dim * k + j] = mesh.Verts(j, bVdx_[k]);
+            printf ("aT %3.2f ", aT_.matE[mesh.dim * k + j]);
+            printf ("bT %3.2f ", bT_.matE[mesh.dim * k + j]);
+        }
+    }
+
+    // Initialize Structs
+    aT_.E = aT_.matE.memptr();
+    bT_.E = bT_.matE.memptr();
+    aT_.absDet = aT.absDet; bT_.absDet = bT.absDet;
+    aT_.signDet = static_cast<int>(signDet(aT_.E, mesh));
+    bT_.signDet = static_cast<int>(signDet(bT_.E, mesh));
+    aT_.dim = mesh.dim, bT_.dim = mesh.dim;
+
+    return 0;
+}
+
+// Not yet in header!!
+void integrate_singularity(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,double *termNonloc){
+    cout << is_firstbfslayer << endl;
+    if (!is_firstbfslayer){
+        cout << "End up here for a while?" << endl;
+        integrate_baryCenter(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
+        abort();
+    } else {
+        ElementStruct aT_, bT_;
+        aT_.matE = arma::vec(mesh.dim*(mesh.dim+1));
+        bT_.matE = arma::vec(mesh.dim*(mesh.dim+1));
+
+        int nEqual = join(aT, bT, mesh, aT_, bT_);
+        integrate_tensorgauss(aT_, bT_, quadRule, mesh, conf, nEqual, is_firstbfslayer, termLocal, termNonloc);
+        termLocal[0] += 10.;
+    }
+}
 void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
-                             const MeshType &mesh, const ConfigurationType &conf, double *termLocal,
+                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc) {
 
     const int dim = mesh.dim;
@@ -49,7 +142,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
     double innerNonloc[mesh.dVertex];
 
     int i=0, rTdx=0, Rdx=0;
-    double ker=0, rTdet=0;
+    double kernel_val=0, rTdet=0;
     double physical_quad[dim];
     double reference_quad[dim];
     double psi_value[mesh.dVertex];
@@ -93,16 +186,17 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
                     // Determinant of Triangle of retriangulation
                     rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
                     // inner Local integral with ker
-                    innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] *
+                    model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, &kernel_val);
+                    innerLocal += kernel_val * quadRule.dy[i] *
                                   rTdet; // Local Term
                     // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
                     toRef(bT.E, physical_quad, reference_quad);
                     // Evaluate ker on physical quad (note this is ker')
-                    ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
+                    model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, &kernel_val);
                     // Evaluate basis function on resulting reference quadrature point
                     model_basisFunction(reference_quad, mesh.dim, psi_value);
                     for (b = 0; b < mesh.dVertex; b++) {
-                        innerNonloc[b] += psi_value[b] * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
+                        innerNonloc[b] += psi_value[b] * kernel_val * quadRule.dy[i] * rTdet; // Nonlocal Term
                     }
                     //[DEBUG]
                     //printf("i %i \n",i);
@@ -131,7 +225,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
 
 void
 integrate_baryCenter(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                     const ConfigurationType &conf, double *termLocal, double *termNonloc) {
+                     const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc) {
 
     const int dim = mesh.dim;
     int k=0, a=0, b=0;
@@ -140,7 +234,7 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
     double innerNonloc[mesh.dVertex];
 
     int i=0;
-    double ker=0, rTdet=0;
+    double kernel_val=0.0, rTdet=0.0;
     double physical_quad[dim];
     double reTriangle_list[36*mesh.dVertex*dim];
     doubleVec_tozero(reTriangle_list, 36*mesh.dVertex*dim);
@@ -159,12 +253,13 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
                 // Determinant of Triangle of retriangulation
                 rTdet = absDet(bT.E, mesh.dim);
                 // inner Local integral with ker
-                innerLocal += model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta) * quadRule.dy[i] * rTdet; // Local Term
+                model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, &kernel_val);
+                innerLocal +=  kernel_val * quadRule.dy[i] * rTdet; // Local Term
                 // Evaluate ker on physical quad (note this is ker')
-                ker = model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta);
+                model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, &kernel_val);
                 // Evaluate basis function on resulting reference quadrature point
                 for (b = 0; b < mesh.dVertex; b++) {
-                    innerNonloc[b] += quadRule.psiy(b,i) * ker * quadRule.dy[i] * rTdet; // Nonlocal Term
+                    innerNonloc[b] += quadRule.psiy(b,i) * kernel_val * quadRule.dy[i] * rTdet; // Nonlocal Term
                 }
             }
         }
@@ -180,7 +275,7 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
 }
 
 void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
-                            const MeshType &mesh, const ConfigurationType &conf, double *termLocal,
+                            const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                             double *termNonloc) {
 
     const int dim = mesh.dim;
@@ -191,7 +286,7 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
     double innerNonloc[mesh.dVertex];
 
     int i=0, Rdx, rTdx;
-    double ker=0, rTdet=0, bTdet=0;
+    double kernel_val=0, rTdet=0, bTdet=0;
     double y[dim];
     double reTriangle_list[36*mesh.dVertex*dim];
     doubleVec_tozero(reTriangle_list, 36*mesh.dVertex*dim);
@@ -222,12 +317,13 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
                     toPhys(bT.E, &(quadRule.Py[dim * i]), mesh.dim, y);
                     // inner Local integral with ker
                     // Local Term
-                    innerLocal += model_kernel(physical_quad, aT.label, y, bT.label, mesh.sqdelta) * quadRule.dy[i] * bTdet;
-                    // Evaluate ker on physical quad (note this is ker')
-                    ker = model_kernel(y, bT.label, physical_quad, aT.label, mesh.sqdelta);
+                    model_kernel(physical_quad, aT.label, y, bT.label, mesh.sqdelta, &kernel_val);
+                    innerLocal +=  kernel_val * quadRule.dy[i] * bTdet;
+                    // Evaluate kernel on physical quad (note this is kernel')
+                    model_kernel(y, bT.label, physical_quad, aT.label, mesh.sqdelta, &kernel_val);
                     // Evaluate basis function on resulting reference quadrature point
                     for (b = 0; b < mesh.dVertex; b++) {
-                        innerNonloc[b] += quadRule.psiy(b, i) * ker * quadRule.dy[i] * bTdet; // Nonlocal Term
+                        innerNonloc[b] += quadRule.psiy(b, i) * kernel_val * quadRule.dy[i] * bTdet; // Nonlocal Term
                     }
                 }
 
