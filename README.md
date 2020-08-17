@@ -12,7 +12,7 @@ python package `Cython` as well as `gcc`, and `cmake`.
 
 The package `nlcfem` can be installed using `pip` via
 
-`pip install nlcfem --index-url https://__token__:<read-api-token>@gitlab.uni-trier.de/api/v4/projects/743/packages/pypi/simple --no-deps`
+`pip install nlcfem --index-url https://__token__:<read-api-token>@gitlab.uni-trier.de/api/v4/projects/402/packages/pypi/simple --no-deps`
 
 You need a personal access toke to allow pip to access gitlab. Find more 
 information under https://gitlab.uni-trier.de/help/api/README.md#personalproject-access-tokens.
