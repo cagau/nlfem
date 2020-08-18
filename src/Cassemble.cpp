@@ -37,7 +37,10 @@ void lookup_configuration(ConfigurationType & conf){
         model_kernel = kernel_labeled;
     } else if (conf.model_kernel == "constant3D") {
         model_kernel = kernel_constant3D;
-    } else {
+    } else if (conf.model_kernel == "linearPrototypeMicroelastic") {
+        model_kernel = kernel_linearPrototypeMicroelastic;
+    }
+    else {
         cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;
         abort();
     }

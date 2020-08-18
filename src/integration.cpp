@@ -37,80 +37,146 @@ bool inTriangle(const double * y_new, const double * p, const double * q, const 
 // ___ INTEGRATION IMPLEMENTATION ______________________________________________________________________________________
 
 // Integration Methods #################################################################################################
-void traffo11(){
+static void setupElement(const MeshType &mesh, const long * Vdx_new, ElementType &T){
+    T.matE = arma::vec(mesh.dim*(mesh.dim+1));
+    for (int k=0; k<mesh.dVertex; k++) {
+        //Vdx = mesh.Triangles(k, Tdx);
+        for (int j = 0; j < mesh.dim; j++) {
+            T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx_new[k]);
+            //printf ("aT %3.2f ", T.matE[mesh.dim * k + j]);
+        }
+    }
 
+    // Initialize Structs
+    T.E = T.matE.memptr();
+    T.absDet = absDet(T.E, mesh.dim);
+    T.signDet = static_cast<int>(signDet(T.E, mesh));
+    T.dim = mesh.dim;
 }
-//....
-void traffo36(){
+static int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
+                ElementType &aTsorted, ElementType &bTsorted){
 
-}
-void integrate_tensorgauss(const ElementType &aT_, const ElementType &bT_, const QuadratureType &quadRule,
-                           const MeshType &mesh, const ConfigurationType &conf, int nEqual, bool is_firstbfslayer,
-                           double * termLocal, double * termNonloc){
-
-}
-int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh, ElementType &aT_, ElementType &bT_){
     cout << "Welcome to join()" << endl;
     int nEqual = 0;
-    int isEqual[9], AinB[3], BinA[3];
+    int AinB[3], BinA[3];
     const long * aVdx = &(mesh.Triangles(0, aT.Tdx));
     const long * bVdx = &(mesh.Triangles(0, bT.Tdx));
-    long aVdx_[3], bVdx_[3];
+    long aVdxsorted[3], bVdxsorted[3];
 
     intVec_tozero(AinB, 3);
     intVec_tozero(BinA, 3);
 
-    for (int i=0; i<9; i++){
-        if (aVdx[i%3] == bVdx[i/3]) {
-            AinB[i % 3] += 1;
-            BinA[i / 3] += 1;
-            aVdx_[nEqual] = aVdx[i % 3];
-            bVdx_[nEqual] = bVdx[i / 3];
-            nEqual += 1;
+    for (int a=0; a<mesh.dVertex; a++){
+        for (int b=0; b<mesh.dVertex; b++) {
+            if (aVdx[a] == bVdx[b]) {
+                AinB[a] += 1;
+                BinA[b] += 1;
+                aVdxsorted[nEqual] = aVdx[a];
+                bVdxsorted[nEqual] = bVdx[b];
+                nEqual += 1;
+            }
         }
     }
     int ia = 0, ib = 0;
     for (int i=0; i<3; i++){
         if (!AinB[i]){
-            aVdx_[nEqual+ia] = aVdx[i];
+            aVdxsorted[nEqual + ia] = aVdx[i];
             ia++;
         }
         if (!BinA[i]){
-            bVdx_[nEqual+ib] = bVdx[i];
+            bVdxsorted[nEqual + ib] = bVdx[i];
             ib++;
         }
         cout << aVdx[i] << ", " << bVdx[i];
-        cout << "  |  " << aVdx_[i] << ", " << bVdx_[i] << endl;
+        cout << "  |  " << aVdxsorted[i] << ", " << bVdxsorted[i] << endl;
     }
+    setupElement(mesh, aVdxsorted, aTsorted);
+    setupElement(mesh, bVdxsorted, bTsorted);
 
-    /* ElementStruct ----
-        arma::vec matE;
-        double * E;
-        int dim;
-        long label;
-        double absDet;
-        int signDet;
+    return nEqual;
+}
+
+static double traffo11(double * alpha){
+    //xi, eta1, eta2, eta3 = alpha;
+    double  xi = alpha[0];
+    /*        eta1 = alpha[1],
+            eta2 = alpha[2],
+            eta3 = alpha[3];
+    alpha[0] = 1.;
+    alpha[1] = eta1;
+    alpha[2] = eta2;
+    alpha[3] = eta2*eta3;
     */
-    for (int k=0; k<mesh.dVertex; k++) {
-        //Vdx = mesh.Triangles(k, Tdx);
-        for (int j = 0; j < mesh.dim; j++) {
+    alpha[0] = 1.; alpha[3] *= alpha[2];
+    return pow(xi,2)*alpha[2];
+}
+static double traffo12(double * alpha){
+    //xi, eta1, eta2, eta3 = alpha;
+    double  xi = alpha[0],
+            eta1 = alpha[1],
+            eta2 = alpha[2],
+            eta3 = alpha[3];
+    alpha[0] = eta2;
+    alpha[1] = eta2*eta3;
+    alpha[2] = 1.;
+    alpha[3] = eta1;
 
-            aT_.matE[mesh.dim * k + j] = mesh.Verts(j, aVdx_[k]);
-            bT_.matE[mesh.dim * k + j] = mesh.Verts(j, bVdx_[k]);
-            printf ("aT %3.2f ", aT_.matE[mesh.dim * k + j]);
-            printf ("bT %3.2f ", bT_.matE[mesh.dim * k + j]);
+    return pow(xi,2)*eta2;
+}
+//....
+void traffo36(){
+
+}
+static void scale(double * alpha){
+    for(int k=0; k<4; k++){
+        alpha[k] = alpha[k]*0.5 + 0.5;
+    }
+}
+static void mirror(double * alpha){
+    double aux=0.;
+    alpha[0] = alpha[0] - alpha[1];
+    aux = alpha[2];
+    alpha[2] = alpha[3];
+    alpha[3] = aux - alpha[3];
+}
+void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                           const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+                           double * termLocal, double * termNonloc){
+    ElementStruct aTsorted, bTsorted;
+    int nEqual = join(aT, bT, mesh, aTsorted, bTsorted);
+
+    const double scaledet = 0.0625;
+    double factors;
+    const int dim = mesh.dim;
+    double alpha[4], traffodet, x[2], y[2], kernel_val=0.;
+    double psix[3], psiy[3];
+
+    for (int k = 0; k < quadRule.nPg; k++) {
+        for (int j=0; j<4; j++) {
+            alpha[j] = quadRule.Pg[dim * k + j];
+        }
+        scale(alpha);
+        traffodet = traffo12(alpha);
+        mirror(alpha);
+        toPhys(aTsorted.E, &alpha[0], 2, x);
+        toPhys(bTsorted.E, &alpha[2], 2, y);
+        // Eval Kernel(x-y)
+        model_kernel(x, aTsorted.label, y, bTsorted.label, mesh.sqdelta, &kernel_val);
+        // Eval C(x-y)
+
+        model_basisFunction(&quadRule.Pg[dim * k], psix);
+        model_basisFunction(&quadRule.Pg[dim * k+2], psiy);
+
+        for (int a = 0; a < mesh.dVertex; a++) {
+            for (int b = 0; b < mesh.dVertex; b++) {
+                factors = kernel_val * traffodet * scaledet * quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+                termLocal[mesh.dVertex * a + b] +=
+                        factors * psix[a] * psix[b];
+                termNonloc[mesh.dVertex * a + b] +=
+                        factors * psix[a] * psiy[b];
+            }
         }
     }
-
-    // Initialize Structs
-    aT_.E = aT_.matE.memptr();
-    bT_.E = bT_.matE.memptr();
-    aT_.absDet = aT.absDet; bT_.absDet = bT.absDet;
-    aT_.signDet = static_cast<int>(signDet(aT_.E, mesh));
-    bT_.signDet = static_cast<int>(signDet(bT_.E, mesh));
-    aT_.dim = mesh.dim, bT_.dim = mesh.dim;
-
-    return 0;
 }
 
 // Not yet in header!!
@@ -121,14 +187,32 @@ const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, doub
         cout << "End up here for a while?" << endl;
         integrate_baryCenter(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
         abort();
-    } else {
-        ElementStruct aT_, bT_;
-        aT_.matE = arma::vec(mesh.dim*(mesh.dim+1));
-        bT_.matE = arma::vec(mesh.dim*(mesh.dim+1));
 
-        int nEqual = join(aT, bT, mesh, aT_, bT_);
-        integrate_tensorgauss(aT_, bT_, quadRule, mesh, conf, nEqual, is_firstbfslayer, termLocal, termNonloc);
-        termLocal[0] += 10.;
+    } else {
+        double termLocal_test[mesh.dVertex * mesh.dVertex], termNonloc_test[mesh.dVertex * mesh.dVertex];
+        doubleVec_tozero(termLocal_test, mesh.dVertex * mesh.dVertex);
+        doubleVec_tozero(termNonloc_test, mesh.dVertex * mesh.dVertex);
+
+        //int nEqual = join(aT, bT, mesh, aTsorted, bTsorted);
+        integrate_tensorgauss(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
+
+        cout << "Tensor Gauss Local" << endl;
+        for (int a=0; a<mesh.dVertex; a++){
+            for  (int b=0; b<mesh.dVertex; b++) {
+                cout << termLocal[mesh.dVertex*a + b] << ", ";
+            }
+            cout << endl;
+        }
+        cout << "Reference Local (Bary Center)" << endl;
+        // Original Conf
+        integrate_baryCenter(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal_test, termNonloc_test);
+        for (int a=0; a<mesh.dVertex; a++) {
+            for (int b = 0; b < mesh.dVertex; b++) {
+                cout << termLocal_test[mesh.dVertex * a + b] << ", ";
+            }
+            cout << endl;
+        }
+        //termLocal[0] += 10.;
     }
 }
 void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,

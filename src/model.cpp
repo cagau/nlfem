@@ -45,6 +45,14 @@ void kernel_labeled(const double * x, const long labelx, const double * y, const
     }
 }
 
+void kernel_linearPrototypeMicroelastic(const double * x, const long labelx, const double * y, const long labely,
+                                        const double sqdelta, double * kernel_val){
+    double z[2];
+    z[0] = x[0] - y[0];
+    z[1] = x[1] - y[1];
+    *kernel_val = 1./sqrt(vec_dot(z,z,2));
+}
+
 // ### RIGHT HAND SIDE #################################################################################################
 
 // Pointer -------------------------------------------------------------------------------------------------------------
