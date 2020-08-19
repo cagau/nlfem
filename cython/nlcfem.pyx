@@ -166,6 +166,7 @@ class tensorgauss:
             k3 += (not (k2 or k1 or k0)) and (bool(l))
             self.weights[l] = w[k0]*w[k1]*w[k2]*w[k3]
             self.points[:,l] = [p[k0], p[k1], p[k2], p[k3]]
+        self.points = np.array(self.points.T)
 
 def assemble(
         # Mesh information ------------------------------------
@@ -183,7 +184,7 @@ def assemble(
         model_f = "constant",
         integration_method = "retriangulate",
         is_PlacePointOnCap = 1,
-        nPg=0
+        tensorGaussDegree=0
     ):
 
     is_tmpAd = False
@@ -245,8 +246,8 @@ def assemble(
     cdef double [:] dg
     cdef const double * ptrdg = NULL
 
-    if nPg != 0:
-        quadgauss = tensorgauss(nPg)
+    if tensorGaussDegree != 0:
+        quadgauss = tensorgauss(tensorGaussDegree)
         Pg = quadgauss.points.flatten()
         ptrPg = &Pg[0]
         dg = quadgauss.weights.flatten()
@@ -270,7 +271,7 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZeta, nZeta,
-                            ptrPg, nPg, ptrdg)
+                            ptrPg, tensorGaussDegree, ptrdg)
 
         total_time = time.time() - start
         print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -296,7 +297,7 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZeta, nZeta,
-                            ptrPg, nPg, ptrdg)
+                            ptrPg, tensorGaussDegree, ptrdg)
 
         fd = read_arma_mat(path_fd)[:,0]
         if is_tmpfd:

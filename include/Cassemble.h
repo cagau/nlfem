@@ -54,7 +54,7 @@ void solve2x2(const double * A, const double * b, double * x);
  * @param ptrZeta Pointer to overlap counter of decomposed Mesh (optional)
  * @param nZeta Number of rows of Zeta
  * @param Pg        <B>(nPg, dim^2)</B> Quadrature points for tensor Gauss quadrature (optional, needed for singular kernels).
- * @param nPg       <B>(degree^dim,)</B> Number of quadrature points.
+ * @param nPg       <B>(tensorGaussDegree^dim,)</B> Number of quadrature points.
  * @param dg        <B>(nPg,)</B> Weights for tensor Gauss quadrature.
  */
 void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
@@ -65,7 +65,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim, const int outdim, const long * ptrZeta = nullptr, const long nZeta = 0,
-                  const double * Pg = nullptr, const int nPg = 0, const double * dg = nullptr);
+                  const double * Pg = nullptr, const int degree = 0, const double * dg = nullptr);
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 

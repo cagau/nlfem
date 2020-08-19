@@ -49,6 +49,7 @@ struct ConfigurationStruct {
     const string model_f;
     const string integration_method;
     const bool is_placePointOnCap;
+    bool is_singularKernel=false;
 };
 typedef ConfigurationStruct ConfigurationType;
 
@@ -110,7 +111,8 @@ struct QuadratureStruct{
 
     const double * Pg;
     const double * dg;
-    const int nPg;
+    const int tensorGaussDegree;
+    const int nPg = pow(tensorGaussDegree, dim * 2);
 
     //const interactionMethodType interactionMethod;
     arma::Mat<double> psix{arma::Mat<double>(this->dim +1, this->nPx)};
