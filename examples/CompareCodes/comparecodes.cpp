@@ -2,13 +2,12 @@
 // Created by klar on 11.03.20.
 //
 #include "armadillo"
+#include "metis.h"
 #include "MeshTypes.h"
-// #include <MeshBuilder.h>
-// #include <Cassemble2D.h>
-#include "Cassemble.h"
 #include "iostream"
 #include "cstdio"
 #include "map"
+#include "omp.h"
 using namespace std;
 
 double uExact(arma::vec x){
@@ -19,7 +18,7 @@ int safereadi(const char * name, fstream & f){
     string fline;
     int value;
     getline(f, fline);
-    if (strcmp(name, fline.c_str()))
+    if (strcmp(name, fline.c_str()) != 0)
     {
         cout << "Error in read_configuration(): Variable name "<< name <<
              " and file "<< fline.c_str() <<" do not match." << endl;
@@ -37,7 +36,7 @@ double safereadd(const char * name, fstream & f){
     string fline;
     double value;
     getline(f, fline);
-    if (strcmp(name, fline.c_str()))
+    if (strcmp(name, fline.c_str()) != 0)
     {
         cout << "Error in read_configuration(): Variable name "<< name <<
              " and file "<< fline.c_str() <<" do not match." << endl;
@@ -54,7 +53,7 @@ double safereadd(const char * name, fstream & f){
 string safereads(const char * name, fstream & f){
     string fline;
     getline(f, fline);
-    if (strcmp(name, fline.c_str()))
+    if (strcmp(name, fline.c_str()) != 0)
     {
         cout << "Error in read_configuration(): Variable name "<< name <<
              " and file "<< fline.c_str() <<" do not match." << endl;
@@ -71,7 +70,7 @@ int safereadb(const char * name, fstream & f){
     string fline;
     int value;
     getline(f, fline);
-    if (strcmp(name, fline.c_str()))
+    if (strcmp(name, fline.c_str()) != 0)
     {
         cout << "Error in read_configuration(): Variable name "<< name <<
              " and file "<< fline.c_str() <<" do not match." << endl;
@@ -86,7 +85,7 @@ int safereadb(const char * name, fstream & f){
 
 }
 
-int read_configuration(string path){
+int read_configuration(const string &path, idx_t nparts){
     fstream f;
     string path_conf = path + "/conf";
     string path_mesh = path + "/mesh.conf";
@@ -102,7 +101,7 @@ int read_configuration(string path){
     string path_fd = path + "/result.fd";
 
     int K_Omega, K,J, J_Omega, L, L_Omega, is_DiscontinuousGalerkin,
-        is_NeumannBoundary, dim, dVertex, is_PlacePointOnCap;
+        is_NeumannBoundary, dim, is_PlacePointOnCap, nNeighbours;
     double sqdelta;
     string str_model_kernel, str_model_f, str_integration_method;
 
@@ -136,8 +135,8 @@ int read_configuration(string path){
         sqdelta = safereadd("sqdelta", f);
         is_DiscontinuousGalerkin = safereadb("is_DiscontinuousGalerkin", f);
         is_NeumannBoundary = safereadb("is_NeumannBoundary", f);
+        nNeighbours = safereadi("nNeighbours", f);
         dim = safereadi("dim", f);
-        dVertex = dim+1;
     } else {
         cout << "Error in read_configuration(): Could not open file " << path << "/mesh.conf." << endl;
         abort();
@@ -150,121 +149,118 @@ int read_configuration(string path){
     arma::Mat<long> elementLabels;
     arma::mat vertices;
     arma::Mat<long> neighbours;
-    elements.load(path_elemt.c_str(), arma::raw_binary);
-    elementLabels.load(path_elelb.c_str(), arma::raw_binary);
-    vertices.load(path_verts.c_str(), arma::raw_binary);
-    neighbours.load(path_neigh.c_str(), arma::raw_binary);
-
+    elements.load(path_elemt, arma::raw_binary);
+    elementLabels.load(path_elelb, arma::raw_binary);
+    vertices.load(path_verts, arma::raw_binary);
+    neighbours.load(path_neigh, arma::raw_binary);
 
     arma::mat Px;
     arma::mat Py;
     arma::vec dx;
     arma::vec dy;
-    Px.load(path_Px.c_str(), arma::raw_binary);
-    Py.load(path_Py.c_str(), arma::raw_binary);
-    dx.load(path_dx.c_str(), arma::raw_binary);
-    dy.load(path_dy.c_str(), arma::raw_binary);
-
+    Px.load(path_Px, arma::raw_binary);
+    Py.load(path_Py, arma::raw_binary);
+    dx.load(path_dx, arma::raw_binary);
+    dy.load(path_dy, arma::raw_binary);
 
     MeshType mesh = {K_Omega, K, elements.memptr(), elementLabels.memptr(), vertices.memptr(), J, J_Omega,
-                     L, L_Omega, sqdelta, neighbours.memptr(), is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, dim + 1};
+                     L, L_Omega, sqdelta, neighbours.memptr(), nNeighbours, is_DiscontinuousGalerkin,
+                     is_NeumannBoundary, dim, 1,dim + 1, nullptr, 0};
 
     QuadratureType quadRule = {Px.memptr(), Py.memptr(), dx.memptr(), dy.memptr(),
                                static_cast<int>(dx.n_elem), static_cast<int>(dy.n_elem), dim};
-    ConfigurationType conf = {"sp_Ad", "fd", str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
 
-    //arma::mat Ad(K, K_Omega);
+    ConfigurationType conf = {"sp_Ad", "fd", str_model_kernel, str_model_f,
+                              str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+
     arma::vec fd(K_Omega);
-    par_system(mesh, quadRule, conf);
+    //idx_t options[METIS_NOPTIONS];
+    //METIS_SetDefaultOptions(options);
+
+    idx_t nE = mesh.nE;
+    idx_t nV = mesh.nV;
+    idx_t ncommon = 2;
+    //The partitions ntended to be quite spiky with ncommon=mesh.dim (recommended by METIS).
+    //However, I assume in the nonlocal case this is not favored.
+    idx_t epart[nE], npart[nV];
+    idx_t objval = 0;
+    idx_t eind[nE * mesh.dVertex];
+    idx_t eptr[nE + 1];
+
+    for (int k=0; k<nE; k++){
+        for (int l=0; l<mesh.dVertex; l++){
+            eind[mesh.dVertex*k + l] = elements[mesh.dVertex*k + l];
+        }
+        eptr[k] = k*mesh.dVertex;
+    }
+    eptr[nE] = nE*mesh.dVertex;
+    idx_t options[METIS_NOPTIONS];
+    METIS_SetDefaultOptions(options);
+    options[METIS_OBJTYPE_VOL] = 1;
+    int ret = METIS_PartMeshDual(&nE, &nV, eptr, eind,
+                       nullptr, nullptr, &ncommon, &nparts, nullptr,
+                       options, &objval, epart, npart);
+    cout << ret << endl;
+    arma::vec partition(mesh.nV);
+    for (int k=0; k<mesh.nV; k++){
+        partition[k] = static_cast<double>(npart[k]);
+    }
+    //par_system(mesh, quadRule, conf);
 
     //Ad.save(path_Ad.c_str(), arma::raw_binary);
-    fd.save(path_fd.c_str(), arma::raw_binary);
+    partition.save(path_fd, arma::arma_binary);
+
+    idx_t numflag=0;
+    idx_t *xadj;
+    idx_t *adjncy;
+    // Compute Adjacency Graph with METIS
+    METIS_MeshToDual(&nE, &nV, eptr, eind, &ncommon, &numflag, &xadj, &adjncy);// ???
+    arma::mat dualGraph(3, nE);
+    for (int k=0; k<nE; k++){
+        dualGraph(0, k) = adjncy[mesh.dVertex*k];
+        dualGraph(1, k) = adjncy[mesh.dVertex*k+1];
+        dualGraph(2, k) = adjncy[mesh.dVertex*k+2];
+
+    }
+    dualGraph.save("data/result.dual", arma::arma_binary);
+
+    METIS_Free(xadj);
+    METIS_Free(adjncy);
+
+    std::cout << "Check out OMP's nested parallelism" << endl;
+
+    #pragma omp parallel num_threads(nparts) default(none)
+    {
+        printf("Level 1 thread num %d of %d.\n", omp_get_thread_num(), omp_get_num_threads());
+        #pragma omp parallel default(none)
+        {
+            printf("Level 2 thread num %d of %d.\n", omp_get_thread_num(), omp_get_num_threads());
+            #pragma omp barrier
+            #pragma omp master
+            {
+            printf("Only INNER masters talking here. (After all of my slaves)\n");
+            }
+        }
+        #pragma omp barrier
+        #pragma omp master
+        {
+            printf("Only OUTER master talking here. (After all others)");
+        }
+    }
+
 
     return 0;
 }
 
-int main() {
-    /*
-    arma::mat A;
-    if (A.load("examples/RatesScipy3D/results/A.bin", arma::raw_binary)){
-        cout << A(0,0) << endl;
-        cout << "Ok!" << endl;
+int main(int argc, char *argv[]) {
+    if (argc < 2){
+        cout << "ERROR: Please hand over nparts!" << endl;
+        abort();
     }
-
-    arma::sp_mat B(3,3);
-    //  sp_mat(locations, values, sort_locations = true)
-    B(0,0) = 1.0;
-    B(1,1) = 2.0;
-    B(2,2)  =4.0;
-
-    B.save("examples/RatesScipy3D/results/B.bin");
-    */
-    string path = "examples/RatesScipy3D/data";
-    read_configuration(path);
-
-    /*
-    cout << "Compare Codes 2D\n" << endl;
-    int nPx, nPy;
-    double delta = 0.1;
-    double sqdelta = pow(delta, 2);
-    int N_Omega = 11;
-    arma::mat Px, Py;
-    arma::vec dx, dy;
-    arma::vec x(2);
-    Px.load("conf/P16.txt");
-    nPx = Px.n_rows;
-    Px = Px.t();
-    Py.load("conf/P1.txt");
-    nPy = Py.n_rows;
-    Py = Py.t();
-    dx.load("conf/d16.txt");
-    dy.load("conf/d1.txt");
-
-    int k;
-    bool compute2D = false;
-
-    cout << "\nConstruct Grid and Adjaciency Graph..." << endl;
-    Grid2D coarseGrid(N_Omega, delta);
-    MeshType coarseMesh = coarseGrid.mesh(true);
-    arma::mat Ad(coarseMesh.K, coarseMesh.K_Omega, arma::fill::zeros);
-    arma::vec fd(coarseMesh.K_Omega, arma::fill::zeros);
-    cout << "Start Assembly..." << endl;
-
-    if (compute2D) {
-        par_assemble2D(Ad.memptr(),
-                       coarseMesh.K,
-                       fd.memptr(),
-                       coarseMesh.Triangles.memptr(),
-                       coarseMesh.LabelTriangles.memptr(),
-                       coarseMesh.Verts.memptr(),
-                       coarseMesh.J, coarseMesh.J_Omega,
-                       coarseMesh.L, coarseMesh.L_Omega, Px.memptr(), nPx, dx.memptr(), Py.memptr(), nPy, dy.memptr(),
-                       sqdelta,
-                       coarseMesh.Neighbours.memptr(),
-                       false,
-                       false);
-    } else {
-        par_system(Ad.memptr(),
-                     coarseMesh.K_Omega,
-                     coarseMesh.K,
-                     fd.memptr(),
-                     coarseMesh.Triangles.memptr(),
-                     coarseMesh.LabelTriangles.memptr(),
-                     coarseMesh.Verts.memptr(),
-                     coarseMesh.J, coarseMesh.J_Omega,
-                     coarseMesh.L, coarseMesh.L_Omega, Px.memptr(), nPx, dx.memptr(), Py.memptr(), nPy, dy.memptr(),
-                     sqdelta,
-                     coarseMesh.Neighbours.memptr(),
-                     false,
-                     false,
-                     "constant",
-                     "linear",
-                     "retriangulate",
-                     1,
-                     2);
-    };
-    */
-
+    //cout << argv[1] << endl;
+    int nparts = *argv[1] - '0';
+    cout << "Partition into " << nparts << " parts." << endl;
+    string path = "data";
+    read_configuration(path, nparts);
     return 0;
 }

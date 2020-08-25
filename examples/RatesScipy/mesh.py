@@ -21,7 +21,7 @@ class RegMesh2D:
         self.n = n
         self.dim = dim
         self.delta = delta
-
+        self.sqdelta = delta**2
         # Construct Meshgrid -------------------------------------------------------------
         if self.dim == 2:
             self.h = 12/n/10
@@ -60,6 +60,7 @@ class RegMesh2D:
         # Read adjaciency list
         if is_constructAdjaciencyGraph:
             self.neighbours = constructAdjaciencyGraph(self.elements)
+            self.nNeighbours = self.neighbours.shape[1]
         else:
             self.neighbours = None
 
@@ -93,6 +94,31 @@ class RegMesh2D:
         if coarseMesh is not None:
             self.interpolator = LinearNDInterpolator(coarseMesh.vertices, coarseMesh.ud)
             self.ud = self.interpolator(self.vertices)
+
+    def save(self, path):
+        def writeattr(file, attr_name):
+            file.write(attr_name+"\n")
+            file.write(str(self.__dict__[attr_name])+"\n")
+
+        f = open(path + "/mesh.conf", "w+")
+        confList = [
+            "K_Omega",
+            "K",
+            "nE",
+            "nE_Omega",
+            "nV",
+            "nV_Omega",
+            "sqdelta",
+            "is_DiscontinuousGalerkin",
+            "is_NeumannBoundary",
+            "nNeighbours",
+            "dim"]
+        [writeattr(f, attr_name) for attr_name in confList]
+
+        self.vertices.tofile(path+"/mesh.verts")
+        self.elements.tofile(path+"/mesh.elemt")
+        self.neighbours.tofile(path+"/mesh.neigh")
+        self.elementLabels.tofile(path+"/mesh.elelb")
 
     def remapElements(self):
         def invert_permutation(p):

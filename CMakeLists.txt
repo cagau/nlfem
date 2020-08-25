@@ -1,11 +1,11 @@
 # cmake version to be used
 cmake_minimum_required(VERSION 3.10)
-
 # project name
 project(nonlocal_assembly)
 
 # flags ----------------------------------------------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 14)
+
 add_compile_options("-O2")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # Equivalent to -fPIC option in the compiler
 
@@ -29,6 +29,7 @@ find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(Cassemble PRIVATE OpenMP::OpenMP_CXX)
 endif()
+
 
 add_subdirectory(./examples/Rates2DCpp)
 add_subdirectory(./examples/CompareCodes)

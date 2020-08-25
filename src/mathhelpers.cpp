@@ -1,6 +1,9 @@
-//
-// Created by klar on 16.03.20.
-//
+/**
+    Helper functions.
+    @file mathhelpers.cpp
+    @author Manuel Klar
+    @version 0.1 25/08/20
+*/
 #ifndef NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
 #define NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
 #include <cassert>

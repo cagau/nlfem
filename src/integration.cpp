@@ -1,6 +1,10 @@
-//
-// Created by klar on 16.03.20.
-//
+/**
+    Integration and retriangulation routines.
+    @file integration.cpp
+    @author Manuel Klar
+    @version 0.1 25/08/20
+*/
+
 #ifndef NONLOCAL_ASSEMBLY_INTEGRATION_CPP
 #define NONLOCAL_ASSEMBLY_INTEGRATION_CPP
 
@@ -13,6 +17,23 @@
 // ___ INTEGRATION DECLARATION _________________________________________________________________________________________
 
 // Integration Routine #################################################################################################
+/**
+ * @brief Function pointer to integration routine. All integration routines share this signature. The function returns
+ *
+ * termLocal = int_aT phiA(x) phiB(x) int_bT ker(x,y) dy dx
+ * termNonloc = int_aT phiA(x) int_bT phiB(y) ker(y,x) dy dx
+ *
+ * @param aT    Triangle of outer integral.
+ * @param bT    Triangle of inner integral.
+ * @param quadRule Quadrature rule.
+ * @param mesh  Mesh.
+ * @param conf  Confuration.
+ * @param is_firstbfslayer Switch to tell whether the integration is happening in the first layer of the breadth first
+ * search. This variable is true only if the kernel is singular. In that case the integrals between aT and its immediate
+ * neighbours have to be handeled with special care.
+ * @param termLocal This term contains the local part of the integral
+ * @param termNonloc
+ */
 void (*integrate)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                   const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
 
@@ -28,7 +49,7 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
                             double *termLocal, double *termNonloc);
 // Helpers -------------------------------------------------------------------------------------------------------------
 int method_baryCenter(const double * x_center, const ElementType & T, const MeshType & mesh, double * reTriangle_list, int is_placePointOnCap);
-int method_retriangulate(const double * x_center, const ElementType & T, const MeshType & mesh, double * re_Triangle_list, int is_placePointOnCap);
+int method_retriangulate(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList, int isPlacePointOnCap);
 int placePointOnCap(const double * y_predecessor, const double * y_current,
                    const double * x_center, double sqdelta, const double * TE,
                    const double * nu_a, const double * nu_b, const double * nu_c,
@@ -307,7 +328,7 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
     std::list<double (*)(double *)> traffoList;
     const double scaledet = 0.0625;
     double factors;
-    const int dim = mesh.dim;
+    //const int dim = mesh.dim;
     double alpha[4], traffodet, x[2], y[2], kernel_val=0.;
     double psix[3], psiy[3];
     //cout << "Tensor Gauss" << endl;
@@ -318,7 +339,7 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
     } else if (nEqual == 3) {
         traffoList = traffoIdentical;
     } else {
-        assert( 0 && "Error in integrate_tensorgauss: This should not have happened.");
+        assert(( 0 && "Error in integrate_tensorgauss: This should not have happened."));
     }
 
 
@@ -686,9 +707,9 @@ int placePointOnCap(const double * y_predecessor, const double * y_current,
     }
 }
 
-int method_retriangulate(const double * x_center, const ElementType & T,
-                         const MeshType & mesh, double * re_Triangle_list,
-                         int is_placePointOnCap){
+int method_retriangulate(const double * xCenter, const ElementType & T,
+                         const MeshType & mesh, double * reTriangleList,
+                         int isPlacePointOnCap){
     // C Variables and Arrays.
     int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
     double v=0, lam1=0, lam2=0, term1=0, term2=0;
@@ -699,7 +720,7 @@ int method_retriangulate(const double * x_center, const ElementType & T,
     arma::vec b(2);
     arma::vec y1(2);
     arma::vec y2(2);
-    arma::vec vec_x_center(x_center, 2);
+    arma::vec vec_x_center(xCenter, 2);
     double orientation;
 
     bool is_onEdge=false, is_firstPointLiesOnVertex=true;
@@ -727,7 +748,7 @@ int method_retriangulate(const double * x_center, const ElementType & T,
         a = q - vec_x_center;
         b = p - q;
 
-        if (vec_sqL2dist(&p[0], x_center, 2) <= mesh.sqdelta){
+        if (vec_sqL2dist(&p[0], xCenter, 2) <= mesh.sqdelta){
             doubleVec_copyTo(&p[0], &R[2*Rdx], 2);
             is_onEdge = false; // This point does not lie on the edge.
             Rdx += 1;
@@ -754,8 +775,8 @@ int method_retriangulate(const double * x_center, const ElementType & T,
             if ((0 <= lam1) && (lam1 <= 1)){
                 is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
                 // Check whether the predecessor lied on the edge
-                if (is_onEdge && is_placePointOnCap){
-                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], x_center, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                if (is_onEdge && isPlacePointOnCap){
+                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
                 }
                 // Append y1
                 doubleVec_copyTo(&y1[0], &R[2*Rdx], 2);
@@ -767,8 +788,8 @@ int method_retriangulate(const double * x_center, const ElementType & T,
                 is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
 
                 // Check whether the predecessor lied on the edge
-                if (is_onEdge && is_placePointOnCap){
-                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], x_center, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                if (is_onEdge && isPlacePointOnCap){
+                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
                 }
                 // Append y2
                 doubleVec_copyTo(&y2[0], &R[2*Rdx], 2);
@@ -781,8 +802,8 @@ int method_retriangulate(const double * x_center, const ElementType & T,
     //(len(RD)>1) cares for the case that either the first and the last point lie on an endge
     // and there is no other point at all.
     //shift=1;
-    if (is_onEdge && (!is_firstPointLiesOnVertex && Rdx > 1) && is_placePointOnCap){
-        Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], x_center, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
+    if (is_onEdge && (!is_firstPointLiesOnVertex && Rdx > 1) && isPlacePointOnCap){
+        Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
     }
 
     // Construct List of Triangles from intersection points
@@ -796,9 +817,9 @@ int method_retriangulate(const double * x_center, const ElementType & T,
                 // i is the index which runs first, then h (which does not exist here), then k
                 // hence if we increase i, the *-index (of the pointer) inreases in the same way.
                 // if we increase k, there is quite a 'jump'
-                re_Triangle_list[2 * (3 * k + 0) + i] = R[i];
-                re_Triangle_list[2 * (3 * k + 1) + i] = R[2 * (k + 1) + i];
-                re_Triangle_list[2 * (3 * k + 2) + i] = R[2 * (k + 2) + i];
+                reTriangleList[2 * (3 * k + 0) + i] = R[i];
+                reTriangleList[2 * (3 * k + 1) + i] = R[2 * (k + 1) + i];
+                reTriangleList[2 * (3 * k + 2) + i] = R[2 * (k + 2) + i];
             }
         }
         // Excessing the bound out_Rdx will not lead to an error but simply to corrupted data!
@@ -808,9 +829,9 @@ int method_retriangulate(const double * x_center, const ElementType & T,
 }
 
 
-int method_retriangulate(const double * x_center, const double * TE,
-                         const double sqdelta, double * re_Triangle_list,
-                         int is_placePointOnCap){
+int method_retriangulate(const double * xCenter, const double * TE,
+                         double sqdelta, double * reTriangleList,
+                         int isPlacePointOnCap){
     // C Variables and Arrays.
     int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
     double v=0, lam1=0, lam2=0, term1=0, term2=0;
@@ -821,7 +842,7 @@ int method_retriangulate(const double * x_center, const double * TE,
     arma::vec b(2);
     arma::vec y1(2);
     arma::vec y2(2);
-    arma::vec vec_x_center(x_center, 2);
+    arma::vec vec_x_center(xCenter, 2);
     double orientation;
 
     bool is_onEdge=false, is_firstPointLiesOnVertex=true;
@@ -849,7 +870,7 @@ int method_retriangulate(const double * x_center, const double * TE,
         a = q - vec_x_center;
         b = p - q;
 
-        if (vec_sqL2dist(&p[0], x_center, 2) <= sqdelta){
+        if (vec_sqL2dist(&p[0], xCenter, 2) <= sqdelta){
             doubleVec_copyTo(&p[0], &R[2*Rdx], 2);
             is_onEdge = false; // This point does not lie on the edge.
             Rdx += 1;
@@ -876,8 +897,8 @@ int method_retriangulate(const double * x_center, const double * TE,
             if ((0 <= lam1) && (lam1 <= 1)){
                 is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
                 // Check whether the predecessor lied on the edge
-                if (is_onEdge && is_placePointOnCap){
-                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                if (is_onEdge && isPlacePointOnCap){
+                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
                 }
                 // Append y1
                 doubleVec_copyTo(&y1[0], &R[2*Rdx], 2);
@@ -889,8 +910,8 @@ int method_retriangulate(const double * x_center, const double * TE,
                 is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
 
                 // Check whether the predecessor lied on the edge
-                if (is_onEdge && is_placePointOnCap){
-                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                if (is_onEdge && isPlacePointOnCap){
+                    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
                 }
                 // Append y2
                 doubleVec_copyTo(&y2[0], &R[2*Rdx], 2);
@@ -903,8 +924,8 @@ int method_retriangulate(const double * x_center, const double * TE,
     //(len(RD)>1) cares for the case that either the first and the last point lie on an endge
     // and there is no other point at all.
     //shift=1;
-    if (is_onEdge && (!is_firstPointLiesOnVertex && Rdx > 1) && is_placePointOnCap){
-        Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], x_center, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+    if (is_onEdge && (!is_firstPointLiesOnVertex && Rdx > 1) && isPlacePointOnCap){
+        Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
     }
 
     // Construct List of Triangles from intersection points
@@ -918,9 +939,9 @@ int method_retriangulate(const double * x_center, const double * TE,
                 // i is the index which runs first, then h (which does not exist here), then k
                 // hence if we increase i, the *-index (of the pointer) inreases in the same way.
                 // if we increase k, there is quite a 'jump'
-                re_Triangle_list[2 * (3 * k + 0) + i] = R[i];
-                re_Triangle_list[2 * (3 * k + 1) + i] = R[2 * (k + 1) + i];
-                re_Triangle_list[2 * (3 * k + 2) + i] = R[2 * (k + 2) + i];
+                reTriangleList[2 * (3 * k + 0) + i] = R[i];
+                reTriangleList[2 * (3 * k + 1) + i] = R[2 * (k + 1) + i];
+                reTriangleList[2 * (3 * k + 2) + i] = R[2 * (k + 2) + i];
             }
         }
         // Excessing the bound out_Rdx will not lead to an error but simply to corrupted data!

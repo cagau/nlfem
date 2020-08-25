@@ -38,16 +38,16 @@ int main(){
         arma::vec fd(coarseMesh.K_Omega, arma::fill::zeros);
         cout << "Start Assembly..." << endl;
         par_assemble2D(Ad.memptr(),
-                coarseMesh.K,
-                fd.memptr(),
-                coarseMesh.Triangles.memptr(),
-                coarseMesh.LabelTriangles.memptr(),
-                coarseMesh.Verts.memptr(),
-                coarseMesh.J, coarseMesh.J_Omega,
-                coarseMesh.L, coarseMesh.L_Omega,Px.memptr(), nPx, dx.memptr(), Py.memptr(), nPy, dy.memptr(), sqdelta,
-                coarseMesh.Neighbours.memptr(),
-                 false,
-                 false);
+                       coarseMesh.K,
+                       fd.memptr(),
+                       coarseMesh.Triangles.memptr(),
+                       coarseMesh.LabelTriangles.memptr(),
+                       coarseMesh.Verts.memptr(),
+                       coarseMesh.nE, coarseMesh.nE_Omega,
+                       coarseMesh.nV, coarseMesh.nV_Omega, Px.memptr(), nPx, dx.memptr(), Py.memptr(), nPy, dy.memptr(), sqdelta,
+                       coarseMesh.Neighbours.memptr(),
+                       false,
+                       false);
         Ad = Ad.t();
         //Ad.save("data/Ad", arma::arma_ascii);
         arma::vec gd(coarseMesh.K - coarseMesh.K_Omega, arma::fill::zeros);
@@ -83,14 +83,14 @@ int main(){
         //pGrid -> save("fineGrid");
         arma::vec MassDiff(fineMesh.K_Omega, arma::fill::zeros);
 
-        //void par_evaluateMass2D(double * vd, double * ud, const long * Triangles, const double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx);
+        //void par_evaluateMass2D(double * vd, double * ud, const long * Triangles, const double * Verts, int K_Omega, int nE_Omega, int nP, double * P, double * dx);
         par_evaluateMass2D(
                 MassDiff.memptr(),
                 diff.memptr(),
                 fineMesh.Triangles.memptr(),
                 fineMesh.Verts.memptr(),
                 fineMesh.K_Omega,
-                fineMesh.J_Omega,
+                fineMesh.nE_Omega,
                 nPx, Px.memptr(), dx.memptr()
                 );
         cout << "h " << 1./(N_Omega(i)-1) << endl;

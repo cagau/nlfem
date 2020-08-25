@@ -12,11 +12,12 @@ quadrule_outer = "16"
 quadrule_inner = "1"
 
 n_start = 12
-n_layers = 2
+n_layers = 3
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4
 def u_exact(x):
     return x[0] ** 2 * x[1] + x[1] ** 2
+
 fnames = {"triPlot.pdf": "results/auto_plot.pdf",
           "rates.md": "results/auto_rates.md",
           "rates.pdf": "results/auto_rates.pdf",
@@ -88,3 +89,25 @@ py_Px = quadrules[quadrule_outer][0]
 dx = quadrules[quadrule_outer][1]
 py_Py = quadrules[quadrule_inner][0]
 dy = quadrules[quadrule_inner][1]
+
+def writeattr(file, attr_name):
+    file.write(attr_name+"\n")
+    file.write(str(eval(attr_name))+"\n")
+
+def save(path):
+    # Save Configuration
+    confList = [
+        "model_kernel",
+        "model_f",
+        "integration_method",
+        "is_PlacePointOnCap"]
+
+    f = open(path + "/conf", "w+")
+    [writeattr(f, attr_name) for attr_name in confList]
+    f.close()
+
+    # Provide Quadrature Rules
+    py_Px.tofile(path+"/quad.Px")
+    py_Py.tofile(path+"/quad.Py")
+    dx.tofile((path+"/quad.dx"))
+    dy.tofile((path+"/quad.dy"))

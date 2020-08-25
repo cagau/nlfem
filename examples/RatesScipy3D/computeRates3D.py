@@ -60,8 +60,8 @@ def rates():
         conf.data["Assembly Time"].append(time() - start)
         #plt.imsave("results/A.pdf", A )
         #raise KeyboardInterrupt
-        A_O = A[:,:mesh.K_Omega]
-        A_I = A[:,mesh.K_Omega:]
+        A_O = A[:, :mesh.K_Omega]
+        A_I = A[:, mesh.K_Omega:]
         g = np.apply_along_axis(conf.u_exact, 1, mesh.vertices[mesh.K_Omega:])
         f -= A_I@g
 
@@ -115,7 +115,9 @@ def matrixComputation():
                                  path_spAd = conf.outputdir+"/spAd_"+str(n),
                                  path_fd = conf.outputdir+"/fd_"+str(n))
         conf.data["Assembly Time"].append(time() - start)
+        mesh.save("data")
     return conf.data
+
 def main():
     import examples.RatesScipy3D.conf3D as conf
     u_exact = lambda x: (x[0]-0.5)**2 + (x[1]-0.5)**2 + (x[2]-0.5)**2 - 0.75

@@ -507,7 +507,7 @@ def py_check_par_assemble(
     cdef int bTdx=0
 
     ## Breadth First Search --------------------------------------
-    cdef visited = np.zeros(mesh.nE)#(int *) malloc(J*sizeof(int));
+    cdef visited = np.zeros(mesh.nE)#(int *) malloc(nE*sizeof(int));
 
     ## Loop index of current outer triangle in BFS
     cdef int sTdx=0
@@ -566,7 +566,7 @@ def py_check_par_assemble(
                 bTdx = NTdx[j]
 
                 ## Check how many neighbours sTdx has. It can be 4 at max. (Itself, and the three others)
-                ## In order to be able to store the list as contiguous array we fill up the empty spots with the number J
+                ## In order to be able to store the list as contiguous array we fill up the empty spots with the number nE
                 ## i.e. the total number of Triangles (which cannot be an index).
                 if (bTdx < mesh.nE):
 

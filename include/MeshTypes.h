@@ -60,11 +60,11 @@ struct MeshStruct{
     const long * ptrLabelTriangles;
     const double * ptrVerts;
     // Number of Triangles and number of Triangles in Omega
-    const int J;
-    const int J_Omega;
+    const int nE;
+    const int nE_Omega;
     // Number of vertices (in case of CG = K and K_Omega)
-    const int L;
-    const int L_Omega;
+    const int nV;
+    const int nV_Omega;
     const double sqdelta;
     const long * ptrNeighbours;
     const int nNeighbours;
@@ -88,12 +88,12 @@ struct MeshStruct{
     // >> This eats up memory unnecessarily if you want to read only!
     // Note: Armadillo uvec.find() is much slower.
     map<long, const long *> Zeta;
-    const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->L)};
-    const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->J)};
-    const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->J)};
+    const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
+    const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
+    const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->nE)};
     // Label of Triangles inside Omega = 1
     // Label of Triangles in OmegaI = 2
-    const arma::Col<long> LabelTriangles{arma::Col<long>(this->ptrLabelTriangles, this->J)};
+    const arma::Col<long> LabelTriangles{arma::Col<long>(this->ptrLabelTriangles, this->nE)};
 };
 typedef MeshStruct MeshType;
 //typedef int (*const interactionMethodType)(const double * x_center, const ElementType & T,

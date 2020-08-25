@@ -10,8 +10,8 @@ from libcpp.string cimport string
 
 cdef extern from "Cassemble.h" nogil:
     void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
-                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int J,
-                  const int J_Omega, const int L, const int L_Omega, const double *Px, const int nPx, const double *dx,
+                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int nE,
+                  const int nE_Omega, const int L, const int L_Omega, const double *Px, const int nPx, const double *dx,
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int nNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
@@ -20,7 +20,7 @@ cdef extern from "Cassemble.h" nogil:
                   const long * ptrZeta, const long nZeta,
                   const double * Pg, const int nPg, const double * dg) nogil
     # Mass matrix evaluation ----------------------------------------------------------------------------------------------
-    void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
+    void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int nE, int nP,
                      double *P, double *dx, const int dim) nogil
 
     # DEBUG Helpers and test functions

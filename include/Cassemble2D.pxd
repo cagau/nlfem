@@ -15,7 +15,7 @@ cdef extern from "Cassemble2D.h" nogil:
                         const long * ptrLabelTriangles,
                         const double * Verts,
                         # Number of Triangles and number of Triangles in Omega
-                        int J, int J_Omega,
+                        int nE, int nE_Omega,
                         # Number of vertices (in case of CG = K and K_Omega)
                         int L, int L_Omega,
                         double * Px, int nPx, double * dx,

@@ -1,6 +1,10 @@
-//
-// Created by klar on 13.03.20.
-//
+/**
+    Contains kernel and forcing functions which are used in the assembly. Different additional kernels can be added
+    here.
+    @file model.cpp
+    @author Manuel Klar
+    @version 0.1 25/08/20
+*/
 #ifndef NONLOCAL_ASSEMBLY_MODEL_CPP
 #define NONLOCAL_ASSEMBLY_MODEL_CPP
 

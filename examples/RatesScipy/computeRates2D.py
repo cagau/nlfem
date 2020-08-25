@@ -2,6 +2,7 @@ from examples.RatesScipy.mesh import RegMesh2D
 from scipy.spatial.distance import euclidean as l2dist
 import examples.RatesScipy.helpers as helpers
 from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
 from python.helpers import read_arma_spMat
 import numpy as np
 import nlcfem as assemble
@@ -17,6 +18,8 @@ def main():
         print("\n h: ", mesh.h)
         conf.data["h"].append(mesh.h)
         conf.data["nV_Omega"].append(mesh.nV_Omega)
+        mesh.save("data")
+        conf.save("data")
 
         # Assembly ------------------------------------------------------------------------
         start = time()
@@ -40,6 +43,13 @@ def main():
         solution = assemble.solve_cg(A_O, f, f)
         print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
         mesh.write_ud(solution["x"], conf.u_exact)
+
+        # Some random quick Check....
+        #filter = np.array(assemble.read_arma_mat("data/result.fd").flatten(), dtype=bool)
+        #plt.scatter(mesh.vertices[filter][:,0], mesh.vertices[filter][:,1])
+        #plt.scatter(mesh.vertices[np.invert(filter)][:,0], mesh.vertices[np.invert(filter)][:,1])
+        #plt.show()
+
         # Refine to N_fine ----------------------------------------------------------------
         mesh.plot_ud(pp)
         mesh = RegMesh2D(conf.delta, conf.N_fine, ufunc=conf.u_exact, coarseMesh=mesh,
@@ -61,6 +71,7 @@ def main():
             conf.data["Rates"].append(0)
         err_ = err
     pp.close()
+
     return conf.data
 
 def justPlotit():
@@ -96,6 +107,6 @@ def plotRHS():
 
 if __name__ == "__main__":
     data = main()
-    helpers.write_output(data)
+    #helpers.write_output(data)
     #plotRHS()
     #justPlotit()

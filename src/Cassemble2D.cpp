@@ -733,7 +733,7 @@ void par_assemble2D( double * Ad,
                 //bTdx = 45;
 
                 // Check how many neighbours sTdx has.
-                // In order to be able to store the list as contiguous array we fill up the empty spots with the number J
+                // In order to be able to store the list as contiguous array we fill up the empty spots with the number nE
                 // i.e. the total number of Triangles (which cannot be an index).
                 if (bTdx < J){
 

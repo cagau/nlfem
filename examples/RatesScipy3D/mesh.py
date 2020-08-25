@@ -58,6 +58,7 @@ class RegMesh2D:
         # Read adjaciency list
         if is_constructAdjaciencyGraph:
             self.neighbours = constructAdjaciencyGraph(self.elements)
+            self.nNeighbours = self.neighbours.shape[1]
         else:
             self.neighbours = None
         #self.neighbours = np.array(self.triangulation.neighbors, dtype=np.int)
@@ -168,10 +169,8 @@ class RegMesh2D:
                           "u_diff": self.u_exact-self.ud,
                           "labels": self.vertexLabels}
             point_data.update(dataDict)
-
             m = meshio.Mesh(points  = self.vertices, cells = [("tetra", self.elements)],
-                            point_data= point_data,
-                            cell_data={"labels": self.elementLabels}   )
+                            point_data= point_data)
             meshio.write(filename, m, file_format="vtk")
 
     def save(self, path):
@@ -190,6 +189,7 @@ class RegMesh2D:
             "sqdelta",
             "is_DiscontinuousGalerkin",
             "is_NeumannBoundary",
+            "nNeighbours",
             "dim"]
         [writeattr(f, attr_name) for attr_name in confList]
 

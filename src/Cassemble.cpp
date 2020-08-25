@@ -1,3 +1,10 @@
+/**
+    Contains assembly algorithm for nonlocal stiffnes matrix and forcing function.
+    @file Cassemble.cpp
+    @author Manuel Klar
+    @version 0.1 25/08/20
+*/
+
 #include <iostream>
 #include <cmath>
 #include <queue>
@@ -173,17 +180,14 @@ void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega
 void
 par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
                  double *P, double *dx, const int dim) {
-    int k=0, kk=0;
     const int dVerts = dim+1;
-
-
     double tmp_psi[dVerts];
     double *psi = (double *) malloc((dVerts)*nP*sizeof(double));
 
-    for(k=0; k<nP; k++){
+    for(int k=0; k<nP; k++){
         //model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals){
        model_basisFunction(&P[dim*k], dim, &tmp_psi[0]);
-       for (kk=0; kk<dVerts; kk++) {
+       for (int kk=0; kk<dVerts; kk++) {
            psi[nP * kk + k] = tmp_psi[kk];
            //psi[nP * 1 + j] = tmp_psi[1];
            //psi[nP * 2 + j] = tmp_psi[2];
@@ -195,10 +199,10 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
     //private(aAdx, a, b, aTE, aTdet, j)
         double aTdet;
         long * aAdx;
-        int a=0, b=0, j=0, jj=0, aTdx=0;
+
         double aTE[dim*(dVerts)];
         #pragma omp for
-        for (aTdx=0; aTdx < J; aTdx++){
+        for (int aTdx=0; aTdx < J; aTdx++){
             if (ElementLabels[aTdx] == 1) {
                 // Get index of ansatz functions in matrix compute_A.-------------------
                 // Continuous Galerkin
@@ -209,8 +213,8 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
                 // Prepare Triangle information aTE and aTdet ------------------
                 // Copy coordinates of Triange a to aTE.
                 // this is done fore convenience only, actually those are unnecessary copies!
-                for (jj=0; jj<dVerts; jj++){
-                    for (j = 0; j < dim; j++) {
+                for (int jj=0; jj<dVerts; jj++){
+                    for (int j = 0; j < dim; j++) {
                         aTE[dim * jj + j] = Verts[dim *aAdx[jj] + j];
                     }
                     //aTE[2 * 0 + j] = Verts[2 * Elements[4 * aTdx + 1] + j];
@@ -220,11 +224,11 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
                 // compute Determinant
                 aTdet = absDet(&aTE[0], dim);
 
-                for (a = 0; a < dVerts; a++) {
+                for (int a = 0; a < dVerts; a++) {
                     if (aAdx[a] < K_Omega) {
-                        for (b = 0; b < dVerts; b++) {
+                        for (int b = 0; b < dVerts; b++) {
                             if (aAdx[b] < K_Omega) {
-                                for (j = 0; j < nP; j++) {
+                                for (int j = 0; j < nP; j++) {
                                     // Evaluation
                                     #pragma omp atomic update
                                     vd[aAdx[a]] += psi[nP * a + j] * psi[nP * b + j] * aTdet * dx[j] * ud[aAdx[b]];
@@ -236,12 +240,13 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
             }
         }
     } // Pragma Omp Parallel
+    free(psi);
 }
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
-                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int J,
-                  const int J_Omega, const int L, const int L_Omega, const double *Px, const int nPx, const double *dx,
+                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int nE,
+                  const int nE_Omega, const int nV, const int nV_Omega, const double *Px, const int nPx, const double *dx,
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int nNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
@@ -251,8 +256,8 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     //const long * ptrZeta;
     //cout << "nZeta is" << nZeta << endl;
 
-    MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, J, J_Omega,
-                     L, L_Omega, sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
+    MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, nE, nE_Omega,
+                     nV, nV_Omega, sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta};
     chk_Mesh(mesh);
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
@@ -277,7 +282,6 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     printf("Quadrule outer: %i\n", quadRule.nPx);
     printf("Quadrule inner: %i\n", quadRule.nPy);
 
-    int aTdx=0, h=0;
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     //arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
@@ -287,21 +291,21 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     arma::umat indices_all(2,0);
     int nnz_total=0;
 
-    for(h=0; h<quadRule.nPx; h++){
+    for(int h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(& quadRule.Px[mesh.dim*h], mesh.dim, & quadRule.psix[mesh.dVertex * h]);
     }
-    for(h=0; h<quadRule.nPy; h++){
+    for(int h=0; h<quadRule.nPy; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(& quadRule.Py[mesh.dim*h], mesh.dim,& quadRule.psiy[mesh.dVertex * h]);
     }
     chk_BasisFunction(quadRule);
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     // Contains one row more than number of verticies as label information is contained here
-    //const arma::Mat<long> Triangles(mesh.ptrTriangles, mesh.dVertex+1, mesh.J);
-    //mesh.Triangles = arma::Mat<long>(mesh.ptrTriangles, mesh.dVertex+1, mesh.J);
+    //const arma::Mat<long> Triangles(mesh.ptrTriangles, mesh.dVertex+1, mesh.nE);
+    //mesh.Triangles = arma::Mat<long>(mesh.ptrTriangles, mesh.dVertex+1, mesh.nE);
     // Contains number of direct neighbours of an element + 1 (itself).
-    //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.J);
+    //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.nE);
     //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
     // Read Zeta for Domain Decomposition.
@@ -309,23 +313,18 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     for(int it=0; it < mesh.nZeta; it++) {
         long aT = mesh.ptrZeta[3 * it]; //Zeta_mat(0, it);
         long bT = mesh.ptrZeta[3 * it + 1]; //Zeta_mat(1, it);
-        mesh.Zeta[aT * mesh.J + bT] = &mesh.ptrZeta[3 * it + 2];
-        //cout << aT << ",    " << bT << ",   val" << mesh.Zeta[aT*mesh.J + bT][0] << endl;
+        mesh.Zeta[aT * mesh.nE + bT] = &mesh.ptrZeta[3 * it + 2];
+        //cout << aT << ",    " << bT << ",   val" << mesh.Zeta[aT*mesh.nE + bT][0] << endl;
     }
 
-    #pragma omp parallel
+    #pragma omp parallel default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total)
     {
     map<unsigned long, double> Ad;
     unsigned long Adx;
 
-    // General Loop Indices ---------------------------------------
-    int j=0, bTdx=0;
-
     // Breadth First Search --------------------------------------
-    arma::Col<int> visited(mesh.J, arma::fill::zeros);
+    arma::Col<int> visited(mesh.nE, arma::fill::zeros);
 
-    // Loop index of current outer triangle in BFS
-    int sTdx=0;
     // Queue for Breadth first search
     queue<int> queue;
     // List of visited triangles
@@ -338,8 +337,6 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //double aTE[3*2];
     //double bTE[3*2];
     // Integration information ------------------------------------
-    // Loop index of basis functions
-    int a=0, b=0;
     // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
     const long * aAdx;
     const long * bAdx;
@@ -359,7 +356,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
     //long debugTdx = 570;
     #pragma omp for
-    for (aTdx=0; aTdx<mesh.J; aTdx++) {
+    for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
         //if (aTdx == debugTdx){
         //    cout << "aTdx " << aTdx << endl;
         //}
@@ -399,7 +396,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
             if (mesh.is_DiscontinuousGalerkin) {
                 // Discontinuous Galerkin
                 //aDGdx[0] = (dVertex+1)*aTdx+1; aDGdx[1] = (dVertex+1)*aTdx+2; aDGdx[2] = (dVertex+1)*aTdx+3;
-                for (j = 0; j < mesh.dVertex; j++) {
+                for (int j = 0; j < mesh.dVertex; j++) {
                     aDGdx[j] = mesh.dVertex * aTdx + j;
                 }
                 aAdx = aDGdx;
@@ -435,21 +432,21 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
             // Check whether BFS is completed.
             while (!queue.empty()) {
                 // Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
-                sTdx = queue.front();
+                int sTdx = queue.front();
                 queue.pop();
                 // Get all the neighbours of sTdx.
                 NTdx = &mesh.Neighbours(0, sTdx);
                 // Run through the list of neighbours.
                 // 3 at max in 2D, 4 in 3D.
-                for (j = 0; j < mesh.nNeighbours; j++) {
+                for (int j = 0; j < mesh.nNeighbours; j++) {
                     // The next valid neighbour is our candidate for the inner Triangle b.
-                    bTdx = NTdx[j];
+                    int bTdx = NTdx[j];
                     //bTdx = 45;
 
                     // Check how many neighbours sTdx has. It can be 3 at max.
-                    // In order to be able to store the list as contiguous array we fill up the empty spots with the number J
+                    // In order to be able to store the list as contiguous array we fill up the empty spots with the number nE
                     // i.e. the total number of Triangles (which cannot be an index).
-                    if (bTdx < mesh.J) {
+                    if (bTdx < mesh.nE) {
 
                         // Check whether bTdx is already visited.
                         if (visited[bTdx] == 0) {
@@ -462,8 +459,8 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             // Retriangulation and integration ------------------------
                             if (mesh.is_DiscontinuousGalerkin) {
                                 // Discontinuous Galerkin
-                                for (j = 0; j < mesh.dVertex; j++) {
-                                    bDGdx[j] = mesh.dVertex * bTdx + j;
+                                for (int jj = 0; jj < mesh.dVertex; jj++) {
+                                    bDGdx[jj] = mesh.dVertex * bTdx + jj;
                                 }
                                 bAdx = bDGdx;
                             } else {
@@ -520,7 +517,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             // returns a reference to its mapped value.
                             // >> This eats up memory unnecessarily if you want to read only!
                             double weight = 1.;
-                            map<long, const long *>::iterator it = mesh.Zeta.find(aTdx*mesh.J + bTdx);
+                            map<long, const long *>::iterator it = mesh.Zeta.find(aTdx*mesh.nE + bTdx);
                             if(it != mesh.Zeta.end()){
                                 weight=1./(1. + (it->second)[0]);
                                 //if (weight != 0.5){
@@ -544,10 +541,10 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
                                 //printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
-                                for (a = 0; a < mesh.dVertex; a++) {
+                                for (int a = 0; a < mesh.dVertex; a++) {
                                     // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
-                                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
-                                        for (b = 0; b < mesh.dVertex; b++) {
+                                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.nV_Omega)) {
+                                        for (int b = 0; b < mesh.dVertex; b++) {
                                             //Adx.i = aAdx[b]; Adx.j = aAdx[a];
                                             Adx = aAdx[a]*mesh.K + aAdx[b];
                                             Ad[Adx] += termLocal[mesh.dVertex * a + b]*weight;
@@ -577,7 +574,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                         }// End if BFS (visited[bTdx] == 0)
                         // Mark bTdx as visited
                         visited[bTdx] = 1;
-                    }// End if BFS (bTdx < mesh.J)
+                    }// End if BFS (bTdx < mesh.nE)
                 }//End for loop BFS (j = 0; j < mesh.nNeighbours; j++)
                 is_firstbfslayer = false;
             }//End while loop BFS (!queue.empty())
@@ -639,8 +636,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
     printf("Quadrule outer: %i\n", quadRule.nPx);
     //printf("Quadrule inner: %i\n", quadRule.nPy);
 
-    int aTdx = 0, h = 0;
-    for (h = 0; h < quadRule.nPx; h++) {
+    for (int h = 0; h < quadRule.nPx; h++) {
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(&quadRule.Px[mesh.dim * h], mesh.dim, &quadRule.psix[mesh.dVertex * h]);
     }
@@ -650,30 +646,28 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
     for(int it=0; it < mesh.nZeta; it++) {
         long aT = mesh.ptrZeta[3 * it]; //Zeta_mat(0, it);
         long bT = mesh.ptrZeta[3 * it + 1]; //Zeta_mat(1, it);
-        mesh.Zeta[aT * mesh.J + bT] = &mesh.ptrZeta[3 * it + 2];
-        //cout << aT << ",    " << bT << ",   val" << mesh.Zeta[aT*mesh.J + bT][0] << endl;
+        mesh.Zeta[aT * mesh.nE + bT] = &mesh.ptrZeta[3 * it + 2];
+        //cout << aT << ",    " << bT << ",   val" << mesh.Zeta[aT*mesh.nE + bT][0] << endl;
     }
 
     #pragma omp parallel
     {
         // General Loop Indices ---------------------------------------
-        int j = 0;
         // Vector containing the coordinates of the vertices of a Triangle
         ElementType aT;
         aT.matE = arma::vec(mesh.dim * (mesh.dim + 1));
-        int a = 0;
         // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
         const long *aAdx;
         long aDGdx[mesh.dVertex]; // Index for discontinuous Galerkin
         // Buffers for integration solutions
         double termf[mesh.dVertex];
         #pragma omp for schedule(dynamic)
-        for (aTdx = 0; aTdx < mesh.J; aTdx++) {
+        for (int aTdx = 0; aTdx < mesh.nE; aTdx++) {
             if (mesh.LabelTriangles[aTdx] == 1) {
                 // Get index of ansatz functions in matrix compute_A.-------------------
                 if (mesh.is_DiscontinuousGalerkin) {
                     // Discontinuous Galerkin
-                    for (j = 0; j < mesh.dVertex; j++) {
+                    for (int j = 0; j < mesh.dVertex; j++) {
                         aDGdx[j] = mesh.dVertex * aTdx + j;
                     }
                     aAdx = aDGdx;
@@ -691,19 +685,19 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
 
                 // Domain decomposition. If Zeta is empty, the weight is set to 1.
                 double weight = 1.;
-                map<long, const long *>::iterator it = mesh.Zeta.find(aTdx*mesh.J + aTdx);
+                map<long, const long *>::iterator it = mesh.Zeta.find(aTdx*mesh.nE + aTdx);
                 if(it != mesh.Zeta.end()){
                     weight=1./(1. + (it->second)[0]);
                 }
 
-                for (a = 0; a < mesh.dVertex; a++) {
-                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
+                for (int a = 0; a < mesh.dVertex; a++) {
+                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.nV_Omega)) {
                         #pragma omp atomic update
                         fd[aAdx[a]] += termf[a]*weight;
                     }
                 }// end for rhs
             }// end outer if (mesh.LabelTriangles[aTdx] == 1)
-        }// end outer for loop (aTdx=0; aTdx<mesh.J; aTdx++)
+        }// end outer for loop (aTdx=0; aTdx<mesh.nE; aTdx++)
     }// end pragma omp parallel
     fd.save(conf.path_fd);
 }// end par_righthandside
@@ -716,7 +710,7 @@ double compute_area(double * aTE, double aTdet, long labela, double * bTE, doubl
     double * x;
     double physical_quad[2];
     double reTriangle_list[9*3*2];
-    const MeshType mesh = {K_Omega, K, ptrTriangles, ptrVerts, J, J_Omega,
+    const MeshType mesh = {K_Omega, K, ptrTriangles, ptrVerts, nE, nE_Omega,
                                         L, L_Omega, sqdelta, ptrNeighbours, is_DiscontinuousGalerkin,
                                         is_NeumannBoundary, dim, dim+1};;
     x = &P[0];

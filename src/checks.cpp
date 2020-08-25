@@ -1,6 +1,10 @@
-//
-// Created by klar on 16.03.20.
-//
+/**
+    Some input checks.
+    @file checks.cpp
+    @author Manuel Klar
+    @version 0.1 25/08/20
+*/
+
 #ifndef NONLOCAL_ASSEMBLY_CHECKS_CPP
 #define NONLOCAL_ASSEMBLY_CHECKS_CPP
 #include <cassert>
@@ -34,8 +38,8 @@ void chk_BasisFunction(QuadratureType & quadRule){
 }
 
 void chk_Mesh(MeshType & mesh){
-    long nV_Omega = mesh.L_Omega;
-    const long nE = mesh.J;
+    long nV_Omega = mesh.nV_Omega;
+    const long nE = mesh.nE;
     long chk_nE_Omega=0;
     const unsigned long d = mesh.dim;
     const long nZeta = mesh.nZeta;
@@ -50,12 +54,12 @@ void chk_Mesh(MeshType & mesh){
             chk_nE_Omega++;
         }
     }
-    assert((mesh.J_Omega == chk_nE_Omega && "Number of elements with label!=1 does not coincide with nE_Omega."));
+    assert((mesh.nE_Omega == chk_nE_Omega && "Number of elements with label!=1 does not coincide with nE_Omega."));
 
     if (mesh.is_DiscontinuousGalerkin) {
-        assert((mesh.outdim * mesh.J * mesh.dVertex == mesh.K && "Matrix dimension does not match #basis functions and output dimension."));
+        assert((mesh.outdim * mesh.nE * mesh.dVertex == mesh.K && "Matrix dimension does not match #basis functions and output dimension."));
     } else {
-        assert((mesh.outdim * mesh.L == mesh.K && "Matrix dimension does not match #basis functions and output dimension."));
+        assert((mesh.outdim * mesh.nV == mesh.K && "Matrix dimension does not match #basis functions and output dimension."));
     }
 
     for(long k=0; k < nZeta; k++){
