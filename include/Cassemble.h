@@ -1,3 +1,22 @@
+/**
+    Contains assembly algorithm for nonlocal stiffnes matrix and forcing function.
+    @file Cassemble.cpp
+    @author Manuel Klar
+    @version 0.1 25/08/20
+*/
+
+/*! \mainpage My Personal Index Page
+ *
+ * \section intro_sec Introduction
+ *
+ * This is the introduction.
+ *
+ * \section install_sec Installation
+ *
+ * \subsection step1 Step 1: Opening the box
+ *
+ * etc...
+ */
 #ifndef CASSEMBLE_H
 #define CASSEMBLE_H
 #include <armadillo>
