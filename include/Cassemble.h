@@ -5,17 +5,30 @@
     @version 0.1 25/08/20
 */
 
-/*! \mainpage My Personal Index Page
+/*! \mainpage Welcome
  *
  * \section intro_sec Introduction
  *
- * This is the introduction.
+ * This library provides a parallel assembly routine for a specific class of integral operators.
+ * The focus lies on operators of the form
+ * \f[
+ *  A(u,v) = \int_{\Omega} v(x) \int_{\Omega \cup \Omega_I}(u(x)-u(y))\gamma(x,y)  dx dy,
+ *  \f]
+ * where \f$ \gamma(x,y) \f$ is a integrable or weakly singular kernel with bounded interaction
+ * radius. The domain \f$\Omega\f$ and the interaction set \f$\Omega_I\f$
+ * can be subsets of \f$ R^d \f$ for \f$ d = 2,3\f$. The solution can be scalar or
+ * vector valued, i.e. \f$ u(x) \in R^c\f$ for \f$c \geq 1\f$.
  *
- * \section install_sec Installation
+ * This implementation addresses researchers who want to verify findings numerically. The computational
+ * burden of the assembly of integral operators is so large that even computations in an
+ * experimental setting require efficient and parallel implementations. However, we do not aim
+ * to provide the fastest possible but rather a flexible implementation which runs at
+ * convenient speed. The hope is to provide a implementation which is easy to understand
+ * such that modifications or small extensions can be implemented quickly.
  *
- * \subsection step1 Step 1: Opening the box
+ * \section Nonlocal Operator
  *
- * etc...
+ * ....
  */
 #ifndef CASSEMBLE_H
 #define CASSEMBLE_H
