@@ -31,6 +31,8 @@ void lookup_configuration(ConfigurationType & conf){
         model_f = f_linear3D;
     } else if (conf.model_f == "constant"){
         model_f = f_constant;
+    } else if (conf.model_f == "linearField"){
+        model_f = fField_linear;
     } else {
         cout << "Error in par:assemble. Right hand side: " << conf.model_f << " is not implemented." << endl;
         abort();
@@ -45,9 +47,12 @@ void lookup_configuration(ConfigurationType & conf){
     } else if (conf.model_kernel == "constant3D") {
         model_kernel = kernel_constant3D;
     } else if (conf.model_kernel == "linearPrototypeMicroelastic") {
-        model_kernel = kernel_linearPrototypeMicroelastic;
+        model_kernel = kernelField_linearPrototypeMicroelastic;
         conf.is_singularKernel = true;
-        cout << "...singular kernel" << endl;
+        //cout << "...singular kernel" << endl;
+    } else if (conf.model_kernel == "constantField") {
+        model_kernel = kernelField_constant;
+        conf.is_singularKernel = true; // Test Case
     }
     else {
         cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;
@@ -114,11 +119,13 @@ void compute_f(     const ElementType & aT,
                     double * termf){
     int i,a;
     double x[mesh.dim];
+    double forcing_value[mesh.outdim];
 
-    for (a=0; a<mesh.dVertex; a++){
+    for (a=0; a<mesh.dVertex*mesh.outdim; a++){
         for (i=0; i<quadRule.nPx; i++){
             toPhys(aT.E, &(quadRule.Px[mesh.dim * i]),  mesh.dim,&x[0]);
-            termf[a] += quadRule.psix(a, i) * model_f(&x[0]) * aT.absDet * quadRule.dx[i];
+            model_f(&x[0], forcing_value);
+            termf[a] += quadRule.psix(a/mesh.outdim, i) * forcing_value[a%mesh.outdim] * aT.absDet * quadRule.dx[i];
         }
     }
 }
@@ -256,13 +263,21 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     //const long * ptrZeta;
     //cout << "nZeta is" << nZeta << endl;
 
+    // [1]
+    // Mesh will contain K_Omega = outdim*nV_Omega in CG case,
+    // K_Omega = outdim*3*nE_Omega in DG [X] Not implemented!
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, nE, nE_Omega,
                      nV, nV_Omega, sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta};
+    // [2]
+    // Above should be checked
     chk_Mesh(mesh);
+
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
     chk_QuadratureRule(quadRule);
     ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+    // [3]
+    // kernel has to match outdim. Can we, or do we want to check this?
     chk_Conf(mesh, conf, quadRule);
 
     if (compute=="system") {
@@ -345,15 +360,14 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
     // Buffers for integration solutions
     //double termf[mesh.dVertex];
-    double termLocal[mesh.dVertex*mesh.dVertex];
-    double termNonloc[mesh.dVertex*mesh.dVertex];
+    double termLocal[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
+    double termNonloc[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
     //[DEBUG]
     /*
     double DEBUG_termTotalLocal[3*3];
     double DEBUG_termTotalNonloc[3*3];
     */
     //[End DEBUG]
-
     //long debugTdx = 570;
     #pragma omp for
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
@@ -471,8 +485,8 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                 // we choose &Triangles[4*aTdx+1];
                             }
                             // Assembly of matrix ---------------------------------------
-                            doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex); // Initialize Buffer
-                            doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex); // Initialize Buffer
+                            doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
+                            doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
                             // Compute integrals and write to buffer
                             integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
                             // [DEBUG]
@@ -541,16 +555,43 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
                                 //printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
-                                for (int a = 0; a < mesh.dVertex; a++) {
-                                    // Note: aAdx[a] == Triangles[4*aTdx+1 + a]!
-                                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.nV_Omega)) {
-                                        for (int b = 0; b < mesh.dVertex; b++) {
-                                            //Adx.i = aAdx[b]; Adx.j = aAdx[a];
-                                            Adx = aAdx[a]*mesh.K + aAdx[b];
-                                            Ad[Adx] += termLocal[mesh.dVertex * a + b]*weight;
-                                            //Adx.i = bAdx[b]; Adx.j =  aAdx[a];
-                                            Adx = aAdx[a]*mesh.K + bAdx[b];
-                                            Ad[Adx] += -termNonloc[mesh.dVertex * a + b]*weight;
+                                for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
+                                    // [x 3]
+                                    // for (int a = 0; a < mesh.dVertex*mesh.outdim; a++){ ...
+
+                                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a/mesh.outdim] < mesh.nV_Omega)) {
+                                        for (int b = 0; b < mesh.dVertex*mesh.outdim; b++) {
+                                            // [x 4]
+                                            // for (int b = 0; b < mesh.dVertex*mesh.outdim; b++){ ...
+
+                                            // INDEX CHECK
+                                            //printf("Local: a %i, b %i, ker (%i, %i) \nAdx %lu \n", a/mesh.outdim, b/mesh.outdim, a%mesh.outdim, b%mesh.outdim, Adx);
+                                            // TERM LOCAL & TERM NON-LOCAL ORDER
+                                            // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
+                                            // However it mimics the matrix which results from the multiplication.
+                                            //                                      Kernel switches back here. v
+                                            // [(a 0, b 0, ker (0,0)), (a 0, b 0, ker (0,1)), (a 0, b 1, ker (0,0)), (a 0, b 1, ker (0,1)), (a 0, b 2, ker (0,0)), (a 0, b 2, ker (0,1)),
+                                            //  (a 0, b 0, ker (1,0)), (a 0, b 0, ker (1,1)), (a 0, b 0, ker (1,0)), (a 0, b 1, ker (1,1)), (a 0, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+                                            //  (a 1, b 0, ker (0,0)), (a 1, b 0, ker (0,1)), (a 1, b 1, ker (0,0)), (a 1, b 1, ker (0,1)), (a 1, b 2, ker (0,0)), (a 1, b 2, ker (0,1)),
+                                            //  (a 1, b 0, ker (1,0)), (a 1, b 0, ker (1,1)), (a 1, b 0, ker (1,0)), (a 1, b 1, ker (1,1)), (a 1, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+                                            //  (a 2, b 0, ker (0,0)), (a 2, b 0, ker (0,1)), (a 2, b 1, ker (0,0)), (a 2, b 1, ker (0,1)), (a 2, b 2, ker (0,0)), (a 2, b 2, ker (0,1)),
+                                            //  (a 2, b 0, ker (1,0)), (a 2, b 0, ker (1,1)), (a 2, b 0, ker (1,0)), (a 2, b 1, ker (1,1)), (a 2, b 2, ker (1,0)), (a 2, b 2, ker (1,1))]
+
+                                            // [x 5]
+                                            Adx =  (mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim) * mesh.K +
+                                                    mesh.outdim*aAdx[b/mesh.outdim] + b%mesh.outdim;
+                                            //Adx = aAdx[a]*mesh.K + aAdx[b];
+
+                                            // [x 6]
+                                            // termLocal and termNonloc come with larger dimension already..
+                                            // Ad[Adx] += termLocal[mesh.dVertex * a + b] * weight;
+                                            Ad[Adx] += termLocal[mesh.dVertex * mesh.outdim * a + b] * weight;
+
+                                            // [6]
+                                            Adx =   (mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim) * mesh.K +
+                                                     mesh.outdim*bAdx[b/mesh.outdim] + b%mesh.outdim;
+                                            //Adx = aAdx[a]*mesh.K + bAdx[b];
+                                            Ad[Adx] += -termNonloc[mesh.dVertex * mesh.outdim * a + b]*weight;
 
                                             //if (aTdx == debugTdx){
                                             //    cout << termLocal[mesh.dVertex * a + b] << ", ";
@@ -566,7 +607,6 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                     }
                                 }
                             }// End if (doubleVec_any(termNonloc, ...)
-
                             //if (aTdx == debugTdx){
                             //    cout << endl;
                             //}
@@ -609,6 +649,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
             // column major format of transposed matrix Ad
             indices_all(0, nnz_start + k) = adx % mesh.K;
             indices_all(1, nnz_start + k) = adx / mesh.K;
+            //printf("Index a %llu, b %llu\n", indices_all(0, nnz_start + k), indices_all(1, nnz_start + k));
             k++;
         }
     }
@@ -622,6 +663,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //cout << arma::max(indices_all.row(1)) << endl;
     arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
     sp_Ad.save(conf.path_spAd);
+    //cout << "Data saved." << endl;
 
 
 }// End function par_system
@@ -660,8 +702,8 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
         const long *aAdx;
         long aDGdx[mesh.dVertex]; // Index for discontinuous Galerkin
         // Buffers for integration solutions
-        double termf[mesh.dVertex];
-        #pragma omp for schedule(dynamic)
+        double termf[mesh.dVertex*mesh.outdim];
+        #pragma omp for
         for (int aTdx = 0; aTdx < mesh.nE; aTdx++) {
             if (mesh.LabelTriangles[aTdx] == 1) {
                 // Get index of ansatz functions in matrix compute_A.-------------------
@@ -679,7 +721,8 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                 initializeTriangle(aTdx, mesh, aT);
                 // Assembly of right side ---------------------------------------
                 // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
-                doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
+                doubleVec_tozero(termf, mesh.dVertex*mesh.outdim); // Initialize Buffer
+
                 compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
                 // Add content of buffer to the right side.
 
@@ -690,12 +733,13 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                     weight=1./(1. + (it->second)[0]);
                 }
 
-                for (int a = 0; a < mesh.dVertex; a++) {
-                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.nV_Omega)) {
+                for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
+                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a/mesh.outdim] < mesh.nV_Omega)) {
                         #pragma omp atomic update
-                        fd[aAdx[a]] += termf[a]*weight;
+                        fd[mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim] += termf[a]*weight;
                     }
                 }// end for rhs
+
             }// end outer if (mesh.LabelTriangles[aTdx] == 1)
         }// end outer for loop (aTdx=0; aTdx<mesh.nE; aTdx++)
     }// end pragma omp parallel
