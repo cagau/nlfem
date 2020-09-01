@@ -99,6 +99,7 @@ int read_configuration(const string &path, idx_t nparts){
     string path_dy = path + "/quad.dy";
     string path_Ad = path + "/result.Ad";
     string path_fd = path + "/result.fd";
+    string path_partition = path + "/result.partition";
 
     int K_Omega, K,J, J_Omega, L, L_Omega, is_DiscontinuousGalerkin,
         is_NeumannBoundary, dim, is_PlacePointOnCap, nNeighbours;
@@ -177,6 +178,7 @@ int read_configuration(const string &path, idx_t nparts){
     //idx_t options[METIS_NOPTIONS];
     //METIS_SetDefaultOptions(options);
 
+    // METIS TEST ------------------------------------------------------------------------------------------------------
     idx_t nE = mesh.nE;
     idx_t nV = mesh.nV;
     idx_t ncommon = 2;
@@ -197,6 +199,8 @@ int read_configuration(const string &path, idx_t nparts){
     idx_t options[METIS_NOPTIONS];
     METIS_SetDefaultOptions(options);
     options[METIS_OBJTYPE_VOL] = 1;
+
+    // Partotion mit METIS berechnen.
     int ret = METIS_PartMeshDual(&nE, &nV, eptr, eind,
                        nullptr, nullptr, &ncommon, &nparts, nullptr,
                        options, &objval, epart, npart);
@@ -208,7 +212,9 @@ int read_configuration(const string &path, idx_t nparts){
     //par_system(mesh, quadRule, conf);
 
     //Ad.save(path_Ad.c_str(), arma::raw_binary);
-    partition.save(path_fd, arma::arma_binary);
+    // Vertex-zerlegung speichern
+    partition.save(path_partition, arma::arma_binary);
+    // [End] METIS TEST ------------------------------------------------------------------------------------------------
 
     idx_t numflag=0;
     idx_t *xadj;
