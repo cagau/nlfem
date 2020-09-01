@@ -59,10 +59,10 @@ void kernelField_constant(const double * x, const long labelx, const double * y,
     //z[1] = x[1] - y[1];
     //*kernel_val = 1./sqrt(vec_dot(z,z,2));
     // KERNEL ORDER [ker (0,0), ker (0,1), ker (1,0), ker (1,1)]
-    kernel_val[0] = 0.0;
+    kernel_val[0] = 4 / (M_PI * pow(sqdelta, 2));
     kernel_val[1] = 0.0;
     kernel_val[2] = 0.0;
-    kernel_val[3] = 4 / (M_PI * pow(sqdelta, 2));
+    kernel_val[3] = 0.0;
 }
 
 // ### RIGHT HAND SIDE #################################################################################################

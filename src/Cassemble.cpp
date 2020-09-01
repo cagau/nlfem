@@ -52,7 +52,7 @@ void lookup_configuration(ConfigurationType & conf){
         //cout << "...singular kernel" << endl;
     } else if (conf.model_kernel == "constantField") {
         model_kernel = kernelField_constant;
-        conf.is_singularKernel = true; // Test Case
+        //conf.is_singularKernel = true; // Test Case
     }
     else {
         cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;

@@ -292,9 +292,8 @@ double vec_sqL2dist(const double * x, const double * y, const int len){
 }
 
 void doubleVec_tozero(double * vec, const int len){
-    int i=0;
-    for (i=0; i< len; i++){
-        vec[i]  = 0;
+    for (double * entry = vec; entry < vec+len; entry++){
+        *entry  = 0.0;
     }
 }
 
