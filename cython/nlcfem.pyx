@@ -222,15 +222,15 @@ def assemble(
     cdef double [:] ptrdx = dx.flatten()
     cdef double [:] ptrdy = dy.flatten()
 
-    cdef long [:] Zeta
-    cdef long * ptrZeta = NULL
+    cdef long [:] ZetaIndicator
+    cdef long * ptrZetaIndicator = NULL
     cdef long nZeta
 
     try:
-        nZeta = mesh.Zeta.shape[0]
-        Zeta = mesh.Zeta.flatten()
+        nZeta = mesh.ZetaIndicator.shape[1]
+        ZetaIndicator = mesh.ZetaIndicator.flatten()
         if nZeta > 0:
-            ptrZeta = &Zeta[0]
+            ptrZetaIndicator = &ZetaIndicator[0]
     except AttributeError:
         print("Zeta not found.")
         nZeta = 0
@@ -253,7 +253,7 @@ def assemble(
         dg = quadgauss.weights.flatten()
         ptrdg = &dg[0]
 
-    # Compute Assembly -------------------------------------------
+    # Compute Assembly --------------------------------
     if (compute=="system" or compute=="systemforcing"):
         start = time.time()
         Cassemble.par_assemble( compute_system_, path_spAd_, path_fd_, mesh.K_Omega, mesh.K,
@@ -270,7 +270,7 @@ def assemble(
                             &model_f_[0],
                             &integration_method_[0],
                             is_PlacePointOnCap_,
-                            mesh.dim, outdim, ptrZeta, nZeta,
+                            mesh.dim, outdim, ptrZetaIndicator, nZeta,
                             ptrPg, tensorGaussDegree, ptrdg)
 
         total_time = time.time() - start
@@ -296,7 +296,7 @@ def assemble(
                             &model_f_[0],
                             &integration_method_[0],
                             is_PlacePointOnCap_,
-                            mesh.dim, outdim, ptrZeta, nZeta,
+                            mesh.dim, outdim, ptrZetaIndicator, nZeta,
                             ptrPg, tensorGaussDegree, ptrdg)
 
         fd = read_arma_mat(path_fd)[:,0]

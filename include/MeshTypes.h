@@ -76,24 +76,19 @@ struct MeshStruct{
     const int outdim;
     const int dVertex;
 
-    // Weights for Domain decomposition
+    // Weights for Domain decomposition (optional)
     const long * ptrZeta = nullptr;
-    const long nZeta;
+    const long nZeta; // Should be set to 0
 
-    // Zeta is an optional parameter. In case we get a Zeta matrix,
-    // the memory is already allocated we only need a wrapper.
-    // Caution: map[k]. If k does not match the key of any element in the container,
-    // the function inserts a new element with that key and
-    // returns a reference to its mapped value.
-    // >> This eats up memory unnecessarily if you want to read only!
-    // Note: Armadillo uvec.find() is much slower.
-    map<long, const long *> Zeta;
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
     const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->nE)};
     // Label of Triangles inside Omega = 1
     // Label of Triangles in OmegaI = 2
     const arma::Col<long> LabelTriangles{arma::Col<long>(this->ptrLabelTriangles, this->nE)};
+    // Zeta is an optional parameter. In case we get a Zeta matrix,
+    // the memory is already allocated we only need a wrapper.
+    const arma::Mat<long> ZetaIndicator{arma::Mat<long>(this-> ptrZeta, this-> nZeta, this-> nE)};
 };
 typedef MeshStruct MeshType;
 //typedef int (*const interactionMethodType)(const double * x_center, const ElementType & T,

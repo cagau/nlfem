@@ -46,13 +46,12 @@ void lookup_configuration(ConfigurationType & conf){
         model_kernel = kernel_labeled;
     } else if (conf.model_kernel == "constant3D") {
         model_kernel = kernel_constant3D;
-    } else if (conf.model_kernel == "linearPrototypeMicroelastic") {
-        model_kernel = kernelField_linearPrototypeMicroelastic;
-        conf.is_singularKernel = true;
-        //cout << "...singular kernel" << endl;
+    //} else if (conf.model_kernel == "linearPrototypeMircoelastic") {
+    //    model_kernel = kernelField_linearPrototypeMicroelastic;
+    //    conf.is_singularKernel = true;
     } else if (conf.model_kernel == "constantField") {
         model_kernel = kernelField_constant;
-        //conf.is_singularKernel = true; // Test Case
+        conf.is_singularKernel = true; // Test Case
     }
     else {
         cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;
@@ -61,18 +60,34 @@ void lookup_configuration(ConfigurationType & conf){
 
     // Lookup integration method  --------------------------------------------------------------------------------------
     cout << "Integration Method: " << conf.integration_method << endl;
-    if (conf.integration_method == "baryCenter"){
-        integrate = integrate_baryCenter;
-    } else if (conf.integration_method == "baryCenterRT") {
-        integrate = integrate_baryCenterRT;
-        printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-    }  else if (conf.integration_method == "retriangulate") {
-        integrate = integrate_retriangulate;
-        printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+    if ( conf.model_kernel == "constantField"){
+        if (conf.integration_method == "baryCenter") {
+            integrate = integrate_linearPrototypeMicroelastic_baryCenter;
+        } else if (conf.integration_method == "baryCenterRT") {
+            integrate = integrate_linearPrototypeMicroelastic_baryCenterRT;
+            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else if (conf.integration_method == "retriangulate") {
+            integrate = integrate_linearPrototypeMicroelastic_retriangulate;
+            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else {
+            cout << "Error in par:assemble. Integration method " << conf.integration_method <<
+                 " is not implemented." << endl;
+            abort();
+        }
     } else {
-        cout << "Error in par:assemble. Integration method " << conf.integration_method <<
-             " is not implemented." << endl;
-        abort();
+        if (conf.integration_method == "baryCenter") {
+            integrate = integrate_baryCenter;
+        } else if (conf.integration_method == "baryCenterRT") {
+            integrate = integrate_baryCenterRT;
+            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else if (conf.integration_method == "retriangulate") {
+            integrate = integrate_retriangulate;
+            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else {
+            cout << "Error in par:assemble. Integration method " << conf.integration_method <<
+                 " is not implemented." << endl;
+            abort();
+        }
     }
 }
 
@@ -292,7 +307,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
     printf("Function: par_system (generic)\n");
     printf("Mesh dimension: %i\n", mesh.dim);
-    printf("Recieved Zeta for DD: %s\n", (mesh.nZeta > 0) ? "true" : "false");
+    printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
     lookup_configuration(conf);
     printf("Quadrule outer: %i\n", quadRule.nPx);
     printf("Quadrule inner: %i\n", quadRule.nPy);
@@ -322,15 +337,6 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     // Contains number of direct neighbours of an element + 1 (itself).
     //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.nE);
     //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
-
-    // Read Zeta for Domain Decomposition.
-    // If nZeta == 0 nothing happens.
-    for(int it=0; it < mesh.nZeta; it++) {
-        long aT = mesh.ptrZeta[3 * it]; //Zeta_mat(0, it);
-        long bT = mesh.ptrZeta[3 * it + 1]; //Zeta_mat(1, it);
-        mesh.Zeta[aT * mesh.nE + bT] = &mesh.ptrZeta[3 * it + 2];
-        //cout << aT << ",    " << bT << ",   val" << mesh.Zeta[aT*mesh.nE + bT][0] << endl;
-    }
 
     #pragma omp parallel default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total)
     {
@@ -432,6 +438,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
             //        fd[aAdx[a]] += termf[a];
             //    }
             //}
+
             // Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
             // on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
 
@@ -525,21 +532,10 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             //[End DEBUG]
 
                             // Domain decomposition. If Zeta is empty, the weight is set to 1.
-                            // Caution: -----------------------------------------------
-                            // map[k] If k does not match the key of any element in the container,
-                            // the []-method inserts a new element with that key and
-                            // returns a reference to its mapped value.
-                            // >> This eats up memory unnecessarily if you want to read only!
                             double weight = 1.;
-                            map<long, const long *>::iterator it = mesh.Zeta.find(aTdx*mesh.nE + bTdx);
-                            if(it != mesh.Zeta.end()){
-                                weight=1./(1. + (it->second)[0]);
-                                //if (weight != 0.5){
-                                //    cout << "wrong weight" << endl;
-                                //    cout << "aTdx " << aTdx << ", bTdx " << bTdx << endl;
-                                //    cout << "weight " << weight << endl;
-                                //    abort();
-                                //}
+                            if (mesh.ptrZeta){
+                                double zeta = arma::dot(mesh.ZetaIndicator.col(aTdx), mesh.ZetaIndicator.col(bTdx));
+                                weight = 1./zeta;
                             }
                             //if (aTdx == debugTdx){
                             //    cout << bTdx << ", ";
@@ -638,7 +634,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
         indices_all.reshape(2, nnz_total);
     }
     #pragma omp barrier
-    //#pragma omp critical
+    #pragma omp critical
     {
         //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
         int k = 0;
@@ -673,7 +669,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
 
     printf("Function: par_forcing (generic)\n");
     printf("Mesh dimension: %i\n", mesh.dim);
-    printf("Recieved Zeta for DD: %s\n", (mesh.nZeta > 0) ? "true" : "false");
+    printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
     lookup_configuration(conf);
     printf("Quadrule outer: %i\n", quadRule.nPx);
     //printf("Quadrule inner: %i\n", quadRule.nPy);
@@ -681,15 +677,6 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
     for (int h = 0; h < quadRule.nPx; h++) {
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(&quadRule.Px[mesh.dim * h], mesh.dim, &quadRule.psix[mesh.dVertex * h]);
-    }
-
-    // Read Zeta for Domain Decomposition.
-    // If nZeta == 0 nothing happens.
-    for(int it=0; it < mesh.nZeta; it++) {
-        long aT = mesh.ptrZeta[3 * it]; //Zeta_mat(0, it);
-        long bT = mesh.ptrZeta[3 * it + 1]; //Zeta_mat(1, it);
-        mesh.Zeta[aT * mesh.nE + bT] = &mesh.ptrZeta[3 * it + 2];
-        //cout << aT << ",    " << bT << ",   val" << mesh.Zeta[aT*mesh.nE + bT][0] << endl;
     }
 
     #pragma omp parallel
@@ -728,9 +715,9 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
 
                 // Domain decomposition. If Zeta is empty, the weight is set to 1.
                 double weight = 1.;
-                map<long, const long *>::iterator it = mesh.Zeta.find(aTdx*mesh.nE + aTdx);
-                if(it != mesh.Zeta.end()){
-                    weight=1./(1. + (it->second)[0]);
+                if(mesh.ptrZeta){
+                    double zeta = arma::dot(mesh.ZetaIndicator.col(aTdx), mesh.ZetaIndicator.col(aTdx));
+                    weight = 1./zeta;
                 }
 
                 for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
