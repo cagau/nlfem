@@ -46,6 +46,10 @@ void integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Qu
 void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                             double *termLocal, double *termNonloc);
+void integrate_fullyContained(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+                              double *termLocal, double *termNonloc);
+
 void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                                                        const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                                                        double * termLocal, double * termNonloc);
@@ -72,8 +76,11 @@ int placePointOnCap(const double * y_predecessor, const double * y_current,
                    const double * x_center, double sqdelta, const double * TE,
                    const double * nu_a, const double * nu_b, const double * nu_c,
                    double orientation, int Rdx, double * R);
+
 bool inTriangle(const double * y_new, const double * p, const double * q, const double * r,
                 const double *  nu_a, const double * nu_b, const double * nu_c);
+bool isFullyContained(const ElementType &aT, const ElementType &bT, const MeshType &mesh);
+
 // Peridynamic Helper functions
 void setupElement(const MeshType &mesh, const long * Vdx_new, ElementType &T);
 int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
@@ -222,9 +229,53 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
     }
 }
 
+void integrate_fullyContained(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+                              double *termLocal, double *termNonloc){
+
+    const int dim = mesh.dim;
+    double x[2], y[2];//, kernel_val=0.;
+    double kernel_val[mesh.outdim*mesh.outdim];
+    double kernelT_val[mesh.outdim*mesh.outdim];
+
+    for (int k = 0; k < quadRule.nPx; k++) {
+        toPhys(aT.E, &(quadRule.Px[dim * k]), dim, x);
+        for (int i = 0; i < quadRule.nPy; i++) {
+            toPhys(bT.E, &(quadRule.Py[dim * i]), dim, y);
+
+            // Eval Kernel(x-y)
+            model_kernel(x, aT.label, y, bT.label, mesh.sqdelta, kernel_val);
+            model_kernel(y, bT.label, x, aT.label, mesh.sqdelta, kernelT_val);
+
+            for (int a = 0; a < mesh.dVertex * mesh.outdim; a++) {
+                for (int b = 0; b < mesh.dVertex * mesh.outdim; b++) {
+
+                    termLocal[mesh.outdim * mesh.dVertex * a + b] += quadRule.dx[k] * quadRule.dy[i] *
+                            kernel_val[mesh.outdim * (a % mesh.outdim) + b % mesh.outdim] * aT.absDet * bT.absDet *
+                            2 * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k);
+
+                    termNonloc[mesh.outdim * mesh.dVertex * a + b] += quadRule.dx[k] * quadRule.dy[i] *
+                            kernel_val[mesh.outdim * (a % mesh.outdim) + b % mesh.outdim] * aT.absDet * bT.absDet *
+                            2 * quadRule.psix(a/mesh.outdim, k) * quadRule.psiy(b/mesh.outdim, i);
+
+                }
+                //cout << endl;
+            }
+            //cout << "Thank you!" << endl;
+            //abort()
+        }
+    }
+}
+
 void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc) {
+
+
+    if ((mesh.maxDiameter > EPSILON) && isFullyContained(aT, bT, mesh)){
+        integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
+        return;
+    }
 
     const int dim = mesh.dim;
     int k = 0, a = 0, b = 0;
@@ -248,6 +299,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
     //double psi_value_test[3] = {20., 30., 50.};
     double reTriangle_list[36 * mesh.dVertex * dim];
     doubleVec_tozero(reTriangle_list, 36 * mesh.dVertex * dim);
+
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
     for (k = 0; k < quadRule.nPx; k++) {
@@ -642,6 +694,20 @@ int placePointOnCap(const double * y_predecessor, const double * y_current,
     } else {
         return 0;
     }
+}
+
+bool isFullyContained(const ElementType & aT, const ElementType & bT, const MeshType & mesh){
+    //cout << "Max Diameter: " << mesh.maxDiameter << endl;
+    //abort();
+
+    double abary[mesh.dim], bbary[mesh.dim];
+
+    baryCenter(mesh.dim, aT.E, abary);
+    baryCenter(mesh.dim, bT.E, bbary);
+
+    double l2dist = vec_sqL2dist(abary, bbary, mesh.dim);
+
+    return ((mesh.delta - 2*mesh.maxDiameter) > 0) && ( l2dist < pow(mesh.delta - 2*mesh.maxDiameter,2) );
 }
 
 int method_retriangulate(const double * xCenter, const ElementType & T,

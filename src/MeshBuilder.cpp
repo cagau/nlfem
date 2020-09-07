@@ -518,6 +518,7 @@ MeshType Grid2D::mesh(bool setNeighbours=true) {
                      Verts.memptr(),
                      nE, nE_Omega,
                      nV, nV_Omega,
+                     delta,
                      pow(delta, 2),
                      Neighbours.memptr(),
                      false,

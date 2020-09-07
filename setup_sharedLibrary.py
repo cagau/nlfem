@@ -13,12 +13,12 @@ os.environ['CXX'] = 'clang++'
 # setup_shareLibrary.py. It then translates and compiles the cython code only.
 
 # Project Name
-name = "nlcfem"
+name = "nlfem"
 
 ext_modules = [
     Extension(
         name=name,
-        sources=["cython/nlcfem.pyx"],
+        sources=["cython/nlfem.pyx"],
         extra_link_args=['-fopenmp', '-llapack', '-lblas', '-larmadillo'],
         extra_compile_args=['-fopenmp'],
         language="c++",

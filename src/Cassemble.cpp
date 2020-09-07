@@ -274,7 +274,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim, const int outdim, const long * ptrZeta, const long nZeta,
-                  const double * Pg, const int degree, const double * dg) {
+                  const double * Pg, const int degree, const double * dg, double maxDiameter) {
     //const long * ptrZeta;
     //cout << "nZeta is" << nZeta << endl;
 
@@ -282,8 +282,8 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     // Mesh will contain K_Omega = outdim*nV_Omega in CG case,
     // K_Omega = outdim*3*nE_Omega in DG [X] Not implemented!
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, nE, nE_Omega,
-                     nV, nV_Omega, sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta};
+                     nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
+                     is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter};
     // [2]
     // Above should be checked
     chk_Mesh(mesh);

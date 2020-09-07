@@ -14,12 +14,12 @@ os.environ['CXX'] = 'clang++'
 # See also https://cython.readthedocs.io/en/latest/src/tutorial/clibraries.html
 
 # Project Name
-name = "nlcfem"
+name = "nlfem"
 
 ext_modules = [
     Extension(
         name=name,
-        sources=["cython/nlcfem.pyx", "src/Cassemble.cpp", "src/Cassemble2D.cpp"],
+        sources=["cython/nlfem.pyx", "src/Cassemble.cpp", "src/Cassemble2D.cpp"],
         extra_link_args=['-fopenmp', '-llapack', '-lblas', '-larmadillo'],
         extra_compile_args=['-fopenmp'],
         language="c++",

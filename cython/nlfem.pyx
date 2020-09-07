@@ -246,6 +246,12 @@ def assemble(
     cdef double [:] dg
     cdef const double * ptrdg = NULL
 
+    cdef double maxDiameter = 0.0
+    try:
+        maxDiameter = mesh.diam
+    except AttributeError:
+        print("Element diameter not found.")
+
     if tensorGaussDegree != 0:
         quadgauss = tensorgauss(tensorGaussDegree)
         Pg = quadgauss.points.flatten()
@@ -271,7 +277,7 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter)
 
         total_time = time.time() - start
         print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -297,7 +303,7 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter)
 
         fd = read_arma_mat(path_fd)[:,0]
         if is_tmpfd:

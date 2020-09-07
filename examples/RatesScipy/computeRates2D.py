@@ -5,7 +5,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 from python.helpers import read_arma_spMat
 import numpy as np
-import nlcfem as assemble
+import nlfem as assemble
 from time import time
 
 def main():
@@ -107,6 +107,6 @@ def plotRHS():
 
 if __name__ == "__main__":
     data = main()
-    #helpers.write_output(data)
+    helpers.write_output(data)
     #plotRHS()
     #justPlotit()

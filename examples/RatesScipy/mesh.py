@@ -5,7 +5,7 @@ from scipy.interpolate import LinearNDInterpolator
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from nlcfem import constructAdjaciencyGraph
+from nlfem import constructAdjaciencyGraph
 import meshzoo
 
 class RegMesh2D:
@@ -87,6 +87,7 @@ class RegMesh2D:
         self.u_exact = None
         self.ud = None
 
+        self.diam = self.h
         if ufunc is not None:
             if hasattr(ufunc, '__call__'):
                 self.set_u_exact(ufunc)

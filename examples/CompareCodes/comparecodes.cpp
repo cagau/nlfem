@@ -165,7 +165,7 @@ int read_configuration(const string &path, idx_t nparts){
     dy.load(path_dy, arma::raw_binary);
 
     MeshType mesh = {K_Omega, K, elements.memptr(), elementLabels.memptr(), vertices.memptr(), J, J_Omega,
-                     L, L_Omega, sqdelta, neighbours.memptr(), nNeighbours, is_DiscontinuousGalerkin,
+                     L, L_Omega, sqrt(sqdelta), sqdelta, neighbours.memptr(), nNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, 1,dim + 1, nullptr, 0};
 
     QuadratureType quadRule = {Px.memptr(), Py.memptr(), dx.memptr(), dy.memptr(),
@@ -200,7 +200,7 @@ int read_configuration(const string &path, idx_t nparts){
     METIS_SetDefaultOptions(options);
     options[METIS_OBJTYPE_VOL] = 1;
 
-    // Partotion mit METIS berechnen.
+    // Partition mit METIS berechnen.
     int ret = METIS_PartMeshDual(&nE, &nV, eptr, eind,
                        nullptr, nullptr, &ncommon, &nparts, nullptr,
                        options, &objval, epart, npart);

@@ -91,7 +91,8 @@ void solve2x2(const double * A, const double * b, double * x);
  * @param Pg        <B>(nPg, dim^2)</B> Quadrature points for tensor Gauss quadrature (optional, needed for singular kernels).
  * @param nPg       <B>(tensorGaussDegree^dim,)</B> Number of quadrature points.
  * @param dg        <B>(nPg,)</B> Weights for tensor Gauss quadrature.
- */
+ * @param maxDiameter Maximal diameter of finite elements (optional). Might increase speed of retriangulation if provided.
+ * */
 void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega, int K,
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, int nE,
                   int nE_Omega, int nV, int nV_Omega, const double *Px, int nPx, const double *dx,
@@ -100,7 +101,7 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
                   int is_DiscontinuousGalerkin, int is_NeumannBoundary, string str_model_kernel,
                   string str_model_f, string str_integration_method, int is_PlacePointOnCap,
                   int dim, int outdim, const long * ptrZeta = nullptr, long nZeta = 0,
-                  const double * Pg = nullptr, int degree = 0, const double * dg = nullptr);
+                  const double * Pg = nullptr, int degree = 0, const double * dg = nullptr, double maxDiameter = 0.0);
 
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);

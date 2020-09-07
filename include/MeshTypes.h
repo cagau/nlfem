@@ -65,6 +65,7 @@ struct MeshStruct{
     // Number of vertices (in case of CG = K and K_Omega)
     const int nV;
     const int nV_Omega;
+    const double delta;
     const double sqdelta;
     const long * ptrNeighbours;
     const int nNeighbours;
@@ -79,6 +80,9 @@ struct MeshStruct{
     // Weights for Domain decomposition (optional)
     const long * ptrZeta = nullptr;
     const long nZeta; // Should be set to 0
+
+    // Optional Argument Mesh Diameter
+    const double maxDiameter; // Should be set to 0 if unused.
 
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
     const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
