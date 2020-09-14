@@ -119,6 +119,63 @@ struct QuadratureStruct{
 };
 typedef QuadratureStruct QuadratureType;
 
+struct entryStruct{
+    unsigned long dx;
+    double value;
+
+    bool operator<(const entryStruct &other) const{
+        return this->dx < other.dx;
+    }
+    bool operator>(const entryStruct &other) const{
+        return this->dx > other.dx;
+    }
+    bool operator==(const entryStruct &other) const{
+        return this->dx == other.dx;
+    }
+};
+typedef entryStruct entryType;
+
+class sparseMatrix{
+public:
+    entryStruct * indexValuePairs = nullptr;
+    entryStruct * indexValuePairs_source = nullptr;
+    unsigned long reserved_total = 0;
+    const unsigned long reserved_buffer;
+    unsigned long size_guess;
+    const MeshType mesh;
+
+    entryStruct * A = nullptr;
+    entryStruct * buffer_A = nullptr;
+    unsigned long n_entries=0, n_buffer=0;
+
+    sparseMatrix(unsigned long chunkSize, MeshType & mesh) :
+    reserved_buffer(2),//10 * static_cast<unsigned long>(pow(mesh.dVertex*mesh.outdim,2))),
+    size_guess(chunkSize),
+    mesh(mesh)
+    {
+        unsigned long estimatedNNZ = size_guess *
+                                     static_cast<unsigned long>(pow(2*ceil(mesh.delta / mesh.maxDiameter + 1)*
+                                                                    mesh.outdim, mesh.dim));
+        //estimatedNNZ = size_guess;
+        reserved_total = reserved_buffer + estimatedNNZ;
+        cout << "Now reserved " << reserved_total << endl;
+        indexValuePairs = static_cast<entryType *>(malloc(sizeof(entryType) * reserved_total));
+        A = indexValuePairs;
+        buffer_A = indexValuePairs+n_entries;
+
+        cout << "Allocated!" << endl;
+    }
+
+    ~sparseMatrix() = default;
+    // Putting this yields munmapchunk error. Hence I guess indexValuePairs is freed automatically.
+    // free(indexValuePairs);
+
+    int append(entryStruct & entry);
+    int mergeBuffer();
+
+    static unsigned long reduce(entryStruct * mat, unsigned long length);
+};
+
 //class sp_index {
 //public:
     //int i;

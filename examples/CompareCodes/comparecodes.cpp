@@ -85,6 +85,82 @@ int safereadb(const char * name, fstream & f){
 
 }
 
+int testMerge(MeshType & mesh){
+        cout << "Welcome to Merge" << endl;
+        sparseMatrix A(1, mesh);
+        printf("res_total %li , \n res_buffer %li,  n_entries %li, n_buffer %li\n",
+               A.reserved_total, A.reserved_buffer, A.n_entries, A.n_buffer);
+        for(unsigned long k=2000; k>0; k--){
+            entryStruct entry = {k + k%2, 1.0};
+            A.append(entry);
+            printf("Entry dx %li, val %f, nbuf %li\n", A.buffer_A[A.n_buffer-1].dx,
+                   A.buffer_A[A.n_buffer-1].value,
+                   A.n_buffer);
+
+        }
+        printf("Print Buffer \n ");
+        for(unsigned long k=0; k<A.n_buffer; k++){
+            printf("Entry dx %li, val %f, nbuf %li\n", A.buffer_A[k].dx, A.buffer_A[k].value,
+                   A.n_buffer);
+        }
+        printf("Print Matrix \n ");
+        for(unsigned long k=0; k<A.n_entries; k++){
+            printf("Entry dx %li, val %f, nbuf %li\n", A.A[k].dx, A.A[k].value,
+                   A.n_entries);
+        }
+
+
+        /*
+        ulong spMat_len = 10;
+        auto * spMat = static_cast<entryType *>(malloc(sizeof(entryType) * spMat_len));
+
+        entryStruct TestValue = {1, 1.002};
+        //for(ulong k = 0; k < spMat_size; k++){
+        for(entryStruct * entry=spMat; entry < spMat + spMat_len; entry++){
+            printf("Index %li, Value %f\n",  entry->dx, entry->value);
+            printf("Index %li, Value %f\n",  TestValue.dx, TestValue.value);
+            printf("Is smaller: %i\n", TestValue < *entry);
+
+        }
+        free(spMat);
+        */
+
+        /*
+        arma::uvec index = {1, 2, 3, 6};
+        arma::uvec index_cp(index.memptr(), index.n_elem);
+
+        arma::uvec buffer = {2, 3, 4, 5, 5};
+        arma::uvec argSort_buffer = arma::sort_index(buffer);
+        arma::uvec sortedUnique_buffer = arma::unique(buffer(argSort_buffer));
+
+        long n_sortedUnique_buffer = sortedUnique_buffer.n_elem;
+        long n_newIndices=0;
+        long dx_index = 0;
+
+        for (long dx_sortedUnique_buffer = n_sortedUnique_buffer - 1; dx_sortedUnique_buffer > -1; dx_sortedUnique_buffer--) {
+            long newIndex = sortedUnique_buffer(dx_sortedUnique_buffer);
+            printf("nk %li, newIndex %li \n", dx_sortedUnique_buffer, newIndex);
+            while ((dx_index >= 0) && (newIndex < index(dx_index))) {
+                dx_index--;
+            }
+            if ((dx_index < 0) || (newIndex > index(dx_index))) {
+                n_newIndices++;
+                dx_index--;
+            }
+        }
+        cout << "Number of new Entries: " << n_newIndices << endl;
+
+        index.set_size(index.n_elem + n_newIndices);
+        index.fill(-1);
+        merge(index_cp.begin(), index_cp.end(), sortedUnique_buffer.begin(), sortedUnique_buffer.end(), index.begin());
+        for (auto k = index.begin(); k < index.end(); k++) {
+            cout << *k << endl;
+        }
+*/
+
+    return 0;
+}
+
 int read_configuration(const string &path, idx_t nparts){
     fstream f;
     string path_conf = path + "/conf";
@@ -166,7 +242,7 @@ int read_configuration(const string &path, idx_t nparts){
 
     MeshType mesh = {K_Omega, K, elements.memptr(), elementLabels.memptr(), vertices.memptr(), J, J_Omega,
                      L, L_Omega, sqrt(sqdelta), sqdelta, neighbours.memptr(), nNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, 1,dim + 1, nullptr, 0};
+                     is_NeumannBoundary, dim, 1,dim + 1, nullptr, 0, 0.01};
 
     QuadratureType quadRule = {Px.memptr(), Py.memptr(), dx.memptr(), dy.memptr(),
                                static_cast<int>(dx.n_elem), static_cast<int>(dy.n_elem), dim};
@@ -178,6 +254,10 @@ int read_configuration(const string &path, idx_t nparts){
     //idx_t options[METIS_NOPTIONS];
     //METIS_SetDefaultOptions(options);
 
+
+    testMerge(mesh);
+
+    /*
     // METIS TEST ------------------------------------------------------------------------------------------------------
     idx_t nE = mesh.nE;
     idx_t nV = mesh.nV;
@@ -253,12 +333,14 @@ int read_configuration(const string &path, idx_t nparts){
             printf("Only OUTER master talking here. (After all others)");
         }
     }
-
-
+     */
     return 0;
 }
 
-int main(int argc, char *argv[]) {
+
+
+int main(){//int argc, char *argv[]) {
+    /*
     if (argc < 2){
         cout << "ERROR: Please hand over nparts!" << endl;
         abort();
@@ -268,5 +350,7 @@ int main(int argc, char *argv[]) {
     cout << "Partition into " << nparts << " parts." << endl;
     string path = "data";
     read_configuration(path, nparts);
+     */
+    read_configuration("data", 0);
     return 0;
 }

@@ -33,6 +33,10 @@ void lookup_configuration(ConfigurationType & conf){
         model_f = f_constant;
     } else if (conf.model_f == "linearField"){
         model_f = fField_linear;
+    } else if (conf.model_f == "constantRightField"){
+        model_f = fField_constantRight;
+    } else if (conf.model_f == "constantDownField"){
+        model_f = fField_constantDown;
     } else {
         cout << "Error in par:assemble. Right hand side: " << conf.model_f << " is not implemented." << endl;
         abort();
@@ -46,12 +50,12 @@ void lookup_configuration(ConfigurationType & conf){
         model_kernel = kernel_labeled;
     } else if (conf.model_kernel == "constant3D") {
         model_kernel = kernel_constant3D;
-    //} else if (conf.model_kernel == "linearPrototypeMircoelastic") {
-    //    model_kernel = kernelField_linearPrototypeMicroelastic;
-    //    conf.is_singularKernel = true;
+    } else if (conf.model_kernel == "linearPrototypeMircoelasticField") {
+        model_kernel = kernelField_linearPrototypeMicroelastic;
+        conf.is_singularKernel = true;
     } else if (conf.model_kernel == "constantField") {
         model_kernel = kernelField_constant;
-        conf.is_singularKernel = true; // Test Case
+        conf.is_singularKernel = false; // Test Case
     }
     else {
         cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;
@@ -60,7 +64,21 @@ void lookup_configuration(ConfigurationType & conf){
 
     // Lookup integration method  --------------------------------------------------------------------------------------
     cout << "Integration Method: " << conf.integration_method << endl;
-    if ( conf.model_kernel == "constantField"){
+    if ( conf.model_kernel == "constantField"){ // Test Case
+        if (conf.integration_method == "baryCenter") {
+            integrate = integrate_linearPrototypeMicroelastic_baryCenter;
+        } else if (conf.integration_method == "baryCenterRT") {
+            integrate = integrate_linearPrototypeMicroelastic_baryCenterRT;
+            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else if (conf.integration_method == "retriangulate") {
+            integrate = integrate_linearPrototypeMicroelastic_retriangulate;
+            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else {
+            cout << "Error in par:assemble. Integration method " << conf.integration_method <<
+                 " is not implemented." << endl;
+            abort();
+        }
+    } else if ( conf.model_kernel == "linearPrototypeMircoelasticField") {
         if (conf.integration_method == "baryCenter") {
             integrate = integrate_linearPrototypeMicroelastic_baryCenter;
         } else if (conf.integration_method == "baryCenterRT") {
@@ -77,6 +95,15 @@ void lookup_configuration(ConfigurationType & conf){
     } else {
         if (conf.integration_method == "baryCenter") {
             integrate = integrate_baryCenter;
+        } else if (conf.integration_method == "subSetBall") {
+            integrate = integrate_subSuperSetBalls;
+
+        } else if (conf.integration_method == "superSetBall") {
+            integrate = integrate_subSuperSetBalls;
+
+        } else if (conf.integration_method == "averageBall") {
+            integrate = integrate_subSuperSetBalls;
+
         } else if (conf.integration_method == "baryCenterRT") {
             integrate = integrate_baryCenterRT;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
@@ -338,7 +365,11 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.nE);
     //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
-    #pragma omp parallel default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total)
+    // default(none)  does not work well with g++.
+    const auto chunkSize = mesh.nE / omp_get_num_procs() ;
+    printf("Chunk Size %i\n", chunkSize);
+
+    #pragma omp parallel shared(mesh, quadRule, conf, values_all, chunkSize, indices_all, nnz_total)
     {
     map<unsigned long, double> Ad;
     unsigned long Adx;
@@ -375,7 +406,8 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     */
     //[End DEBUG]
     //long debugTdx = 570;
-    #pragma omp for
+
+    #pragma omp for schedule(static, chunkSize)
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
         //if (aTdx == debugTdx){
         //    cout << "aTdx " << aTdx << endl;
@@ -622,6 +654,9 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     #pragma omp critical
     {
         int nnz_current = static_cast<int>(Ad.size());
+        printf("NNZ of Thread %i is %i\n", omp_get_thread_num(), nnz_current);
+        int estimatedNNZ = chunkSize * pow(2*ceil(mesh.delta / mesh.maxDiameter + 1), mesh.dim);
+        printf("Estimated NNZ is %i\n", estimatedNNZ);
         nnz_start = nnz_total;
         nnz_total +=nnz_current;
         //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;

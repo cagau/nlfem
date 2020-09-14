@@ -19,6 +19,7 @@ include_directories(./include/ ./src/)
 # Adds the library Cassemble. Leads to: libCassemble.a
 add_library(Cassemble SHARED ./src/Cassemble.cpp ./include/Cassemble.h
         ./src/MeshBuilder.cpp ./include/MeshBuilder.h
+        ./include/MeshTypes.cpp ./include/MeshTypes.h
         ./src/Cassemble2D.cpp ./include/Cassemble2D.h)
 target_compile_options(Cassemble PUBLIC "-fopenmp" "-Wall")
 

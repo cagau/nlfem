@@ -87,7 +87,7 @@ class RegMesh2D:
         self.u_exact = None
         self.ud = None
 
-        self.diam = self.h
+        self.diam = self.h*np.sqrt(2)
         if ufunc is not None:
             if hasattr(ufunc, '__call__'):
                 self.set_u_exact(ufunc)

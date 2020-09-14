@@ -51,6 +51,17 @@ void kernel_labeled(const double * x, const long labelx, const double * y, const
 
 void kernelField_linearPrototypeMicroelastic(const double * x, const long labelx, const double * y, const long labely,
                                         const double sqdelta, double * kernel_val) {
+    double z[2];
+    z[0] = x[0] - y[0];
+    z[1] = x[1] - y[1];
+    double denominator = 1.0/pow(sqrt(vec_dot(z,z,2) * sqdelta),3);
+    double K = 160.0; //bulk_modulus of steel
+    double c = (72.0*K) / (5.0*M_PI);
+
+    kernel_val[0] = c*denominator*z[0]*z[0];
+    kernel_val[1] = c*denominator*z[0]*z[1];
+    kernel_val[2] = c*denominator*z[1]*z[0];
+    kernel_val[3] = c*denominator*z[1]*z[1];
 }
 void kernelField_constant(const double * x, const long labelx, const double * y, const long labely,
                                              const double sqdelta, double * kernel_val) {
@@ -59,7 +70,7 @@ void kernelField_constant(const double * x, const long labelx, const double * y,
     //z[1] = x[1] - y[1];
     //*kernel_val = 1./sqrt(vec_dot(z,z,2));
     // KERNEL ORDER [ker (0,0), ker (0,1), ker (1,0), ker (1,1)]
-    kernel_val[0] = 4 / (M_PI * pow(sqdelta, 2));
+    kernel_val[0] = 4. / (M_PI * pow(sqdelta, 2));
     kernel_val[1] = 0.0;
     kernel_val[2] = 0.0;
     kernel_val[3] = 0.0;
@@ -75,8 +86,16 @@ void f_constant(const double * x, double * forcing_out){
     forcing_out[0] = 1.0;
 }
 void fField_linear(const double * x, double * forcing_out){
-    forcing_out[0] = -2. * (x[1] + 1.);
+    forcing_out[0] = 0.0;
     forcing_out[1] = -2. * (x[1] + 1.);
+}
+void fField_constantRight(const double * x, double * forcing_out){
+    forcing_out[0] = 100.0;
+    forcing_out[1] = 0.0;
+}
+void fField_constantDown(const double * x, double * forcing_out){
+    forcing_out[0] = 0.0;
+    forcing_out[1] = -1.;
 }
 void f_linear(const double * x, double * forcing_out){
     *forcing_out = -2. * (x[1] + 1.);

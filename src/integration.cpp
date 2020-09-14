@@ -49,6 +49,9 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
 void integrate_fullyContained(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                               const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                               double *termLocal, double *termNonloc);
+void
+integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                           const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
 
 void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                                                        const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
@@ -72,6 +75,8 @@ void integrate_linearPrototypeMicroelastic_baryCenterRT(const ElementType &aT, c
 // Helpers -------------------------------------------------------------------------------------------------------------
 int method_baryCenter(const double * x_center, const ElementType & T, const MeshType & mesh, double * reTriangle_list, int is_placePointOnCap);
 int method_retriangulate(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList, int isPlacePointOnCap);
+int method_subSuperSetBalls(const double * x_center, const ElementType & T, const MeshType & mesh);
+
 int placePointOnCap(const double * y_predecessor, const double * y_current,
                    const double * x_center, double sqdelta, const double * TE,
                    const double * nu_a, const double * nu_b, const double * nu_c,
@@ -146,8 +151,10 @@ void integrate_linearPrototypeMicroelastic_baryCenterRT(const ElementType &aT, c
     }
 }
 
-void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
-                                                       const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, const ElementType &bT,
+                                                       const QuadratureType &quadRule,
+                                                       const MeshType &mesh, const ConfigurationType &conf,
+                                                       bool is_firstbfslayer,
                                                        double * termLocal, double * termNonloc){
     const std::list<double(*)(double *)> traffoCommonVertex = {traffoCommonVertex0,
                                                                traffoCommonVertex1};
@@ -168,7 +175,9 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
 
     double factors;
     //const int dim = mesh.dim;
-    double alpha[4], traffodet, x[2], y[2];//, kernel_val=0.;
+    double alpha[4], alphaCanceled[4], traffodet, traffodetCanceled, x[2], y[2],
+    x_canceled[2], y_canceled[2];//, kernel_val=0.;
+
     double kernel_val[mesh.outdim*mesh.outdim];
     double psix[3], psiy[3];
     //cout << "Tensor Gauss" << endl;
@@ -182,24 +191,38 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
         assert(( 0 && "Error in integrate_linearPrototypeMicroelastic_tensorgauss: This should not have happened."));
     }
 
-
+    int traffoCounter = 0;
     for(auto & traffo : traffoList) {
         for (int k = 0; k < quadRule.nPg; k++) {
             for (int j = 0; j < 4; j++) {
                 alpha[j] = quadRule.Pg[4 * k + j];
+                alphaCanceled[j] = quadRule.Pg[4 * k + j];
             }
+            traffodetCanceled = (nEqual==1 && traffoCounter==0) ? alphaCanceled[0] : pow(alphaCanceled[0], 2);
+            alphaCanceled[0] = 1.0;
 
             scale(alpha);
+            scale(alphaCanceled);
             traffodet = traffo(alpha);
+            traffodetCanceled *= traffo(alphaCanceled);
+
             mirror(alpha);
+            mirror(alphaCanceled);
 
             toPhys(aTsorted.E, &alpha[0], 2, x);
             toPhys(bTsorted.E, &alpha[2], 2, y);
+            toPhys(aTsorted.E, &alphaCanceled[0], 2, x_canceled);
+            toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
 
             // Eval Kernel(x-y)
-            model_kernel(x, aTsorted.label, y, bTsorted.label, mesh.sqdelta, kernel_val);
-            // Eval C(x-y)
+            model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh.sqdelta, kernel_val);
 
+            //cout << "x " << endl;
+            //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
+            //cout << "y " << endl;
+            //cout << y_canceled[0] << ", " << y_canceled[1] << endl;
+
+            // Eval C(x-y)
             model_basisFunction(&alpha[0], 2, psix);
             model_basisFunction(&alpha[2], 2, psiy);
             //double outTest[mesh.outdim*mesh.outdim*mesh.dVertex*mesh.dVertex];
@@ -226,7 +249,9 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
             //cout << "Thank you!" << endl;
             //abort();
         }
+        traffoCounter++;
     }
+
 }
 
 void integrate_fullyContained(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
@@ -272,7 +297,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
                              double *termNonloc) {
 
 
-    if ((mesh.maxDiameter > EPSILON) && isFullyContained(aT, bT, mesh)){
+    if ((mesh.maxDiameter > EPSILON) && (mesh.delta - 2*mesh.maxDiameter > 0) && isFullyContained(aT, bT, mesh)){
         integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
         return;
     }
@@ -429,7 +454,6 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
     }
 }
 
-
 void
 integrate_baryCenter(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                      const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc) {
@@ -535,6 +559,129 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
     }
 }
 
+
+void
+integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                     const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc) {
+
+    bool isAverage = false;
+    double averageWeight = 1.0;
+    int doesInteract;
+
+    if (conf.integration_method == "superSetBall"){
+        doesInteract = 1;
+    } else if (conf.integration_method == "subSetBall"){
+        doesInteract = 2;
+    } else if (conf.integration_method == "averageBall") {
+        doesInteract = 1;
+        isAverage = true;
+    }
+
+    const int dim = mesh.dim;
+    int k = 0, a = 0, b = 0;
+    double x[dim];
+    // [x 26]
+    double innerLocal[mesh.outdim*mesh.outdim];
+
+    // [x 27]
+    double innerNonloc[mesh.outdim*mesh.outdim*mesh.dVertex];
+
+    int i = 0;
+    double kernel_val[mesh.outdim*mesh.outdim];
+    double rTdet = 0.0;
+    double physical_quad[dim];
+    double reTriangle_list[36 * mesh.dVertex * dim];
+    doubleVec_tozero(reTriangle_list, 36 * mesh.dVertex * dim);
+
+    //[DEBUG]
+    //printf("\nouterInt_full----------------------------------------\n");
+    for (k = 0; k < quadRule.nPx; k++) {
+        toPhys(aT.E, &(quadRule.Px[dim * k]), mesh.dim, x);
+
+        doubleVec_tozero(innerLocal, mesh.outdim*mesh.outdim);
+        // [x 28]
+        doubleVec_tozero(innerNonloc, mesh.outdim*mesh.outdim*mesh.dVertex);
+        int nContained = method_subSuperSetBalls(x, bT, mesh);
+        if (nContained >= doesInteract) {
+            //averageWeight = isAverage ? 0.5 * static_cast<double>(interaction) : 1.0;
+
+            for (i = 0; i < quadRule.nPy; i++) {
+                // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
+                toPhys(bT.E, &(quadRule.Py[dim * i]), mesh.dim, physical_quad);
+                // Determinant of Triangle of retriangulation
+                rTdet = absDet(bT.E, mesh.dim);
+                // inner Local integral with ker
+                model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, kernel_val);
+                // [x 29]
+                for (int o=0; o<mesh.outdim*mesh.outdim; o++) {
+                    innerLocal[o] += rTdet * kernel_val[o] * quadRule.dy[i] * averageWeight; // Local Term
+                }
+                // Evaluate ker on physical quad (note this is ker')
+                model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, kernel_val);
+                // Evaluate basis function on resulting reference quadrature point
+
+                // INNER NON-LOCAL ORDER
+                // [(b 0, ker (0,0)), (b 0, ker (0,1)), (b 0, ker (1,0)), (b 0, ker (1,1)),
+                //  (b 1, ker (0,0)), (b 1, ker (0,1)), (b 1, ker (1,0)), (b 1, ker (1,1)),
+                //  (b 2, ker (0,0)), (b 2, ker (0,1)), (b 2, ker (1,0)), (b 2, ker (1,1))]
+                //  = (PSI ORDER) * (KERNEL ORDER)
+
+                for (b = 0; b < mesh.dVertex*mesh.outdim*mesh.outdim; b++) {
+                    // [x 31]
+                    //innerNonloc[b] += quadRule.psiy(b, i) * kernel_val * quadRule.dy[i] * rTdet; // Nonlocal Term
+                    innerNonloc[b] +=
+                            quadRule.psiy(b/(mesh.outdim*mesh.outdim), i) *
+                            kernel_val[b%(mesh.outdim*mesh.outdim)] *
+                            quadRule.dy[i] * rTdet * averageWeight; // Nonlocal Term
+                }
+            }
+        }
+        //printf("Local %17.16e\n", innerLocal);
+        //printf("Nonloc [%17.16e, %17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2], innerNonloc[3]);
+
+        // TERM LOCAL & TERM NON-LOCAL ORDER
+        // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
+        // However it mimics the matrix which results from the multiplication.
+        //                                      Kernel switches back here. v
+        // [(a 0, b 0, ker (0,0)), (a 0, b 0, ker (0,1)), (a 0, b 1, ker (0,0)), (a 0, b 1, ker (0,1)), (a 0, b 2, ker (0,0)), (a 0, b 2, ker (0,1)),
+        //  (a 0, b 0, ker (1,0)), (a 0, b 0, ker (1,1)), (a 0, b 0, ker (1,0)), (a 0, b 1, ker (1,1)), (a 0, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+        //  (a 1, b 0, ker (0,0)), (a 1, b 0, ker (0,1)), (a 1, b 1, ker (0,0)), (a 1, b 1, ker (0,1)), (a 1, b 2, ker (0,0)), (a 1, b 2, ker (0,1)),
+        //  (a 1, b 0, ker (1,0)), (a 1, b 0, ker (1,1)), (a 1, b 0, ker (1,0)), (a 1, b 1, ker (1,1)), (a 1, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+        //  (a 2, b 0, ker (0,0)), (a 2, b 0, ker (0,1)), (a 2, b 1, ker (0,0)), (a 2, b 1, ker (0,1)), (a 2, b 2, ker (0,0)), (a 2, b 2, ker (0,1)),
+        //  (a 2, b 0, ker (1,0)), (a 2, b 0, ker (1,1)), (a 2, b 0, ker (1,0)), (a 2, b 1, ker (1,1)), (a 2, b 2, ker (1,0)), (a 2, b 2, ker (1,1))]
+
+        //  = (PSI ORDER) * (PSI ORDER) * (INNER LOCAL ORDER)
+        //  = (PSI ORDER) *' (INNER NON-LOCAL ORDER)
+
+        // [x 32]
+        for (a = 0; a < mesh.dVertex*mesh.outdim; a++) {
+            // [x 33]
+            for (b = 0; b < mesh.dVertex*mesh.outdim; b++) {
+                // [x 33]
+                termLocal[mesh.dVertex * mesh.outdim * a + b] +=
+                        2 * aT.absDet *
+                        quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) *
+                        quadRule.dx[k] *
+                        innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)]; //innerLocal
+                // [x 34]
+                // [x 35]
+                //2 * aT.absDet * quadRule.psix(a, k) * quadRule.psix(b, k) * quadRule.dx[k] * innerLocal;
+
+                // [x 36]
+                termNonloc[mesh.dVertex * mesh.outdim * a + b] +=
+                        // [x 37]
+                        //2 * aT.absDet * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b];
+                        2 * aT.absDet *
+                        quadRule.psix(a/mesh.outdim, k) *
+                        quadRule.dx[k] *
+                        innerNonloc[(a%mesh.outdim)*mesh.outdim +
+                                    mesh.outdim*mesh.outdim*(b/mesh.outdim) +
+                                    (b%mesh.outdim)];//innerNonloc
+            }
+        }
+    }
+}
+
 void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                             double *termNonloc) {
@@ -630,6 +777,15 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
     }
 }
 // Helpers -------------------------------------------------------------------------------------------------------------
+// Sub Set Method ------------------------------------------------------------------------------------------------------
+// Super, Sub and Average Set Method -----------------------------------------------------------------------------------
+int method_subSuperSetBalls(const double * x, const ElementType & T, const MeshType & mesh){
+    int nContained = 0;
+    for (int i=0; i<mesh.dVertex; i++){
+        nContained += (vec_sqL2dist(x, &T.E[mesh.dim * i], mesh.dim) < mesh.sqdelta);
+    }
+    return nContained;
+}
 
 // Bary Center Method --------------------------------------------------------------------------------------------------
 int method_baryCenter(const double * x_center, const ElementType & T, const MeshType & mesh, double * reTriangle_list, int is_placePointOnCap){
