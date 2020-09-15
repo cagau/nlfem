@@ -11,7 +11,7 @@ is_PlacePointOnCap = True
 quadrule_outer = "16"
 quadrule_inner = "1"
 
-n_start = 24
+n_start = 12
 n_layers = 4
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4

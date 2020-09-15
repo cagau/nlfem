@@ -140,30 +140,31 @@ public:
     entryStruct * indexValuePairs = nullptr;
     entryStruct * indexValuePairs_source = nullptr;
     unsigned long reserved_total = 0;
-    const unsigned long reserved_buffer;
+    unsigned long reserved_buffer;
     unsigned long size_guess;
     const MeshType mesh;
 
-    entryStruct * A = nullptr;
-    entryStruct * buffer_A = nullptr;
+    entryStruct * data = nullptr;
+    entryStruct * buffer = nullptr;
     unsigned long n_entries=0, n_buffer=0;
 
     sparseMatrix(unsigned long chunkSize, MeshType & mesh) :
-    reserved_buffer(2),//10 * static_cast<unsigned long>(pow(mesh.dVertex*mesh.outdim,2))),
     size_guess(chunkSize),
     mesh(mesh)
     {
+        // The NNZ depends on the mergeBuffer() function. If we reduce, we need more time and less memory.
         unsigned long estimatedNNZ = size_guess *
                                      static_cast<unsigned long>(pow(2*ceil(mesh.delta / mesh.maxDiameter + 1)*
                                                                     mesh.outdim, mesh.dim));
-        //estimatedNNZ = size_guess;
-        reserved_total = reserved_buffer + estimatedNNZ;
-        cout << "Now reserved " << reserved_total << endl;
+        reserved_buffer = estimatedNNZ;
+        reserved_total = reserved_buffer;// + estimatedNNZ;
+        //printf("Now reserved %li\n", reserved_total);
+        //printf("%f GB\n", static_cast<double>(reserved_total)*16.0 * 1e-9);
         indexValuePairs = static_cast<entryType *>(malloc(sizeof(entryType) * reserved_total));
-        A = indexValuePairs;
-        buffer_A = indexValuePairs+n_entries;
+        data = indexValuePairs;
+        buffer = indexValuePairs + n_entries;
 
-        cout << "Allocated!" << endl;
+        //cout << "Allocated!" << endl;
     }
 
     ~sparseMatrix() = default;

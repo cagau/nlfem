@@ -5,11 +5,11 @@
 
 int sparseMatrix::append(entryStruct &entry) {
     if (n_buffer >= reserved_buffer - 1) {
-        cout << "Buffer filled Up!" << endl;
+        //cout << "Buffer filled Up!" << endl;
         mergeBuffer();
     }
-    buffer_A[n_buffer].dx = entry.dx;
-    buffer_A[n_buffer].value = entry.value;
+    buffer[n_buffer].dx = entry.dx;
+    buffer[n_buffer].value = entry.value;
     n_buffer++;
     //cout << "Appended! " << endl;
     return 0;
@@ -20,33 +20,37 @@ int sparseMatrix::mergeBuffer(){
     // Sort Buffer into indexValuePairs
     // inplace merge indexValuePairs
 
-    sort(buffer_A, buffer_A+n_buffer);
-    n_buffer = reduce(buffer_A, n_buffer);
+    sort(buffer, buffer + n_buffer);
+    n_buffer = reduce(buffer, n_buffer);
 
-    inplace_merge(A, buffer_A, buffer_A+n_buffer);
+    // Too expensive. If ommited, we cannot reduce A.
+    //inplace_merge(data, buffer, buffer + n_buffer);
     n_entries += n_buffer;
-    n_entries = reduce(A, n_entries);
+    // If omitted, then merge is even more expensive.
+    // We also need more memory.
+    //n_entries = reduce(data, n_entries);
 
-    buffer_A = A + n_entries;
+    buffer = data + n_entries;
     n_buffer = 0;
 
-    cout << "MergeBuffer! New Size is " << n_buffer << endl;
+    //cout << "MergeBuffer! New Size is " << n_buffer << endl;
 
     if (n_entries + reserved_buffer > reserved_total){
-        cout << "Chunk larger than expected. Resize Sparse Matrix!" << endl;
-        size_guess += size_guess;
+
+        size_guess *= 2;
         unsigned long estimatedNNZ = size_guess *
                                      static_cast<unsigned long>(pow(2*ceil(mesh.delta / mesh.maxDiameter + 1)*
                                                                     mesh.outdim, mesh.dim));
-        //estimatedNNZ = size_guess;
         reserved_total = reserved_buffer + estimatedNNZ;
-        cout << "Now newly reserved " << reserved_total << endl;
+        printf("Thread %i resizes buffer to %li entries.\n", omp_get_thread_num(), reserved_total);
+        //printf("Now newly reserved %li\n", reserved_total);
+        //printf("%f GB\n", static_cast<double>(reserved_total)*16.0 * 1e-9);
         auto auxPtr = static_cast<entryStruct *>(realloc(indexValuePairs, sizeof(entryType) * reserved_total));
 
         if ( auxPtr != nullptr){
             indexValuePairs = auxPtr;
-            A = indexValuePairs;
-            buffer_A = A+n_entries;
+            data = indexValuePairs;
+            buffer = data + n_entries;
             return 0;
         }
         printf("Error in sparseMatrix::mergeBuffer. Could not allocate enough memory.");
@@ -68,7 +72,7 @@ unsigned long sparseMatrix::reduce(entryStruct * mat, const unsigned long length
             mat[k - duplicate_counter].dx = mat[k].dx;
         }
     }
-    cout << "Reduced Buffer or Matrix!" << endl;
+    //cout << "Reduced Buffer or Matrix!" << endl;
     return length - duplicate_counter;
 }
 

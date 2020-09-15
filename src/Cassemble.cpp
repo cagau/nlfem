@@ -407,7 +407,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //[End DEBUG]
     //long debugTdx = 570;
 
-    #pragma omp for schedule(static, chunkSize)
+    #pragma omp for schedule(static)
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
         //if (aTdx == debugTdx){
         //    cout << "aTdx " << aTdx << endl;
@@ -654,9 +654,9 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     #pragma omp critical
     {
         int nnz_current = static_cast<int>(Ad.size());
-        printf("NNZ of Thread %i is %i\n", omp_get_thread_num(), nnz_current);
-        int estimatedNNZ = chunkSize * pow(2*ceil(mesh.delta / mesh.maxDiameter + 1), mesh.dim);
-        printf("Estimated NNZ is %i\n", estimatedNNZ);
+        //printf("NNZ of Thread %i is %i\n", omp_get_thread_num(), nnz_current);
+        //int estimatedNNZ = chunkSize * pow(2*ceil(mesh.delta / mesh.maxDiameter + 1), mesh.dim);
+        //printf("Estimated NNZ is %i\n", estimatedNNZ);
         nnz_start = nnz_total;
         nnz_total +=nnz_current;
         //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;

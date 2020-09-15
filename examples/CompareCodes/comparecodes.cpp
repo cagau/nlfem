@@ -4,6 +4,7 @@
 #include "armadillo"
 #include "metis.h"
 #include "MeshTypes.h"
+#include "Cassemble.h"
 #include "iostream"
 #include "cstdio"
 #include "map"
@@ -93,19 +94,19 @@ int testMerge(MeshType & mesh){
         for(unsigned long k=2000; k>0; k--){
             entryStruct entry = {k + k%2, 1.0};
             A.append(entry);
-            printf("Entry dx %li, val %f, nbuf %li\n", A.buffer_A[A.n_buffer-1].dx,
-                   A.buffer_A[A.n_buffer-1].value,
+            printf("Entry dx %li, val %f, nbuf %li\n", A.buffer[A.n_buffer - 1].dx,
+                   A.buffer[A.n_buffer - 1].value,
                    A.n_buffer);
 
         }
         printf("Print Buffer \n ");
         for(unsigned long k=0; k<A.n_buffer; k++){
-            printf("Entry dx %li, val %f, nbuf %li\n", A.buffer_A[k].dx, A.buffer_A[k].value,
+            printf("Entry dx %li, val %f, nbuf %li\n", A.buffer[k].dx, A.buffer[k].value,
                    A.n_buffer);
         }
         printf("Print Matrix \n ");
         for(unsigned long k=0; k<A.n_entries; k++){
-            printf("Entry dx %li, val %f, nbuf %li\n", A.A[k].dx, A.A[k].value,
+            printf("Entry dx %li, val %f, nbuf %li\n", A.data[k].dx, A.data[k].value,
                    A.n_entries);
         }
 
@@ -257,7 +258,7 @@ int read_configuration(const string &path, idx_t nparts){
 
     testMerge(mesh);
 
-    /*
+
     // METIS TEST ------------------------------------------------------------------------------------------------------
     idx_t nE = mesh.nE;
     idx_t nV = mesh.nV;
@@ -289,8 +290,8 @@ int read_configuration(const string &path, idx_t nparts){
     for (int k=0; k<mesh.nV; k++){
         partition[k] = static_cast<double>(npart[k]);
     }
-    //par_system(mesh, quadRule, conf);
-
+    par_system(mesh, quadRule, conf);
+    /*
     //Ad.save(path_Ad.c_str(), arma::raw_binary);
     // Vertex-zerlegung speichern
     partition.save(path_partition, arma::arma_binary);
