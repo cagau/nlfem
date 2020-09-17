@@ -50,7 +50,10 @@ void lookup_configuration(ConfigurationType & conf){
         model_kernel = kernel_labeled;
     } else if (conf.model_kernel == "constant3D") {
         model_kernel = kernel_constant3D;
-    } else if (conf.model_kernel == "linearPrototypeMircoelasticField") {
+    } else if (conf.model_kernel == "linearPrototypeMicroelastic") {
+        model_kernel = kernel_linearPrototypeMicroelastic;
+        conf.is_singularKernel = true;
+    } else if (conf.model_kernel == "linearPrototypeMicroelasticField") {
         model_kernel = kernelField_linearPrototypeMicroelastic;
         conf.is_singularKernel = true;
     } else if (conf.model_kernel == "constantField") {
@@ -78,7 +81,8 @@ void lookup_configuration(ConfigurationType & conf){
                  " is not implemented." << endl;
             abort();
         }
-    } else if ( conf.model_kernel == "linearPrototypeMircoelasticField") {
+    } else if ( conf.model_kernel == "linearPrototypeMicroelastic" ||
+                conf.model_kernel == "linearPrototypeMicroelasticField") {
         if (conf.integration_method == "baryCenter") {
             integrate = integrate_linearPrototypeMicroelastic_baryCenter;
         } else if (conf.integration_method == "baryCenterRT") {
@@ -92,7 +96,7 @@ void lookup_configuration(ConfigurationType & conf){
                  " is not implemented." << endl;
             abort();
         }
-    } else {
+    }  else {
         if (conf.integration_method == "baryCenter") {
             integrate = integrate_baryCenter;
         } else if (conf.integration_method == "subSetBall") {
@@ -369,7 +373,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     const auto chunkSize = mesh.nE / omp_get_num_procs() ;
     printf("Chunk Size %i\n", chunkSize);
 
-    #pragma omp parallel shared(mesh, quadRule, conf, values_all, chunkSize, indices_all, nnz_total)
+    #pragma omp parallel shared(mesh, quadRule, conf, values_all, indices_all, nnz_total)
     {
     map<unsigned long, double> Ad;
     unsigned long Adx;
@@ -407,7 +411,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //[End DEBUG]
     //long debugTdx = 570;
 
-    #pragma omp for schedule(static)
+    #pragma omp for schedule(dynamic)
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
         //if (aTdx == debugTdx){
         //    cout << "aTdx " << aTdx << endl;

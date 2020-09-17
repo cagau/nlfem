@@ -5,8 +5,8 @@ import os
 
 # Environment variables
 home = os.getenv("HOME")
-os.environ['CC'] = 'clang'
-os.environ['CXX'] = 'clang++'
+os.environ['CC'] = 'gcc'
+os.environ['CXX'] = 'g++'
 
 # If you want to build the C++ Code into a shared library and dynamically link it to python you can
 # use the CMakeLists.txt to build the binaries for the C++ code and then

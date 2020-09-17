@@ -7,21 +7,27 @@
 
 #ifndef NONLOCAL_ASSEMBLY_CHECKS_CPP
 #define NONLOCAL_ASSEMBLY_CHECKS_CPP
-#include <cassert>
+
 #include <armadillo>
 
 #include "mathhelpers.cpp"
 #include "MeshTypes.h"
 
+void abortIfFalse(const bool assertion, const char * message){
+    if (!assertion){
+        cout << message << endl;
+        abort();
+    }
+}
 void chk_QuadratureRule(QuadratureType & quadRule){
     // Volume of elements
     double elementVolume = 1./ static_cast<double>(faculty(quadRule.dim));
 
     double dx_sum = vec_sum(quadRule.dx, quadRule.nPx);
-    assert((double_eq(dx_sum, elementVolume) && "Weights dx do not sum up to element volume."));
+    abortIfFalse(double_eq(dx_sum, elementVolume) , "Weights dx do not sum up to element volume.");
 
     double dy_sum = vec_sum(quadRule.dy, quadRule.nPy);
-    assert((double_eq(dy_sum, elementVolume) && "Weights dy do not sum up to element volume."));
+    abortIfFalse(double_eq(dy_sum, elementVolume) , "Weights dy do not sum up to element volume.");
 }
 
 void chk_BasisFunction(QuadratureType & quadRule){
@@ -30,11 +36,11 @@ void chk_BasisFunction(QuadratureType & quadRule){
 
     arma::vec dx(quadRule.dx, quadRule.nPx);
     double psix_integral = arma::dot(dx, quadRule.psix.row(0));
-    assert((double_eq(psix_integral, elementIntegral)  && "Wrong integral of basis function w.r.t. weights dx."));
+    abortIfFalse(double_eq(psix_integral, elementIntegral)  , "Wrong integral of basis function w.r.t. weights dx.");
 
     arma::vec dy(quadRule.dy, quadRule.nPy);
     double psiy_integral = arma::dot(dy, quadRule.psiy.row(0));
-    assert((double_eq(psiy_integral, elementIntegral) && "Wrong integral of basis function w.r.t. weights dy."));
+    abortIfFalse(double_eq(psiy_integral, elementIntegral) , "Wrong integral of basis function w.r.t. weights dy.");
 }
 
 void chk_Mesh(MeshType & mesh){
@@ -48,37 +54,37 @@ void chk_Mesh(MeshType & mesh){
         if (mesh.LabelTriangles(k)!=1) {
             for (unsigned long i = 0; i < d; i++) {
                 // For description of element labels see MeshTypes.h
-                assert((mesh.Triangles(i, k) >= nV_Omega && "Incorrect vertex order or incorrect element label."));
+                abortIfFalse(mesh.Triangles(i, k) >= nV_Omega, "Incorrect vertex order or incorrect element label.");
             }
         } else {
             chk_nE_Omega++;
         }
     }
-    assert((mesh.nE_Omega == chk_nE_Omega && "Number of elements with label!=1 does not coincide with nE_Omega."));
+    abortIfFalse(mesh.nE_Omega == chk_nE_Omega , "Number of elements with label!=1 does not coincide with nE_Omega.");
 
     if (mesh.is_DiscontinuousGalerkin) {
-        assert((mesh.outdim * mesh.nE * mesh.dVertex == mesh.K && "Matrix dimension does not match #basis functions and output dimension."));
+        abortIfFalse(mesh.outdim * mesh.nE * mesh.dVertex == mesh.K , "Matrix dimension does not match #basis functions and output dimension.");
     } else {
-        assert((mesh.outdim * mesh.nV == mesh.K && "Matrix dimension does not match #basis functions and output dimension."));
+        abortIfFalse(mesh.outdim * mesh.nV == mesh.K , "Matrix dimension does not match #basis functions and output dimension.");
     }
 
     for(long k=0; k < nZeta; k++){
-        assert((mesh.ptrZeta[3*k] >= 0 && mesh.ptrZeta[3*k+1] >= 0 && mesh.ptrZeta[3*k+2] >= 0 && "Some entries in Zeta are negative."));
-        assert((mesh.ptrZeta[3*k] < nE && mesh.ptrZeta[3*k+1] < nE && mesh.ptrZeta[3*k+2] < nE && "Some entries in Zeta exceed the number of triangles."));
+        abortIfFalse(mesh.ptrZeta[3*k] >= 0 && mesh.ptrZeta[3*k+1] >= 0 && mesh.ptrZeta[3*k+2] >= 0 , "Some entries in Zeta are negative.");
+        abortIfFalse(mesh.ptrZeta[3*k] < nE && mesh.ptrZeta[3*k+1] < nE && mesh.ptrZeta[3*k+2] < nE , "Some entries in Zeta exceed the number of triangles.");
     }
 }
 
 void chk_Conf(MeshType & mesh, ConfigurationType & conf, QuadratureType & quadRule){
     if (mesh.dim == 3){
-        assert((conf.integration_method == "baryCenter" &&
-        "Only Bary-Center is implemented as integration method for 3D."));
+        abortIfFalse(conf.integration_method == "baryCenter" ,
+        "Only Bary-Center is implemented as integration method for 3D.");
     } else if (mesh.dim != 2)
     {
         cout << "Dimension is not equal to 2 or 3." << endl;
         abort();
     }
     if(conf.integration_method == "linearPrototypeMicroelastic" ){
-        assert((quadRule.tensorGaussDegree && "You chose a singular kernel, but no quadrature rule for it."));
+        abortIfFalse(quadRule.tensorGaussDegree , "You chose a singular kernel, but no quadrature rule for it.");
     }
 }
 #endif //NONLOCAL_ASSEMBLY_CHECKS_CPP

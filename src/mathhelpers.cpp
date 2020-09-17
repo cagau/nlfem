@@ -6,7 +6,6 @@
 */
 #ifndef NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
 #define NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
-#include <cassert>
 using namespace std;
 
 // ___ MATH HELERPS DECLARATION ________________________________________________________________________________________
@@ -71,14 +70,10 @@ void solve2x2(const double * A, const double * b, double * x){
     }
 
     // Check invertibility
-    /*
-    if (A[2*dx0] == 0){
-        // raise LinAlgError("in solve2x2. Matrix not invertible.")
-        cout << "in solve2x2. Matrix not invertible." << endl;
+    if (double_eq(A[2*dx0], 0)) {
+        cout << "Error in solve2x2. Matrix not invertible." << endl;
         abort();
     }
-    */
-    assert((!double_eq(A[2*dx0], 0) && "in solve2x2. Matrix not invertible."));
 
     // LU Decomposition
     l = A[2*dx1]/A[2*dx0];

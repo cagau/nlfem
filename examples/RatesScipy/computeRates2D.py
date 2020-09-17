@@ -28,7 +28,9 @@ def main():
                                  model_f=conf.model_f,
                                  integration_method=conf.integration_method,
                                  is_PlacePointOnCap=conf.is_PlacePointOnCap,
-                                 compute="systemforcing")
+                                 compute="systemforcing",
+                                 tensorGaussDegree=conf.tensorGaussDegree)
+
         conf.data["Assembly Time"].append(time() - start)
 
         A_O = A[:,:mesh.K_Omega]

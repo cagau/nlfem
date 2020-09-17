@@ -188,7 +188,8 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
     } else if (nEqual == 3) {
         traffoList = traffoIdentical;
     } else {
-        assert(( 0 && "Error in integrate_linearPrototypeMicroelastic_tensorgauss: This should not have happened."));
+        cout << "Error in integrate_linearPrototypeMicroelastic_tensorgauss: This should not have happened." << endl;
+        abort();
     }
 
     int traffoCounter = 0;
@@ -575,6 +576,10 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
     } else if (conf.integration_method == "averageBall") {
         doesInteract = 1;
         isAverage = true;
+    } else {
+        cout << "Error in integrate_subSuperSetBalls: No such integration_method: " <<
+         conf.integration_method << endl;
+        abort();
     }
 
     const int dim = mesh.dim;

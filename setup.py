@@ -5,8 +5,8 @@ import os
 
 # Environment variables
 home = os.getenv("HOME")
-os.environ['CC'] = 'clang'
-os.environ['CXX'] = 'clang++'
+os.environ['CC'] = 'gcc'
+os.environ['CXX'] = 'g++'
 
 # This file translates the cython code, compiles all C++ files and the translation and statically links them.
 # This is convenient if you do not really plan to work in the C++ code (profiling, debugging)
