@@ -1,10 +1,3 @@
-/**
-    Contains assembly algorithm for nonlocal stiffnes matrix and forcing function.
-    @file Cassemble.cpp
-    @author Manuel Klar
-    @version 0.1 25/08/20
-*/
-
 /*! \mainpage Welcome
  *
  * \section intro_sec Introduction
@@ -26,9 +19,28 @@
  * convenient speed. The hope is to provide a implementation which is easy to understand
  * such that modifications or small extensions can be implemented quickly.
  *
- * \section Nonlocal Operator
+ * \section Assembly
  *
- * ....
+ * The main assembly of the nonlocal stiffness matrix happens in the function par_system(). The Python interface
+ * calls the function par_assemble() which is a wrapper function. In translates the input data into
+ * three objects which are defined in MeshStruct, QuadratureStruct, and ConfigurationStruct. It also performs
+ * some basic input checks. The output of the integration is saved as
+ * [Armadillo sparse matrix](http://arma.sourceforge.net/docs.html#SpMat).
+ * The file is then copied again into the Python interface to make it available.
+ *
+ *\subsection Integration
+ *
+ * There are different integration routines available (e.g. integrate_retriangulate(), integrate_baryCenter(),
+ * ...). The file integration.cpp also contains the implementations for the underlying truncation methods
+ * (e.g. method_retriangulate(), method_baryCenter(), ...).
+ *
+ * \subsection Model
+ *
+ * Models are defined in model.cpp. Different options for kernels (e.g. kernel_constant(),
+ * kernel_linearPrototypeMicroelastic, ...), and forcing terms (e.g. f_constant(), f_linear(),...)
+ * are pre implemented. If you to add a kernel or forcing function just add the corresponding
+ * function to model.cpp obeying the common signature. In order to make it accessible as
+ * option you have change lookup_configuration() accordingly.
  */
 #ifndef CASSEMBLE_H
 #define CASSEMBLE_H
@@ -118,7 +130,8 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
  *  \f]
  *
  *  to the stiffness matrix. The integration starts with the domain aT x aT and then proceeds with the neighbouring
- *  elements of aT in the mesh until the interaction domain is exceeded. For each pair aT, bT an integrate() routine
+ *  elements of aT in the mesh until the interaction domain is exceeded. For each pair aT, bT an integration routine
+ *  (options are e.g. integrate_retriangulate(), integrate_baryCenter(), integrate_baryCenterRT(), ...)
  *  is called. If it all computed integrals are 0 the elements are considered as non-interacting. The integrals,
  *  and the interaction sets
  *  again depend on the truncation routines, which are called inside integrate(). This approach allows to

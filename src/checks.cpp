@@ -10,7 +10,7 @@
 
 #include <armadillo>
 
-#include "mathhelpers.cpp"
+#include "mathhelpers.h"
 #include "MeshTypes.h"
 
 void abortIfFalse(const bool assertion, const char * message){

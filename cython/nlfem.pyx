@@ -8,61 +8,12 @@
 # Assembly routine
 from libcpp.string cimport string
 cimport Cassemble
-cimport Cassemble2D
-#import meshio
-#from Cassemble cimport par_assemble
+
 import numpy as np
 import time
 from libc.math cimport pow
-from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import scipy.sparse as sparse
 cimport numpy as c_np
-#cimport armadillo
-
-def assemble2D(
-        # Mesh information ------------------------------------
-        mesh,
-        Px,
-        Py,
-        # Weights for quadrature rule
-        dx,
-        dy,
-        double delta,
-        **kwargs
-    ):
-    Ad = np.zeros(mesh.K*mesh.K_Omega)
-    fd = np.zeros(mesh.K_Omega)
-
-    cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
-    cdef long[:] elements = mesh.elements.flatten()
-    cdef long[:] elementLabels = mesh.elementLabels.flatten()
-    cdef double[:] vertices = mesh.vertices.flatten()
-    cdef double[:] ptrAd = Ad
-    cdef double[:] ptrfd = fd
-
-    cdef double[:] ptrPx = Px.flatten()
-    cdef double[:] ptrPy = Py.flatten()
-    cdef double[:] ptrdx = dx.flatten()
-    cdef double[:] ptrdy = dy.flatten()
-
-    start = time.time()
-    # Compute Assembly -------------------------------------------
-
-    Cassemble2D.par_assemble2D( &ptrAd[0],
-                        mesh.K,
-                        &ptrfd[0], &elements[0], &elementLabels[0], &vertices[0],
-                        mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
-                        &ptrPx[0], Px.shape[0], &ptrdx[0],
-                        &ptrPy[0], Py.shape[0], &ptrdy[0],
-                        delta**2,
-                        &neighbours[0],
-                        mesh.is_DiscontinuousGalerkin,
-                        mesh.is_NeumannBoundary)
-
-    total_time = time.time() - start
-
-    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
-    return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
 
 def read_arma_mat(path, is_verbose=False):
     """
@@ -186,7 +137,6 @@ def assemble(
         is_PlacePointOnCap = 1,
         tensorGaussDegree=0
     ):
-
     is_tmpAd = False
     if path_spAd is None:
         is_tmpAd = True

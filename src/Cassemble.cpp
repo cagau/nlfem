@@ -13,16 +13,20 @@
 
 #include <Cassemble.h>
 
-#include "integration.cpp"
-#include "mathhelpers.cpp"
-#include "model.cpp"
+#include "integration.h"
+#include "mathhelpers.h"
+#include "model.h"
 #include "checks.cpp"
 
 
 using namespace std;
-
+/**
+ * This function looks up the configuration. It hast to be updated whenever a new kernel,
+ * forcing function or integration routine is added in order to make the option available.
+ *
+ * @param conf
+ */
 void lookup_configuration(ConfigurationType & conf){
-
     // Lookup right hand side ------------------------------------------------------------------------------------------
     cout << "Right hand side: " << conf.model_f << endl;
     if (conf.model_f == "linear") {

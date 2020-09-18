@@ -1,15 +1,19 @@
 /**
     Contains kernel and forcing functions which are used in the assembly. Different additional kernels can be added
     here.
+
     @file model.cpp
     @author Manuel Klar
     @version 0.1 25/08/20
-*/
+**/
+#include <iostream>
 
 #include "model.h"
-#include "mathhelpers.cpp"
+#include "mathhelpers.h"
+using namespace std;
 
 // ### KERNEL ##########################################################################################################
+void (*model_kernel)(const double * x, long labelx, const double * y, long labely, double sqdelta, double * kernel_val);
 
 // Implementations -----------------------------------------------------------------------------------------------------
 void kernel_constant(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
@@ -82,7 +86,7 @@ void kernelField_constant(const double * x, const long labelx, const double * y,
 }
 
 // ### RIGHT HAND SIDE #################################################################################################
-
+void (*model_f)(const double * x, double * forcing_out);
 // Implementations -----------------------------------------------------------------------------------------------------
 void f_constant(const double * x, double * forcing_out){
     forcing_out[0] = 1.0;
