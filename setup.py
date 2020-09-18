@@ -19,7 +19,11 @@ name = "nlfem"
 ext_modules = [
     Extension(
         name=name,
-        sources=["cython/nlfem.pyx", "src/Cassemble.cpp"],
+        sources=["cython/nlfem.pyx", "src/Cassemble.cpp",
+                    "./include/MeshTypes.cpp",
+                    "./src/mathhelpers.cpp",
+                    "./src/model.cpp",
+                    "./src/integration.cpp"],
         extra_link_args=['-fopenmp', '-llapack', '-lblas', '-larmadillo'],
         extra_compile_args=['-fopenmp'],
         language="c++",
