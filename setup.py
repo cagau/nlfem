@@ -19,7 +19,7 @@ name = "nlfem"
 ext_modules = [
     Extension(
         name=name,
-        sources=["cython/nlfem.pyx", "src/Cassemble.cpp", "src/Cassemble2D.cpp"],
+        sources=["cython/nlfem.pyx", "src/Cassemble.cpp"],
         extra_link_args=['-fopenmp', '-llapack', '-lblas', '-larmadillo'],
         extra_compile_args=['-fopenmp'],
         language="c++",
