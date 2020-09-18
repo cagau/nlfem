@@ -1,5 +1,3 @@
-image: alpine
-
 pages:
   script:
   - apk update && apk add doxygen graphviz ttf-freefont texlive-science
