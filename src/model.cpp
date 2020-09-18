@@ -5,23 +5,20 @@
     @author Manuel Klar
     @version 0.1 25/08/20
 */
-#ifndef NONLOCAL_ASSEMBLY_MODEL_CPP
-#define NONLOCAL_ASSEMBLY_MODEL_CPP
 
+#include "model.h"
 #include "mathhelpers.cpp"
 
 // ### KERNEL ##########################################################################################################
-// Pointer -------------------------------------------------------------------------------------------------------------
-void (*model_kernel)(const double * x, long labelx, const double * y, long labely, double sqdelta, double * kernel_val);
 
 // Implementations -----------------------------------------------------------------------------------------------------
-void kernel_constant(const double * x, const long labelx, const double * y, const long labely, const double sqdelta,
-                       double * kernel_val){
+void kernel_constant(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+                     double *kernel_val) {
     *kernel_val = 4 / (M_PI * pow(sqdelta, 2));
 }
 
-void kernel_constant3D(const double * x, const long labelx, const double * y, const long labely, const double sqdelta,
-                         double * kernel_val){
+void kernel_constant3D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+                       double *kernel_val) {
     *kernel_val = 15 / (M_PI * 4 * pow(sqrt(sqdelta), 5));
 }
 
@@ -64,7 +61,7 @@ void kernelField_linearPrototypeMicroelastic(const double * x, const long labelx
     z[0] = x[0] - y[0];
     z[1] = x[1] - y[1];
     double denominator = 1.0/pow(sqrt(vec_dot(z,z,2)),3);
-    double c =  3.0/(M_PI * pow(sqrt(sqdelta),3));
+    double c =  12.0/(M_PI * pow(sqrt(sqdelta),3));
 
     kernel_val[0] = c*denominator*z[0]*z[0];
     kernel_val[1] = c*denominator*z[0]*z[1];
@@ -86,9 +83,6 @@ void kernelField_constant(const double * x, const long labelx, const double * y,
 
 // ### RIGHT HAND SIDE #################################################################################################
 
-// Pointer -------------------------------------------------------------------------------------------------------------
-void (*model_f)(const double * x, double * forcing_out);
-
 // Implementations -----------------------------------------------------------------------------------------------------
 void f_constant(const double * x, double * forcing_out){
     forcing_out[0] = 1.0;
@@ -102,8 +96,10 @@ void fField_constantRight(const double * x, double * forcing_out){
     forcing_out[1] = 0.0;
 }
 void fField_constantDown(const double * x, double * forcing_out){
-    forcing_out[0] = 2.;
-    forcing_out[1] = -2.;
+    const double f1 = 0; //1e-3;
+    const double f2 = -1e-3;
+    forcing_out[0] = f1;// * (x[0]+1)/(x[0]+1);
+    forcing_out[1] = f2;// * (x[0]+1)/(x[0]+1);
 }
 void f_linear(const double * x, double * forcing_out){
     *forcing_out = -2. * (x[1] + 1.);
@@ -128,5 +124,3 @@ void model_basisFunction(const double * p, const int dim, double *psi_vals){
         psi_vals[i+1] = p[i];
     }
 }
-
-#endif //NONLOCAL_ASSEMBLY_MODEL_CPP

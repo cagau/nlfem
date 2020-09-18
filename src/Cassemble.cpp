@@ -336,7 +336,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
-    printf("Function: par_system (generic)\n");
+    printf("Function: par_system\n");
     printf("Mesh dimension: %i\n", mesh.dim);
     printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
     lookup_configuration(conf);
@@ -706,7 +706,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
     arma::vec fd(mesh.K_Omega, arma::fill::zeros);
 
-    printf("Function: par_forcing (generic)\n");
+    printf("Function: par_forcing\n");
     printf("Mesh dimension: %i\n", mesh.dim);
     printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
     lookup_configuration(conf);
