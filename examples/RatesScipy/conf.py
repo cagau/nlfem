@@ -5,15 +5,15 @@ delta = .1
 ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
-model_kernel = "linearPrototypeMicroelastic"# "linearPrototypeMicroelastic"# "constant" # "labeled" #
+model_kernel = "linearPrototypeMicroelastic"#"linearPrototypeMicroelastic"# "linearPrototypeMicroelastic"# "constant" # "labeled" #
 integration_method = "retriangulate" # "retriangulate" # "baryCenter" # subSetBall # superSetBall averageBall
 is_PlacePointOnCap = True
-quadrule_outer = "7"
-quadrule_inner = "7"
+quadrule_outer = "laursenGellert15a"
+quadrule_inner = "laursenGellert15a"
 tensorGaussDegree = 8
 
-n_start = 12
-n_layers = 1
+n_start = 24
+n_layers = 4
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4
 def u_exact(x):
@@ -83,6 +83,58 @@ quadrules = {
     "1":    [
         np.array([[0.33333333, 0.33333333]]),
         0.5 * np.array([1.0])
+    ],
+    "laursenGellert15a":
+    [      np.array([[0.33333333, 0.33333333],
+            [0.42508621, 0.42508621],
+            [0.02330887, 0.02330887],
+            [0.42508621, 0.14982758],
+            [0.02330887, 0.95338226],
+            [0.14982758, 0.42508621],
+            [0.95338226, 0.02330887],
+            [0.14792563, 0.22376697],
+            [0.02994603, 0.35874014],
+            [0.03563256, 0.14329537],
+            [0.6283074,  0.14792563],
+            [0.61131383, 0.02994603],
+            [0.82107207, 0.03563256],
+            [0.22376697, 0.6283074 ],
+            [0.35874014, 0.61131383],
+            [0.14329537, 0.82107207],
+            [0.22376697, 0.14792563],
+            [0.35874014, 0.02994603],
+            [0.14329537, 0.03563256],
+            [0.6283074,  0.22376697],
+            [0.61131383, 0.35874014],
+            [0.82107207, 0.14329537],
+            [0.14792563, 0.6283074 ],
+            [0.02994603, 0.61131383],
+            [0.03563256, 0.82107207]]) ,
+          np.array([0.03994725237062 ,
+                   0.0355619011161885 ,
+                   0.004111909345232 ,
+                   0.0355619011161885 ,
+                   0.004111909345232 ,
+                   0.0355619011161885 ,
+                   0.004111909345232 ,
+                   0.022715296148085 ,
+                   0.0186799281171525 ,
+                   0.015443328442282 ,
+                   0.022715296148085 ,
+                   0.0186799281171525 ,
+                   0.015443328442282 ,
+                   0.022715296148085 ,
+                   0.0186799281171525 ,
+                   0.015443328442282 ,
+                   0.022715296148085 ,
+                   0.0186799281171525 ,
+                   0.015443328442282 ,
+                   0.022715296148085 ,
+                   0.0186799281171525 ,
+                   0.015443328442282 ,
+                   0.022715296148085 ,
+                   0.0186799281171525 ,
+                   0.015443328442282 ])
     ]
 }
 

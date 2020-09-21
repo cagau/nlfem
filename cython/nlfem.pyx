@@ -98,26 +98,23 @@ def remove_arma_tmp(path):
 class tensorgauss:
     def __init__(self, deg, dim=4):
         self.deg = deg
-        self.dim = 4
+        self.dim = dim
         p, w = np.polynomial.legendre.leggauss(deg)
         #print("Length", len(p), "\np", p, "w", w)
         self.N = deg**dim
-        self.weights = np.zeros(deg**dim)
-        self.points = np.zeros((dim, deg**dim))
+
+        self.weights = np.ones(deg**dim)
+        self.points = np.zeros((deg**dim, dim))
         l = 0
-        k1 = 0
-        k2 = 0
-        k3 = 0
-        for l in range(deg**4):
-            k0 = l % deg
-            k1 += (not k0) and (bool(l))
-            k1 %= deg
-            k2 += (not (k1 or k0)) and (bool(l))
-            k2 %= deg
-            k3 += (not (k2 or k1 or k0)) and (bool(l))
-            self.weights[l] = w[k0]*w[k1]*w[k2]*w[k3]
-            self.points[:,l] = [p[k0], p[k1], p[k2], p[k3]]
-        self.points = np.array(self.points.T)
+        k = np.zeros(self.dim, dtype=int)
+
+        point_coord = np.array([row.flatten() for row in np.meshgrid(*([np.arange(self.deg)]*self.dim),
+        indexing = "ij")]).T
+        for k, dxRow in enumerate(point_coord):
+            self.points[k] = p[dxRow]
+            for dx in dxRow:
+                self.weights[k] *= w[dx]
+
 
 def assemble(
         # Mesh information ------------------------------------

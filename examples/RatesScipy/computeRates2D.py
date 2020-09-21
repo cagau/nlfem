@@ -11,7 +11,6 @@ from time import time
 def main():
     import examples.RatesScipy.conf as conf
     err_ = None
-
     pp = PdfPages(conf.fnames["triPlot.pdf"])
     for n in conf.N:
         mesh=RegMesh2D(conf.delta, n, ufunc=conf.u_exact)
@@ -20,6 +19,7 @@ def main():
         conf.data["nV_Omega"].append(mesh.nV_Omega)
         mesh.save("data")
         conf.save("data")
+
 
         # Assembly ------------------------------------------------------------------------
         start = time()

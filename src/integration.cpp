@@ -1289,12 +1289,27 @@ double traffoIdentical5( double * alpha){
 
     return pow(xi,3)*pow(eta1,2)*eta2;
 }
-
+/**
+ * @brief Rescales a cube \f$ [-1, 1]^4 \f$ to a cube
+ * \f$ [0, 1]^4 \f$. The determinant of this
+ * transformation is given by the constant SCALEDET.
+ *
+ * @param alpha, a single input point of dimension 4.
+ */
 void scale(double * alpha){
     for(int k=0; k<4; k++){
         alpha[k] = alpha[k]*0.5 + 0.5;
     }
 }
+/**
+ * @brief Maps a tuple of two triangles \f$\left\lbrace z | z_2 \in
+ * [0,1], z_1 \ in [0,z_2] \right\rbrace\f$
+ * to a tuple of two standard simplices
+ * \f$\left\lbrace z | z_1 \in [0,1], z_2 \ in [0,1-z_1] \right\rbrace\f$.
+ * The determinant of this transformation is 1.
+ *
+ * @param alpha, a single input point of dimension 4.
+ */
 void mirror(double * alpha){
     double aux=0.;
     alpha[0] = alpha[0] - alpha[1];
