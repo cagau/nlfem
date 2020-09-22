@@ -2,7 +2,8 @@ image: ubuntu:bionic
 
 pages:
   script:
-  - apt update && apt install doxygen fonts-freefont-ttf texlive-science ghostscript graphviz
+  - DEBIAN_FRONTEND=noninteractive
+  - apt update && apt-get install doxygen fonts-freefont-ttf texlive-science ghostscript graphviz
   - cd docs
   - doxygen Doxyfile
   - mv html/ ../public/
