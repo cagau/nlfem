@@ -2,7 +2,7 @@ image: alpine
 
 pages:
   script:
-  - apk update && apk add doxygen graphviz ttf-freefont texlive dvips ghostscript graphviz
+  - apk update && apk add doxygen graphviz ttf-freefont texlive-full texlive-dvi ghostscript graphviz
   - cd docs
   - doxygen Doxyfile
   - mv html/ ../public/
