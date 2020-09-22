@@ -1,4 +1,4 @@
-/*! \mainpage Welcome
+/*! \mainpage
  *
  * \section intro_sec Introduction
  *
@@ -7,7 +7,7 @@
  * \f[
  *  A(u,v) = \int_{\Omega} v(x) \int_{\Omega \cup \Omega_I}(u(x)-u(y))\gamma(x,y)  dx dy,
  *  \f]
- * where \f$ \gamma(x,y) \f$ is a integrable or weakly singular kernel with bounded interaction
+ * where \f$ \gamma(x,y) \f$ is an integrable or weakly singular kernel with bounded interaction
  * radius. The domain \f$\Omega\f$ and the interaction set \f$\Omega_I\f$
  * can be subsets of \f$ R^d \f$ for \f$ d = 2,3\f$. The solution can be scalar or
  * vector valued, i.e. \f$ u(x) \in R^c\f$ for \f$c \geq 1\f$.
@@ -16,13 +16,15 @@
  * burden of the assembly of integral operators is so large that even computations in an
  * experimental setting require efficient and parallel implementations. However, we do not aim
  * to provide the fastest possible but rather a flexible implementation which runs at
- * convenient speed. The hope is to provide a implementation which is easy to understand
- * such that modifications or small extensions can be implemented quickly.
+ * convenient speed.
  *
  * \section Assembly
  *
- * The main assembly of the nonlocal stiffness matrix happens in the function par_system(). The Python interface
- * calls the function par_assemble() which is a wrapper function. In translates the input data into
+ * The Python interface
+ * calls the function par_assemble() which is a wrapper function. This function again calls the function par_system()
+ * where the assembly of the nonlocal stiffness matrix happens, or the function par_forcing() for the assembly
+ * of the right hand side.
+ * The wrapper function par_assemble() translates the input data into
  * three objects which are defined in MeshStruct, QuadratureStruct, and ConfigurationStruct. It also performs
  * some basic input checks. The output of the integration is saved as
  * [Armadillo sparse matrix](http://arma.sourceforge.net/docs.html#SpMat).
@@ -36,11 +38,12 @@
  *
  * \subsection Model
  *
- * Models are defined in model.cpp. Different options for kernels (e.g. kernel_constant(),
+ * The kernel and forcing functions, as well as the basis functions are defined in model.cpp.
+ * Different options for kernels (e.g. kernel_constant(),
  * kernel_linearPrototypeMicroelastic, ...), and forcing terms (e.g. f_constant(), f_linear(),...)
- * are pre implemented. If you to add a kernel or forcing function just add the corresponding
- * function to model.cpp obeying the common signature. In order to make it accessible as
- * option you have change lookup_configuration() accordingly.
+ * are implemented. If you want to add a kernel or forcing function just add the corresponding
+ * function to model.cpp obeying the common function signature. In order to make it accessible as
+ * option you have change the function lookup_configuration() accordingly.
  */
 #ifndef CASSEMBLE_H
 #define CASSEMBLE_H
