@@ -2,6 +2,7 @@ from Cython.Distutils import build_ext
 from setuptools import setup
 from setuptools.extension import Extension
 import os
+import numpy
 
 # Environment variables
 home = os.getenv("HOME")
@@ -22,7 +23,7 @@ ext_modules = [
         extra_link_args=['-fopenmp', '-llapack', '-lblas', '-larmadillo'],
         extra_compile_args=['-fopenmp'],
         language="c++",
-        include_dirs=["include"],
+        include_dirs=["include", numpy.get_include()],
         library_dirs=[home+"/lib"],
         libraries=["Cassemble"]
     )

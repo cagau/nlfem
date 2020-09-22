@@ -1,5 +1,5 @@
 def write_output(data):
-    import examples.RatesScipy.conf as conf
+    import conf
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
     import numpy as np
