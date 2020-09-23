@@ -1313,9 +1313,8 @@ void scale(double * alpha){
 void mirror(double * alpha){
     double aux=0.;
     alpha[0] = alpha[0] - alpha[1];
-    aux = alpha[2];
-    alpha[2] = alpha[3];
-    alpha[3] = aux - alpha[3];
+    alpha[2] = alpha[2] - alpha[3];
+
 }
 // [End] Helpers Peridynamics ---------------------------------------------------------------------------------------
 #endif //NONLOCAL_ASSEMBLY_INTEGRATION_CPP

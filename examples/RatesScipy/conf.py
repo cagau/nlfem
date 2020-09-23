@@ -8,8 +8,8 @@ model_f = "linear" # "constant" #
 model_kernel = "linearPrototypeMicroelastic"#"linearPrototypeMicroelastic"# "linearPrototypeMicroelastic"# "constant" # "labeled" #
 integration_method = "retriangulate" # "retriangulate" # "baryCenter" # subSetBall # superSetBall averageBall
 is_PlacePointOnCap = True
-quadrule_outer = "vioreanu_rokhlin"
-quadrule_inner = "vioreanu_rokhlin"
+quadrule_outer = "7"
+quadrule_inner = "7"
 tensorGaussDegree = 8
 
 n_start = 24

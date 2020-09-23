@@ -7,6 +7,7 @@ from python.helpers import read_arma_spMat
 import numpy as np
 import nlfem as assemble
 from time import time
+from scipy.sparse.linalg import cg
 
 def main():
     import examples.RatesScipy.conf as conf
@@ -42,9 +43,9 @@ def main():
         # Solve ---------------------------------------------------------------------------
         print("Solve...")
         #mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
-        solution = assemble.solve_cg(A_O, f, f)
-        print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
-        mesh.write_ud(solution["x"], conf.u_exact)
+        x = cg(A_O, f, f)[0]
+        #print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
+        mesh.write_ud(x, conf.u_exact)
 
         # Some random quick Check....
         #filter = np.array(assemble.read_arma_mat("data/result.fd").flatten(), dtype=bool)

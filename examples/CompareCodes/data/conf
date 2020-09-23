@@ -1,5 +1,5 @@
 model_kernel
-constant
+linearPrototypeMicroelastic
 model_f
 linear
 integration_method
