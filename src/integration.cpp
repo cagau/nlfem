@@ -499,17 +499,13 @@ void
 integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                      const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc) {
 
-    bool isAverage = false;
     double averageWeight = 1.0;
     int doesInteract;
 
     if (conf.integration_method == "superSetBall"){
         doesInteract = 1;
     } else if (conf.integration_method == "subSetBall"){
-        doesInteract = 2;
-    } else if (conf.integration_method == "averageBall") {
-        doesInteract = 1;
-        isAverage = true;
+        doesInteract = 3;
     } else {
         cout << "Error in integrate_subSuperSetBalls: No such integration_method: " <<
          conf.integration_method << endl;
@@ -1311,10 +1307,8 @@ void scale(double * alpha){
  * @param alpha, a single input point of dimension 4.
  */
 void mirror(double * alpha){
-    double aux=0.;
     alpha[0] = alpha[0] - alpha[1];
     alpha[2] = alpha[2] - alpha[3];
-
 }
 // [End] Helpers Peridynamics ---------------------------------------------------------------------------------------
 #endif //NONLOCAL_ASSEMBLY_INTEGRATION_CPP

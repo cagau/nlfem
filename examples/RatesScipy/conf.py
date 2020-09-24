@@ -5,15 +5,15 @@ delta = .1
 ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
-model_kernel = "linearPrototypeMicroelastic"#"linearPrototypeMicroelastic"# "linearPrototypeMicroelastic"# "constant" # "labeled" #
+model_kernel = "parabola"#"linearPrototypeMicroelastic"# "linearPrototypeMicroelastic"# "constant" # "labeled" #
 integration_method = "retriangulate" # "retriangulate" # "baryCenter" # subSetBall # superSetBall averageBall
-is_PlacePointOnCap = True
+is_PlacePointOnCap = False
 quadrule_outer = "7"
 quadrule_inner = "7"
-tensorGaussDegree = 8
+tensorGaussDegree = 6
 
 n_start = 24
-n_layers = 3
+n_layers = 4
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4
 def u_exact(x):

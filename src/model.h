@@ -23,7 +23,18 @@ extern void (*model_kernel)(const double * x, long labelx, const double * y, lon
  */
 void kernel_constant(const double * x, long labelx, const double * y, long labely, double sqdelta,
                      double * kernel_val);
-
+ /**
+  * @brief This kernel is defined by \f$ \delta^2 - \|z\|^2 \f$. It is radial but not
+  * singular or constant. The second moment is given by \f$ \pi \delta ^6 / 12 \f$.
+  * @param x
+  * @param labelx
+  * @param y
+  * @param labely
+  * @param sqdelta
+  * @param kernel_val
+  */
+void kernel_parabola(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+                     double *kernel_val);
 /**
  * @brief Constant kernel in 3D case. The constant is chosen such that the operator is equivalent to the laplacian for
  * polynomials of degree less or equal to 2.

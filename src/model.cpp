@@ -21,6 +21,16 @@ void kernel_constant(const double *x, const long labelx, const double *y, const 
     *kernel_val = 4 / (M_PI * pow(sqdelta, 2));
 }
 
+void kernel_parabola(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+                     double *kernel_val) {
+    double z[2];
+    z[0] = x[0] - y[0];
+    z[1] = x[1] - y[1];
+    const double value = sqdelta - vec_dot(z,z,2);
+    const double c =  12./(M_PI * pow(sqdelta, 3));
+    *kernel_val = c*value;
+}
+
 void kernel_constant3D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
                        double *kernel_val) {
     *kernel_val = 15 / (M_PI * 4 * pow(sqrt(sqdelta), 5));
@@ -54,8 +64,8 @@ void kernel_linearPrototypeMicroelastic(const double * x, const long labelx, con
     double z[2];
     z[0] = x[0] - y[0];
     z[1] = x[1] - y[1];
-    double denominator = 1.0/sqrt(vec_dot(z,z,2));
-    double c =  3.0/(M_PI * pow(sqrt(sqdelta),3));
+    const double denominator = 1.0/sqrt(vec_dot(z,z,2));
+    const double c =  3.0/(M_PI * pow(sqrt(sqdelta),3));
     *kernel_val = c*denominator;
 }
 

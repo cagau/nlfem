@@ -220,9 +220,10 @@ int doubleVec_any(const double * vec, const int len){
 
 double vec_dot(const double * x, const double * y, const int len){
     double r=0;
-    int i=0;
-    for (i=0; i<len; i++){
-        r += x[i]*y[i];
+    auto ity = y;
+    for (auto itx=x; itx < x+len; itx++){
+        r += *(itx) * *(ity);
+        ity++;
     }
     return r;
 }

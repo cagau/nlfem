@@ -38,6 +38,7 @@ def write_output(data):
         "With caps": conf.is_PlacePointOnCap,
         "Quadrule outer": conf.quadrule_outer,
         "Quadrule inner": conf.quadrule_inner,
+        "Singular quad degree": conf.tensorGaussDegree,
         "Delta": conf.delta,
         "Ansatz": conf.ansatz,
         "Boundary Conditions": conf.boundaryConditionType
