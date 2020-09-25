@@ -56,6 +56,7 @@ void lookup_configuration(ConfigurationType & conf){
         model_kernel = kernel_constant3D;
     } else if (conf.model_kernel == "parabola") {
         model_kernel = kernel_parabola;
+        conf.is_singularKernel = true;
     } else if (conf.model_kernel == "linearPrototypeMicroelastic") {
         model_kernel = kernel_linearPrototypeMicroelastic;
         conf.is_singularKernel = true;

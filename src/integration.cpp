@@ -189,6 +189,106 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
 
 }
 
+void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                           const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+                           double * termLocal, double * termNonloc){
+    if (is_firstbfslayer) {
+        const std::list<double(*)(double *)> traffoCommonVertex = {traffoCommonVertex0,
+                                                                   traffoCommonVertex1};
+        const std::list<double(*)(double *)> traffoCommonEdge = {traffoCommonEdge0,
+                                                                 traffoCommonEdge1,
+                                                                 traffoCommonEdge2,
+                                                                 traffoCommonEdge3,
+                                                                 traffoCommonEdge4};
+        const std::list<double(*)(double *)> traffoIdentical = {traffoIdentical0,
+                                                                traffoIdentical1,
+                                                                traffoIdentical2,
+                                                                traffoIdentical3,
+                                                                traffoIdentical4,
+                                                                traffoIdentical5};
+        ElementStruct aTsorted, bTsorted;
+        int nEqual = join(aT, bT, mesh, aTsorted, bTsorted);
+        std::list<double (*)(double *)> traffoList;
+
+        double factors;
+        //const int dim = mesh.dim;
+        double alpha[4], traffodet, x[2], y[2];//, kernel_val=0.;
+
+        double kernel_val[mesh.outdim*mesh.outdim];
+        double psix[3], psiy[3];
+        //cout << "Tensor Gauss" << endl;
+        if (nEqual == 1){
+            traffoList = traffoCommonVertex;
+        } else if (nEqual == 2){
+            traffoList = traffoCommonEdge;
+        } else if (nEqual == 3) {
+            traffoList = traffoIdentical;
+        } else {
+            cout << "Error in integrate_linearPrototypeMicroelastic_tensorgauss: This should not have happened." << endl;
+            abort();
+        }
+
+        int traffoCounter = 0;
+        for(auto & traffo : traffoList) {
+            for (int k = 0; k < quadRule.nPg; k++) {
+                for (int j = 0; j < 4; j++) {
+                    alpha[j] = quadRule.Pg[4 * k + j];
+                    //alphaCanceled[j] = quadRule.Pg[4 * k + j];
+                }
+                //traffodetCanceled = (nEqual==1 && traffoCounter==0) ? alphaCanceled[0] : pow(alphaCanceled[0], 2);
+                //alphaCanceled[0] = 1.0;
+
+                scale(alpha);
+                //scale(alphaCanceled);
+                traffodet = traffo(alpha);
+                //traffodetCanceled *= traffo(alphaCanceled);
+
+                mirror(alpha);
+                //mirror(alphaCanceled);
+
+                toPhys(aTsorted.E, &alpha[0], 2, x);
+                toPhys(bTsorted.E, &alpha[2], 2, y);
+                //toPhys(aTsorted.E, &alphaCanceled[0], 2, x_canceled);
+                //toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
+
+                // Eval Kernel(x-y)
+                model_kernel(x, aTsorted.label, y, bTsorted.label, mesh.sqdelta, kernel_val);
+
+                //cout << "x " << endl;
+                //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
+                //cout << "y " << endl;
+                //cout << y_canceled[0] << ", " << y_canceled[1] << endl;
+
+                // Eval C(x-y)
+                model_basisFunction(&alpha[0], 2, psix);
+                model_basisFunction(&alpha[2], 2, psiy);
+                //double outTest[mesh.outdim*mesh.outdim*mesh.dVertex*mesh.dVertex];
+                // double psitest[3] = {20., 30., 50.};
+                // [7] for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
+                for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
+                    for (int b = 0; b < mesh.dVertex*mesh.outdim; b++) {
+                        //outTest[mesh.outdim*mesh.dVertex * a + b] = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim]
+                        //        + psitest[a/mesh.outdim]*psitest[b/mesh.outdim];
+                        //cout << outTest[mesh.outdim*mesh.dVertex * a + b] << ",   ";
+
+                        factors = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim] * traffodet * SCALEDET *
+                                  quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+
+                        termLocal[mesh.outdim*mesh.dVertex * a + b] += 2*factors* psix[a/mesh.outdim] * psix[b/mesh.outdim];
+
+                        termNonloc[mesh.outdim*mesh.dVertex * a + b] += 2*factors* psix[a/mesh.outdim] * psiy[b/mesh.outdim];
+                    }
+                    //cout << endl;
+                }
+                //cout << "Thank you!" << endl;
+                //abort();
+            }
+            traffoCounter++;
+        }
+    } else {
+        integrate_retriangulate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
+    }
+}
 void integrate_fullyContained(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                               const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                               double *termLocal, double *termNonloc){

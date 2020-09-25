@@ -142,6 +142,31 @@ void integrate_fullyContained(const ElementType &aT, const ElementType &bT, cons
 void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                                                        const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                                                        double * termLocal, double * termNonloc);
+
+/**
+ * @brief This integration routine is used for testing. It integrates the direct neighbors of the outer
+ * triangle aT with the integral transformations which are used for weakly singular kernels (see e.g.
+ * integrate_linearPrototypeMicroelastic_tensorgauss()). The other pairs are integrated using
+ * the retriangulation method.
+ *
+ * termLocal = int_aT phiA(x) phiB(x) int_bT ker(x,y) dy dx,\n
+ * termNonloc = int_aT phiA(x) int_bT phiB(y) ker(y,x) dy dx.
+ *
+ * Please note that the nonlocal term has to be subtracted, while the local term has to be added to the stiffness
+ * matrix.
+ * @param aT    Triangle of the outer integral.
+ * @param bT    Triangle of the inner integral.
+ * @param quadRule Quadrature rule.
+ * @param mesh  Mesh.
+ * @param conf  Confuration.
+ * @param is_firstbfslayer Tells, whether bT is a direct neighbor of the outer triangle aT.
+ * @param termLocal This term contains the local part of the integral
+ * @param termNonloc This term contains the nonlocal part of the integral
+ */
+void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                                                       const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+                                                       double * termLocal, double * termNonloc);
+
 /**
  * @brief This integration routine is tied tie the singular kernels *kernel_linearPrototypeMicroelastic*
  * and *kernelField_linearPrototypeMicroelastic*. It calls integrate_retriangulate() for remote triangles.
