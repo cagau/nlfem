@@ -65,7 +65,6 @@ void lookup_configuration(ConfigurationType & conf){
         conf.is_singularKernel = true;
     } else if (conf.model_kernel == "constantField") {
         model_kernel = kernelField_constant;
-        conf.is_singularKernel = false; // Test Case
     }
     else {
         cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;
@@ -121,7 +120,11 @@ void lookup_configuration(ConfigurationType & conf){
         } else if (conf.integration_method == "retriangulate") {
             integrate = integrate_retriangulate;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-        } else {
+        } else if (conf.integration_method == "tensorgauss") {
+            integrate = integrate_tensorgauss;
+            conf.is_singularKernel = true; // Test Case
+        }
+        else {
             cout << "Error in par:assemble. Integration method " << conf.integration_method <<
                  " is not implemented." << endl;
             abort();

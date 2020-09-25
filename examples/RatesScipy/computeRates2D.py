@@ -21,7 +21,7 @@ def main():
         mesh.save("data")
         conf.save("data")
 
-
+        tg = assemble.tensorgauss(4)
         # Assembly ------------------------------------------------------------------------
         start = time()
         A, f = assemble.assemble(mesh, conf.py_Px, conf.py_Py, conf.dx, conf.dy, conf.delta,

@@ -301,7 +301,7 @@ bool isFullyContained(const ElementType &aT, const ElementType &bT, const MeshTy
 // Peridynamic Helper functions
 void setupElement(const MeshType &mesh, const long * Vdx_new, ElementType &T);
 int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
-         ElementType &aTsorted, ElementType &bTsorted);
+         ElementType &aTsorted, ElementType &bTsorted, int * argSortA, int * argSortB);
 double traffoCommonVertex0(double * alpha);
 double traffoCommonVertex1(double * alpha);
 

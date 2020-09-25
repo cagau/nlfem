@@ -104,7 +104,9 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
                                                             traffoIdentical4,
                                                             traffoIdentical5};
     ElementStruct aTsorted, bTsorted;
-    int nEqual = join(aT, bT, mesh, aTsorted, bTsorted);
+    int argSortA[3], argSortB[3];
+
+    int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
     std::list<double (*)(double *)> traffoList;
 
     double factors;
@@ -133,11 +135,12 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
                 alpha[j] = quadRule.Pg[4 * k + j];
                 alphaCanceled[j] = quadRule.Pg[4 * k + j];
             }
-            traffodetCanceled = (nEqual==1 && traffoCounter==0) ? alphaCanceled[0] : pow(alphaCanceled[0], 2);
-            alphaCanceled[0] = 1.0;
-
             scale(alpha);
             scale(alphaCanceled);
+
+            traffodetCanceled = pow(alphaCanceled[0], 2);
+            alphaCanceled[0] = 1.0;
+
             traffodet = traffo(alpha);
             traffodetCanceled *= traffo(alphaCanceled);
 
@@ -169,13 +172,13 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
                     //        + psitest[a/mesh.outdim]*psitest[b/mesh.outdim];
                     //cout << outTest[mesh.outdim*mesh.dVertex * a + b] << ",   ";
 
-                    factors = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim] * traffodet * SCALEDET *
+                    factors = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim] * traffodetCanceled * SCALEDET *
                             quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
                     //factors = kernel_val * traffodet * scaledet * quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                    termLocal[mesh.outdim*mesh.dVertex * a + b] += 2*factors* psix[a/mesh.outdim] * psix[b/mesh.outdim];
+                    termLocal[mesh.outdim*mesh.dVertex * argSortA[a] + argSortA[b]] += 2*factors * psix[a/mesh.outdim] * psix[b/mesh.outdim];
                     //termLocal[mesh.dVertex * a + b] += 2*factors* psix[a] * psix[b];
                     // [10] siehe [9]
-                    termNonloc[mesh.outdim*mesh.dVertex * a + b] += 2*factors* psix[a/mesh.outdim] * psiy[b/mesh.outdim];
+                    termNonloc[mesh.outdim*mesh.dVertex * argSortA[a] + argSortB[b]] += 2*factors * psix[a/mesh.outdim] * psiy[b/mesh.outdim];
                     //termNonloc[mesh.dVertex * a + b] += 2*factors * psix[a] * psiy[b];
                     //cout << termLocal[mesh.outdim*mesh.dVertex * a + b] << endl;
                 }
@@ -193,6 +196,8 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
                            const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                            double * termLocal, double * termNonloc){
     if (is_firstbfslayer) {
+        //printf("Ok, fine!");
+        //abort();
         const std::list<double(*)(double *)> traffoCommonVertex = {traffoCommonVertex0,
                                                                    traffoCommonVertex1};
         const std::list<double(*)(double *)> traffoCommonEdge = {traffoCommonEdge0,
@@ -207,7 +212,8 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
                                                                 traffoIdentical4,
                                                                 traffoIdentical5};
         ElementStruct aTsorted, bTsorted;
-        int nEqual = join(aT, bT, mesh, aTsorted, bTsorted);
+        int argSortA[3], argSortB[3];
+        int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
         std::list<double (*)(double *)> traffoList;
 
         double factors;
@@ -224,7 +230,7 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
         } else if (nEqual == 3) {
             traffoList = traffoIdentical;
         } else {
-            cout << "Error in integrate_linearPrototypeMicroelastic_tensorgauss: This should not have happened." << endl;
+            cout << "Error in integrate_tensorgauss: This should not have happened." << endl;
             abort();
         }
 
@@ -273,10 +279,10 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
 
                         factors = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim] * traffodet * SCALEDET *
                                   quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-
-                        termLocal[mesh.outdim*mesh.dVertex * a + b] += 2*factors* psix[a/mesh.outdim] * psix[b/mesh.outdim];
-
-                        termNonloc[mesh.outdim*mesh.dVertex * a + b] += 2*factors* psix[a/mesh.outdim] * psiy[b/mesh.outdim];
+                        // In case of the local term both entries belong to the outer integral. Hence...argSortA[a] + argSortA[b]
+                        termLocal[mesh.outdim*mesh.dVertex * argSortA[a] + argSortA[b]] += 2*factors* psix[a/mesh.outdim] * psix[b/mesh.outdim];
+                        // In this case we write ...argSortA[a] + argSortB[b].
+                        termNonloc[mesh.outdim*mesh.dVertex * argSortA[a] + argSortB[b]] += 2*factors* psix[a/mesh.outdim] * psiy[b/mesh.outdim];
                     }
                     //cout << endl;
                 }
@@ -1162,7 +1168,7 @@ void setupElement(const MeshType &mesh, const long * Vdx_new, ElementType &T){
     T.dim = mesh.dim;
 }
 int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
-         ElementType &aTsorted, ElementType &bTsorted){
+         ElementType &aTsorted, ElementType &bTsorted, int * argSortA, int * argSortB){
     //cout << "Welcome to join()" << endl;
     int nEqual = 0;
     int AinB[3], BinA[3];
@@ -1179,7 +1185,9 @@ int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
                 AinB[a] += 1;
                 BinA[b] += 1;
                 aVdxsorted[nEqual] = aVdx[a];
+                argSortA[nEqual] = a;
                 bVdxsorted[nEqual] = bVdx[b];
+                argSortB[nEqual] = b;
                 nEqual += 1;
             }
         }
@@ -1188,37 +1196,35 @@ int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
     for (int i=0; i<3; i++){
         if (!AinB[i]){
             aVdxsorted[nEqual + ia] = aVdx[i];
+            argSortA[nEqual + ia] = i;
             ia++;
         }
         if (!BinA[i]){
             bVdxsorted[nEqual + ib] = bVdx[i];
+            argSortB[nEqual + ib] = i;
             ib++;
         }
-        //cout << aVdx[i] << ", " << bVdx[i];
-        //cout << "  |  " << aVdxsorted[i] << ", " << bVdxsorted[i] << endl;
+        //printf("%li, %li | %li, %li \n", aVdx[i], bVdx[i], aVdxsorted[i],  bVdxsorted[i] );
+        //printf("%i, %i \n", argSortA[i], argSortB[i]);
     }
     setupElement(mesh, aVdxsorted, aTsorted);
     setupElement(mesh, bVdxsorted, bTsorted);
-
+    //abort();
     return nEqual;
 }
 
 double traffoCommonVertex0(double * alpha){
     //xi, eta1, eta2, eta3 = alpha;
-    double  xi = alpha[0];
-    /*        eta1 = alpha[1],
+    double  xi = alpha[0],
+            eta1 = alpha[1],
             eta2 = alpha[2],
             eta3 = alpha[3];
-    alpha[0] = 1.;
-    alpha[1] = eta1;
-    alpha[2] = eta2;
-    alpha[3] = eta2*eta3;
-    */
+
     alpha[0] = xi;
-    alpha[1] *=xi;
-    alpha[2] *=xi;
-    alpha[3] *= alpha[2];
-    return pow(xi,2)*alpha[2];
+    alpha[1] = eta1 * xi;
+    alpha[2] = eta2 * xi;
+    alpha[3] = eta2 * eta3 * xi;
+    return pow(xi,3)*eta2;
 }
 double traffoCommonVertex1(double * alpha){
     //xi, eta1, eta2, eta3 = alpha;
