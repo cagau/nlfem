@@ -19,10 +19,9 @@ It might happen that recompilation or translation is skipped because
 Cython assumes that there have been no changes.
 
 ## Step by Step Guide
-
 To prepare the basic requirements do.
 
-`sudo apt-get install gcc g++ libarmadillo-dev liblapack-dev python3-venv`
+`sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev python3-venv`
 
 `mkdir nlfemvenv`
 
@@ -33,6 +32,10 @@ To prepare the basic requirements do.
 `(nlfemvenv) python3 -m pip install numpy scipy Cython`
 
 `(nlfemvenv) python3 -m pip install matplotlib pathos meshio meshzoo quadpy`
+
+To clone the default branch (C++) do
+
+`git clone https://gitlab.uni-trier.de/klar/nonlocal-assembly.git path/to/nlfem`
 
 To build and install the `nlfem` package do.
 

@@ -8,12 +8,23 @@
 # Assembly routine
 from libcpp.string cimport string
 cimport Cassemble
+cimport MeshTypes
 
 import numpy as np
 import time
 from libc.math cimport pow
 import scipy.sparse as sparse
 cimport numpy as c_np
+
+cdef class Element:
+    cdef MeshTypes.ElementClass element
+
+    def __cinit__(self, int dim):
+        self.element = MeshTypes.ElementClass(dim)
+
+def showElement(int dim):
+    E = Element(dim)
+    return MeshTypes.getElement(E.element)
 
 def read_arma_mat(path, is_verbose=False):
     """

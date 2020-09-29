@@ -42,6 +42,27 @@ struct ElementStruct
 };
 typedef ElementStruct ElementType;
 
+class ElementClass {
+    public:
+        double * E = nullptr;
+        int dim = 0;
+        long label = -1;
+        double absDet = 0.;
+        int signDet = 0.;
+        long Tdx=0;
+        arma::vec matE;
+
+        ElementClass(){
+        };
+        ElementClass(int dim_):
+                dim(dim_){
+            matE = arma::vec(this->dim*(dim+1), arma::fill::zeros);
+            E = matE.memptr();
+        };
+        ~ElementClass () {};
+};
+int getElement(ElementClass &element);
+
 struct ConfigurationStruct {
     const string path_spAd;
     const string path_fd;

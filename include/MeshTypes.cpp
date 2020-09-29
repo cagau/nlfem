@@ -3,6 +3,11 @@
 //
 #include "MeshTypes.h"
 
+int getElement(ElementClass &element){
+    printf("Dimension is %d \n", element.dim);
+    return 0;
+}
+
 int sparseMatrix::append(entryStruct &entry) {
     if (n_buffer >= reserved_buffer - 1) {
         //cout << "Buffer filled Up!" << endl;
