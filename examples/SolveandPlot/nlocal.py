@@ -5,7 +5,7 @@ Documentation for this module.
 
 import numpy as np
 import meshio
-import nlcfem as assemble
+import nlfem as assemble
 
 
 def readMeshBuilder(name):

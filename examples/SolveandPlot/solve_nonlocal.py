@@ -18,7 +18,7 @@ from examples.SolveandPlot.plot import plot
 
 
 try:
-    from nlcfem import assemble, assemble2D
+    from nlfem import assemble
 except ImportError:
     print("\nCan't import assemble.\nTry: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/libCassemble.\n")
     raise ImportError

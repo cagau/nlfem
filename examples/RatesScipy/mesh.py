@@ -13,7 +13,7 @@ class RegMesh2D:
                  dim=2, ansatz="CG", boundaryConditionType="Dirichlet",
                  is_constructAdjaciencyGraph=True):
         ### TEST 27.07.2020
-        self.Ceta = np.arange(12, dtype=np.int).reshape(4,3)
+        self.Ceta = np.arange(12, dtype=np.int).reshape(4, 3)
 
         #####
 
@@ -28,10 +28,9 @@ class RegMesh2D:
             points, cells = meshzoo.rectangle(
                 xmin=-self.delta, xmax=1.0+self.delta,
                 ymin=-self.delta, ymax=1.0+self.delta,
-                nx=n+1, ny=n+1,
-                zigzag=False
+                nx=n+1, ny=n+1
             )
-            self.vertices = np.array(points[:,:2])
+            self.vertices = np.array(points[:, :2])
 
 
         # Set up Delaunay Triangulation --------------------------------------------------
