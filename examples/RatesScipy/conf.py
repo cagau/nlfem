@@ -10,7 +10,7 @@ integration_method = "retriangulate" # "tensorgauss" "retriangulate" # "baryCent
 is_PlacePointOnCap = True
 quadrule_outer = "7"
 quadrule_inner = "1"
-tensorGaussDegree = 6
+tensorGaussDegree = 4
 
 n_start = 12
 n_layers = 1
