@@ -4,11 +4,11 @@ import numpy as np
 delta = .1
 ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
-model_f = "linear" # "constant" #
+model_f = "constant" # "constant" #
 model_kernel = "constant1D"#"parabola" "linearPrototypeMicroelastic"# "constant" # "labeled" #
 integration_method = "baryCenter" # "tensorgauss" "retriangulate" # "baryCenter" # subSetBall # superSetBall averageBall
 is_PlacePointOnCap = True
-quadrule_outer = 4
+quadrule_outer = 6
 quadrule_inner = 1
 tensorGaussDegree = 4
 
@@ -18,7 +18,7 @@ n_layers = 5
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4
 def u_exact(x):
-    return x ** 2/2.
+    return -x ** 2/2.
 
 fnames = {"triPlot.pdf": "results/auto_plot.pdf",
           "rates.md": "results/auto_rates.md",

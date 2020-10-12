@@ -164,7 +164,7 @@ void fField_constantDown(const double * x, double * forcing_out);
  */
 void f_linear(const double * x, double * forcing_out);
 /**
- * @brief Linear scalar valued forcing function \f$f = -2 (x_1 + 1)\f$. Used for computation of rates.
+ * @brief Linear scalar valued forcing function \f$f = -2 (x+ 1)\f$. Used for computation of rates.
  * @param x
  * @param forcing_out
  */

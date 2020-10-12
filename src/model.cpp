@@ -23,7 +23,7 @@ void kernel_constant(const double *x, const long labelx, const double *y, const 
 
 void kernel_constant1D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
                      double *kernel_val) {
-    *kernel_val = 3./pow(sqrt(sqdelta), 3);
+    *kernel_val = 3./(2. * pow(sqrt(sqdelta), 3));
 }
 void kernel_parabola(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
                      double *kernel_val) {
@@ -121,6 +121,9 @@ void fField_constantDown(const double * x, double * forcing_out){
 }
 void f_linear(const double * x, double * forcing_out){
     *forcing_out = -2. * (x[1] + 1.);
+}
+void f_linear1D(const double * x, double * forcing_out){
+    *forcing_out = -2. * (x[0] + 1.);
 }
 void f_linear3D(const double * x, double * forcing_out){
     *forcing_out = -2. * (x[1] + 2.);
