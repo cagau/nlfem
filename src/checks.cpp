@@ -75,13 +75,13 @@ void chk_Mesh(MeshType & mesh){
 }
 
 void chk_Conf(MeshType & mesh, ConfigurationType & conf, QuadratureType & quadRule){
-    if (mesh.dim == 3){
+    if (mesh.dim == 3 || mesh.dim == 1){
         abortIfFalse(conf.integration_method == "baryCenter" ,
-        "Only Bary-Center is implemented as integration method for 3D.");
+        "Only Bary-Center is currently implemented as integration method for 3D and 1D.");
     } else if (mesh.dim != 2 )
     {
-        cout << "Dimension is not equal to 2 or 3." << endl;
-        //abort();
+        cout << "Dimension is not equal to 1, 2 or 3." << endl;
+        abort();
     }
     if(conf.integration_method == "linearPrototypeMicroelastic" ){
         abortIfFalse(quadRule.tensorGaussDegree , "You chose a singular kernel, but no quadrature rule for it.");
