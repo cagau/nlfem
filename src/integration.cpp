@@ -605,17 +605,27 @@ void
 integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                      const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc) {
 
-    double averageWeight = 1.0;
-    int doesInteract;
+    double averageWeights[mesh.dVertex];
+    doubleVec_tozero(averageWeights, mesh.dVertex);
+    //int doesInteract;
 
     if (conf.integration_method == "superSetBall"){
-        doesInteract = 1;
+        //doesInteract = 1;
+        for (auto ptr = averageWeights; ptr < averageWeights + mesh.dVertex; ptr++){
+            *ptr = 1.0;
+        }
     } else if (conf.integration_method == "subSetBall"){
-        doesInteract = 3;
+        //doesInteract = 3;
+        averageWeights[2]=1.0;
+    } else if (conf.integration_method == "averageBall") {
+        for (auto ptr = averageWeights; ptr < averageWeights + mesh.dVertex; ptr++){
+            *ptr = 0.5;
+        }
+        averageWeights[2]=1.0;
     } else {
-        cout << "Error in integrate_subSuperSetBalls: No such integration_method: " <<
-         conf.integration_method << endl;
-        abort();
+            cout << "Error in integrate_subSuperSetBalls: No such integration_method: " <<
+            conf.integration_method << endl;
+            abort();
     }
 
     const int dim = mesh.dim;
@@ -631,8 +641,7 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
     double kernel_val[mesh.outdim*mesh.outdim];
     double rTdet = 0.0;
     double physical_quad[dim];
-    double reTriangle_list[36 * mesh.dVertex * dim];
-    doubleVec_tozero(reTriangle_list, 36 * mesh.dVertex * dim);
+
 
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
@@ -643,7 +652,7 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
         // [x 28]
         doubleVec_tozero(innerNonloc, mesh.outdim*mesh.outdim*mesh.dVertex);
         int nContained = method_subSuperSetBalls(x, bT, mesh);
-        if (nContained >= doesInteract) {
+        if (nContained >= 1) {
             //averageWeight = isAverage ? 0.5 * static_cast<double>(interaction) : 1.0;
 
             for (i = 0; i < quadRule.nPy; i++) {
@@ -655,7 +664,7 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
                 model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, kernel_val);
                 // [x 29]
                 for (int o=0; o<mesh.outdim*mesh.outdim; o++) {
-                    innerLocal[o] += rTdet * kernel_val[o] * quadRule.dy[i] * averageWeight; // Local Term
+                    innerLocal[o] += averageWeights[nContained-1] * rTdet * kernel_val[o] * quadRule.dy[i]; // Local Term
                 }
                 // Evaluate ker on physical quad (note this is ker')
                 model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, kernel_val);
@@ -670,10 +679,10 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
                 for (b = 0; b < mesh.dVertex*mesh.outdim*mesh.outdim; b++) {
                     // [x 31]
                     //innerNonloc[b] += quadRule.psiy(b, i) * kernel_val * quadRule.dy[i] * rTdet; // Nonlocal Term
-                    innerNonloc[b] +=
+                    innerNonloc[b] += averageWeights[nContained-1] *
                             quadRule.psiy(b/(mesh.outdim*mesh.outdim), i) *
                             kernel_val[b%(mesh.outdim*mesh.outdim)] *
-                            quadRule.dy[i] * rTdet * averageWeight; // Nonlocal Term
+                            quadRule.dy[i] * rTdet; // Nonlocal Term
                 }
             }
         }
