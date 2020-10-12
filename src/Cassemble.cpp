@@ -54,6 +54,8 @@ void lookup_configuration(ConfigurationType & conf){
         model_kernel = kernel_labeled;
     } else if (conf.model_kernel == "constant3D") {
         model_kernel = kernel_constant3D;
+    } else if (conf.model_kernel == "constant1D") {
+        model_kernel = kernel_constant1D;
     } else if (conf.model_kernel == "parabola") {
         model_kernel = kernel_parabola;
         conf.is_singularKernel = true;

@@ -222,7 +222,7 @@ double vec_dot(const double * x, const double * y, const int len){
     double r=0;
     auto ity = y;
     for (auto itx=x; itx < x+len; itx++){
-        r += *(itx) * *(ity);
+        r += (*(itx)) * (*(ity));
         ity++;
     }
     return r;

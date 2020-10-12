@@ -11,7 +11,7 @@ import meshzoo
 class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
                  dim=2, ansatz="CG", boundaryConditionType="Dirichlet",
-                 is_constructAdjaciencyGraph=True):
+                 is_constructAdjaciencyGraph=True, zigzag=True):
         ### TEST 27.07.2020
         self.Ceta = np.arange(12, dtype=np.int).reshape(4, 3)
 
@@ -28,7 +28,8 @@ class RegMesh2D:
             points, cells = meshzoo.rectangle(
                 xmin=-self.delta, xmax=1.0+self.delta,
                 ymin=-self.delta, ymax=1.0+self.delta,
-                nx=n+1, ny=n+1
+                nx=n+1, ny=n+1,
+                zigzag=zigzag
             )
             self.vertices = np.array(points[:, :2])
 
@@ -201,7 +202,46 @@ def testInterpolation2D():
         print("L2 Error: ", l2dist(mesh_exact.ud, mesh.ud))
     pp.close()
 
-if __name__ == "__main__":
+def plotRegMesh():
     n = 12
-    M = meshzoo.cube(-0.1, 1.1, -.1, 1.1, nx=n+1, ny=n+1, nz=n+1)
-    print(M)
+
+    from matplotlib.backends.backend_pdf import PdfPages
+    pp = PdfPages("results/RegMeshes.pdf")
+
+    def baryCenter(E):
+        return np.sum(E, axis=0)/3
+    mesh1 = RegMesh2D(0.1, n, zigzag=False)
+    mesh2 = RegMesh2D(0.1, n, zigzag=True)
+
+    bC1 = np.array([baryCenter(mesh1.vertices[Vdx]) for Vdx in mesh1.elements])
+    bC2 = np.array([baryCenter(mesh2.vertices[Vdx]) for Vdx in mesh2.elements])
+
+    bCdx = 30
+    circle1 = plt.Circle(bC1[bCdx], 0.1, fill=None)
+    circle2 = plt.Circle(bC1[bCdx], 0.1, fill=None)
+
+    fig, ax = plt.subplots()
+
+    ax1 = plt.subplot("221")
+    plt.ylim((.25, .75))
+    plt.xlim((.0, .5))
+    plt.scatter(bC1[bCdx, 0], bC1[bCdx, 1], c="black", alpha=.4)
+
+    plt.scatter(bC1[:, 0], bC1[:, 1], alpha = .7, marker = "x", c = "red")
+    plt.triplot(mesh1.vertices[:,0], mesh1.vertices[:,1], mesh1.elements, c = "red", alpha = .5)
+    ax1.add_artist(circle1)
+
+    ax2 = plt.subplot("223")
+    plt.ylim((.25, .75))
+    plt.xlim((.0, .5))
+    plt.scatter(bC1[bCdx, 0], bC1[bCdx, 1], c="black", alpha=.4)
+
+    plt.scatter(bC1[bCdx, 0], bC1[bCdx, 1], c="black", alpha=.4)
+    plt.scatter(bC2[:, 0], bC2[:, 1], alpha = .7, marker = "o", c = "blue")
+    plt.triplot(mesh2.vertices[:,0], mesh2.vertices[:,1], mesh2.elements, c = "blue", alpha = .5)
+
+    ax2.add_artist(circle2)
+
+    pp.savefig()
+    plt.close()
+    pp.close()

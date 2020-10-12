@@ -36,6 +36,20 @@ void kernel_constant(const double * x, long labelx, const double * y, long label
 void kernel_parabola(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
                      double *kernel_val);
 /**
+ * @brief Constant kernel in 1D case. The constant is chosen such that the operator is equivalent to the laplacian for
+ * polynomials of degree less or equal to 2.
+ *
+ * @param x Physical point of the outer integration region.
+ * @param labelx Label of the outer triangle.
+ * @param y Physical point of the inner integration region.
+ * @param labely Label of inner triangle.
+ * @param sqdelta Squared delta.
+ * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
+ * of shape d x d in case of peridynamics.
+ */
+void kernel_constant1D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+                       double *kernel_val);
+/**
  * @brief Constant kernel in 3D case. The constant is chosen such that the operator is equivalent to the laplacian for
  * polynomials of degree less or equal to 2.
  *
