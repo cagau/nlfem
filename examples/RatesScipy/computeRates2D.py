@@ -1,16 +1,13 @@
 from mesh import RegMesh2D
-from scipy.spatial.distance import euclidean as l2dist
-import helpers as helpers
+import helpers
 from matplotlib.backends.backend_pdf import PdfPages
-import matplotlib.pyplot as plt
-from python.helpers import read_arma_spMat
 import numpy as np
 import nlfem as assemble
 from time import time
 from scipy.sparse.linalg import cg
 
 def main():
-    import examples.RatesScipy.conf as conf
+    import conf
     err_ = None
     pp = PdfPages(conf.fnames["triPlot.pdf"])
     for n in conf.N:

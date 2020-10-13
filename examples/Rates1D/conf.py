@@ -1,6 +1,6 @@
 #-*- coding:utf-8 -*-
 import numpy as np
-
+import os
 delta = .1
 ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
@@ -20,11 +20,13 @@ N_fine = N[-1]*4
 def u_exact(x):
     return -x ** 2/2.
 
-fnames = {"triPlot.pdf": "results/auto_plot.pdf",
-          "rates.md": "results/auto_rates.md",
-          "rates.pdf": "results/auto_rates.pdf",
-          "timePlot.pdf": "results/timePlot.pdf",
-          "report.pdf": "results/auto_report.pdf"}
+outputdir  = "results/"
+os.makedirs(outputdir, exist_ok=True)
+fnames = {"triPlot.pdf": outputdir+"auto_plot.pdf",
+          "rates.md": outputdir+"auto_rates.md",
+          "rates.pdf": outputdir+"auto_rates.pdf",
+          "timePlot.pdf": outputdir+"timePlot.pdf",
+          "report.pdf": outputdir+"auto_report.pdf"}
 data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
 
 # Quadrature rules -----------------------------------------------------------------------------------------------------
@@ -43,6 +45,8 @@ def writeattr(file, attr_name):
     file.write(str(eval(attr_name))+"\n")
 
 def save(path):
+    import os
+    os.makedirs(path, exist_ok=True)
     # Save Configuration
     confList = [
         "model_kernel",

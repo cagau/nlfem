@@ -1,12 +1,10 @@
 from examples.RatesScipy3D.mesh import RegMesh2D as RegMesh
-import examples.RatesScipy3D.helpers as helpers
 import numpy as np
-import nlcfem as assemble
+import nlfem as assemble
 from time import time
-import matplotlib.pyplot as plt
 
 def compareRHS():
-    import examples.RatesScipy3D.conf3D as conf
+    import conf
     dim = 3
     n = conf.n_start
     def source(x):
@@ -38,7 +36,7 @@ def compareRHS():
     mesh.plot3D(conf.fnames["tetPlot.vtk"], dataDict={"ffromAssemble": ffromAssemble_K, "ffromMass": ffromMass_K})
 
 def rates():
-    import examples.RatesScipy3D.conf3D as conf
+    import conf3D as conf
     err_ = None
     dim = 3
     for n in conf.N:
@@ -154,7 +152,8 @@ def main():
     #mesh.plot3D(conf.fnames["tetPlot.vtk"])
 
 if __name__ == "__main__":
-#    #main()
-    data = matrixComputation()
-    helpers.write_output(data)
+#    main()
+    rates()
+    #data = matrixComputation()
+    #helpers.write_output(data)
 #    #compareRHS()

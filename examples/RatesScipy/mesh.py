@@ -11,7 +11,7 @@ import meshzoo
 class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
                  dim=2, ansatz="CG", boundaryConditionType="Dirichlet",
-                 is_constructAdjaciencyGraph=True, zigzag=True):
+                 is_constructAdjaciencyGraph=True, zigzag=False):
         ### TEST 27.07.2020
         self.Ceta = np.arange(12, dtype=np.int).reshape(4, 3)
 
@@ -97,10 +97,13 @@ class RegMesh2D:
             self.ud = self.interpolator(self.vertices)
 
     def save(self, path):
+        import os
+
         def writeattr(file, attr_name):
             file.write(attr_name+"\n")
             file.write(str(self.__dict__[attr_name])+"\n")
 
+        os.makedirs(path, exist_ok=True)
         f = open(path + "/mesh.conf", "w+")
         confList = [
             "K_Omega",

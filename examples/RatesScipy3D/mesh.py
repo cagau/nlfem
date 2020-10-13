@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import meshzoo
-from nlcfem import constructAdjaciencyGraph
+from nlfem import constructAdjaciencyGraph
 
 class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
@@ -174,6 +174,9 @@ class RegMesh2D:
             meshio.write(filename, m, file_format="vtk")
 
     def save(self, path):
+        import os
+        os.makedirs(path, exist_ok=True)
+
         def writeattr(file, attr_name):
             file.write(attr_name+"\n")
             file.write(str(self.__dict__[attr_name])+"\n")

@@ -1,5 +1,6 @@
 #-*- coding:utf-8 -*-
 import numpy as np
+import os
 
 delta = .1
 ansatz = "CG"
@@ -13,17 +14,19 @@ quadrule_inner = "1"
 tensorGaussDegree = 4
 
 n_start = 12
-n_layers = 4
+n_layers = 3
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4
 def u_exact(x):
     return x[0] ** 2 * x[1] + x[1] ** 2
 
-fnames = {"triPlot.pdf": "results/auto_plot.pdf",
-          "rates.md": "results/auto_rates.md",
-          "rates.pdf": "results/auto_rates.pdf",
-          "timePlot.pdf": "results/timePlot.pdf",
-          "report.pdf": "results/auto_report.pdf"}
+outputdir  = "results/"
+os.makedirs(outputdir, exist_ok=True)
+fnames = {"triPlot.pdf": outputdir+"auto_plot.pdf",
+          "rates.md": outputdir+"auto_rates.md",
+          "rates.pdf": outputdir+"auto_rates.pdf",
+          "timePlot.pdf": outputdir+"timePlot.pdf",
+          "report.pdf": outputdir+"auto_report.pdf"}
 data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
 
 # Quadrature rules -----------------------------------------------------------------------------------------------------

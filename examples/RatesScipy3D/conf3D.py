@@ -22,7 +22,7 @@ u_exact = lambda x: x[0]**2 * x[1] + x[1]**2 + x[2]**2
 
 
 outputdir = datetime.datetime.now().strftime("%m.%d_%H-%M-%S")+"_results"
-os.mkdir(outputdir)
+os.makedirs(outputdir, exist_ok=True)
 #outputdir = "results"
 
 fnames = {
@@ -70,6 +70,8 @@ def writeattr(file, attr_name):
     file.write(str(eval(attr_name))+"\n")
 
 def save(path):
+    import os
+    os.makedirs(path, exist_ok=True)
     # Save Configuration
     confList = [
         "model_kernel",

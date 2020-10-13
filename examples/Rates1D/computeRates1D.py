@@ -1,6 +1,6 @@
 from mesh import RegMesh1D
 from scipy.spatial.distance import euclidean as l2dist
-import helpers as helpers
+import helpers
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
@@ -20,7 +20,6 @@ def main():
         print("\n h: ", mesh.h)
         conf.data["h"].append(mesh.h)
         conf.data["nV_Omega"].append(mesh.nV_Omega)
-        #mesh.save("data")
         conf.save("data")
 
         # Assembly ------------------------------------------------------------------------
