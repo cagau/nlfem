@@ -111,7 +111,8 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
 
     double factors;
     //const int dim = mesh.dim;
-    double alpha[4], alphaCanceled[4], traffodet, traffodetCanceled, x[2], y[2],
+    double alpha[4], alphaCanceled[4]; // traffodet
+    double traffodetCanceled, x[2], y[2],
     x_canceled[2], y_canceled[2];//, kernel_val=0.;
 
     double kernel_val[mesh.outdim*mesh.outdim];
@@ -141,7 +142,7 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
             traffodetCanceled = pow(alphaCanceled[0], 2);
             alphaCanceled[0] = 1.0;
 
-            traffodet = traffo(alpha);
+            //traffodet = traffo(alpha);
             traffodetCanceled *= traffo(alphaCanceled);
 
             mirror(alpha);

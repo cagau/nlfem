@@ -108,8 +108,8 @@ if __name__=="__main__":
     import numpy as np
 
     print("\nIndices")
-    indices = read_arma_Mat_uword("../examples/RatesScipy/indices_all", True)
+    indices = read_arma_Mat_uword("../examples/Rates2D/indices_all", True)
     print(indices.shape)
     print(np.max(indices))
     print("\nValues")
-    values = read_arma_mat("../examples/RatesScipy/values_all", True)
+    values = read_arma_mat("../examples/Rates2D/values_all", True)
