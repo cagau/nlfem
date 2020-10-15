@@ -9,7 +9,6 @@
 #define NONLOCAL_ASSEMBLY_CHECKS_CPP
 
 #include <armadillo>
-
 #include "mathhelpers.h"
 #include "MeshTypes.h"
 
@@ -24,10 +23,10 @@ void chk_QuadratureRule(QuadratureType & quadRule){
     double elementVolume = 1./ static_cast<double>(faculty(quadRule.dim));
 
     double dx_sum = vec_sum(quadRule.dx, quadRule.nPx);
-    abortIfFalse(double_eq(dx_sum, elementVolume) , "Weights dx do not sum up to element volume.");
+    abortIfFalse(double_eq(dx_sum, elementVolume, EPSILON_CHKS) , "Weights dx do not sum up to element volume.");
 
     double dy_sum = vec_sum(quadRule.dy, quadRule.nPy);
-    abortIfFalse(double_eq(dy_sum, elementVolume) , "Weights dy do not sum up to element volume.");
+    abortIfFalse(double_eq(dy_sum, elementVolume, EPSILON_CHKS) , "Weights dy do not sum up to element volume.");
 }
 
 void chk_BasisFunction(QuadratureType & quadRule){
@@ -36,11 +35,11 @@ void chk_BasisFunction(QuadratureType & quadRule){
 
     arma::vec dx(quadRule.dx, quadRule.nPx);
     double psix_integral = arma::dot(dx, quadRule.psix.row(0));
-    abortIfFalse(double_eq(psix_integral, elementIntegral)  , "Wrong integral of basis function w.r.t. weights dx.");
+    abortIfFalse(double_eq(psix_integral, elementIntegral, EPSILON_CHKS)  , "Wrong integral of basis function w.r.t. weights dx.");
 
     arma::vec dy(quadRule.dy, quadRule.nPy);
     double psiy_integral = arma::dot(dy, quadRule.psiy.row(0));
-    abortIfFalse(double_eq(psiy_integral, elementIntegral) , "Wrong integral of basis function w.r.t. weights dy.");
+    abortIfFalse(double_eq(psiy_integral, elementIntegral, EPSILON_CHKS) , "Wrong integral of basis function w.r.t. weights dy.");
 }
 
 void chk_Mesh(MeshType & mesh){
@@ -84,7 +83,7 @@ void chk_Conf(MeshType & mesh, ConfigurationType & conf, QuadratureType & quadRu
         abort();
     }
     if(conf.integration_method == "linearPrototypeMicroelastic" ){
-        abortIfFalse(quadRule.tensorGaussDegree , "You chose a singular kernel, but no quadrature rule for it.");
+        abortIfFalse(quadRule.tensorGaussDegree, "You chose a singular kernel, but no quadrature rule for it.");
     }
 }
 #endif //NONLOCAL_ASSEMBLY_CHECKS_CPP

@@ -116,8 +116,7 @@ struct MeshStruct{
     const arma::Mat<long> ZetaIndicator{arma::Mat<long>(this-> ptrZeta, this-> nZeta, this-> nE)};
 };
 typedef MeshStruct MeshType;
-//typedef int (*const interactionMethodType)(const double * x_center, const ElementType & T,
-//                                       const MeshType & mesh, double * out_reTriangle_list);
+
 
 struct QuadratureStruct{
     const double * Px;
@@ -156,90 +155,4 @@ struct entryStruct{
 };
 typedef entryStruct entryType;
 
-class sparseMatrix{
-public:
-    entryStruct * indexValuePairs = nullptr;
-    entryStruct * indexValuePairs_source = nullptr;
-    unsigned long reserved_total = 0;
-    unsigned long reserved_buffer;
-    unsigned long size_guess;
-    const MeshType mesh;
-
-    entryStruct * data = nullptr;
-    entryStruct * buffer = nullptr;
-    unsigned long n_entries=0, n_buffer=0;
-
-    sparseMatrix(unsigned long chunkSize, MeshType & mesh) :
-    size_guess(chunkSize),
-    mesh(mesh)
-    {
-        // The NNZ depends on the mergeBuffer() function. If we reduce, we need more time and less memory.
-        unsigned long estimatedNNZ = size_guess *
-                                     static_cast<unsigned long>(pow(2*ceil(mesh.delta / mesh.maxDiameter + 1)*
-                                                                    mesh.outdim, mesh.dim));
-        reserved_buffer = estimatedNNZ;
-        reserved_total = reserved_buffer;// + estimatedNNZ;
-        //printf("Now reserved %li\n", reserved_total);
-        //printf("%f GB\n", static_cast<double>(reserved_total)*16.0 * 1e-9);
-        indexValuePairs = static_cast<entryType *>(malloc(sizeof(entryType) * reserved_total));
-        data = indexValuePairs;
-        buffer = indexValuePairs + n_entries;
-
-        //cout << "Allocated!" << endl;
-    }
-
-    ~sparseMatrix() = default;
-    // Putting this yields munmapchunk error. Hence I guess indexValuePairs is freed automatically.
-    // free(indexValuePairs);
-
-    int append(entryStruct & entry);
-    int mergeBuffer();
-
-    static unsigned long reduce(entryStruct * mat, unsigned long length);
-};
-
-//class sp_index {
-//public:
-    //int i;
-    //int j;
-    // Needed for (ordered) std::map
-    /*bool operator<(const sp_index &other) const {
-        if (i < other.i) return true;
-        if (other.i < i) return false;
-        return (j < other.j);
-    }*/
-    // Needed for std::unoredered_map
-    /*bool operator==(const sp_index &other) const {
-        return (i == other.i) && (j == other.j);
-    }*/
-//};
-// Hashing function for unordered map
-// https://en.cppreference.com/w/cpp/utility/hash
-// https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
-/*namespace std {
-    template <>
-    struct hash<sp_index>
-    {
-        std::size_t operator()(const sp_index& dx) const
-        {
-            using std::size_t;
-            using std::hash;
-
-            // Compute individual hash values for first,
-            // second and third and combine them using XOR
-            // and bit shifting:
-
-            return ((hash<int>()(dx.i) ^ (hash<int>()(dx.j) << 1)) >> 1);
-        }
-    };
-
-}
-
-struct sp_reduce {
-    int threadID;
-    int start;
-    int end;
-};
-typedef sp_reduce sp_reduceType;
-*/
 #endif //NONLOCAL_ASSEMBLY_MESHTYPES_H

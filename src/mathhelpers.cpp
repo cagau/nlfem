@@ -324,9 +324,9 @@ double absolute(const double value){
     }
 }
 
-bool double_eq(double x, double y){
+bool double_eq(double x, double y, const double eps){
     double diff = absolute(x-y);
-    return (diff < EPSILON);
+    return (diff < eps);
 }
 
 double scal_sqL2dist(const double x, const double y){

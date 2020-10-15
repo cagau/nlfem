@@ -8,7 +8,8 @@
 #include "MeshTypes.h"
 
 // ___ MATH HELERPS DECLARATION ________________________________________________________________________________________
-const double EPSILON=1e-8;
+const double EPSILON=1e-15;
+const double EPSILON_CHKS=1e-8;
 
 // Miscellaneous helpers ###############################################################################################
 void solve2x2(const double *, const double *, double *);                 // Solve 2x2 System with LU
@@ -50,7 +51,7 @@ void intVec_tozero(int *, int);                    // Reset to zero
 
 // Scalar operations ###################################################################################################
 double absolute(double);                                  // Get absolute value
-bool double_eq(double x, double y);                 // Compare to double values
+bool double_eq(double x, double y, double eps=EPSILON);     // Compare to double values
 double scal_sqL2dist(double x, double y);           // L2 Distance
 
 

@@ -13,8 +13,7 @@ class RegMesh2D:
                  dim=2, ansatz="CG", boundaryConditionType="Dirichlet",
                  is_constructAdjaciencyGraph=True, zigzag=False):
         ### TEST 27.07.2020
-        self.Ceta = np.arange(12, dtype=np.int).reshape(4, 3)
-
+        #self.Zeta = np.arange(12, dtype=np.int).reshape(4, 3)
         #####
 
 
@@ -123,6 +122,12 @@ class RegMesh2D:
         self.elements.tofile(path+"/mesh.elemt")
         self.neighbours.tofile(path+"/mesh.neigh")
         self.elementLabels.tofile(path+"/mesh.elelb")
+
+        np.save(path + "/vertices.npy", self.vertices)
+        np.save(path + "/elements.npy", self.elements)
+        np.save(path + "/neighbours.npy", self.neighbours)
+        np.save(path + "/elementsLabels.npy", self.elementLabels)
+        np.save(path + "/verticesLabels.npy", self.vertexLabels)
 
     def remapElements(self):
         def invert_permutation(p):

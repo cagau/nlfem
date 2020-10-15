@@ -21,7 +21,7 @@
 
 using namespace std;
 /**
- * This function looks up the configuration. It hast to be updated whenever a new kernel,
+ * This function looks up the configuration. It has to be updated whenever a new kernel,
  * forcing function or integration routine is added in order to make the option available.
  *
  * @param conf
@@ -510,7 +510,6 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                 for (int j = 0; j < mesh.nNeighbours; j++) {
                     // The next valid neighbour is our candidate for the inner Triangle b.
                     int bTdx = NTdx[j];
-                    //bTdx = 45;
 
                     // Check how many neighbours sTdx has. It can be 3 at max.
                     // In order to be able to store the list as contiguous array we fill up the empty spots with the number nE
