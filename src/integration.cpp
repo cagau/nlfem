@@ -176,10 +176,10 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
                     factors = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim] * traffodetCanceled * SCALEDET *
                             quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
                     //factors = kernel_val * traffodet * scaledet * quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                    termLocal[mesh.outdim*mesh.dVertex * argSortA[a] + argSortA[b]] += 2*factors * psix[a/mesh.outdim] * psix[b/mesh.outdim];
+                    termLocal[mesh.outdim*mesh.dVertex * (argSortA[a/mesh.outdim] + a%mesh.outdim) + argSortA[b/mesh.outdim]  + b%mesh.outdim] += 2*factors * psix[a/mesh.outdim] * psix[b/mesh.outdim];
                     //termLocal[mesh.dVertex * a + b] += 2*factors* psix[a] * psix[b];
                     // [10] siehe [9]
-                    termNonloc[mesh.outdim*mesh.dVertex * argSortA[a] + argSortB[b]] += 2*factors * psix[a/mesh.outdim] * psiy[b/mesh.outdim];
+                    termNonloc[mesh.outdim*mesh.dVertex * (argSortA[a/mesh.outdim] + a%mesh.outdim) + argSortB[b/mesh.outdim] +  b%mesh.outdim] += 2*factors * psix[a/mesh.outdim] * psiy[b/mesh.outdim];
                     //termNonloc[mesh.dVertex * a + b] += 2*factors * psix[a] * psiy[b];
                     //cout << termLocal[mesh.outdim*mesh.dVertex * a + b] << endl;
                 }
