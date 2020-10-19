@@ -142,7 +142,7 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
             traffodetCanceled = pow(alphaCanceled[0], 2);
             alphaCanceled[0] = 1.0;
 
-            //traffodet = traffo(alpha);
+            traffo(alpha);
             traffodetCanceled *= traffo(alphaCanceled);
 
             mirror(alpha);
@@ -167,21 +167,29 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
             //double outTest[mesh.outdim*mesh.outdim*mesh.dVertex*mesh.dVertex];
             // double psitest[3] = {20., 30., 50.};
             // [7] for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
-            for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
-                for (int b = 0; b < mesh.dVertex*mesh.outdim; b++) {
-                    //outTest[mesh.outdim*mesh.dVertex * a + b] = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim]
-                    //        + psitest[a/mesh.outdim]*psitest[b/mesh.outdim];
-                    //cout << outTest[mesh.outdim*mesh.dVertex * a + b] << ",   ";
+            for (int a = 0; a < mesh.dVertex; a++) {
+                for (int aOut = 0; aOut < mesh.outdim; aOut++) {
+                    for (int b = 0; b < mesh.dVertex; b++) {
+                        for (int bOut = 0; bOut < mesh.outdim; bOut++) {
+                            //outTest[mesh.outdim*mesh.dVertex * a + b] = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim]
+                            //        + psitest[a/mesh.outdim]*psitest[b/mesh.outdim];
+                            //cout << outTest[mesh.outdim*mesh.dVertex * a + b] << ",   ";
 
-                    factors = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim] * traffodetCanceled * SCALEDET *
-                            quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                    //factors = kernel_val * traffodet * scaledet * quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                    termLocal[mesh.outdim*mesh.dVertex * (argSortA[a/mesh.outdim] + a%mesh.outdim) + argSortA[b/mesh.outdim]  + b%mesh.outdim] += 2*factors * psix[a/mesh.outdim] * psix[b/mesh.outdim];
-                    //termLocal[mesh.dVertex * a + b] += 2*factors* psix[a] * psix[b];
-                    // [10] siehe [9]
-                    termNonloc[mesh.outdim*mesh.dVertex * (argSortA[a/mesh.outdim] + a%mesh.outdim) + argSortB[b/mesh.outdim] +  b%mesh.outdim] += 2*factors * psix[a/mesh.outdim] * psiy[b/mesh.outdim];
-                    //termNonloc[mesh.dVertex * a + b] += 2*factors * psix[a] * psiy[b];
-                    //cout << termLocal[mesh.outdim*mesh.dVertex * a + b] << endl;
+                            factors =
+                                    kernel_val[mesh.outdim * aOut + bOut] * traffodetCanceled *
+                                    SCALEDET *
+                                    quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+                            //factors = kernel_val * traffodet * scaledet * quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+                            termLocal[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut) +
+                                      argSortA[b]*mesh.outdim + bOut] += 2 * factors * psix[a] * psix[b];
+                            //termLocal[mesh.dVertex * a + b] += 2*factors* psix[a] * psix[b];
+                            // [10] siehe [9]
+                            termNonloc[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
+                                      + argSortB[b]*mesh.outdim + bOut] += 2 * factors * psix[a] * psiy[b];
+                            //termNonloc[mesh.dVertex * a + b] += 2*factors * psix[a] * psiy[b];
+                            //cout << termLocal[mesh.outdim*mesh.dVertex * a + b] << endl;
+                        }
+                    }
                 }
                 //cout << endl;
             }
