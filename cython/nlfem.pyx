@@ -288,6 +288,12 @@ def evaluateMass(
     cdef double[:] ptrPx = Px.flatten()
     cdef double[:] ptrdx = dx.flatten()
 
+    cdef long outdim = 1
+    try:
+        outdim = mesh.outdim
+    except AttributeError:
+        pass
+
     Cassemble.par_evaluateMass(
             &ptrvd[0],
             &ptrud[0],
@@ -296,7 +302,7 @@ def evaluateMass(
             &vertices[0],
             mesh.K_Omega,
             mesh.nE_Omega,
-            Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim)
+            Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim, outdim)
     return vd
 
 def constructAdjaciencyGraph(long[:,:] elements):

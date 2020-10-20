@@ -95,7 +95,7 @@ void kernelField_constant(const double * x, const long labelx, const double * y,
     // KERNEL ORDER [ker (0,0), ker (0,1), ker (1,0), ker (1,1)]
     kernel_val[0] = 4. / (M_PI * pow(sqdelta, 2));
     kernel_val[1] = 0.0;
-    kernel_val[2] = 0.0;
+    kernel_val[2] = 4. / (M_PI * pow(sqdelta, 2));
     kernel_val[3] = 0.0;
 }
 
@@ -116,8 +116,14 @@ void fField_constantRight(const double * x, double * forcing_out){
 void fField_constantDown(const double * x, double * forcing_out){
     const double f1 = 0; //1e-3;
     const double f2 = -1e-3;
-    forcing_out[0] = f1;// * (x[0]+1)/(x[0]+1);
-    forcing_out[1] = f2;// * (x[0]+1)/(x[0]+1);
+    forcing_out[0] = f1;
+    forcing_out[1] = f2;
+}
+void fField_constantBoth(const double * x, double * forcing_out){
+    const double f1 = .5*1e-3;
+    const double f2 = 3./2.*1e-3;
+    forcing_out[0] = f1;
+    forcing_out[1] = f2;
 }
 void f_linear(const double * x, double * forcing_out){
     *forcing_out = -2. * (x[1] + 1.);

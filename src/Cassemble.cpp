@@ -41,6 +41,8 @@ void lookup_configuration(ConfigurationType & conf){
         model_f = fField_constantRight;
     } else if (conf.model_f == "constantDownField"){
         model_f = fField_constantDown;
+    } else if (conf.model_f == "constantBothField"){
+        model_f = fField_constantBoth;
     } else {
         cout << "Error in par:assemble. Right hand side: " << conf.model_f << " is not implemented." << endl;
         abort();
@@ -244,7 +246,7 @@ void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega
 
 void
 par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
-                 double *P, double *dx, const int dim) {
+                 double *P, double *dx, const int dim, const int outdim) {
     const int dVerts = dim+1;
     double tmp_psi[dVerts];
     double *psi = (double *) malloc((dVerts)*nP*sizeof(double));
@@ -290,13 +292,18 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
                 aTdet = absDet(&aTE[0], dim);
 
                 for (int a = 0; a < dVerts; a++) {
-                    if (aAdx[a] < K_Omega) {
-                        for (int b = 0; b < dVerts; b++) {
-                            if (aAdx[b] < K_Omega) {
-                                for (int j = 0; j < nP; j++) {
-                                    // Evaluation
-                                    #pragma omp atomic update
-                                    vd[aAdx[a]] += psi[nP * a + j] * psi[nP * b + j] * aTdet * dx[j] * ud[aAdx[b]];
+                    if (aAdx[a] < K_Omega/outdim) {
+                        for (int aOut = 0; aOut < outdim; aOut++) {
+                            for (int b = 0; b < dVerts; b++) {
+                                if (aAdx[b] < K_Omega/outdim) {
+                                    for (int bOut = 0; bOut < outdim; bOut++) {
+                                        for (int j = 0; j < nP; j++) {
+                                            // Evaluation
+#pragma omp atomic update
+                                            vd[outdim*aAdx[a] + aOut] +=
+                                                    psi[nP * a + j] * psi[nP * b + j] * aTdet * dx[j] * ud[outdim*aAdx[b] + bOut];
+                                        }
+                                    }
                                 }
                             }
                         }

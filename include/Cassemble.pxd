@@ -21,7 +21,7 @@ cdef extern from "Cassemble.h" nogil:
                   const double * Pg, const int nPg, const double * dg, double maxDiameter) nogil
     # Mass matrix evaluation ----------------------------------------------------------------------------------------------
     void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int nE, int nP,
-                     double *P, double *dx, const int dim) nogil
+                     double *P, double *dx, const int dim, int outdim) nogil
 
     # DEBUG Helpers and test functions
     int method_retriangulate(const double * x_center, const double * TE,

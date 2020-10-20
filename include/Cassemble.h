@@ -178,7 +178,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
  * @param dim       Dimension of the domain Omega (2 or 3).
  */
 void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
-                 double *P, double *dx, int dim);
+                 double *P, double *dx, int dim, int outdim=1);
 //[DEBUG]
 
 
