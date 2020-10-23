@@ -30,7 +30,8 @@ def main():
                                  integration_method=conf.integration_method,
                                  is_PlacePointOnCap=conf.is_PlacePointOnCap,
                                  compute="systemforcing",
-                                 tensorGaussDegree=conf.tensorGaussDegree)
+                                 tensorGaussDegree=conf.tensorGaussDegree,
+                                 averageWeights = conf.averageWeights)
 
         conf.data["Assembly Time"].append(time() - start)
 

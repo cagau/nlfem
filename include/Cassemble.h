@@ -119,7 +119,8 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
                   int is_DiscontinuousGalerkin, int is_NeumannBoundary, string str_model_kernel,
                   string str_model_f, string str_integration_method, int is_PlacePointOnCap,
                   int dim, int outdim, const long * ptrZeta = nullptr, long nZeta = 0,
-                  const double * Pg = nullptr, int degree = 0, const double * dg = nullptr, double maxDiameter = 0.0);
+                  const double * Pg = nullptr, int degree = 0, const double * dg = nullptr, double maxDiameter = 0.0,
+                  const double * averageWeights = nullptr);
 
 /**
  * @brief Parallel assembly of nonlocal operator using a finite element approach.

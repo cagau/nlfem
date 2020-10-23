@@ -143,7 +143,8 @@ def assemble(
         model_f = "constant",
         integration_method = "retriangulate",
         is_PlacePointOnCap = 1,
-        tensorGaussDegree=0
+        tensorGaussDegree=0,
+        averageWeights = [1.0, 1.0, 1.0]
     ):
     is_tmpAd = False
     if path_spAd is None:
@@ -173,7 +174,7 @@ def assemble(
     cdef string compute_system_ = "system".encode('UTF-8')
     cdef string compute_forcing_ = "forcing".encode('UTF-8')
     cdef int is_PlacePointOnCap_ = is_PlacePointOnCap
-
+    cdef double [:] averageWeights_ = np.array(averageWeights)
 
     cdef double [:] ptrPx = Px.flatten()
     cdef double [:] ptrPy = Py.flatten()
@@ -235,7 +236,7 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, &averageWeights_[0])
 
         total_time = time.time() - start
         print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -261,7 +262,7 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, &averageWeights_[0])
 
         fd = read_arma_mat(path_fd)[:,0]
         if is_tmpfd:

@@ -315,7 +315,8 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim, const int outdim, const long * ptrZeta, const long nZeta,
-                  const double * Pg, const int degree, const double * dg, double maxDiameter) {
+                  const double * Pg, const int degree, const double * dg, double maxDiameter,
+                  const double * averageWeights) {
     //const long * ptrZeta;
     //cout << "nZeta is" << nZeta << endl;
 
@@ -331,7 +332,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
     chk_QuadratureRule(quadRule);
-    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap), false ,averageWeights};
     // [3]
     // kernel has to match outdim. Can we, or do we want to check this?
     chk_Conf(mesh, conf, quadRule);

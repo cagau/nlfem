@@ -71,7 +71,7 @@ struct ConfigurationStruct {
     const string integration_method;
     const bool is_placePointOnCap;
     bool is_singularKernel=false;
-  //  double averageWeights[3];
+    const double * averageWeights;
 };
 typedef ConfigurationStruct ConfigurationType;
 
