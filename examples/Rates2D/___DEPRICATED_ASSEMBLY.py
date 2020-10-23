@@ -197,7 +197,7 @@ for h in H:
 #==============================================================================
 #              PRINT INPUT - PARAMETERS INTO TEXT-FILE
 #==============================================================================  
-current_script = open('DEPRICATED_ASSEMBLY.py', 'r')
+current_script = open('___DEPRICATED_ASSEMBLY.py', 'r')
 textfile = open(folder+'parameters.txt', 'w')
 
 for line in current_script:

@@ -28,7 +28,8 @@ class RegMesh2D:
             points, cells = meshzoo.rectangle(
                 xmin=-self.delta, xmax=1.0+self.delta,
                 ymin=-self.delta, ymax=1.0+self.delta,
-                nx=n+1, ny=n+1
+                nx=n+1, ny=n+1,
+                variant = "up"
             )
             self.vertices = np.array(points[:, :2])
 

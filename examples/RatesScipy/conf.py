@@ -6,16 +6,17 @@ ansatz = "CG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
 model_kernel = "constant"#"parabola" "linearPrototypeMicroelastic"# "constant" # "labeled" #
-integration_method = "retriangulate" # "tensorgauss" "retriangulate" # "baryCenter" # subSetBall # superSetBall averageBall
-is_PlacePointOnCap = True
-quadrule_outer = "7"
+integration_method = "superSetBall" #"retriangulate" # "tensorgauss" "baryCenterRT" # "baryCenter"  # superSetBall #averageBall #subSetBall
+is_PlacePointOnCap = False
+averageWeights = [1.0, 1.0, 1.0]
+quadrule_outer = "16"
 quadrule_inner = "1"
 tensorGaussDegree = 4
 
 n_start = 12
-n_layers = 1
+n_layers = 6
 N  = [n_start*2**(l) for l in list(range(n_layers))]
-N_fine = N[-1]*4
+N_fine = N[-1]*10
 def u_exact(x):
     return x[0] ** 2 * x[1] + x[1] ** 2
 

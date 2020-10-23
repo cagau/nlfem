@@ -610,18 +610,16 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
     //int doesInteract;
 
     if (conf.integration_method == "superSetBall"){
-        //doesInteract = 1;
-        for (auto ptr = averageWeights; ptr < averageWeights + mesh.dVertex; ptr++){
-            *ptr = 1.0;
-        }
+        averageWeights[0]=1.0;
+        averageWeights[1]=1.0;
+        averageWeights[2]=1.0;
     } else if (conf.integration_method == "subSetBall"){
         //doesInteract = 3;
         averageWeights[2]=1.0;
     } else if (conf.integration_method == "averageBall") {
-        for (auto ptr = averageWeights; ptr < averageWeights + mesh.dVertex; ptr++){
-            *ptr = 0.5;
-        }
-        averageWeights[2]=1.0;
+        averageWeights[0]= 0.0;
+        averageWeights[1]= 1.0;
+        averageWeights[2]= 1.0;
     } else {
             cout << "Error in integrate_subSuperSetBalls: No such integration_method: " <<
             conf.integration_method << endl;

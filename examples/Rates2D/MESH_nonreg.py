@@ -108,40 +108,31 @@ def prepare_mesh_nonreg(h1,h2, delta, transform_switch, transform):
     omega_i = list(range(len(verts[omega]) + len(verts[boundary]),len(verts)))  # np.where(np.linalg.norm(verts - np.ones(1) * 0.5, axis=1, ord=np.inf) > 0.5)
     nodes = omega+boundary
 
+    # TRANSFORM
     index_to_transform = omega# np.where(np.linalg.norm(verts - np.ones(2) * 0.5, axis=1, ord=np.inf) < 0.5 - max(h1, h2))[0].tolist()
-
     if transform_switch:
         """
         problem: index_to_transform inner-inner points --> might then overlap and interpolation does not work anymore
         """
         for i in index_to_transform:
             verts[i] = transform(verts[i])
-
     triangles = Delaunay(verts).simplices
     bary = (verts[triangles[:, 0]] + verts[triangles[:, 1]] + verts[
         triangles[:, 2]]) / 3.
-
     triangles = np.concatenate((np.zeros((len(triangles), 1), dtype=np.int), triangles), axis=1)
-
     new_omega = list(np.where(np.linalg.norm(bary - np.ones(1) * 0.5, axis=1, ord=np.inf) < 0.5)[0])
-
     new_omega_i = list(set(range(len(triangles))) - set(new_omega))
-
     triangles[new_omega, 0] = 1
     triangles[new_omega_i, 0] = 2
-
     omega = triangles[new_omega]
 
     def diam(T):
         length_of_edges = np.array(
             [np.linalg.norm(T[0] - T[1]), np.linalg.norm(T[0] - T[2]), np.linalg.norm(T[1] - T[2])])
         return np.max(length_of_edges)
-
     diameter = [diam(np.array([verts[triangles[i,][1]], verts[triangles[i,][2]], verts[triangles[i,][3]]])) for i in
                 range(len(triangles))]
     diam = np.max(diameter)
-
-
     proc_mesh_data = [triangles, omega, verts, [], boundary, nodes, [], diameter, [], [], bary,
                       boundary, [], [], [], len(verts), len(triangles), len(omega), len(nodes)]
     mesh = Mesh(proc_mesh_data)
