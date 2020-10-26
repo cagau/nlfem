@@ -1,0 +1,8 @@
+model_kernel
+constant
+model_f
+linear
+integration_method
+retriangulate
+is_PlacePointOnCap
+False

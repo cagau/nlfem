@@ -36,7 +36,7 @@ endif()
 
 
 #add_subdirectory(./examples/Rates2DCpp)
-#add_subdirectory(./examples/CompareCodes)
+add_subdirectory(./examples/CompareCodes)
 # Add tests to project
 #option(PACKAGE_TESTS "Build the tests" ON)
 #if(PACKAGE_TESTS)

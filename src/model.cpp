@@ -115,7 +115,7 @@ void fField_constantRight(const double * x, double * forcing_out){
 }
 void fField_constantDown(const double * x, double * forcing_out){
     const double f1 = 0; //1e-3;
-    const double f2 = -1e-3;
+    const double f2 = -1.*1e-3;
     forcing_out[0] = f1;
     forcing_out[1] = f2;
 }
