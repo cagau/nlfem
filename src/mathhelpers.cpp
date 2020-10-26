@@ -1,52 +1,15 @@
-//
-// Created by klar on 16.03.20.
-//
-#ifndef NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
-#define NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
+/**
+    Helper functions.
+
+    @file mathhelpers.cpp
+    @author Manuel Klar
+    @version 0.1 25/08/20
+*/
+#include <cmath>
+#include <iostream>
+
+#include "mathhelpers.h"
 using namespace std;
-
-// ___ MATH HELERPS DECLARATION ________________________________________________________________________________________
-
-// Miscellaneous helpers ###############################################################################################
-void solve2x2(const double *, const double *, double *);                 // Solve 2x2 System with LU
-void rightNormal(const double * y0, const double * y1, double orientation, double * normal);
-
-// Matrix operations ###################################################################################################
-
-// Double
-double absDet(const double * E);                                         // Compute determinant
-double absDet(const double * E, int dim);
-double signDet(const double * E);
-double signDet(const double * E, const MeshType & mesh);
-void baryCenter(const double * E, double * bary);                        // Bary Center
-void baryCenter(int dim, const double * E, double * bary);
-void toRef(const double * E, const double * phys_x, double * ref_p);     // Pull point to Reference Element (performs 2x2 Solve)
-void toPhys(const double * E, const double * p, double * out_x);         // Push point to Physical Element
-void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x);
-
-// Vector operations ###################################################################################################
-
-// Double
-double vec_sqL2dist(const double * x, const double * y, int len);      // L2 Distance
-double vec_dot(const double * x, const double * y, int len);           // Scalar Product
-int doubleVec_any(const double * vec, int len);                        // Any
-void doubleVec_tozero(double *, int);               // Reset to zero
-void doubleVec_subtract(const double * vec1, const double * vec2, double * out, int len);
-void doubleVec_midpoint(const double * vec1, const double * vec2, double * midpoint, int len);
-void doubleVec_scale(double lambda, const double * vec, double * out, int len);
-void doubleVec_add(const double * vec1, const double * vec2, double * out, int len);
-void doubleVec_copyTo(const double * input, double * output, int len);
-
-// Long
-int longVec_all(const long *, int);                // All
-int longVec_any(const long *, int);                // Any
-
-// Int
-void intVec_tozero(int *, int);                    // Reset to zero
-
-// Scalar operations ###################################################################################################
-double absolute(double);                                  // Get absolute value
-double scal_sqL2dist(double x, double y);           // L2 Distance
 
 
 // ___ MATH HELERPS IMPLEMENTATION _____________________________________________________________________________________
@@ -64,9 +27,8 @@ void solve2x2(const double * A, const double * b, double * x){
     }
 
     // Check invertibility
-    if (A[2*dx0] == 0){
-        // raise LinAlgError("in solve2x2. Matrix not invertible.")
-        cout << "in solve2x2. Matrix not invertible." << endl;
+    if (double_eq(A[2*dx0], 0)) {
+        cout << "Error in solve2x2. Matrix not invertible." << endl;
         abort();
     }
 
@@ -84,7 +46,6 @@ void solve2x2(const double * A, const double * b, double * x){
     // LU Solve
     x[1] = (b[dx1] - l*b[dx0])/u;
     x[0] = (b[dx0] - A[2*dx0+1]*x[1])/A[2*dx0];
-    return;
 }
 
 // Normal which looks to the right w.r.t the vector from y0 to y1.
@@ -92,6 +53,14 @@ void rightNormal(const double * y0, const double * y1, const double orientation,
     normal[0] = y1[1] - y0[1];
     normal[1] = y0[0] - y1[0];
     doubleVec_scale(orientation, normal, normal, 2);
+}
+
+int faculty(int n){
+    int fac=1;
+    for(int i=n; i>1; i--){
+        fac*=i;
+    }
+    return fac;
 }
 
 // ### MATRIX OPERATIONS ###############################################################################################
@@ -211,12 +180,11 @@ void toPhys(const double * E, const double * p, double * out_x){
     }
 }
 
-void toPhys(const double * E, const double * p, const MeshType & mesh, double * out_x) {
-    int i = 0, j = 0;
-    doubleVec_tozero(out_x, mesh.dim);
-    for (i=0; i<mesh.dim;i++){
-        for(j=0; j<mesh.dim;j++){
-            out_x[i] += p[j]*(E[mesh.dim*(j+1)+i] - E[i]);
+void toPhys(const double * E, const double * p, const int dim, double * out_x) {
+    doubleVec_tozero(out_x, dim);
+    for (int i=0; i<dim;i++){
+        for(int j=0; j<dim;j++){
+            out_x[i] += p[j]*(E[dim*(j+1)+i] - E[i]);
         }
         out_x[i] += E[i];
     }
@@ -235,7 +203,6 @@ void toRef(const double * E, const double * phys_x, double * ref_p){
     b[1] = phys_x[1] - E[1];
 
     solve2x2(&M[0], &b[0], &ref_p[0]);
-    return;
 }
 
 // ### VECTOR OPERATIONS ###############################################################################################
@@ -253,13 +220,21 @@ int doubleVec_any(const double * vec, const int len){
 
 double vec_dot(const double * x, const double * y, const int len){
     double r=0;
-    int i=0;
-    for (i=0; i<len; i++){
-        r += x[i]*y[i];
+    auto ity = y;
+    for (auto itx=x; itx < x+len; itx++){
+        r += (*(itx)) * (*(ity));
+        ity++;
     }
     return r;
 }
 
+double vec_sum(const double *x, const int len){
+    double sum=0;
+    for(int i=0; i<len; i++){
+        sum+=x[i];
+    }
+    return sum;
+}
 double vec_sqL2dist(const double * x, const double * y, const int len){
     double r=0;
     int i=0;
@@ -270,9 +245,8 @@ double vec_sqL2dist(const double * x, const double * y, const int len){
 }
 
 void doubleVec_tozero(double * vec, const int len){
-    int i=0;
-    for (i=0; i< len; i++){
-        vec[i]  = 0;
+    for (auto entry = vec; entry < vec+len; entry++){
+        *entry  = 0.0;
     }
 }
 
@@ -336,9 +310,8 @@ int longVec_any(const long * vec, const int len){
 
 // Set Vectors to Zero -------------------------------------------------
 void intVec_tozero(int * vec, const int len){
-    int i=0;
-    for (i=0; i< len; i++){
-        vec[i]  = 0;
+    for (auto it= vec; it < vec + len; it++){
+        *it = 0;
     }
 }
 // Scalar --------------------------------------------------------
@@ -351,8 +324,11 @@ double absolute(const double value){
     }
 }
 
+bool double_eq(double x, double y, const double eps){
+    double diff = absolute(x-y);
+    return (diff < eps);
+}
+
 double scal_sqL2dist(const double x, const double y){
     return pow((x-y), 2);
 }
-
-#endif //NONLOCAL_ASSEMBLY_MATHHELPERS_CPP
