@@ -47,3 +47,4 @@ add_subdirectory(./examples/CompareCodes)
 # install --------------------------------------------------------------------------------------------------------------
 # When calling "Install" libCassemble.a is written to ~/lib
 install(TARGETS Cassemble DESTINATION $ENV{HOME}/lib)
+
