@@ -6,6 +6,7 @@ import nlfem as assemble
 from time import time
 from scipy.sparse.linalg import cg
 
+
 def main():
     import conf
     err_ = None
