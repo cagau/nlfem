@@ -2,12 +2,12 @@
 
 If you want to contribute follow the instructions below.
 
- - Create an Issue #<n> with a describtion of what should be done in the project.
- - `git checkout -b issue<n>`, Create a new branch on your local repository.
+ - Create an Issue #n with a description of what should be done in the project.
+ - `git checkout -b issue_n` Create a new branch on your local repository.
  - Change the code...
- - `git add x; git commit -m "Issue #<n>"` Commit your changes locally.
- - `git push --set-upstream origin issue<n>` Push your branch to origin.
- - Create a merge request to issue<n> -> master.
+ - `git add x; git commit -m "Issue #n"` Commit your changes locally.
+ - `git push --set-upstream origin issue_n` Push your branch to origin.
+ - Create a merge request to issue_n -> master.
 
 # Build and Install
 
