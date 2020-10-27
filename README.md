@@ -2,8 +2,6 @@
 
 If you want to contribute follow the instructions below.
 
-## Every Issus a Branch
-
  - Create an Issue #<n> with a describtion of what should be done in the project.
  - `git checkout -b issue<n>`, Create a new branch on your local repository.
  - Change the code...
