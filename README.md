@@ -1,3 +1,15 @@
+# Collaboration Workflow
+
+If you want to contribute follow the instructions below.
+
+## Every Issus a Branch
+
+ - Create an Issue #<n> with a describtion of what should be done in the project.
+ - `git checkout -b issue<n>`, Create a new branch on your local repository.
+ - Change the code...
+ - `git add x; git commit -m "Issue #<n>"` Commit your changes locally.
+ - `git push --set-upstream origin issue<n>` Push your branch to origin.
+ - Create a merge request to issue<n> -> master.
 
 # Build and Install
 
