@@ -126,7 +126,115 @@ class tensorgauss:
             for dx in dxRow:
                 self.weights[k] *= w[dx]
 
+def stiffnesMatrix(
+    mesh,
+    kernel,
+    configuration
+):
 
+    # Save Path
+    cdef string path_stiffnesMatrix = configuration.get("savePath", "_tmpSavePath_stiffnesMatrix_").encode('UTF-8')
+
+    # Model
+    cdef string kernelFunction = kernel.get("function", ValueError("No kernel function given.")).encode('UTF-8')
+    cdef double kernelHorizon = kernel.get("horizon", ValueError("No interaction horzon function defined."))
+
+    # Quadrature Rules
+    cdef double [:] Px = configuration["outer"]["points"].flatten()
+    cdef double nPx = configuration["outer"]["points"].shape[0]
+    cdef double [:] Py = configuration["inner"]["points"].flatten()
+    cdef double nPy = configuration["inner"]["points"].shape[0]
+    cdef double [:] dx = configuration["outer"]["weights"].flatten()
+    cdef double [:] dy = configuration["inner"]["weights"].flatten()
+
+    if (nPx != len(dx)) or (nPy != len(dy)):
+        raise ValueError("Quadrature Points should be of shape (n quadrature points, dimension).")
+
+    cdef double [:] Pg
+    cdef const double * ptrPg = NULL
+    cdef double [:] dg
+    cdef const double * ptrdg = NULL
+
+    tensorGaussDegree = configuration.get("tensorGaussDegree", {})
+    if tensorGaussDegree:
+        quadgauss = tensorgauss(tensorGaussDegree)
+        Pg = quadgauss.points.flatten()
+        ptrPg = &Pg[0]
+        dg = quadgauss.weights.flatten()
+        ptrdg = &dg[0]
+
+    # Mesh
+    cdef double maxDiameter = mesh.get("maxDiameter", 0.0)
+
+    cdef double[:] vertices = mesh.get("vertices", ValueError("No vertices provided"))
+    elements = mesh.get("elements", ValueError("No elements provided"))
+    cdef long[:] neighbors = constructAdjaciencyGraph(elements)
+    cdef long[:] elements = mesh.get("elements", ValueError("No elements provided"))
+
+    elementLabels = mesh.get("elementLabels", ValueError("No elementLabels provided"))
+    elementLabels = sparse.csr_matrix(elementLabels, dtype=np.int)
+    elementLabelsData = elementLabels.data
+    cdef long[:] elementLabelsData = elementLabels.data
+    cdef long[:] elementLabelsIndices = elementLabels.indices
+    cdef long[:] elementLabelsIndptr = elementLabels.indptr
+    cdef long nE = elementLabels.shape[0]
+    cdef long nEOmega = np.sum(elementLabelsData > 0)
+
+    vertexLabels = mesh.get("vertexLabels", ValueError("No vertexLabels provided"))
+    vertexLabels = sparse.csr_matrix(vertexLabels, dtype=np.float)
+    vertexLabels = vertexLabels.data
+    cdef long[:] vertexLabelsData = vertexLabels.data
+    cdef long[:] vertexLabelsIndices = vertexLabels.indices
+    cdef long[:] vertexLabelsIndptr = vertexLabels.indptr
+    cdef long nV = vertexLabels.shape[0]
+    cdef long nVOmega = np.sum(vertexLabelsData > 0)
+
+
+    # Things which apparently are NOT set here
+
+    # outputdim -> attribute of the kernel (which we don't know here!)
+    # It should not be possible to mix matrix and scalar kernels though!
+    # -> The kernel has only ONE attribute outdim, even if label dependent
+    # K, K_Omega -> comes after the kernel, and ansatz
+
+    start = time.time()
+    Cassemble.par_assemble( "system".encode('UTF-8'),
+                            path_stiffnesMatrix,
+                            NULL,
+                            mesh.K_Omega,
+                            mesh.K,
+                            &elements[0], &elementLabels[0],
+                            &vertices[0],
+                            &verexLabels[0], ## NEW!!
+                            nE , nEOmega,
+                            nV, nVOmega,
+                            &ptrPx[0], nPx, &ptrdx[0],
+                            &ptrPy[0], nPy, &ptrdy[0],
+                            delta**2,
+                            &neighbors[0],
+                            nNeighbours,
+                            mesh.is_DiscontinuousGalerkin,
+                            mesh.is_NeumannBoundary,
+                            &model_kernel_[0],
+                            &model_f_[0],
+                            &integration_method_[0],
+                            is_PlacePointOnCap_,
+                            mesh.dim, outdim, ptrZetaIndicator, nZeta,
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter)
+
+    total_time = time.time() - start
+    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+
+    Ad = read_arma_spMat(path_spAd)
+    if is_tmpAd:
+        remove_arma_tmp(path_spAd)
+
+def loadVector(
+    mesh,
+    load,
+    configuration
+):
+    pass
 def assemble(
         # Mesh information ------------------------------------
         mesh,
@@ -304,6 +412,37 @@ def evaluateMass(
             mesh.nE_Omega,
             Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim, outdim)
     return vd
+
+
+
+def constructAdjaciencyCSRGraph(long[:,:] elements):
+    print("Constructing adjaciency graph...")
+    nE = elements.shape[0]
+    nV = np.max(elements)+1
+    cdef int dVerts = elements.shape[1]
+    cdef int dim = dVerts-1
+
+    indptr = np.zeros(nE + 1)
+    indptr[:nE] = np.arange(0,nE*3,3)
+    indptr[nE] = nE*3
+    indices = elements.ravel()
+    data = np.ones(len(indices)-1)
+
+    grph_elements_csr = sparse.csr_matrix((data, indices, indptr), shape = (nE, dVerts))
+    grph_elements_csc = sparse.csc_matrix((data, indices, indptr), shape = (nE, dVerts))
+
+    for Tdx, Vdx in enumerate(elements):
+        for d in range(dVerts):
+            grph_elements[Vdx[d], Tdx] = 1
+    #grph_neigs = ((grph_elements.transpose() @ grph_elements) == dim)
+    grph_neigs = ((grph_elements.transpose() @ grph_elements) > 0)
+
+    # ..
+
+    data = [1,2,3]
+    indptr  = [0,1,1,3]
+    index = [0,1,3]
+    sparse.csr_matrix((data, index, indptr)).todense()
 
 def constructAdjaciencyGraph(long[:,:] elements):
     print("Constructing adjaciency graph...")

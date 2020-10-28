@@ -432,3 +432,9 @@ def save(path):
     py_Py.tofile(path+"/quad.Py")
     dx.tofile((path+"/quad.dx"))
     dy.tofile((path+"/quad.dy"))
+
+    np.save(path+"/Px.npy", py_Px)
+    np.save(path+"/Py.npy", py_Py)
+    np.save(path+"/dx.npy", dx)
+    np.save(path+"/dy.npy", dy)
+
