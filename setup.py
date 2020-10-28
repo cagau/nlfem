@@ -31,6 +31,5 @@ setup(
     python_requires='>=3.6',
     include_package_data=True,
     install_requires=[['numpy'], ['scipy'], ['Cython']],
-    cmdclass={"build_ext": build_ext},
-    options={"bdist_wheel": {"universal": "1"}}
+    cmdclass={"build_ext": build_ext}
 )
