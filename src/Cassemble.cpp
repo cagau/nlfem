@@ -208,7 +208,7 @@ void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega
 
     #pragma omp parallel for private(aAdx, a, b, aTE, aTdet, j)
     for (aTdx=0; aTdx < J_Omega; aTdx++){
-        // Get index of ansatz functions in matrix compute_A.-------------------
+        // Get Index of ansatz functions in matrix compute_A.-------------------
         // Continuous Galerkin
         aAdx = &Triangles[4*aTdx+1];
         // Discontinuous Galerkin
@@ -271,7 +271,7 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
         #pragma omp for
         for (int aTdx=0; aTdx < J; aTdx++){
             if (ElementLabels[aTdx] == 1) {
-                // Get index of ansatz functions in matrix compute_A.-------------------
+                // Get Index of ansatz functions in matrix compute_A.-------------------
                 // Continuous Galerkin
                 aAdx = &Elements[dVerts* aTdx];
                 // Discontinuous Galerkin
@@ -351,6 +351,12 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     if (compute=="forcing") {
         par_forcing(mesh, quadRule, conf);
     }
+}
+
+void stiffnessMatrix(Mesh &mesh, Quadrature &quadRule, Configuration &conf){
+    cout << "Hi there" << endl;
+    cout << mesh.nV << endl;
+    cout << conf.model_kernel << endl;
 }
 
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
@@ -467,7 +473,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
             */
             //[End DEBUG]
 
-            // Get index of ansatz functions in matrix compute_A.-------------------
+            // Get Index of ansatz functions in matrix compute_A.-------------------
             if (mesh.is_DiscontinuousGalerkin) {
                 // Discontinuous Galerkin
                 //aDGdx[0] = (dVertex+1)*aTdx+1; aDGdx[1] = (dVertex+1)*aTdx+2; aDGdx[2] = (dVertex+1)*aTdx+3;
@@ -507,7 +513,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
             bool is_firstbfslayer = conf.is_singularKernel;
             // Check whether BFS is completed.
             while (!queue.empty()) {
-                // Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
+                // Get and delete the next Triangle Index of the queue. The first one will be the triangle aTdx itself.
                 int sTdx = queue.front();
                 queue.pop();
                 // Get all the neighbours of sTdx.
@@ -520,7 +526,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
                     // Check how many neighbours sTdx has. It can be 3 at max.
                     // In order to be able to store the list as contiguous array we fill up the empty spots with the number nE
-                    // i.e. the total number of Triangles (which cannot be an index).
+                    // i.e. the total number of Triangles (which cannot be an Index).
                     if (bTdx < mesh.nE) {
 
                         // Check whether bTdx is already visited.
@@ -539,9 +545,9 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                 }
                                 bAdx = bDGdx;
                             } else {
-                                // Get (pointer to) index of basis function (in Continuous Galerkin)
+                                // Get (pointer to) Index of basis function (in Continuous Galerkin)
                                 bAdx = &mesh.Triangles(0, bTdx);
-                                // The first entry (index 0) of each row in triangles contains the Label of each point!
+                                // The first entry (Index 0) of each row in triangles contains the Label of each point!
                                 // Hence, in order to get an pointer to the three Triangle idices, which we need here
                                 // we choose &Triangles[4*aTdx+1];
                             }
@@ -750,7 +756,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
         #pragma omp for
         for (int aTdx = 0; aTdx < mesh.nE; aTdx++) {
             if (mesh.LabelTriangles[aTdx] == 1) {
-                // Get index of ansatz functions in matrix compute_A.-------------------
+                // Get Index of ansatz functions in matrix compute_A.-------------------
                 if (mesh.is_DiscontinuousGalerkin) {
                     // Discontinuous Galerkin
                     for (int j = 0; j < mesh.dVertex; j++) {

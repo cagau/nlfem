@@ -117,7 +117,6 @@ struct MeshStruct{
 };
 typedef MeshStruct MeshType;
 
-
 struct QuadratureStruct{
     const double * Px;
     const double * Py;

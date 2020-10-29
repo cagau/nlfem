@@ -49,6 +49,9 @@
 #define CASSEMBLE_H
 #include <armadillo>
 #include "MeshTypes.h"
+#include "Mesh.h"
+#include "Quadrature.h"
+#include "Configuration.h"
 #include "cstring"
 using namespace std;
 
@@ -148,6 +151,34 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
  * @param conf General configuration, namely kernel, and forcing functions, as well as integration method.
  */
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
+
+/**
+ * @brief Parallel assembly of nonlocal operator using a finite element approach.
+ * Kernel functions can be defined in *model* see model_kernel() for more information.
+ *
+ * This function assembles the stiffness
+ * matrix. It traverses all elements aT with element Label == 1 and adds the values
+ *
+ *  * \f[
+ *  A(\phi_j,\phi_k) = \int_{aT} phi_j(x) \int_{bT \cup \Omega_I}(\phi_k(x)-\phi_ku(y))\gamma(x,y)  dx dy,
+ *  \f]
+ *
+ *  to the stiffness matrix. The integration starts with the domain aT x aT and then proceeds with the neighbouring
+ *  elements of aT in the mesh until the interaction domain is exceeded. For each pair aT, bT an integration routine
+ *  (options are e.g. integrate_retriangulate(), integrate_baryCenter(), integrate_baryCenterRT(), ...)
+ *  is called. If it all computed integrals are 0 the elements are considered as non-interacting. The integrals,
+ *  and the interaction sets
+ *  again depend on the truncation routines, which are called inside integrate(). This approach allows to
+ *  define interaction sets directly in the truncation routines. The code then automatically
+ *  finds the interacting elements bT without traversing all of them. This approach requires setting up the dual
+ *  graph of the mesh which is to be found in mesh.neighbours.
+ *
+ * @param mesh The mesh is of type MeshType and contains all information about the finite element descretization.
+ * See MeshStruct for more information.
+ * @param quadRule Quadrature rules for inner, and outer elements as well as for the singular kernels.
+ * @param conf General configuration, namely kernel, and forcing functions, as well as integration method.
+ */
+void stiffnessMatrix(Mesh &mesh, Quadrature &quadRule, Configuration &conf);
 
 /**
  * @brief Parallel assembly of forcing term. Forcing functions can be defined in *model* see model_f() for

@@ -6,7 +6,7 @@
 #define NONLOCAL_ASSEMBLY_INDEX_H
 
 
-class index {
+class Index {
 
 };
 

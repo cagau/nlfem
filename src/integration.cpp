@@ -1032,8 +1032,8 @@ int method_retriangulate(const double * xCenter, const ElementType & T,
 
         for (k=0; k < (Rdx - 2); k++){
             for (i=0; i<2; i++){
-                // i is the index which runs first, then h (which does not exist here), then k
-                // hence if we increase i, the *-index (of the pointer) inreases in the same way.
+                // i is the Index which runs first, then h (which does not exist here), then k
+                // hence if we increase i, the *-Index (of the pointer) inreases in the same way.
                 // if we increase k, there is quite a 'jump'
                 reTriangleList[2 * (3 * k + 0) + i] = R[i];
                 reTriangleList[2 * (3 * k + 1) + i] = R[2 * (k + 1) + i];
@@ -1154,8 +1154,8 @@ int method_retriangulate(const double * xCenter, const double * TE,
 
         for (k=0; k < (Rdx - 2); k++){
             for (i=0; i<2; i++){
-                // i is the index which runs first, then h (which does not exist here), then k
-                // hence if we increase i, the *-index (of the pointer) inreases in the same way.
+                // i is the Index which runs first, then h (which does not exist here), then k
+                // hence if we increase i, the *-Index (of the pointer) inreases in the same way.
                 // if we increase k, there is quite a 'jump'
                 reTriangleList[2 * (3 * k + 0) + i] = R[i];
                 reTriangleList[2 * (3 * k + 1) + i] = R[2 * (k + 1) + i];

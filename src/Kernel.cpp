@@ -2,7 +2,7 @@
 // Created by klar on 29.10.20.
 //
 
-#include "kernel.h"
+#include "Kernel.h"
 #include "mathhelpers.h"
 
 void constant2D::operator()(double *x, double *y, long labelx, long labely, double *kernel_val) {

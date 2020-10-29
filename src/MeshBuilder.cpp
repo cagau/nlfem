@@ -384,11 +384,11 @@ Grid3D Grid3D::refine() const{
     for (counter=0; counter<coarsenV; counter++) {
         // Think in Column-Major order.
         // see https://stackoverflow.com/questions/12710138/c-fastest-loop-scan-over-3d-vector
-        // i is a row index, so i is between 0,...,N-1
+        // i is a row Index, so i is between 0,...,N-1
         i = counter % N;
         // j is increased whenever i is 0, but we have to start with j=-1.
         j += !i;
-        // j is a Column index, so between 0,...,N-1
+        // j is a Column Index, so between 0,...,N-1
         j %= N;
         // k is increased whenever i and j are 0, but we have to start with k=-1.
         k += !j*!i;
@@ -400,7 +400,7 @@ Grid3D Grid3D::refine() const{
     i=0; j=-1; k=-1;
     endLoop = (N-1)*N*N;
     for (counter=0; counter<endLoop; counter++) {
-        // Get index ijk;
+        // Get Index ijk;
         // We send our loop over every every spacing between columns i (N-1) and every second column j (N) and slice k (N).
         i = counter % (N-1); j += !i; j %= N; k += !j*!i;
         // Interpolate
@@ -415,7 +415,7 @@ Grid3D Grid3D::refine() const{
     // See loop description.
     endLoop = Nfine*(N-1)*N;
     for (counter=0; counter<endLoop; counter++) {
-        // Get index ijk;
+        // Get Index ijk;
         // We send our loop over every Row i (Nfine), every spacing between columns j (N-1) and every second slice k (N).
         i = counter % Nfine; j += !i; j %= (N-1); k += !j*!i;
         // Interpolate
@@ -430,7 +430,7 @@ Grid3D Grid3D::refine() const{
     // See loop description.
     endLoop = Nfine*Nfine*(N-1);
     for (counter=0; counter<endLoop; counter++) {
-        // Get index ijk;
+        // Get Index ijk;
         // We send our loop over every Row i (Nfine), every column j (Nfine) and the spacing between slices k (N-1).
         i = counter % Nfine; j += !i; j %= Nfine; k += !j*!i;
         // Interpolate

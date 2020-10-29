@@ -9,12 +9,114 @@
 from libcpp.string cimport string
 cimport Cassemble
 cimport MeshTypes
+cimport Mesh
+cimport Quadrature
+cimport Configuration
 
 import numpy as np
 import time
 from libc.math cimport pow
 import scipy.sparse as sparse
 cimport numpy as c_np
+
+cdef class CQuadrature:
+    cdef Quadrature.Quadrature * Cquadrature
+
+    def __cinit__(self, dim, configuration):
+        # Quadrature Rules
+        cdef double [:] Px = configuration["quadrature"]["outer"]["points"].flatten()
+        cdef long nPx = configuration["quadrature"]["outer"]["points"].shape[0]
+        cdef double [:] Py = configuration["quadrature"]["inner"]["points"].flatten()
+        cdef long nPy = configuration["quadrature"]["inner"]["points"].shape[0]
+        dx_ = configuration["quadrature"]["outer"]["weights"].flatten()
+        cdef double [:] dx = dx_
+        dy_ = configuration["quadrature"]["inner"]["weights"].flatten()
+        cdef double [:] dy = dy_
+
+        if (nPx != len(dx_)) or (nPy != len(dy_)):
+            raise ValueError("Quadrature Points should be of shape (n quadrature points, dimension).")
+
+        cdef double [:] Pg
+        cdef const double * ptrPg = NULL
+        cdef double [:] dg
+        cdef const double * ptrdg = NULL
+
+        cdef long tensorGaussDegree = configuration.get("tensorGaussDegree", 0)
+        if tensorGaussDegree:
+            quadgauss = tensorgauss(tensorGaussDegree)
+            Pg = quadgauss.points.flatten()
+            ptrPg = &Pg[0]
+            dg = quadgauss.weights.flatten()
+            ptrdg = &dg[0]
+
+        self.Cquadrature = new Quadrature.Quadrature(dim, &Px[0], &dx[0], nPx,
+                                                &Py[0], &dy[0], nPy, ptrPg, ptrdg,
+                                                tensorGaussDegree)
+
+
+cdef class CMesh:
+    cdef Mesh.Mesh * Cmesh
+
+    def __cinit__(self, mesh):
+        # Mesh
+        cdef double maxDiameter = mesh.get("maxDiameter", 0.0)
+        cdef long dim = mesh.get("vertices", ValueError("No vertices provided")).shape[1]
+
+        cdef double[:] vertices = mesh.get("vertices").flatten()
+        elements_ = mesh.get("elements", ValueError("No elements provided"))
+        neighbors = constructAdjaciencyCSRGraph(elements_)
+        cdef long[:] ptrNeighborIndices = np.array(neighbors.indices, dtype=np.int)
+        cdef long[:] ptrNeighborIndexPtr = np.array(neighbors.indptr, dtype=np.int)
+        cdef long[:] elements = elements_.flatten()
+
+        elementLabels = mesh.get("elementLabels", ValueError("No elementLabels provided"))
+        elementLabels = sparse.csr_matrix(elementLabels)
+        cdef long[:] elementLabelsData = elementLabels.data
+        cdef long[:] elementLabelsIndices = np.array(elementLabels.indices, dtype=np.int)
+        cdef long[:] elementLabelsIndptr = np.array(elementLabels.indptr, dtype=np.int)
+        cdef long nE = elementLabels.shape[0]
+        cdef long nEOmega = np.sum(elementLabels.data > 0)
+
+        vertexLabels = mesh.get("vertexLabels", ValueError("No vertexLabels provided"))
+        vertexLabels = sparse.csr_matrix(vertexLabels, dtype=np.float)
+        cdef double[:] vertexLabelsData = vertexLabels.data
+        cdef long[:] vertexLabelsIndices = np.array(vertexLabels.indices, dtype=np.int)
+        cdef long[:] vertexLabelsIndptr = np.array(vertexLabels.indptr, dtype=np.int)
+        cdef long nV = vertexLabels.shape[0]
+        cdef long nVOmega = np.sum(vertexLabels.data > 0)
+
+
+        self.Cmesh = new Mesh.Mesh(&elements[0], &elementLabelsData[0], &vertices[0],
+                        nE, nEOmega, nV, nVOmega, &ptrNeighborIndices[0], &ptrNeighborIndexPtr[0],
+                        dim, maxDiameter)
+
+cdef class CConfiguration:
+    cdef Configuration.Configuration * Cconf
+
+    def __cinit__(self, kernel, configuration):
+        # Model
+        cdef string kernelFunction = kernel.get("function", ValueError("No kernel function given.")).encode('UTF-8')
+        cdef double kernelHorizon = kernel.get("horizon", ValueError("No interaction horzon function defined."))
+
+        # Approx Balls
+        cdef string integrationMethod = configuration["approxBalls"]["method"].encode('UTF-8')
+        cdef int isPlacePointOnCap = configuration["approxBalls"].get("isPlacePointOnCap", True)
+        cdef double [:]  averageBallWeights = np.array(configuration["approxBalls"].get("averageBallWeights", [0.,1.,1.]))
+
+        # Ansatz
+        cdef int isDiscontinuousGalerkin = configuration["ansatz"] == "DG"
+        # outputdim -> attribute of the kernel (which we don't know here!)
+        # It should not be possible to mix matrix and scalar kernels though!
+        # -> The kernel has only ONE attribute outdim, even if label dependent
+        # K, K_Omega -> comes after the kernel, and ansatz
+        cdef long K=0, K_Omega=0 ### ???
+        # Save Path
+        cdef string path_stiffnesMatrix = configuration.get("savePath", "_tmpSavePath_stiffnesMatrix_").encode('UTF-8')
+
+        self.Cconf = new Configuration.Configuration(path_stiffnesMatrix, "".encode('UTF-8'),
+                  kernelFunction, "".encode('UTF-8'),
+                  integrationMethod,
+                  isPlacePointOnCap)
 
 cdef class Element:
     cdef MeshTypes.ElementClass element
@@ -25,6 +127,7 @@ cdef class Element:
 def showElement(int dim):
     E = Element(dim)
     return MeshTypes.getElement(E.element)
+
 
 def read_arma_mat(path, is_verbose=False):
     """
@@ -126,119 +229,24 @@ class tensorgauss:
             for dx in dxRow:
                 self.weights[k] *= w[dx]
 
-def stiffnesMatrix(
+def stiffnessMatrix(
     mesh,
     kernel,
     configuration
 ):
-
-    # Save Path
-    cdef string path_stiffnesMatrix = configuration.get("savePath", "_tmpSavePath_stiffnesMatrix_").encode('UTF-8')
-
-    # Model
-    cdef string kernelFunction = kernel.get("function", ValueError("No kernel function given.")).encode('UTF-8')
-    cdef double kernelHorizon = kernel.get("horizon", ValueError("No interaction horzon function defined."))
-
-    # Quadrature Rules
-    cdef double [:] Px = configuration["outer"]["points"].flatten()
-    cdef double nPx = configuration["outer"]["points"].shape[0]
-    cdef double [:] Py = configuration["inner"]["points"].flatten()
-    cdef double nPy = configuration["inner"]["points"].shape[0]
-    cdef double [:] dx = configuration["outer"]["weights"].flatten()
-    cdef double [:] dy = configuration["inner"]["weights"].flatten()
-
-    if (nPx != len(dx)) or (nPy != len(dy)):
-        raise ValueError("Quadrature Points should be of shape (n quadrature points, dimension).")
-
-    cdef double [:] Pg
-    cdef const double * ptrPg = NULL
-    cdef double [:] dg
-    cdef const double * ptrdg = NULL
-
-    tensorGaussDegree = configuration.get("tensorGaussDegree", {})
-    if tensorGaussDegree:
-        quadgauss = tensorgauss(tensorGaussDegree)
-        Pg = quadgauss.points.flatten()
-        ptrPg = &Pg[0]
-        dg = quadgauss.weights.flatten()
-        ptrdg = &dg[0]
-
-    # Approx Balls
-    cdef string integrationMethod = configuration["approxBalls"]["method"].encode('UTF-8')
-    cdef int isPlacePointOnCap = configuration["approxBalls"].get("isPlacePointOnCap", True)
-    cdef double [:]  averageBallWeights = np.array(configuration["approxBalls"].get("averageBallWeights", [0.,1.,1.]))
-
-    # Ansatz
-    cdef int isDiscontinuousGalerkin = configuration["ansatz"] == "DG"
+    # Quadrature
+    dim = mesh.get("vertices", ValueError("No vertices provided")).shape[1]
+    cquadrature = CQuadrature(dim, configuration)
 
     # Mesh
-    cdef double maxDiameter = mesh.get("maxDiameter", 0.0)
-    cdef long dim = mesh.get("vertices", ValueError("No vertices provided")).shape[1]
+    cmesh = CMesh(mesh)
 
-    cdef double[:] vertices = mesh.get["vertices"].flatten()
-    elements_ = mesh.get("elements", ValueError("No elements provided"))
-    cdef long[:] neighbors = constructAdjaciencyCSRGraph(elements_)
-    cdef long[:] elements = mesh.get("elements", ValueError("No elements provided"))
+    # Configuration
+    cconf = CConfiguration(kernel, configuration)
 
-    elementLabels = mesh.get("elementLabels", ValueError("No elementLabels provided"))
-    elementLabels = sparse.csr_matrix(elementLabels, dtype=np.int)
-    cdef long[:] elementLabelsData = elementLabels.data
-    cdef long[:] elementLabelsIndices = elementLabels.indices
-    cdef long[:] elementLabelsIndptr = elementLabels.indptr
-    cdef long nE = elementLabels.shape[0]
-    cdef long nEOmega = np.sum(elementLabels.data > 0)
-
-    vertexLabels = mesh.get("vertexLabels", ValueError("No vertexLabels provided"))
-    vertexLabels = sparse.csr_matrix(vertexLabels, dtype=np.float)
-    cdef long[:] vertexLabelsData = vertexLabels.data
-    cdef long[:] vertexLabelsIndices = vertexLabels.indices
-    cdef long[:] vertexLabelsIndptr = vertexLabels.indptr
-    cdef long nV = vertexLabels.shape[0]
-    cdef long nVOmega = np.sum(vertexLabels.data > 0)
+    Cassemble.stiffnessMatrix(cmesh.Cmesh[0], cquadrature.Cquadrature[0], cconf.Cconf[0])
 
 
-    # Things which apparently are NOT set here
-
-    # outputdim -> attribute of the kernel (which we don't know here!)
-    # It should not be possible to mix matrix and scalar kernels though!
-    # -> The kernel has only ONE attribute outdim, even if label dependent
-    # K, K_Omega -> comes after the kernel, and ansatz
-    cdef long K=0, K_Omega=0 ### ???
-
-    start = time.time()
-    """
-    Cassemble.par_assemble( "system".encode('UTF-8'),
-                            path_stiffnesMatrix,
-                            NULL,
-                            K_Omega, ## ???
-                            K, ### ????
-                            &elements[0], &elementLabelsData[0],
-                            &vertices[0],
-                            &vertexLabelsData[0], ## NEW!!
-                            nE , nEOmega,
-                            nV, nVOmega,
-                            &Px[0], nPx, &dx[0],
-                            &Py[0], nPy, &dy[0],
-                            kernelHorizon**2, ## NEW, is a kernel parameter
-                            &neighbors[0],
-                            #nNeighbours, ## NEW will be deleted
-                            isDiscontinuousGalerkin,
-                            &kernelFunction[0],
-                            ##&model_f_[0], ## set to Null or something
-                            &integrationMethod[0],
-                            isPlacePointOnCap,
-                            dim,
-                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter,
-                            &averageBallWeights[0]) ### NEW!!
-    """
-    total_time = time.time() - start
-    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
-
-    A = read_arma_spMat(path_stiffnesMatrix)
-    if configuration.get("savePath", None) is None:
-        remove_arma_tmp(path_stiffnesMatrix)
-
-    return A
 
 def loadVector(
     mesh,
@@ -444,7 +452,7 @@ def constructAdjaciencyCSRGraph(elements, verbose = False):
     grph_elements_csr = sparse.csr_matrix((data, indices, indptr), shape = (nE, nV))
     grph_elements_csc = sparse.csc_matrix((data, indices, indptr), shape = (nV, nE))
     if verbose: print("Done [Constructing adjaciency graph]")
-    return ((grph_elements_csr @ grph_elements_csc) >= ncommon).to_csr(dtype=int)
+    return sparse.csr_matrix((grph_elements_csr @ grph_elements_csc) >= ncommon, dtype=np.int64)
 
 def constructAdjaciencyGraph(long[:,:] elements):
     print("Constructing adjaciency graph...")

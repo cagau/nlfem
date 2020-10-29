@@ -6,6 +6,10 @@
 # distutils: sources = RoadDensityPyMod.cpp
 from libcpp cimport bool
 from libcpp.string cimport string
+from Mesh cimport Mesh
+from Configuration cimport Configuration
+from Quadrature cimport Quadrature
+
 # Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 
 cdef extern from "Cassemble.h" nogil:
@@ -22,6 +26,8 @@ cdef extern from "Cassemble.h" nogil:
     # Mass matrix evaluation ----------------------------------------------------------------------------------------------
     void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int nE, int nP,
                      double *P, double *dx, const int dim, int outdim) nogil
+
+    void stiffnessMatrix(Mesh & mesh, Quadrature & quadRule, Configuration & conf) nogil
 
     # DEBUG Helpers and test functions
     int method_retriangulate(const double * x_center, const double * TE,

@@ -6,16 +6,20 @@
 #define NONLOCAL_ASSEMBLY_KERNEL_H
 #include "MeshTypes.h"
 
-class kernel {
+class Kernel {
 public:
     const double delta;
     const long outdim;
-    kernel(long outdim_, double delta_): delta(delta_), outdim(outdim_){};
+    const bool isWeaklySingular;
+    Kernel(long outdim_, double delta_, bool isSingular_):
+    delta(delta_),
+    outdim(outdim_),
+    isWeaklySingular(isSingular_){};
     virtual double horizon(double * x, double * y, long labelx, long labely) { return 0.0; };
     virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) {};
 };
 
-class constant2D: public kernel {
+class constant2D: public Kernel {
 public:
     /**
      @brief Constant kernel in 2D case. The constant is chosen such that the operator is equivalent to the laplacian for
@@ -24,8 +28,8 @@ public:
      * @param interactionHorizon
      */
     const double sqsqdelta;
-    constant2D(double interactionHorizon): kernel(1, interactionHorizon), sqsqdelta(pow(delta, 4)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return kernel::delta; };
+    constant2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqsqdelta(pow(delta, 4)){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
      * @brief Evaluates kernel.
      *
@@ -40,7 +44,7 @@ public:
     void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
-class parabola2D: public kernel {
+class parabola2D: public Kernel {
 public:
     /**
     * @brief This kernel is defined by \f$ \delta^2 - \|z\|^2 \f$. It is radial but not
@@ -51,9 +55,9 @@ public:
     */
     const double sqdelta;
     const double qtdelta;
-    parabola2D(double interactionHorizon): kernel(1, interactionHorizon), sqdelta(pow(delta, 2)),
-                                         qtdelta(pow(delta, 5)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return kernel::delta; };
+    parabola2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqdelta(pow(delta, 2)),
+                                           qtdelta(pow(delta, 5)){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -69,7 +73,7 @@ public:
 };
 
 
-class constant1D: public kernel {
+class constant1D: public Kernel {
 public:
     /**
      * @brief Constant kernel in 1D case. The constant is chosen such that the operator is equivalent to the laplacian for
@@ -79,8 +83,8 @@ public:
      *
     */
     const double trdelta;
-    constant1D(double interactionHorizon): kernel(1, interactionHorizon), trdelta(pow(delta, 3)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return kernel::delta; };
+    constant1D(double interactionHorizon): Kernel(1, interactionHorizon, false), trdelta(pow(delta, 3)){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -95,7 +99,7 @@ public:
     void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
-class constant3D: public kernel {
+class constant3D: public Kernel {
 public:
     /**
      * @brief Constant kernel in 3D case. The constant is chosen such that the operator is equivalent to the laplacian for
@@ -105,8 +109,8 @@ public:
      *
     */
     const double qtdelta;
-    constant3D(double interactionHorizon): kernel(1, interactionHorizon), qtdelta(pow(delta, 5)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return kernel::delta; };
+    constant3D(double interactionHorizon): Kernel(1, interactionHorizon, false), qtdelta(pow(delta, 5)){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -121,7 +125,7 @@ public:
     void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
-class labeled2D: public kernel {
+class labeled2D: public Kernel {
 public:
     /**
      * @brief Kernel depending on the triangle labels. Can be used to model nonlocal to nonlocal coupling.
@@ -130,9 +134,9 @@ public:
      *
     */
     const double sqdelta, qddelta;
-    labeled2D(double interactionHorizon): kernel(1, interactionHorizon), sqdelta(pow(delta, 2)),
-    qddelta(pow(delta, 4)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return kernel::delta; };
+    labeled2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqdelta(pow(delta, 2)),
+                                          qddelta(pow(delta, 4)){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -148,7 +152,7 @@ public:
 };
 
 
-class linearPrototypeMicroelastic2D: public kernel {
+class linearPrototypeMicroelastic2D: public Kernel {
 public:
     /**
      * @brief Kernel for peridynamics diffusion model. The scalar valued weakly singular kernel reads as
@@ -162,8 +166,8 @@ public:
      *
     */
     const double trdelta;
-    linearPrototypeMicroelastic2D(double interactionHorizon): kernel(1, interactionHorizon), trdelta(pow(delta, 3)) {};
-    double horizon(double * x, double * y, long labelx, long labely) override { return kernel::delta; };
+    linearPrototypeMicroelastic2D(double interactionHorizon): Kernel(1, interactionHorizon, true), trdelta(pow(delta, 3)) {};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -178,7 +182,7 @@ public:
     void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
-class linearPrototypeMicroelastic2DField: public kernel {
+class linearPrototypeMicroelastic2DField: public Kernel {
 public:
     /**
      * @brief Kernel for the peridynamics model. The matrix valued weakly singular kernel reads as
@@ -193,8 +197,8 @@ public:
      *
     */
     const double trdelta;
-    linearPrototypeMicroelastic2DField(double interactionHorizon): kernel(2, interactionHorizon), trdelta(pow(delta, 3)) {};
-    double horizon(double * x, double * y, long labelx, long labely) override { return kernel::delta; };
+    linearPrototypeMicroelastic2DField(double interactionHorizon): Kernel(2, interactionHorizon, true), trdelta(pow(delta, 3)) {};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -209,7 +213,7 @@ public:
     void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
-class constant2DField: public kernel {
+class constant2DField: public Kernel {
 public:
     /**
      * @brief Kernel for the peridynamics model. The matrix valued weakly singular kernel reads as
@@ -224,8 +228,8 @@ public:
      *
     */
     const double qddelta;
-    constant2DField(double interactionHorizon): kernel(2, interactionHorizon), qddelta(pow(delta, 4)) {};
-    double horizon(double * x, double * y, long labelx, long labely) override { return kernel::delta; };
+    constant2DField(double interactionHorizon): Kernel(2, interactionHorizon, false), qddelta(pow(delta, 4)) {};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
