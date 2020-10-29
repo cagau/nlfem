@@ -23,7 +23,7 @@ add_library(Cassemble SHARED
         ./src/mathhelpers.cpp
         ./src/model.cpp
         ./src/integration.cpp
-        )
+        src/kernel.cpp src/kernel.h src/mesh.cpp src/mesh.h src/configuration.cpp src/configuration.h src/index.cpp src/index.h src/quadrature.cpp src/quadrature.h)
 target_compile_options(Cassemble PUBLIC "-fopenmp" "-Wall")
 
 # external libraries ---------------------------------------------------------------------------------------------------

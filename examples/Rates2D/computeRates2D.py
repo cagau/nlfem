@@ -73,8 +73,8 @@ def main():
         err_ = err
     pp.close()
 
-    return conf.data
+    return conf.data, mesh
 
 if __name__ == "__main__":
-    data = main()
+    data, mesh = main()
     helpers.write_output(data)

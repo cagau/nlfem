@@ -1,7 +1,7 @@
 import numpy as np
 
 mesh = {
-    # "maxDiameter": 0.0
+    # "maxDiameter": 0.0,
     "vertices": np.load("data/vertices.npy"),
     "vertexLabels": np.load("data/verticesLabels.npy"),
     "elements": np.load("data/elements.npy"),
@@ -20,7 +20,11 @@ load = {
 configuration = {
     # "savePath": "pathA",
     "ansatz": "CG", #DG
-    "approxBalls": "baryCenter", #baryCenter, retriangulate, baryCenterRT, averageBall
+    "approxBalls": {
+        "method": "baryCenter", #baryCenter, retriangulate, baryCenterRT, averageBall
+        #"isPlacePointOnCap": True, # required for "retriangulate" only
+        #"averageBallWeights": [1., 1., 1.] # required for "averageBall" only
+    },
     "quadrature": {
         "outer": {
             "points": np.load("data/Px.npy"),

@@ -2,7 +2,7 @@
 | | |
 | --- | --- |
 | Right hand side | linear |
-| Kernel | linearPrototypeMicroelastic |
+| Kernel | constant |
 | Integration Method | retriangulate |
 | With caps | False |
 | Quadrule outer | 7 |
@@ -14,5 +14,4 @@
 # Rates
 | h| L2 Error| Rates| Assembly Time| 
 |---|---|---|---|
-| 5.00e-02 | 2.38e-03 | 0.00e+00 | 1.96e+00 |
-| 2.50e-02 | 6.09e-04 | 1.96e+00 | 8.50e+00 |
+| 5.00e-02 | 3.29e-03 | 0.00e+00 | 1.71e-01 |
