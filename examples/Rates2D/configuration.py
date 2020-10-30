@@ -9,7 +9,7 @@ mesh = {
 }
 
 kernel = {
-            "function": "constant",
+            "function": "constant2D",
             "horizon": 0.1
 }
 
@@ -21,7 +21,7 @@ configuration = {
     # "savePath": "pathA",
     "ansatz": "CG", #DG
     "approxBalls": {
-        "method": "baryCenter", #baryCenter, retriangulate, baryCenterRT, averageBall
+        "method": "baryCenterRT", #baryCenter, retriangulate, baryCenterRT, averageBall
         #"isPlacePointOnCap": True, # required for "retriangulate" only
         #"averageBallWeights": [1., 1., 1.] # required for "averageBall" only
     },

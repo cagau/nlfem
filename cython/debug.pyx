@@ -1,256 +1,3 @@
-#-*- coding:utf-8 -*-
-# distutils: include_dirs = ../include
-
-#cython: language_level=3
-#cython: boundscheck=True, wraparound=True, cdivision=False
-# Setting this compiler directive will given a minor increase of speed.
-
-# Assembly routine
-from libcpp.string cimport string
-cimport Cassemble
-cimport Cassemble2D
-#import meshio
-#from Cassemble cimport par_assemble
-import numpy as np
-import time
-from libc.math cimport pow
-from cpython.mem cimport PyMem_Malloc, PyMem_Free
-import scipy.sparse as sparse
-cimport numpy as c_np
-
-def assemble2D(
-        # Mesh information ------------------------------------
-        mesh,
-        Px,
-        Py,
-        # Weights for quadrature rule
-        dx,
-        dy,
-        double delta,
-        **kwargs
-    ):
-
-    Ad = np.zeros(mesh.K*mesh.K_Omega)
-    fd = np.zeros(mesh.K_Omega)
-
-    cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
-    cdef long[:] elements = mesh.elements.flatten()
-    cdef long[:] elementLabels = mesh.elementLabels.flatten()
-    cdef double[:] vertices = mesh.vertices.flatten()
-    cdef double[:] ptrAd = Ad
-    cdef double[:] ptrfd = fd
-
-    cdef double[:] ptrPx = Px.flatten()
-    cdef double[:] ptrPy = Py.flatten()
-    cdef double[:] ptrdx = dx.flatten()
-    cdef double[:] ptrdy = dy.flatten()
-
-    start = time.time()
-    # Compute Assembly -------------------------------------------
-
-    Cassemble2D.par_assemble2D( &ptrAd[0],
-                        mesh.K,
-                        &ptrfd[0], &elements[0], &elementLabels[0], &vertices[0],
-                        mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
-                        &ptrPx[0], Px.shape[0], &ptrdx[0],
-                        &ptrPy[0], Py.shape[0], &ptrdy[0],
-                        delta**2,
-                        &neighbours[0],
-                        mesh.is_DiscontinuousGalerkin,
-                        mesh.is_NeumannBoundary)
-
-    total_time = time.time() - start
-
-    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
-    return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
-
-def assemble(
-        # Mesh information ------------------------------------
-        mesh,
-        Px,
-        Py,
-        # Weights for quadrature rule
-        dx,
-        dy,
-        double delta,
-        model_kernel="constant",
-        model_f = "constant",
-        integration_method = "retriangulate",
-        is_PlacePointOnCap = 1
-    ):
-
-    Ad = np.zeros(mesh.K*mesh.K_Omega)
-    fd = np.zeros(mesh.K_Omega)
-
-    cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
-    cdef long[:] elements = mesh.elements.flatten()
-    cdef long[:] elementLabels = mesh.elementLabels.flatten()
-    cdef double[:] vertices = mesh.vertices.flatten()
-    cdef double[:] ptrAd = Ad
-    cdef double[:] ptrfd = fd
-    cdef string model_kernel_ = model_kernel.encode('UTF-8')
-    cdef string model_f_ = model_f.encode('UTF-8')
-    cdef string integration_method_ = integration_method.encode('UTF-8')
-    cdef int is_PlacePointOnCap_ = is_PlacePointOnCap
-
-    cdef double [:] ptrPx = Px.flatten()
-    cdef double [:] ptrPy = Py.flatten()
-    cdef double [:] ptrdx = dx.flatten()
-    cdef double [:] ptrdy = dy.flatten()
-
-    start = time.time()
-    # Compute Assembly -------------------------------------------
-
-    Cassemble.par_assemble( &ptrAd[0], mesh.K_Omega, mesh.K,
-                        &ptrfd[0], &elements[0], &elementLabels[0], &vertices[0],
-                        mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
-                        &ptrPx[0], Px.shape[0], &ptrdx[0],
-                        &ptrPy[0], Py.shape[0], &ptrdy[0],
-                        delta**2,
-                        &neighbours[0],
-                        mesh.is_DiscontinuousGalerkin,
-                        mesh.is_NeumannBoundary,
-                        &model_kernel_[0],
-                        &model_f_[0],
-                        &integration_method_[0],
-                        is_PlacePointOnCap_,
-                        mesh.dim)
-
-    total_time = time.time() - start
-
-    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
-    return np.reshape(Ad, (mesh.K_Omega, mesh.K)), fd
-
-def evaluateMass(
-      # Mesh information ------------------------------------
-            mesh,
-            ud,
-            Px,
-            # Weights for quadrature rule
-            dx
-        ):
-    vd = np.zeros(mesh.K_Omega)
-    cdef double[:] ptrvd = vd
-    cdef double[:] ptrud = ud.flatten()
-
-    cdef long[:] elements = mesh.elements.flatten()
-    cdef long [:] elementLabels = mesh.elementLabels.flatten()
-    cdef double[:] vertices = mesh.vertices.flatten()
-
-    cdef double[:] ptrPx = Px.flatten()
-    cdef double[:] ptrdx = dx.flatten()
-
-    Cassemble.par_evaluateMass(
-            &ptrvd[0],
-            &ptrud[0],
-            &elements[0],
-            &elementLabels[0],
-            &vertices[0],
-            mesh.K_Omega,
-            mesh.nE_Omega,
-            Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim)
-    return vd
-
-cdef is_neighbour(const int aTdx, const int bTdx, const long [:,:] Elements, const long dVerts):
-    cdef int n=0, i,j
-    for i in range(dVerts):
-        for j in range(dVerts):
-            if (Elements[aTdx, i] == Elements[bTdx, j]):
-                n += 1
-    return n == (dVerts-1)
-
-def constructAdjaciencyGraph(long[:,:] elements):
-    print("Constructing adjaciency graph...")
-    nE = elements.shape[0]
-    nV = np.max(elements)+1
-    cdef int dVerts = elements.shape[1]
-    cdef int dim = dVerts-1
-
-    neigs = np.ones((nE, dim+1), dtype=np.int)*nE
-    grph_elements = sparse.lil_matrix((nV, nE), dtype=np.int)
-
-    for Tdx, Vdx in enumerate(elements):
-        for d in range(dVerts):
-            grph_elements[Vdx[d], Tdx] = 1
-    grph_neigs = ((grph_elements.transpose() @ grph_elements) == dim)
-    elemenIndices, neighbourIndices = grph_neigs.nonzero()
-
-    neigs[elemenIndices[0],0] = neighbourIndices[0]
-    cdef int colj = 0
-    cdef int k
-
-    for k in range(1, len(elemenIndices)):
-        colj *= ((elemenIndices[k-1]-elemenIndices[k])==0)
-        colj += ((elemenIndices[k-1]-elemenIndices[k])==0)
-        neigs[elemenIndices[k], colj] =  neighbourIndices[k]
-    return neigs
-
-def solve_cg(c_np.ndarray Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 500):
-    cdef int n = b.size
-    cdef int k=0
-
-    cdef double beta = 0.0
-    cdef c_np.ndarray p = np.zeros(n)
-    cdef c_np.ndarray r = Q.dot(x) - b
-    cdef double res_new  = np.linalg.norm(r)
-
-    while res_new >= tol and k < max_it:
-        k+=1
-        p = -r + beta*p
-        alpha = res_new**2 / p.dot(Q.dot(p))
-        x = x + alpha*p
-        r = r + alpha*Q.dot(p)
-        res_old = res_new
-        res_new = np.linalg.norm(r)
-        beta = res_new**2/res_old**2
-
-    return {"x": x, "its": k, "res": res_new}
-# DEPRECATED #
-#def par_constructAdjaciencyGraph(Elements):
-#    print("Constructing adjaciency graph...")
-#    cdef int nE = Elements.shape[0]
-#    cdef int dim = Elements.shape[1]-1
-#    cdef long[:,:] Neighbours = np.ones((nE, dim+1), dtype=int)#*nE
-#    cdef long[:] Elements_flat = Elements.flatten()
-#
-#    Cassemble.constructAdjaciencyGraph(dim, nE, &Elements_flat[0], &Neighbours[0,0])
-#    return np.array(Neighbours)
-#
-#def seq_constructAdjaciencyGraph(long [:,:] Elements):
-#    print("Constructing adjaciency graph...")
-#    cdef int nE = Elements.shape[0]
-#    cdef int dVerts = Elements.shape[1]
-#    cdef long[:,:] Neighbours = np.ones((nE, dVerts), dtype=int)*nE
-#    cdef long [:] neighbourCounter = np.zeros(nE, dtype=int)
-#    cdef int aTdx, bTdx
-#
-#    #print(dVerts)
-#    bTdxFilter = np.ones(nE, dtype=bool)
-#
-#    # Outer For Loop,
-#    # Find all neighbours of Triangle aT
-#    for aTdx in range(nE):
-#        #print("\na", aTdx)
-#        # No triangle can be its own neighbour
-#        # and all of its neighbours will be found
-#        bTdxFilter[aTdx] = False
-#        # If a triangle index was already in the outer loop,
-#        # Traverse all triangles bT
-#        # which do not have dVerts neighbours yet
-#        for bTdx in range(nE):
-#            if bTdxFilter[bTdx] and is_neighbour(aTdx, bTdx, Elements, dVerts):
-#                #print("b", bTdx, "c", neighbourCounter[bTdx])
-#                #print("aT:", np.array(Elements[aTdx]))
-#                #print("bT:", np.array(Elements[bTdx]))
-#                Neighbours[aTdx, neighbourCounter[aTdx]] = bTdx
-#                neighbourCounter[aTdx] += 1
-#                Neighbours[bTdx, neighbourCounter[bTdx]] = aTdx
-#                neighbourCounter[bTdx] += 1
-#                if neighbourCounter[bTdx] == dVerts:
-#                    #print(bTdx)
-#                    bTdxFilter[bTdx] = False
-#    return np.array(Neighbours)
-
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
 from Cassemble cimport method_retriangulate
 def py_retriangulate(
@@ -269,6 +16,36 @@ def py_retriangulate(
 
     return Rdx, TriangleList
 
+from Cassemble cimport toRef
+def py_toRef(
+    double [:] TE,
+    double [:] phys_x):
+    ref_p = np.zeros(2)
+    cdef double [:] cref_p = ref_p
+     # void toRef(const double * E, const double * phys_x, double * ref_p);
+    toRef(&TE[0], &phys_x[0], &cref_p[0]);
+    return ref_p
+
+from Cassemble cimport toPhys
+def py_toPhys(
+    double [:] TE,
+    double [:] p):
+    out_x = np.zeros(2)
+    cdef double [:] cout_x = out_x
+     # void toPhys(const double * E, const double * p, int dim, double * out_x)
+    toPhys(&TE[0], &p[0], 2, &cout_x[0]);
+    return out_x
+
+from Cassemble cimport solve2x2
+def py_solve2x2(
+    double [:] A,
+    double [:] b
+    ):
+    x = np.zeros(2)
+    cdef double [:] cx = x
+    # void solve2x2(const double * A, const double * b, double * x)
+    solve2x2(&A[0], &b[0], &cx[0])
+    return x
 """
 from Cassemble cimport retriangulate
 from Cassemble cimport toRef, model_basisFunction
@@ -341,7 +118,7 @@ def py_check_par_assemble(
     cdef int bTdx=0
 
     ## Breadth First Search --------------------------------------
-    cdef visited = np.zeros(mesh.nE)#(int *) malloc(J*sizeof(int));
+    cdef visited = np.zeros(mesh.nE)#(int *) malloc(nE*sizeof(int));
 
     ## Loop index of current outer triangle in BFS
     cdef int sTdx=0
@@ -400,7 +177,7 @@ def py_check_par_assemble(
                 bTdx = NTdx[j]
 
                 ## Check how many neighbours sTdx has. It can be 4 at max. (Itself, and the three others)
-                ## In order to be able to store the list as contiguous array we fill up the empty spots with the number J
+                ## In order to be able to store the list as contiguous array we fill up the empty spots with the number nE
                 ## i.e. the total number of Triangles (which cannot be an index).
                 if (bTdx < mesh.nE):
 

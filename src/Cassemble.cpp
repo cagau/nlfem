@@ -17,7 +17,7 @@
 #include "mathhelpers.h"
 #include "model.h"
 #include "checks.cpp"
-
+#include "Integrator.h"
 
 using namespace std;
 /**
@@ -354,9 +354,70 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 }
 
 void stiffnessMatrix(Mesh &mesh, Quadrature &quadRule, Configuration &conf){
+
+    // Set Kernel ##########################################################
+    Kernel * ptrmodelkernel;
+    cout << "Kernel: " << conf.model_kernel << endl;
+    // Choose correct kernel class from user's input
+    if (conf.model_kernel == "constant2D"){
+        ptrmodelkernel = new constant2D(conf.kernelHorizon);
+    } else if (conf.model_kernel == "labeled2D") {
+        ptrmodelkernel = new labeled2D(conf.kernelHorizon);
+    } else if (conf.model_kernel == "constant3D") {
+        ptrmodelkernel = new constant3D(conf.kernelHorizon);
+    } else if (conf.model_kernel == "constant1D") {
+        ptrmodelkernel = new constant1D(conf.kernelHorizon);
+    } else if (conf.model_kernel == "parabola2D") {
+        ptrmodelkernel = new parabola2D(conf.kernelHorizon);
+    } else if (conf.model_kernel == "linearPrototypeMicroelastic2D") {
+        ptrmodelkernel = new linearPrototypeMicroelastic2D(conf.kernelHorizon);
+    } else if (conf.model_kernel == "linearPrototypeMicroelastic2DField") {
+        ptrmodelkernel = new linearPrototypeMicroelastic2DField(conf.kernelHorizon);
+    } else if (conf.model_kernel == "constantField") {
+        ptrmodelkernel = new constant2DField(conf.kernelHorizon);
+    } else {
+        cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;
+        abort();
+    }
+    // Copy construct model_kernel
+    Kernel kernel(*ptrmodelkernel);
+
+    // Set Approx Ball ##########################################################
+    Integrator * ptrintegrator;
+    if (conf.integration_method == "baryCenter") {
+        ptrintegrator = new BaryCenter(mesh, quadRule, kernel, conf);
+    } else if (conf.integration_method == "averageBall") {
+        ptrintegrator = new AverageBall(mesh, quadRule, kernel, conf);
+    } else if (conf.integration_method == "baryCenterRT") {
+        ptrintegrator = new BaryCenterRT(mesh, quadRule, kernel, conf);
+    } else if (conf.integration_method == "retriangulate") {
+        ptrintegrator = new Retriangulate(mesh, quadRule, kernel, conf);
+    } else {
+        cout << "Error in par:assemble. Integration method " << conf.integration_method <<
+             " is not implemented." << endl;
+        abort();
+    }
+
+    // jumpCode
+    ElementType aT, bT;
+    void (Integrator::*intgrt)(const ElementType &aT, const ElementType &bT, double *termLocal, double *termNonloc);
+
+    double termLocal[20];
+    double termNonlocal[20];
+
+    Integrator integrator(*ptrintegrator);
+    intgrt = &Integrator::approxBall;
+    (integrator.*intgrt)(aT, bT, termLocal, termNonlocal);
+    intgrt = &Integrator::tensorGauss;
+    (integrator.*intgrt)(aT, bT, termLocal, termNonlocal);
+
+    cout  << "outdim " << kernel.outdim << endl;
     cout << "Hi there" << endl;
     cout << mesh.nV << endl;
     cout << conf.model_kernel << endl;
+
+
+
 }
 
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {

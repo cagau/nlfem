@@ -2,7 +2,7 @@
 // Created by klar on 18.09.20.
 //
 
-#ifndef NONLOCAL_ASSEMBLY_INTEGRATION_H
+#ifndef NONLOCAL_ASSEMBLY_INTEGRATOR_H
 #define NONLOCAL_ASSEMBLY_INTEGRATION_H
 // ___ INTEGRATION DECLARATION _________________________________________________________________________________________
 
@@ -321,4 +321,4 @@ double traffoIdentical5( double * alpha);
 void scale(double * alpha);
 void mirror(double * alpha);
 
-#endif //NONLOCAL_ASSEMBLY_INTEGRATION_H
+#endif //NONLOCAL_ASSEMBLY_INTEGRATOR_H

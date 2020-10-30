@@ -15,6 +15,7 @@ public:
     delta(delta_),
     outdim(outdim_),
     isWeaklySingular(isSingular_){};
+
     virtual double horizon(double * x, double * y, long labelx, long labely) { return 0.0; };
     virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) {};
 };
@@ -29,7 +30,7 @@ public:
      */
     const double sqsqdelta;
     constant2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqsqdelta(pow(delta, 4)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
      * @brief Evaluates kernel.
      *
@@ -41,7 +42,7 @@ public:
      * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion.
      * @return void
      */
-    void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
+    virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
 class parabola2D: public Kernel {
@@ -57,7 +58,7 @@ public:
     const double qtdelta;
     parabola2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqdelta(pow(delta, 2)),
                                            qtdelta(pow(delta, 5)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -69,7 +70,7 @@ public:
     * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion.
     * @return void
     */
-    void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
+    virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
 
@@ -84,7 +85,7 @@ public:
     */
     const double trdelta;
     constant1D(double interactionHorizon): Kernel(1, interactionHorizon, false), trdelta(pow(delta, 3)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -96,7 +97,7 @@ public:
      * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
      * of shape d x d in case of peridynamics.
     */
-    void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
+    virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
 class constant3D: public Kernel {
@@ -110,7 +111,7 @@ public:
     */
     const double qtdelta;
     constant3D(double interactionHorizon): Kernel(1, interactionHorizon, false), qtdelta(pow(delta, 5)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -122,7 +123,7 @@ public:
      * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
      * of shape d x d in case of peridynamics.
     */
-    void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
+    virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
 class labeled2D: public Kernel {
@@ -136,7 +137,7 @@ public:
     const double sqdelta, qddelta;
     labeled2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqdelta(pow(delta, 2)),
                                           qddelta(pow(delta, 4)){};
-    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -148,7 +149,7 @@ public:
      * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
      * of shape d x d in case of peridynamics.
     */
-    void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
+    virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
 
@@ -167,7 +168,7 @@ public:
     */
     const double trdelta;
     linearPrototypeMicroelastic2D(double interactionHorizon): Kernel(1, interactionHorizon, true), trdelta(pow(delta, 3)) {};
-    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -179,7 +180,7 @@ public:
      * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
      * of shape d x d in case of peridynamics.
     */
-    void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
+    virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
 class linearPrototypeMicroelastic2DField: public Kernel {
@@ -198,7 +199,7 @@ public:
     */
     const double trdelta;
     linearPrototypeMicroelastic2DField(double interactionHorizon): Kernel(2, interactionHorizon, true), trdelta(pow(delta, 3)) {};
-    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -210,7 +211,7 @@ public:
      * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
      * of shape d x d in case of peridynamics.
     */
-    void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
+    virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
 class constant2DField: public Kernel {
@@ -229,7 +230,7 @@ public:
     */
     const double qddelta;
     constant2DField(double interactionHorizon): Kernel(2, interactionHorizon, false), qddelta(pow(delta, 4)) {};
-    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -241,7 +242,7 @@ public:
      * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
      * of shape d x d in case of peridynamics.
     */
-    void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
+    virtual void operator() (double * x, double * y, long labelx, long labely, double * kernel_val) override;
 };
 
 

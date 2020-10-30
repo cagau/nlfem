@@ -52,7 +52,9 @@
 #include "Mesh.h"
 #include "Quadrature.h"
 #include "Configuration.h"
+#include "Kernel.h"
 #include "cstring"
+
 using namespace std;
 
 ////// Retriangulation Routine ---------------------------------------------------------------------------------------------
