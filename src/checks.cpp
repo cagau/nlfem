@@ -50,10 +50,10 @@ void chk_Mesh(MeshType & mesh){
     const long nZeta = mesh.nZeta;
 
     for(long k=0; k<nE; k++){
-        if (mesh.LabelTriangles(k)!=1) {
+        if (mesh.LabelElements(k) != 1) {
             for (unsigned long i = 0; i < d; i++) {
                 // For description of element labels see MeshTypes.h
-                abortIfFalse(mesh.Triangles(i, k) >= nV_Omega, "Incorrect vertex order or incorrect element label.");
+                abortIfFalse(mesh.Elements(i, k) >= nV_Omega, "Incorrect vertex order or incorrect element label.");
             }
         } else {
             chk_nE_Omega++;

@@ -152,7 +152,7 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     //T.matE = arma::vec(dim*(dim+1));
     for (k=0; k<mesh.dVertex; k++) {
         //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
-        Vdx = mesh.Triangles(k, Tdx);
+        Vdx = mesh.Elements(k, Tdx);
         for (j=0; j<mesh.dim; j++){
             T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx);
             //printf ("%3.2f ", T.matE[mesh.dim * k + j]);
@@ -164,7 +164,7 @@ void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
     T.E = T.matE.memptr();
     T.absDet = absDet(T.E, mesh.dim);
     T.signDet = static_cast<int>(signDet(T.E, mesh));
-    T.label = mesh.LabelTriangles(Tdx);
+    T.label = mesh.LabelElements(Tdx);
 
     //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
     //T.dim = dim;
@@ -331,16 +331,20 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     // [1]
     // Mesh will contain K_Omega = outdim*nV_Omega in CG case,
     // K_Omega = outdim*3*nE_Omega in DG [X] Not implemented!
-    MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, nE, nE_Omega,
-                     nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter};
-    // [2]
-    // Above should be checked
+    //MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, nE, nE_Omega,
+    //                 nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
+    //                 is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter};
+
+    MeshType mesh(ptrTriangles,ptrLabelTriangles,ptrVerts,nE,nE_Omega,nV,nV_Omega,
+                  ptrNeighbours,ptrNeighbours,dim,maxDiameter, outdim, nNeighbours);
     chk_Mesh(mesh);
 
-    QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
+    QuadratureType quadRule(dim, Px, dx, nPx, Py, dy, nPy, Pg, dg, degree);
     chk_QuadratureRule(quadRule);
-    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+
+    ConfigurationType conf(path_spAd, path_fd, str_model_kernel, str_model_f,
+                           str_integration_method, static_cast<bool>(is_PlacePointOnCap),
+                           sqrt(sqdelta));
     // [3]
     // kernel has to match outdim. Can we, or do we want to check this?
     chk_Conf(mesh, conf, quadRule);
@@ -353,7 +357,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     }
 }
 
-void stiffnessMatrix(Mesh &mesh, Quadrature &quadRule, Configuration &conf){
+void stiffnessMatrix(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf){
 
     // Set Kernel ##########################################################
     Kernel * ptrmodelkernel;
@@ -411,23 +415,23 @@ void stiffnessMatrix(Mesh &mesh, Quadrature &quadRule, Configuration &conf){
     intgrt = &Integrator::tensorGauss;
     (integrator.*intgrt)(aT, bT, termLocal, termNonlocal);
 
+    mesh.outdim = kernel.outdim; // Deprecated
+
     cout  << "outdim " << kernel.outdim << endl;
     cout << "Hi there" << endl;
     cout << mesh.nV << endl;
     cout << conf.model_kernel << endl;
-
-
 
 }
 
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
     printf("Function: par_system\n");
-    printf("Mesh dimension: %i\n", mesh.dim);
+    printf("MeshType dimension: %ld\n", mesh.dim);
     printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
     lookup_configuration(conf);
-    printf("Quadrule outer: %i\n", quadRule.nPx);
-    printf("Quadrule inner: %i\n", quadRule.nPy);
+    printf("Quadrule outer: %ld\n", quadRule.nPx);
+    printf("Quadrule inner: %ld\n", quadRule.nPy);
 
     //const int dVertex = dim + 1;
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
@@ -449,15 +453,15 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     chk_BasisFunction(quadRule);
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     // Contains one row more than number of verticies as label information is contained here
-    //const arma::Mat<long> Triangles(mesh.ptrTriangles, mesh.dVertex+1, mesh.nE);
-    //mesh.Triangles = arma::Mat<long>(mesh.ptrTriangles, mesh.dVertex+1, mesh.nE);
+    //const arma::Mat<long> Elements(mesh.ptrTriangles, mesh.dVertex+1, mesh.nE);
+    //mesh.Elements = arma::Mat<long>(mesh.ptrTriangles, mesh.dVertex+1, mesh.nE);
     // Contains number of direct neighbours of an element + 1 (itself).
     //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.nE);
     //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
     // default(none)  does not work well with g++.
     const auto chunkSize = mesh.nE / omp_get_num_procs() ;
-    printf("Chunk Size %i\n", chunkSize);
+    printf("Chunk Size %ld\n", chunkSize);
 
     #pragma omp parallel shared(mesh, quadRule, conf, values_all, indices_all, nnz_total)
     {
@@ -502,11 +506,11 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
         //if (aTdx == debugTdx){
         //    cout << "aTdx " << aTdx << endl;
         //}
-        if (mesh.LabelTriangles[aTdx] == 1) {
+        if (mesh.LabelElements[aTdx] == 1) {
             // It would be nice, if in future there is no dependency on the element ordering...
             //cout <<  aTdx << endl;
-            //cout << "L " << mesh.LabelTriangles[aTdx] << endl;
-            //if (mesh.LabelTriangles[aTdx] == 1) {
+            //cout << "L " << mesh.LabelElements[aTdx] << endl;
+            //if (mesh.LabelElements[aTdx] == 1) {
 
             //[DEBUG]
             /*
@@ -544,7 +548,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                 aAdx = aDGdx;
             } else {
                 // Continuous Galerkin
-                aAdx = &mesh.Triangles(0, aTdx);
+                aAdx = &mesh.Elements(0, aTdx);
             }
             // Prepare Triangle information aTE and aTdet ------------------
             initializeTriangle(aTdx, mesh, aT);
@@ -587,7 +591,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
                     // Check how many neighbours sTdx has. It can be 3 at max.
                     // In order to be able to store the list as contiguous array we fill up the empty spots with the number nE
-                    // i.e. the total number of Triangles (which cannot be an Index).
+                    // i.e. the total number of Elements (which cannot be an Index).
                     if (bTdx < mesh.nE) {
 
                         // Check whether bTdx is already visited.
@@ -607,10 +611,10 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                 bAdx = bDGdx;
                             } else {
                                 // Get (pointer to) Index of basis function (in Continuous Galerkin)
-                                bAdx = &mesh.Triangles(0, bTdx);
+                                bAdx = &mesh.Elements(0, bTdx);
                                 // The first entry (Index 0) of each row in triangles contains the Label of each point!
                                 // Hence, in order to get an pointer to the three Triangle idices, which we need here
-                                // we choose &Triangles[4*aTdx+1];
+                                // we choose &Elements[4*aTdx+1];
                             }
                             // Assembly of matrix ---------------------------------------
                             doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
@@ -629,9 +633,9 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             if (aTdx == 0 && bTdx == 45){
                             //if (true){
 
-                            printf("aTdx %i\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
+                            printf("aTdx %d\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
                             printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aT.E[0],aT.E[1],aT.E[2],aT.E[3],aT.E[4],aT.E[5]);
-                            printf("bTdx %i\ndet %17.16e, label %li \n", bTdx, bT.absDet, bT.label);
+                            printf("bTdx %d\ndet %17.16e, label %li \n", bTdx, bT.absDet, bT.label);
                             printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bT.E[0],bT.E[1],bT.E[2],bT.E[3],bT.E[4],bT.E[5]);
 
                             cout << endl << "Local Term" << endl ;
@@ -671,7 +675,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                 // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
-                                //printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
+                                //printf("aTdx %d \nbTdx %d\n", aTdx, bTdx);
                                 for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
                                     // [x 3]
                                     // for (int a = 0; a < mesh.dVertex*mesh.outdim; a++){ ...
@@ -682,7 +686,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                             // for (int b = 0; b < mesh.dVertex*mesh.outdim; b++){ ...
 
                                             // INDEX CHECK
-                                            //printf("Local: a %i, b %i, ker (%i, %i) \nAdx %lu \n", a/mesh.outdim, b/mesh.outdim, a%mesh.outdim, b%mesh.outdim, Adx);
+                                            //printf("Local: a %d, b %d, ker (%d, %d) \nAdx %lu \n", a/mesh.outdim, b/mesh.outdim, a%mesh.outdim, b%mesh.outdim, Adx);
                                             // TERM LOCAL & TERM NON-LOCAL ORDER
                                             // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
                                             // However it mimics the matrix which results from the multiplication.
@@ -736,16 +740,16 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                 is_firstbfslayer = false;
             }//End while loop BFS (!queue.empty())
             //}// End if Label of (aTdx == 1)
-        }// End if LabelTriangles == 1
+        }// End if LabelElements == 1
     }// End parallel for
 
     int nnz_start = 0;
     #pragma omp critical
     {
         int nnz_current = static_cast<int>(Ad.size());
-        //printf("NNZ of Thread %i is %i\n", omp_get_thread_num(), nnz_current);
+        //printf("NNZ of Thread %d is %d\n", omp_get_thread_num(), nnz_current);
         //int estimatedNNZ = chunkSize * pow(2*ceil(mesh.delta / mesh.maxDiameter + 1), mesh.dim);
-        //printf("Estimated NNZ is %i\n", estimatedNNZ);
+        //printf("Estimated NNZ is %d\n", estimatedNNZ);
         nnz_start = nnz_total;
         nnz_total +=nnz_current;
         //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
@@ -792,11 +796,11 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
     arma::vec fd(mesh.K_Omega, arma::fill::zeros);
 
     printf("Function: par_forcing\n");
-    printf("Mesh dimension: %i\n", mesh.dim);
+    printf("MeshType dimension: %ld\n", mesh.dim);
     printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
     lookup_configuration(conf);
-    printf("Quadrule outer: %i\n", quadRule.nPx);
-    //printf("Quadrule inner: %i\n", quadRule.nPy);
+    printf("Quadrule outer: %ld\n", quadRule.nPx);
+    //printf("Quadrule inner: %ld\n", quadRule.nPy);
 
     for (int h = 0; h < quadRule.nPx; h++) {
         // This works due to Column Major ordering of Armadillo Matricies!
@@ -816,7 +820,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
         double termf[mesh.dVertex*mesh.outdim];
         #pragma omp for
         for (int aTdx = 0; aTdx < mesh.nE; aTdx++) {
-            if (mesh.LabelTriangles[aTdx] == 1) {
+            if (mesh.LabelElements[aTdx] == 1) {
                 // Get Index of ansatz functions in matrix compute_A.-------------------
                 if (mesh.is_DiscontinuousGalerkin) {
                     // Discontinuous Galerkin
@@ -826,7 +830,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                     aAdx = aDGdx;
                 } else {
                     // Continuous Galerkin
-                    aAdx = &mesh.Triangles(0, aTdx);
+                    aAdx = &mesh.Elements(0, aTdx);
                 }
                 // Prepare Triangle information aTE and aTdet ------------------
                 initializeTriangle(aTdx, mesh, aT);
@@ -851,7 +855,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                     }
                 }// end for rhs
 
-            }// end outer if (mesh.LabelTriangles[aTdx] == 1)
+            }// end outer if (mesh.LabelElements[aTdx] == 1)
         }// end outer for loop (aTdx=0; aTdx<mesh.nE; aTdx++)
     }// end pragma omp parallel
     fd.save(conf.path_fd);

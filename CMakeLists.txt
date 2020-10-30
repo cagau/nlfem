@@ -24,9 +24,9 @@ add_library(Cassemble SHARED
         ./src/model.cpp
         ./src/integration.cpp
         src/Kernel.cpp include/Kernel.h
-        src/Mesh.cpp include/Mesh.h src/Configuration.cpp
-        include/Configuration.h
-        src/Quadrature.cpp include/Quadrature.h
+        src/MeshType.cpp include/MeshType.h src/ConfigurationType.cpp
+        include/ConfigurationType.h
+        src/QuadratureType.cpp include/QuadratureType.h
         src/Integrator.cpp src/Integrator.h)
 target_compile_options(Cassemble PUBLIC "-fopenmp" "-Wall")
 

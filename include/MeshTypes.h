@@ -72,7 +72,7 @@ struct ConfigurationStruct {
     const bool is_placePointOnCap;
     bool is_singularKernel=false;
 };
-typedef ConfigurationStruct ConfigurationType;
+//typedef ConfigurationStruct ConfigurationType;
 
 struct MeshStruct{
     const int K_Omega;
@@ -80,7 +80,7 @@ struct MeshStruct{
     const long * ptrTriangles;
     const long * ptrLabelTriangles;
     const double * ptrVerts;
-    // Number of Triangles and number of Triangles in Omega
+    // Number of Elements and number of Elements in Omega
     const int nE;
     const int nE_Omega;
     // Number of vertices (in case of CG = K and K_Omega)
@@ -108,14 +108,14 @@ struct MeshStruct{
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
     const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->nE)};
-    // Label of Triangles inside Omega = 1
-    // Label of Triangles in OmegaI = 2
+    // Label of Elements inside Omega = 1
+    // Label of Elements in OmegaI = 2
     const arma::Col<long> LabelTriangles{arma::Col<long>(this->ptrLabelTriangles, this->nE)};
     // Zeta is an optional parameter. In case we get a Zeta matrix,
     // the memory is already allocated we only need a wrapper.
     const arma::Mat<long> ZetaIndicator{arma::Mat<long>(this-> ptrZeta, this-> nZeta, this-> nE)};
 };
-typedef MeshStruct MeshType;
+//typedef MeshStruct MeshType;
 
 struct QuadratureStruct{
     const double * Px;
@@ -136,7 +136,7 @@ struct QuadratureStruct{
     arma::Mat<double> psix{arma::Mat<double>(this->dim +1, this->nPx)};
     arma::Mat<double> psiy{arma::Mat<double>(this->dim +1, this->nPy)};
 };
-typedef QuadratureStruct QuadratureType;
+//typedef QuadratureStruct QuadratureType;
 
 struct entryStruct{
     unsigned long dx;

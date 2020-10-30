@@ -4,6 +4,10 @@
 
 #ifndef NONLOCAL_ASSEMBLY_INTEGRATOR_H
 #define NONLOCAL_ASSEMBLY_INTEGRATION_H
+#include "QuadratureType.h"
+#include "ConfigurationType.h"
+#include "MeshType.h"
+
 // ___ INTEGRATION DECLARATION _________________________________________________________________________________________
 
 // Integration Routine #################################################################################################

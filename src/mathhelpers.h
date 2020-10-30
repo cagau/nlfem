@@ -5,7 +5,7 @@
 #ifndef NONLOCAL_ASSEMBLY_MATHHELPERS_H
 #define NONLOCAL_ASSEMBLY_MATHHELPERS_H
 
-#include "MeshTypes.h"
+#include "MeshType.h"
 
 // ___ MATH HELERPS DECLARATION ________________________________________________________________________________________
 const double EPSILON=1e-15;

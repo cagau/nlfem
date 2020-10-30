@@ -1024,7 +1024,7 @@ int method_retriangulate(const double * xCenter, const ElementType & T,
         Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
     }
 
-    // Construct List of Triangles from intersection points
+    // Construct List of Elements from intersection points
     if (Rdx < 3){
         // In this case the content of the array out_RE will not be touched.
         return 0;
@@ -1146,7 +1146,7 @@ int method_retriangulate(const double * xCenter, const double * TE,
         Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
     }
 
-    // Construct List of Triangles from intersection points
+    // Construct List of Elements from intersection points
     if (Rdx < 3){
         // In this case the content of the array out_RE will not be touched.
         return 0;
@@ -1172,7 +1172,7 @@ int method_retriangulate(const double * xCenter, const double * TE,
 void setupElement(const MeshType &mesh, const long * Vdx_new, ElementType &T){
     T.matE = arma::vec(mesh.dim*(mesh.dim+1));
     for (int k=0; k<mesh.dVertex; k++) {
-        //Vdx = mesh.Triangles(k, Tdx);
+        //Vdx = mesh.Elements(k, Tdx);
         for (int j = 0; j < mesh.dim; j++) {
             T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx_new[k]);
             //printf ("aT %3.2f ", T.matE[mesh.dim * k + j]);
@@ -1190,8 +1190,8 @@ int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
     //cout << "Welcome to join()" << endl;
     int nEqual = 0;
     int AinB[3], BinA[3];
-    const long * aVdx = &(mesh.Triangles(0, aT.Tdx));
-    const long * bVdx = &(mesh.Triangles(0, bT.Tdx));
+    const long * aVdx = &(mesh.Elements(0, aT.Tdx));
+    const long * bVdx = &(mesh.Elements(0, bT.Tdx));
     long aVdxsorted[3], bVdxsorted[3];
 
     intVec_tozero(AinB, 3);

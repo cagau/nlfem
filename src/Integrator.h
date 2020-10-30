@@ -9,19 +9,19 @@
 #include <utility>
 
 #include "MeshTypes.h"
-#include "Quadrature.h"
-#include "Mesh.h"
+#include "QuadratureType.h"
+#include "MeshType.h"
 #include "Kernel.h"
-#include "Configuration.h"
+#include "ConfigurationType.h"
 
 class Integrator {
 public:
-    const Mesh mesh;
-    const Quadrature quadRule;
+    const MeshType mesh;
+    const QuadratureType quadRule;
     const Kernel kernel;
-    const Configuration conf;
+    const ConfigurationType conf;
 
-    Integrator(Mesh &mesh_, Quadrature &quadrature_, Kernel &kernel_, Configuration &conf_) :
+    Integrator(MeshType &mesh_, QuadratureType &quadrature_, Kernel &kernel_, ConfigurationType &conf_) :
             mesh(mesh_),
             quadRule(quadrature_),
             kernel(kernel_),
@@ -42,7 +42,7 @@ public:
 
 class BaryCenter : public Integrator {
 public:
-    BaryCenter(Mesh & mesh_, Quadrature & quadrature_, Kernel & kernel_, Configuration & conf_):
+    BaryCenter(MeshType & mesh_, QuadratureType & quadrature_, Kernel & kernel_, ConfigurationType & conf_):
     Integrator(mesh_, quadrature_, kernel_, conf_){
         cout << "Constructor of BaryCenter Integrator knows kernel delta: " << kernel.delta << endl;
     };
@@ -52,7 +52,7 @@ public:
 
 class BaryCenterRT : public Integrator {
 public:
-    BaryCenterRT(Mesh & mesh_, Quadrature & quadrature_, Kernel & kernel_, Configuration & conf_):
+    BaryCenterRT(MeshType & mesh_, QuadratureType & quadrature_, Kernel & kernel_, ConfigurationType & conf_):
     Integrator(mesh_, quadrature_, kernel_, conf_){
         cout << "Constructor of BaryCenterRT Integrator knows kernel delta: " << kernel.delta << endl;
     };
@@ -63,7 +63,7 @@ public:
 
 class Retriangulate : public Integrator {
 public:
-    Retriangulate(Mesh & mesh_, Quadrature & quadrature_, Kernel & kernel_, Configuration & conf_):
+    Retriangulate(MeshType & mesh_, QuadratureType & quadrature_, Kernel & kernel_, ConfigurationType & conf_):
     Integrator(mesh_, quadrature_, kernel_, conf_){
         cout << "Constructor of Retriangulate Integrator knows kernel delta: " << kernel.delta << endl;
     };
@@ -73,7 +73,7 @@ public:
 
 class AverageBall : public Integrator {
 public:
-    AverageBall(Mesh & mesh_, Quadrature & quadrature_, Kernel & kernel_, Configuration & conf_):
+    AverageBall(MeshType & mesh_, QuadratureType & quadrature_, Kernel & kernel_, ConfigurationType & conf_):
     Integrator(mesh_, quadrature_, kernel_, conf_){
         cout << "Constructor of AverageBall Integrator knows kernel delta: " << kernel.delta << endl;
     };

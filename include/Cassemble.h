@@ -49,9 +49,9 @@
 #define CASSEMBLE_H
 #include <armadillo>
 #include "MeshTypes.h"
-#include "Mesh.h"
-#include "Quadrature.h"
-#include "Configuration.h"
+#include "MeshType.h"
+#include "QuadratureType.h"
+#include "ConfigurationType.h"
 #include "Kernel.h"
 #include "cstring"
 
@@ -180,7 +180,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
  * @param quadRule Quadrature rules for inner, and outer elements as well as for the singular kernels.
  * @param conf General configuration, namely kernel, and forcing functions, as well as integration method.
  */
-void stiffnessMatrix(Mesh &mesh, Quadrature &quadRule, Configuration &conf);
+void stiffnessMatrix(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 
 /**
  * @brief Parallel assembly of forcing term. Forcing functions can be defined in *model* see model_f() for

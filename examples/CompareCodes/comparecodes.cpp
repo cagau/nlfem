@@ -128,7 +128,7 @@ int read_configuration(const string &path, idx_t nparts){
     // Read general Configuration
     f.open(path_conf.c_str(), ios::in);
     if (f.is_open()) {
-        printf(" \nReading Configuration ---------------------------------------------------------------------\n");
+        printf(" \nReading ConfigurationType ---------------------------------------------------------------------\n");
         str_model_kernel = safereads("model_kernel", f);
         str_model_f = safereads("model_f", f);
         str_integration_method = safereads("integration_method", f);
@@ -143,7 +143,7 @@ int read_configuration(const string &path, idx_t nparts){
     f.open(path_mesh.c_str(), ios::in);
     if (f.is_open()){
         string fline;
-        printf(" \nReading Mesh Configuration ----------------------------------------------------------------\n");
+        printf(" \nReading MeshType ConfigurationType ----------------------------------------------------------------\n");
         printf("path %s/mesh.conf\n\n", path.c_str());
         K_Omega = safereadi("K_Omega", f);
         K = safereadi("K", f);

@@ -13,9 +13,9 @@ from libc.math cimport pow
 # My Includes (compile time)
 cimport Cassemble
 cimport MeshTypes
-cimport Mesh
-cimport Quadrature
-cimport Configuration
+cimport MeshType
+cimport QuadratureType
+cimport ConfigurationType
 
 # Python includes (run time)
 import numpy as np
@@ -35,7 +35,7 @@ def stiffnessMatrix(
     # Mesh
     cmesh = CMesh(mesh)
 
-    # Configuration
+    # ConfigurationType
     cconf = CConfiguration(kernel, configuration)
 
     Cassemble.stiffnessMatrix(cmesh.Cmesh[0], cquadrature.Cquadrature[0], cconf.Cconf[0])
@@ -229,7 +229,7 @@ def evaluateMass(
 
 # Class Wrappers #######################################################################################################
 cdef class CQuadrature:
-    cdef Quadrature.Quadrature * Cquadrature
+    cdef QuadratureType.QuadratureType * Cquadrature
 
     def __cinit__(self, dim, configuration):
         # Quadrature Rules
@@ -258,22 +258,24 @@ cdef class CQuadrature:
             dg = quadgauss.weights.flatten()
             ptrdg = &dg[0]
 
-        self.Cquadrature = new Quadrature.Quadrature(dim, &Px[0], &dx[0], nPx,
+        self.Cquadrature = new QuadratureType.QuadratureType(dim, &Px[0], &dx[0], nPx,
                                                 &Py[0], &dy[0], nPy, ptrPg, ptrdg,
                                                 tensorGaussDegree)
 
 
 cdef class CMesh:
-    cdef Mesh.Mesh * Cmesh
+    cdef MeshType.MeshType * Cmesh
 
-    def __cinit__(self, mesh):
+    def __cinit__(self, mesh, long outdim):
         # Mesh
         cdef double maxDiameter = mesh.get("maxDiameter", 0.0)
         cdef long dim = mesh.get("vertices", ValueError("No vertices provided")).shape[1]
 
         cdef double[:] vertices = mesh.get("vertices").flatten()
         elements_ = mesh.get("elements", ValueError("No elements provided"))
-        neighbors = constructAdjaciencyCSRGraph(elements_)
+        #neighbors = constructAdjaciencyCSRGraph(elements_)
+        neighbors = constructAdjaciencyGraph(elements_)
+        cdef long nNeighbours = neighbors.shape[1]
         cdef long[:] ptrNeighborIndices = np.array(neighbors.indices, dtype=np.int)
         cdef long[:] ptrNeighborIndexPtr = np.array(neighbors.indptr, dtype=np.int)
         cdef long[:] elements = elements_.flatten()
@@ -294,13 +296,12 @@ cdef class CMesh:
         cdef long nV = vertexLabels.shape[0]
         cdef long nVOmega = np.sum(vertexLabels.data > 0)
 
-
-        self.Cmesh = new Mesh.Mesh(&elements[0], &elementLabelsData[0], &vertices[0],
+        self.Cmesh = new MeshType.MeshType(&elements[0], &elementLabelsData[0], &vertices[0],
                         nE, nEOmega, nV, nVOmega, &ptrNeighborIndices[0], &ptrNeighborIndexPtr[0],
-                        dim, maxDiameter)
+                        dim, maxDiameter, outdim, nNeighbours)
 
 cdef class CConfiguration:
-    cdef Configuration.Configuration * Cconf
+    cdef ConfigurationType.ConfigurationType * Cconf
 
     def __cinit__(self, kernel, configuration):
         # Model
@@ -322,7 +323,7 @@ cdef class CConfiguration:
         # Save Path
         cdef string path_stiffnesMatrix = configuration.get("savePath", "_tmpSavePath_stiffnesMatrix_").encode('UTF-8')
 
-        self.Cconf = new Configuration.Configuration(path_stiffnesMatrix, "".encode('UTF-8'),
+        self.Cconf = new ConfigurationType.ConfigurationType(path_stiffnesMatrix, "".encode('UTF-8'),
                   kernelFunction, "".encode('UTF-8'),
                   integrationMethod,
                   isPlacePointOnCap, kernelHorizon)

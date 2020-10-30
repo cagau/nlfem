@@ -92,7 +92,7 @@ def py_check_par_assemble(
         long nV_Omega = mesh.nV_Omega
 
         int nP = py_P.shape[0] # Does not differ in inner and outer integral!
-        long [:] Triangles = (np.array(mesh.triangles, int)).flatten("C")
+        long [:] Elements = (np.array(mesh.triangles, int)).flatten("C")
         double [:] Verts = (np.array(mesh.vertices, float)).flatten("C")
         double[:] P = (np.array(py_P, float)).flatten("C")
 
@@ -106,7 +106,7 @@ def py_check_par_assemble(
     # Setup adjaciency graph of the mesh --------------------------
     neigs = []
     for aTdx in range(mesh.nE):
-        neigs = get_neighbour(mesh.nE, dVertex, &Triangles[0], &Triangles[(dVertex+1)*aTdx])
+        neigs = get_neighbour(mesh.nE, dVertex, &Elements[0], &Elements[(dVertex+1)*aTdx])
         n = len(neigs)
         for i in range(n):
             Neighbours[4*aTdx + i] = neigs[i]
@@ -136,7 +136,7 @@ def py_check_par_assemble(
     cdef int a=0, b=0, aAdxj =0
     cdef long labela=0, labelb=0
     #cdef double [:] Verts = mesh.vertices.flatten("C")
-    #cdef long [:] Triangles = mesh.triangles.flatten("C")
+    #cdef long [:] Elements = mesh.triangles.flatten("C")
 
     for aTdx in [7,16, 41]:#, 95, 98, 100]:#(mesh.nE-10, mesh.nE):
         fig = plt.figure()  # create a figure object
@@ -146,13 +146,13 @@ def py_check_par_assemble(
         ## this is done fore convenience only, actually those are unnecessary copies!
         print(aTdx)
         for j in range(2):
-            aTE[2*0+j] = Verts[2*Triangles[(dVertex+1)*aTdx+1] + j]
-            aTE[2*1+j] = Verts[2*Triangles[(dVertex+1)*aTdx+2] + j]
-            aTE[2*2+j] = Verts[2*Triangles[(dVertex+1)*aTdx+3] + j]
+            aTE[2*0+j] = Verts[2*Elements[(dVertex+1)*aTdx+1] + j]
+            aTE[2*1+j] = Verts[2*Elements[(dVertex+1)*aTdx+2] + j]
+            aTE[2*2+j] = Verts[2*Elements[(dVertex+1)*aTdx+3] + j]
 
         ## compute Determinant
         aTdet = absDet(aTE)
-        labela = Triangles[(dVertex+1)*aTdx]
+        labela = Elements[(dVertex+1)*aTdx]
 
         ## Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
         ## on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
@@ -178,19 +178,19 @@ def py_check_par_assemble(
 
                 ## Check how many neighbours sTdx has. It can be 4 at max. (Itself, and the three others)
                 ## In order to be able to store the list as contiguous array we fill up the empty spots with the number nE
-                ## i.e. the total number of Triangles (which cannot be an index).
+                ## i.e. the total number of Elements (which cannot be an index).
                 if (bTdx < mesh.nE):
 
                     ## Prepare Triangle information bTE and bTdet ------------------
                     ## Copy coordinates of Triange b to bTE.
                     ## again this is done fore convenience only, actually those are unnecessary copies!
                     for i in range(2):
-                        bTE[2*0+i] = Verts[2*Triangles[(dVertex+1)*bTdx+1] + i]
-                        bTE[2*1+i] = Verts[2*Triangles[(dVertex+1)*bTdx+2] + i]
-                        bTE[2*2+i] = Verts[2*Triangles[(dVertex+1)*bTdx+3] + i]
+                        bTE[2*0+i] = Verts[2*Elements[(dVertex+1)*bTdx+1] + i]
+                        bTE[2*1+i] = Verts[2*Elements[(dVertex+1)*bTdx+2] + i]
+                        bTE[2*2+i] = Verts[2*Elements[(dVertex+1)*bTdx+3] + i]
 
                     bTdet = absDet(bTE)
-                    labelb = Triangles[(dVertex+1)*bTdx]
+                    labelb = Elements[(dVertex+1)*bTdx]
                     ## Check wheter bTdx is already visited.
                     if (visited[bTdx]==0):
 
@@ -300,11 +300,11 @@ cdef double [:] baryCenter(double [:] E):
 
 
 # ASSEMBLY OF MASS MATRICIES -------------------------------------------------------------------------------------------
-# def assembleMass(int K_Omega, int nE_Omega, long [:,:] Triangles, double [:,:] Verts, double [:,:] py_P, double [:] dx):
+# def assembleMass(int K_Omega, int nE_Omega, long [:,:] Elements, double [:,:] Verts, double [:,:] py_P, double [:] dx):
 #     py_Ad = np.zeros(K_Omega**2).flatten("C")
 #     cdef:
 #         int nP = py_P.shape[0] # Does not differ in inner and outer integral!
-#         long [:] c_Triangles = (np.array(Triangles, int)).flatten("C")
+#         long [:] c_Triangles = (np.array(Elements, int)).flatten("C")
 #         double [:] c_Verts = (np.array(Verts, float)).flatten("C")
 #         double[:] P = (np.array(py_P, float)).flatten("C")
 #         double[:] Ad = py_Ad
@@ -320,7 +320,7 @@ cdef double [:] baryCenter(double [:] E):
 #         double[:] P
 #         double [:] dx
 #
-#     def __init__(self, mesh, K_Omega, nE_Omega, Triangles, Verts, py_Px, dx, py_Py, dy):
+#     def __init__(self, mesh, K_Omega, nE_Omega, Elements, Verts, py_Px, dx, py_Py, dy):
 #         self.K_Omega = mesh.K_Omega
 #         self.nE_Omega = mesh.nE_Omega
 #         self.c_Triangles = (np.array(mesh.triangles, int)).flatten("C")
@@ -355,10 +355,10 @@ cdef double [:] baryCenter(double [:] E):
 #     def __init__(self,
 #                  # Mesh information ------------------------------------
 #                  int K, int K_Omega,# Number of Basis functions
-#                  int nE, int nE_Omega,# Number of Triangles and number of Triangles in Omega
+#                  int nE, int nE_Omega,# Number of Elements and number of Elements in Omega
 #                  int nV, int nV_Omega, # Number of vertices (in case of CG = K and K_Omega)
 #                  # Map Triangle index (Tdx) -> index of Vertices in Verts (Vdx = Triangle[Tdx] array of int, shape (3,))
-#                  long [:,:] Triangles,
+#                  long [:,:] Elements,
 #                   # Map Vertex Index (Vdx) -> Coordinate of some Vertex i of some Triangle (E[i])
 #                  double [:,:] Verts,
 #                  double [:,:] py_P, # Quadrature Points
@@ -374,7 +374,7 @@ cdef double [:] baryCenter(double [:] E):
 #         self.nV_Omega = nV_Omega
 #         self.sqdelta = pow(delta,2) # Squared interaction horizon
 #
-#         self.c_Triangles = (np.array(Triangles, int)).flatten("C")
+#         self.c_Triangles = (np.array(Elements, int)).flatten("C")
 #         self.c_Verts = (np.array(Verts, float)).flatten("C")
 #
 #         self.P = (np.array(py_P, float)).flatten("C")

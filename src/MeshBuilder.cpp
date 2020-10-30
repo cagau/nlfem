@@ -247,7 +247,7 @@ long Grid2D::ElementLabel(long Tdx) const {
             return 1;
         }
     }
-    // Label for Triangles in Omega is 1, for Triangles in OmegaI is 2.
+    // Label for Elements in Omega is 1, for Elements in OmegaI is 2.
     // If there is any vertex in Omega then the trianlge is in Omega.
     return  2;
 }
@@ -259,7 +259,7 @@ long Grid3D::ElementLabel(long Tdx) const {
     for (k=0; k<4; k++){
         vertexLabels(k) = (long) Vertex(Vdx(k))(3);
     }
-    // Label for Triangles in Omega is 1, for Triangles in OmegaI is 2.
+    // Label for Elements in Omega is 1, for Elements in OmegaI is 2.
     // If there is any vertex in Omega then the trianlge is in Omega.
     return  vertexLabels.min();
 }
@@ -268,8 +268,8 @@ int Grid2D::save( string name ){
     MeshType mesh = Grid2D::mesh(false);
     //mesh.Neighbours.save("data/"+to_string(N)+name+"nbr", arma::arma_ascii);
     mesh.Verts.save("data/"+to_string(N)+name+"vrt", arma::arma_ascii);
-    mesh.Triangles.save("data/"+to_string(N)+name+"tri", arma::arma_ascii);
-    mesh.LabelTriangles.save("data/"+to_string(N)+name+"lab", arma::arma_ascii);
+    mesh.Elements.save("data/" + to_string(N) + name + "tri", arma::arma_ascii);
+    mesh.LabelElements.save("data/" + to_string(N) + name + "lab", arma::arma_ascii);
     // As Mesh is a sorted version of the points, DataVdx has to be sorted accordingly!
     arma::vec orderedData = DataVdx(sortIndex);
     orderedData.save("data/"+to_string(N)+name+"dat", arma::arma_ascii);
@@ -497,7 +497,7 @@ MeshType Grid2D::mesh(bool setNeighbours=true) {
         }
     }
 
-    //Permute Triangles as well
+    //Permute Elements as well
     arma::uvec sortIndexElements = arma::sort_index(LabelElements);
     arma::uvec invIndexElements =  invert_permutation(sortIndexElements);
     Elements = Elements.cols(sortIndexElements);

@@ -1,6 +1,6 @@
-cdef extern from "Mesh.h":
-    cdef cppclass Mesh:
-            Mesh(const long * ptrElements_,
+cdef extern from "MeshType.h":
+    cdef cppclass MeshType:
+            MeshType(const long * ptrElements_,
                  const long * ptrElementLabels_,
                  const double * ptrVerts_,
                  const long nE_,
@@ -10,5 +10,7 @@ cdef extern from "Mesh.h":
                  const long * ptrNeighborIndices_,
                  const long * ptrNeighborIndexPtr_,
                  const long dim_,
-                 const double maxDiameter_
+                 const double maxDiameter_,
+                 const long outdim,
+                 const long nNeighbours
                  ) except +

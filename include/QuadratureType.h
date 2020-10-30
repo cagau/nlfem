@@ -2,13 +2,13 @@
 // Created by klar on 29.10.20.
 //
 
-#ifndef NONLOCAL_ASSEMBLY_QUADRATURE_H
-#define NONLOCAL_ASSEMBLY_QUADRATURE_H
+#ifndef NONLOCAL_ASSEMBLY_QUADRATURETYPE_H
+#define NONLOCAL_ASSEMBLY_QUADRATURETYPE_H
 
 #include "cmath"
 #include "armadillo"
 
-class Quadrature {
+class QuadratureType {
     /**
      * @brief Contains the quadrature rules.
      *
@@ -47,16 +47,16 @@ public:
      * @param dg_ Integration weights of tensor Gauss quadrature (for singular kernels).
      * @param tensorGaussDegree_ Degree of tensor Gauss quadrature rule.
      */
-    Quadrature(const long dim_,
-               const double * Px_,
-               const double * dx_,
-               const long nPx_,
-               const double * Py_,
-               const double * dy_,
-               const long nPy_,
-               const double * Pg_,
-               const double * dg_,
-               const long tensorGaussDegree_=0):
+    QuadratureType(const long dim_,
+                   const double * Px_,
+                   const double * dx_,
+                   const long nPx_,
+                   const double * Py_,
+                   const double * dy_,
+                   const long nPy_,
+                   const double * Pg_,
+                   const double * dg_,
+                   const long tensorGaussDegree_=0):
                dim(dim_),
                Px(Px_),
                dx(dx_),
@@ -78,4 +78,4 @@ public:
  */
 void model_basisFunction(const double * p, int dim, double *psi_vals);
 
-#endif //NONLOCAL_ASSEMBLY_QUADRATURE_H
+#endif //NONLOCAL_ASSEMBLY_QUADRATURETYPE_H

@@ -1,6 +1,6 @@
-cdef extern from "Quadrature.h":
-    cdef cppclass Quadrature:
-        Quadrature(const long dim_,
+cdef extern from "QuadratureType.h":
+    cdef cppclass QuadratureType:
+        QuadratureType(const long dim_,
                    const double * Px_,
                    const double * dx_,
                    const long nPx_,
