@@ -10,19 +10,19 @@ ext_modules = [
     Extension(
         name=name,
         sources=["cython/nlfem.pyx", "src/Cassemble.cpp",
-                    "./include/MeshTypes.cpp",
+                    "./src/MeshTypes.cpp",
                      "src/Kernel.cpp",
-                     #"src/Configuration.cpp",
+                     #"src/ConfigurationType.cpp",
                      #"src/Index.cpp",
                      #"src/Load.cpp",
-                     #"src/Quadrature.cpp",
+                     "./src/QuadratureType.cpp",
                     "./src/mathhelpers.cpp",
                     "./src/model.cpp",
                     "./src/integration.cpp"],
         extra_link_args=['-fopenmp', '-larmadillo'],
         extra_compile_args=['-fopenmp'],
         language="c++",
-        include_dirs=["include", numpy.get_include()]
+        include_dirs=["src", "include", numpy.get_include()]
     )
 ]
 

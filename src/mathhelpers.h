@@ -19,7 +19,7 @@ int faculty(int n);
 // Matrix operations ###################################################################################################
 // Double
 double absDet(const double * E);                                         // Compute determinant
-double absDet(const double * E, int dim);
+double absDet(const double * E, long dim);
 double signDet(const double * E);
 double signDet(const double * E, const MeshType & mesh);
 void baryCenter(const double * E, double * bary);                        // Bary Center

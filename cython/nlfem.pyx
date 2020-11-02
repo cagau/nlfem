@@ -12,7 +12,6 @@ from libc.math cimport pow
 
 # My Includes (compile time)
 cimport Cassemble
-cimport MeshTypes
 cimport MeshType
 cimport QuadratureType
 cimport ConfigurationType
@@ -327,16 +326,6 @@ cdef class CConfiguration:
                   kernelFunction, "".encode('UTF-8'),
                   integrationMethod,
                   isPlacePointOnCap, kernelHorizon)
-
-cdef class Element:
-    cdef MeshTypes.ElementClass element
-
-    def __cinit__(self, int dim):
-        self.element = MeshTypes.ElementClass(dim)
-
-def showElement(int dim):
-    E = Element(dim)
-    return MeshTypes.getElement(E.element)
 
 # Helper functions #####################################################################################################
 def read_arma_mat(path, is_verbose=False):

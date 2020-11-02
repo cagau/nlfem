@@ -18,6 +18,7 @@
 #include "model.h"
 #include "checks.cpp"
 #include "Integrator.h"
+#include "QuadratureType.h"
 
 using namespace std;
 /**
@@ -136,41 +137,41 @@ void lookup_configuration(ConfigurationType & conf){
     }
 }
 
-void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
-    /*
-    Copy coordinates of Triange b to bTE.
-
-     Tempalte of Triangle Point data.
-     2D Case, a, b, c are the vertices of a triangle
-     T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
-     Hence, if one wants to put T.E into col major order matrix it would be of shape\
-                                 | a1 | b1 | c1 |
-     M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
-    */
-
-    int j, k, Vdx;
-    //T.matE = arma::vec(dim*(dim+1));
-    for (k=0; k<mesh.dVertex; k++) {
-        //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
-        Vdx = mesh.Elements(k, Tdx);
-        for (j=0; j<mesh.dim; j++){
-            T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx);
-            //printf ("%3.2f ", T.matE[mesh.dim * k + j]);
-            //T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
-        }
-        //printf("\n");
-    }
-    // Initialize Struct
-    T.E = T.matE.memptr();
-    T.absDet = absDet(T.E, mesh.dim);
-    T.signDet = static_cast<int>(signDet(T.E, mesh));
-    T.label = mesh.LabelElements(Tdx);
-
-    //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
-    //T.dim = dim;
-    T.dim = mesh.dim;
-    T.Tdx = Tdx;
-}
+//void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
+//    /*
+//    Copy coordinates of Triange b to bTE.
+//
+//     Tempalte of Triangle Point data.
+//     2D Case, a, b, c are the vertices of a triangle
+//     T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
+//     Hence, if one wants to put T.E into col major order matrix it would be of shape\
+//                                 | a1 | b1 | c1 |
+//     M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
+//    */
+//
+//    int j, k, Vdx;
+//    //T.matE = arma::vec(dim*(dim+1));
+//    for (k=0; k<mesh.dVertex; k++) {
+//        //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
+//        Vdx = mesh.Elements(k, Tdx);
+//        for (j=0; j<mesh.dim; j++){
+//            T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx);
+//            //printf ("%3.2f ", T.matE[mesh.dim * k + j]);
+//            //T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
+//        }
+//        //printf("\n");
+//    }
+//    // Initialize Struct
+//    T.E = T.matE.memptr();
+//    T.absDetValue = absDet(T.E, mesh.dim);
+//    T.signDetValue = static_cast<int>(signDet(T.E, mesh));
+//    T.label = mesh.LabelElements(Tdx);
+//
+//    //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
+//    //T.dim = dim;
+//    T.dim = mesh.dim;
+//    T.Tdx = Tdx;
+//}
 
 // Compute A and f -----------------------------------------------------------------------------------------------------
 void compute_f(     const ElementType & aT,
@@ -185,7 +186,7 @@ void compute_f(     const ElementType & aT,
         for (i=0; i<quadRule.nPx; i++){
             toPhys(aT.E, &(quadRule.Px[mesh.dim * i]),  mesh.dim,&x[0]);
             model_f(&x[0], forcing_value);
-            termf[a] += quadRule.psix(a/mesh.outdim, i) * forcing_value[a%mesh.outdim] * aT.absDet * quadRule.dx[i];
+            termf[a] += quadRule.psix(a/mesh.outdim, i) * forcing_value[a%mesh.outdim] * aT.absDetValue * quadRule.dx[i];
         }
     }
 }
@@ -403,7 +404,7 @@ void stiffnessMatrix(MeshType &mesh, QuadratureType &quadRule, ConfigurationType
     }
 
     // jumpCode
-    ElementType aT, bT;
+    ElementType aT(mesh), bT(mesh);
     void (Integrator::*intgrt)(const ElementType &aT, const ElementType &bT, double *termLocal, double *termNonloc);
 
     double termLocal[20];
@@ -433,23 +434,10 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     printf("Quadrule outer: %ld\n", quadRule.nPx);
     printf("Quadrule inner: %ld\n", quadRule.nPy);
 
-    //const int dVertex = dim + 1;
-    // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
-    //arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
-    //Ad.zeros();
-    //arma::sp_mat sp_Ad(mesh.K, mesh.K_Omega);
     arma::vec values_all;
     arma::umat indices_all(2,0);
     int nnz_total=0;
 
-    for(int h=0; h<quadRule.nPx; h++){
-        // This works due to Column Major ordering of Armadillo Matricies!
-        model_basisFunction(& quadRule.Px[mesh.dim*h], mesh.dim, & quadRule.psix[mesh.dVertex * h]);
-    }
-    for(int h=0; h<quadRule.nPy; h++){
-        // This works due to Column Major ordering of Armadillo Matricies!
-        model_basisFunction(& quadRule.Py[mesh.dim*h], mesh.dim,& quadRule.psiy[mesh.dVertex * h]);
-    }
     chk_BasisFunction(quadRule);
     // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
     // Contains one row more than number of verticies as label information is contained here
@@ -477,9 +465,8 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     const long *NTdx;
 
     // Vector containing the coordinates of the vertices of a Triangle
-    ElementType aT, bT;
-    aT.matE = arma::vec(mesh.dim*(mesh.dim+1));
-    bT.matE = arma::vec(mesh.dim*(mesh.dim+1));
+    ElementType aT(mesh), bT(mesh);
+
     //double aTE[3*2];
     //double bTE[3*2];
     // Integration information ------------------------------------
@@ -551,7 +538,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                 aAdx = &mesh.Elements(0, aTdx);
             }
             // Prepare Triangle information aTE and aTdet ------------------
-            initializeTriangle(aTdx, mesh, aT);
+            aT.setData(aTdx);//initializeTriangle(aTdx, mesh, aT);
             // Assembly of right side ---------------------------------------
             // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
             //doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
@@ -598,7 +585,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                         if (visited[bTdx] == 0) {
 
                             // Prepare Triangle information bTE and bTdet ------------------
-                            initializeTriangle(bTdx, mesh, bT);
+                            bT.setData(bTdx); //initializeTriangle(bTdx, mesh, bT);
 
                             //cout << aTdx << ", " << bTdx << endl;
 
@@ -633,9 +620,9 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                             if (aTdx == 0 && bTdx == 45){
                             //if (true){
 
-                            printf("aTdx %d\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
+                            printf("aTdx %d\ndet %17.16e, label %li \n", aTdx, aT.absDetValue, aT.label);
                             printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aT.E[0],aT.E[1],aT.E[2],aT.E[3],aT.E[4],aT.E[5]);
-                            printf("bTdx %d\ndet %17.16e, label %li \n", bTdx, bT.absDet, bT.label);
+                            printf("bTdx %d\ndet %17.16e, label %li \n", bTdx, bT.absDetValue, bT.label);
                             printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bT.E[0],bT.E[1],bT.E[2],bT.E[3],bT.E[4],bT.E[5]);
 
                             cout << endl << "Local Term" << endl ;
@@ -811,7 +798,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
     {
         // General Loop Indices ---------------------------------------
         // Vector containing the coordinates of the vertices of a Triangle
-        ElementType aT;
+        ElementType aT(mesh);
         aT.matE = arma::vec(mesh.dim * (mesh.dim + 1));
         // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
         const long *aAdx;
@@ -833,7 +820,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                     aAdx = &mesh.Elements(0, aTdx);
                 }
                 // Prepare Triangle information aTE and aTdet ------------------
-                initializeTriangle(aTdx, mesh, aT);
+                aT.setData(aTdx); //initializeTriangle(aTdx, mesh, aT);
                 // Assembly of right side ---------------------------------------
                 // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
                 doubleVec_tozero(termf, mesh.dVertex*mesh.outdim); // Initialize Buffer
@@ -876,7 +863,7 @@ double compute_area(double * aTE, double aTdet, long labela, double * bTE, doubl
     toPhys(aTE, x, physical_quad);
     Rdx = retriangulate(physical_quad, bTE, mesh, reTriangle_list, true);
     for (rTdx=0; rTdx < Rdx; rTdx++){
-        areaTerm += absDet(&reTriangle_list[2*3*rTdx])/2;
+        areaTerm += absDetValue(&reTriangle_list[2*3*rTdx])/2;
     }
     return areaTerm;
 }

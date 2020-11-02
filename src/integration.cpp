@@ -39,6 +39,7 @@ neighbours have to be handled with special care.
 #include "MeshTypes.h"
 #include "mathhelpers.h"
 #include "model.h"
+#include "QuadratureType.h"
 #include "integration.h"
 
 const double SCALEDET = 0.0625;
@@ -103,7 +104,7 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
                                                             traffoIdentical3,
                                                             traffoIdentical4,
                                                             traffoIdentical5};
-    ElementStruct aTsorted, bTsorted;
+    ElementType aTsorted(aT), bTsorted(bT);
     int argSortA[3], argSortB[3];
 
     int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
@@ -178,8 +179,8 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
                             factors =
                                     kernel_val[mesh.outdim * aOut + bOut] * traffodetCanceled *
                                     SCALEDET *
-                                    quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                            //factors = kernel_val * traffodet * scaledet * quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+                                    quadRule.dg[k] * aTsorted.absDetValue * bTsorted.absDetValue;
+                            //factors = kernel_val * traffodet * scaledet * quadRule.dg[k] * aTsorted.absDetValue * bTsorted.absDetValue;
                             termLocal[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut) +
                                       argSortA[b]*mesh.outdim + bOut] += 2 * factors * psix[a] * psix[b];
                             //termLocal[mesh.dVertex * a + b] += 2*factors* psix[a] * psix[b];
@@ -220,7 +221,7 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
                                                                 traffoIdentical3,
                                                                 traffoIdentical4,
                                                                 traffoIdentical5};
-        ElementStruct aTsorted, bTsorted;
+        ElementType aTsorted(aT), bTsorted(bT);
         int argSortA[3], argSortB[3];
         int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
         std::list<double (*)(double *)> traffoList;
@@ -287,7 +288,7 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
                         //cout << outTest[mesh.outdim*mesh.dVertex * a + b] << ",   ";
 
                         factors = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim] * traffodet * SCALEDET *
-                                  quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+                                  quadRule.dg[k] * aTsorted.absDetValue * bTsorted.absDetValue;
                         // In case of the local term both entries belong to the outer integral. Hence...argSortA[a] + argSortA[b]
                         termLocal[mesh.outdim*mesh.dVertex * argSortA[a] + argSortA[b]] += 2*factors* psix[a/mesh.outdim] * psix[b/mesh.outdim];
                         // In this case we write ...argSortA[a] + argSortB[b].
@@ -326,12 +327,12 @@ void integrate_fullyContained(const ElementType &aT, const ElementType &bT, cons
                 for (int b = 0; b < mesh.dVertex * mesh.outdim; b++) {
 
                     termLocal[mesh.outdim * mesh.dVertex * a + b] += quadRule.dx[k] * quadRule.dy[i] *
-                            kernel_val[mesh.outdim * (a % mesh.outdim) + b % mesh.outdim] * aT.absDet * bT.absDet *
-                            2 * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k);
+                                                                     kernel_val[mesh.outdim * (a % mesh.outdim) + b % mesh.outdim] * aT.absDetValue * bT.absDetValue *
+                                                                     2 * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k);
 
                     termNonloc[mesh.outdim * mesh.dVertex * a + b] += quadRule.dx[k] * quadRule.dy[i] *
-                            kernel_val[mesh.outdim * (a % mesh.outdim) + b % mesh.outdim] * aT.absDet * bT.absDet *
-                            2 * quadRule.psix(a/mesh.outdim, k) * quadRule.psiy(b/mesh.outdim, i);
+                                                                      kernel_val[mesh.outdim * (a % mesh.outdim) + b % mesh.outdim] * aT.absDetValue * bT.absDetValue *
+                                                                      2 * quadRule.psix(a/mesh.outdim, k) * quadRule.psiy(b/mesh.outdim, i);
 
                 }
                 //cout << endl;
@@ -395,7 +396,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
         //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i], reTriangle_list[2 * 3 * i+1]);
         //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+2], reTriangle_list[2 * 3 * i+3]);
         //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+4], reTriangle_list[2 * 3 * i+5]);
-        //printf("absDet %17.16e\n", absDet(&reTriangle_list[2 * 3 * i]));
+        //printf("absDetValue %17.16e\n", absDetValue(&reTriangle_list[2 * 3 * i]));
         //}
         // [x 14] doubleVec_tozero(innerLocal, mesh.outdim*mesh.outdim);
         //innerLocal = 0.0;
@@ -482,23 +483,23 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
             for (b = 0; b < mesh.dVertex * mesh.outdim; b++) {
                 // [x 21] termLocal[mesh.dVertex * mesh.outputdim * a + b] +=
                 termLocal[mesh.dVertex * mesh.outdim * a + b] +=
-                        2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) * quadRule.dx[k] *
+                        2 * aT.absDetValue * quadRule.psix(a / mesh.outdim, k) * quadRule.psix(b / mesh.outdim, k) * quadRule.dx[k] *
                         innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)]; //innerLocal
                 // psi_value_test[a/mesh.outdim]*psi_value_test[b/mesh.outdim]+innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)];
                 //printf("a %6.4e, b %6.4e, innerLocal %6.4e \n", psi_value_test[a/mesh.outdim], psi_value_test[b/mesh.outdim], innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)]);
-                // [x 22] 2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) * quadRule.dx[k] * ...
+                // [x 22] 2 * aT.absDetValue * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) * quadRule.dx[k] * ...
 
                 //printf("quadRule.psix(%i,%i) %17.16e\nquadRule.psix(%i,%i) %17.16e \n", a,k, quadRule.psix(a,k), b,k,quadRule.psix(b,k));
                 // [x 24] termNonloc[mesh.dVertex * mesh.outputdim * a + b] +=
                 termNonloc[mesh.dVertex * mesh.outdim * a + b] +=
-                        2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.dx[k] *
+                        2 * aT.absDetValue * quadRule.psix(a / mesh.outdim, k) * quadRule.dx[k] *
                         innerNonloc[(a%mesh.outdim)*mesh.outdim +
                                     mesh.outdim*mesh.outdim*(b/mesh.outdim) +
                                     (b%mesh.outdim)];
                 //printf("a %6.4e, innerNonloc %6.4e \n", psi_value_test[a/mesh.outdim],
                 // innerNonloc[(a%mesh.outdim)*mesh.outdim + mesh.outdim*mesh.outdim*(b/mesh.outdim) + (b%mesh.outdim)]);
-                // [x 25] 2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.dx[k] *
-                //2 * aT.absDet * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+                // [x 25] 2 * aT.absDetValue * quadRule.psix(a/mesh.outdim, k) * quadRule.dx[k] *
+                //2 * aT.absDetValue * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
             }
         }
     }
@@ -586,19 +587,19 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
             for (b = 0; b < mesh.dVertex*mesh.outdim; b++) {
                 // [x 33]
                 termLocal[mesh.dVertex * mesh.outdim * a + b] +=
-                    2 * aT.absDet *
-                    quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) *
+                        2 * aT.absDetValue *
+                        quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) *
                     quadRule.dx[k] *
                     innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)]; //innerLocal
                     // [x 34]
                     // [x 35]
-                //2 * aT.absDet * quadRule.psix(a, k) * quadRule.psix(b, k) * quadRule.dx[k] * innerLocal;
+                //2 * aT.absDetValue * quadRule.psix(a, k) * quadRule.psix(b, k) * quadRule.dx[k] * innerLocal;
 
                 // [x 36]
                 termNonloc[mesh.dVertex * mesh.outdim * a + b] +=
                 // [x 37]
-                //2 * aT.absDet * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b];
-                    2 * aT.absDet *
+                //2 * aT.absDetValue * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b];
+                    2 * aT.absDetValue *
                     quadRule.psix(a/mesh.outdim, k) *
                     quadRule.dx[k] *
                     innerNonloc[(a%mesh.outdim)*mesh.outdim +
@@ -718,19 +719,19 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
             for (b = 0; b < mesh.dVertex*mesh.outdim; b++) {
                 // [x 33]
                 termLocal[mesh.dVertex * mesh.outdim * a + b] +=
-                        2 * aT.absDet *
+                        2 * aT.absDetValue *
                         quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) *
                         quadRule.dx[k] *
                         innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)]; //innerLocal
                 // [x 34]
                 // [x 35]
-                //2 * aT.absDet * quadRule.psix(a, k) * quadRule.psix(b, k) * quadRule.dx[k] * innerLocal;
+                //2 * aT.absDetValue * quadRule.psix(a, k) * quadRule.psix(b, k) * quadRule.dx[k] * innerLocal;
 
                 // [x 36]
                 termNonloc[mesh.dVertex * mesh.outdim * a + b] +=
                         // [x 37]
-                        //2 * aT.absDet * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b];
-                        2 * aT.absDet *
+                        //2 * aT.absDetValue * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b];
+                        2 * aT.absDetValue *
                         quadRule.psix(a/mesh.outdim, k) *
                         quadRule.dx[k] *
                         innerNonloc[(a%mesh.outdim)*mesh.outdim +
@@ -1168,23 +1169,8 @@ int method_retriangulate(const double * xCenter, const double * TE,
     }
 }
 
-// Helpers Peridynamics ------------------------------------------------------------------------------------------------
-void setupElement(const MeshType &mesh, const long * Vdx_new, ElementType &T){
-    T.matE = arma::vec(mesh.dim*(mesh.dim+1));
-    for (int k=0; k<mesh.dVertex; k++) {
-        //Vdx = mesh.Elements(k, Tdx);
-        for (int j = 0; j < mesh.dim; j++) {
-            T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx_new[k]);
-            //printf ("aT %3.2f ", T.matE[mesh.dim * k + j]);
-        }
-    }
+//// Helpers Peridynamics ------------------------------------------------------------------------------------------------
 
-    // Initialize Structs
-    T.E = T.matE.memptr();
-    T.absDet = absDet(T.E, mesh.dim);
-    T.signDet = static_cast<int>(signDet(T.E, mesh));
-    T.dim = mesh.dim;
-}
 int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
          ElementType &aTsorted, ElementType &bTsorted, int * argSortA, int * argSortB){
     //cout << "Welcome to join()" << endl;
@@ -1225,8 +1211,8 @@ int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
         //printf("%li, %li | %li, %li \n", aVdx[i], bVdx[i], aVdxsorted[i],  bVdxsorted[i] );
         //printf("%i, %i \n", argSortA[i], argSortB[i]);
     }
-    setupElement(mesh, aVdxsorted, aTsorted);
-    setupElement(mesh, bVdxsorted, bTsorted);
+    aTsorted.setData(aVdxsorted); // setupElement(mesh, aVdxsorted, aTsorted);
+    bTsorted.setData(bVdxsorted); //setupElement(mesh, bVdxsorted, bTsorted);
     //abort();
     return nEqual;
 }

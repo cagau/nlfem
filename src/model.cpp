@@ -136,18 +136,16 @@ void f_linear3D(const double * x, double * forcing_out){
 }
 // ### BASIS FUNCTION ##################################################################################################
 
-void model_basisFunction(const double * p, double *psi_vals){
-    psi_vals[0] = 1 - p[0] - p[1];
-    psi_vals[1] = p[0];
-    psi_vals[2] = p[1];
-}
-
-void model_basisFunction(const double * p, const int dim, double *psi_vals){
-    int i=0;
-
-    psi_vals[0] = 1;
-    for (i=0; i<dim; i++){
-        psi_vals[0] -= p[i];
-        psi_vals[i+1] = p[i];
-    }
-}
+//void model_basisFunction(const double * p, double *psi_vals){
+//    psi_vals[0] = 1 - p[0] - p[1];
+//    psi_vals[1] = p[0];
+//    psi_vals[2] = p[1];
+//}
+//
+//void model_basisFunction(const double * p, const long dim, double *psi_vals){
+//    psi_vals[0] = 1;
+//    for (int i=0; i<dim; i++){
+//        psi_vals[0] -= p[i];
+//        psi_vals[i+1] = p[i];
+//    }
+//}

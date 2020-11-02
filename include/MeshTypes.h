@@ -5,63 +5,49 @@
 #define NONLOCAL_ASSEMBLY_MESHTYPES_H
 #include "armadillo"
 #include "cstring"
+#include "MeshType.h"
+#include "mathhelpers.h"
+
 using namespace std;
 
-struct ElementStruct
+class ElementType {
 /*!
- * Struct containing all necessary data of one finite element.
+ * Class containing all necessary data of one finite element.
  *
  *  Template of Triangle Point data
  *
  *   2D Case, a, b, c are the vertices of a triangle
  *
-*/
-{
-    /*!
-     *
-     *   T.E is of ordered the following way:
-     *   | 0 | 1 | 2 | 3 | 4 | 5 |
-     *   | -- | -- | -- | -- | -- | -- |
-     *   | a1 | a2 | b1 | b2 | c1 | c2 |
-     *
-     *   Hence, if one wants to put T.E into cloumn major order matrix it would be of shape
-     *   *M(mesh.dim, mesh.dVerts)* =
-     *
-     *    | 0   | 1   | 2   |
-     *    | --- | --- | --- |
-     *    | a1  | b1  | c1  |
-     *    | a2  | b2  | c2  |
-     */
-    arma::vec matE;
-    double * E;
-    int dim;
-    long label;
-    double absDet;
-    int signDet;
-    long Tdx=0;
-};
-typedef ElementStruct ElementType;
 
-class ElementClass {
+ *
+ *   T.E is of ordered the following way:
+ *   | 0 | 1 | 2 | 3 | 4 | 5 |
+ *   | -- | -- | -- | -- | -- | -- |
+ *   | a1 | a2 | b1 | b2 | c1 | c2 |
+ *
+ *   Hence, if one wants to put T.E into cloumn major order matrix it would be of shape
+ *   *M(mesh.dim, mesh.dVerts)* =
+ *
+ *    | 0   | 1   | 2   |
+ *    | --- | --- | --- |
+ *    | a1  | b1  | c1  |
+ *    | a2  | b2  | c2  |
+ */
     public:
+        const long dim = 0;
+        const MeshType & mesh;
+
         double * E = nullptr;
-        int dim = 0;
         long label = -1;
-        double absDet = 0.;
-        int signDet = 0.;
+        double absDetValue = 0.;
+        int signDetValue = 0.;
         long Tdx=0;
         arma::vec matE;
 
-        ElementClass(){
-        };
-        ElementClass(int dim_):
-                dim(dim_){
-            matE = arma::vec(this->dim*(dim+1), arma::fill::zeros);
-            E = matE.memptr();
-        };
-        ~ElementClass () {};
+        ElementType(const MeshType & mesh_);
+        void setData(const int Tdx_);
+        void setData(const long * Vdx_new);
 };
-int getElement(ElementClass &element);
 
 struct ConfigurationStruct {
     const string path_spAd;

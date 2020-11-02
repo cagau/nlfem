@@ -303,7 +303,6 @@ bool inTriangle(const double * y_new, const double * p, const double * q, const 
 bool isFullyContained(const ElementType &aT, const ElementType &bT, const MeshType &mesh);
 
 // Peridynamic Helper functions
-void setupElement(const MeshType &mesh, const long * Vdx_new, ElementType &T);
 int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
          ElementType &aTsorted, ElementType &bTsorted, int * argSortA, int * argSortB);
 double traffoCommonVertex0(double * alpha);

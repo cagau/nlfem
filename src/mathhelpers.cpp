@@ -75,7 +75,7 @@ double absDet(const double * E){
     return absolute(M[0][0]*M[1][1] - M[0][1]*M[1][0]);
 }
 
-double absDet(const double * E, const int dim){
+double absDet(const double * E, const long dim){
     // Let a,b,c,d be the Verticies of a Tetrahedon (3D)
     // Then M will be the 3x3 matrix containg [b-a,c-a,d-a]
     int dVertex = dim+1;

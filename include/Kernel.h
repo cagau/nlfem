@@ -9,10 +9,19 @@
 class Kernel {
 public:
     const double delta;
+    const double sqdelta;
+    const double trdelta;
+    const double qddelta;
+    const double qtdelta;
+
     const long outdim;
     const bool isWeaklySingular;
     Kernel(long outdim_, double delta_, bool isSingular_):
     delta(delta_),
+    sqdelta(pow(delta_, 2)),
+    trdelta(pow(delta_, 3)),
+    qddelta(pow(delta_, 4)),
+    qtdelta(pow(delta_, 5)),
     outdim(outdim_),
     isWeaklySingular(isSingular_){};
 
@@ -29,8 +38,8 @@ public:
      * @param interactionHorizon
      */
     const double sqsqdelta;
-    constant2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqsqdelta(pow(delta, 4)){};
-    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    explicit constant2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqsqdelta(pow(delta, 4)){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
      * @brief Evaluates kernel.
      *
@@ -54,11 +63,8 @@ public:
      * @param interactionHorizon
      *
     */
-    const double sqdelta;
-    const double qtdelta;
-    parabola2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqdelta(pow(delta, 2)),
-                                           qtdelta(pow(delta, 5)){};
-    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    explicit parabola2D(double interactionHorizon): Kernel(1, interactionHorizon, false){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -83,9 +89,8 @@ public:
      * @param interactionHorizon
      *
     */
-    const double trdelta;
-    constant1D(double interactionHorizon): Kernel(1, interactionHorizon, false), trdelta(pow(delta, 3)){};
-    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    explicit constant1D(double interactionHorizon): Kernel(1, interactionHorizon, false){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -109,9 +114,8 @@ public:
      * @param interactionHorizon
      *
     */
-    const double qtdelta;
-    constant3D(double interactionHorizon): Kernel(1, interactionHorizon, false), qtdelta(pow(delta, 5)){};
-    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    explicit constant3D(double interactionHorizon): Kernel(1, interactionHorizon, false){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -134,10 +138,8 @@ public:
      * @param interactionHorizon
      *
     */
-    const double sqdelta, qddelta;
-    labeled2D(double interactionHorizon): Kernel(1, interactionHorizon, false), sqdelta(pow(delta, 2)),
-                                          qddelta(pow(delta, 4)){};
-    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    explicit labeled2D(double interactionHorizon): Kernel(1, interactionHorizon, false){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -166,9 +168,8 @@ public:
      * @param interactionHorizon
      *
     */
-    const double trdelta;
-    linearPrototypeMicroelastic2D(double interactionHorizon): Kernel(1, interactionHorizon, true), trdelta(pow(delta, 3)) {};
-    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    explicit linearPrototypeMicroelastic2D(double interactionHorizon): Kernel(1, interactionHorizon, true) {};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -197,9 +198,8 @@ public:
      * \f$\mu = \lambda = \frac{\pi}{4}\f$.
      *
     */
-    const double trdelta;
-    linearPrototypeMicroelastic2DField(double interactionHorizon): Kernel(2, interactionHorizon, true), trdelta(pow(delta, 3)) {};
-    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    explicit linearPrototypeMicroelastic2DField(double interactionHorizon): Kernel(2, interactionHorizon, true) {};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
@@ -228,9 +228,8 @@ public:
      * \f$\mu = \lambda = \frac{\pi}{4}\f$.
      *
     */
-    const double qddelta;
-    constant2DField(double interactionHorizon): Kernel(2, interactionHorizon, false), qddelta(pow(delta, 4)) {};
-    virtual double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
+    explicit constant2DField(double interactionHorizon): Kernel(2, interactionHorizon, false){};
+    double horizon(double * x, double * y, long labelx, long labely) override { return Kernel::delta; };
     /**
     * @brief Evaluates kernel.
     *
