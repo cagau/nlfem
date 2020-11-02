@@ -88,11 +88,12 @@ def main(conf, kernel):
 
 if __name__ == "__main__":
     os.makedirs("results", exist_ok=True)
-    fileHandle = open("results/rates" + helpers.timestamp() + ".md", "w+")
+    tmpstmp = helpers.timestamp()
+    fileHandle = open("results/rates" + tmpstmp + ".md", "w+")
     for kernel in KERNELS:
         fileHandle.write("# Kernel: " + kernel["function"] + "\n")
         for conf in CONFIGURATIONS:
             data = main(conf, kernel)
             helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle)
     fileHandle.close()
-    os.system("pandoc results/rates.md -o results/rates.pdf")
+    os.system("pandoc results/rates" + tmpstmp + ".md -o results/rates" + tmpstmp + ".pdf")
