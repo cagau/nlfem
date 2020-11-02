@@ -88,7 +88,7 @@ def main(conf, kernel):
 
 if __name__ == "__main__":
     os.makedirs("results", exist_ok=True)
-    fileHandle = open("results/rates.md", "w+")
+    fileHandle = open("results/rates" + helpers.timestamp() + ".md", "w+")
     for kernel in KERNELS:
         fileHandle.write("# Kernel: " + kernel["function"] + "\n")
         for conf in CONFIGURATIONS:

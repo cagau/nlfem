@@ -1,3 +1,14 @@
+import datetime
+def timestamp():
+    """
+    Returns current timestamp as string.
+
+    :return: string, format %m%d_%H-%M-%S
+    """
+    # Link to strftime Doc
+    # http://strftime.org/
+    return datetime.datetime.now().strftime("%m%d_%H-%M-%S")
+
 def append_output(data, conf, kernel, load, fileHandle):
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
