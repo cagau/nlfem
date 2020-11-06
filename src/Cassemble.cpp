@@ -114,6 +114,9 @@ void lookup_configuration(ConfigurationType & conf){
         } else if (conf.integration_method == "averageBall") {
             integrate = integrate_subSuperSetBalls;
 
+        } else if (conf.integration_method == "exactBall") {
+            integrate = integrate_exact;
+
         } else if (conf.integration_method == "baryCenterRT") {
             integrate = integrate_baryCenterRT;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");

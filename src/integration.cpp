@@ -192,6 +192,180 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
 
 }
 
+
+void integrate_exact(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
+                             double *termNonloc) {
+
+
+    if ((mesh.maxDiameter > EPSILON) && (mesh.delta - 2*mesh.maxDiameter > 0) && isFullyContained(aT, bT, mesh)){
+        integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
+        return;
+    }
+
+    const int dim = mesh.dim;
+    int k = 0, a = 0, b = 0;
+    double x[dim];
+    // [x 11] [mesh.outdim*mesh.outdim]
+    //double innerLocal = 0;
+    double innerLocal[mesh.outdim*mesh.outdim];
+
+    // [x 12] [mesh.outdim*mesh.outdim*mesh.dVertex]
+    // double innerNonloc[mesh.dVertex];
+    double innerNonloc[mesh.outdim*mesh.outdim*mesh.dVertex];
+
+    int i = 0, rTdx = 0, Rdx = 0;
+    // [x 13] kernel_val [mesh.outdim*mesh.outdim]
+    double kernel_val[mesh.outdim*mesh.outdim];
+
+    double rTdet = 0;
+    double physical_quad[dim];
+    double reference_quad[dim];
+    double psi_value[mesh.dVertex];
+    //double psi_value_test[3] = {20., 30., 50.};
+    double reTriangle_list[36 * mesh.dVertex * dim];
+    doubleVec_tozero(reTriangle_list, 36 * mesh.dVertex * dim);
+    double capsList[3*2];
+    double capsWeights[3];
+    int nCaps;
+
+    //[DEBUG]
+    //printf("\nouterInt_full----------------------------------------\n");
+    for (k = 0; k < quadRule.nPx; k++) {
+        //printf("k %i, quadRule.nPx %i\n", k, quadRule.nPx);
+        toPhys(aT.E, &(quadRule.Px[dim * k]), mesh.dim, x);
+        //printf("\nInner Integral, Iterate %i\n", k);
+        //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
+        //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
+
+        //is_placePointOnCap = true;
+        Rdx = method_exact(x, bT, mesh, reTriangle_list, capsList, capsWeights, &nCaps); // innerInt_retriangulate
+
+        //[DEBUG]
+        //printf("Retriangulation Rdx %i\n", Rdx);
+        //for (i=0;i<Rdx;i++){
+        //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i], reTriangle_list[2 * 3 * i+1]);
+        //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+2], reTriangle_list[2 * 3 * i+3]);
+        //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+4], reTriangle_list[2 * 3 * i+5]);
+        //printf("absDet %17.16e\n", absDet(&reTriangle_list[2 * 3 * i]));
+        //}
+        // [x 14] doubleVec_tozero(innerLocal, mesh.outdim*mesh.outdim);
+        //innerLocal = 0.0;
+        doubleVec_tozero(innerLocal, mesh.outdim*mesh.outdim);
+
+        // [x 15] doubleVec_tozero(innerLocal, mesh.outdim*mesh.outdim*mesh.dVertex);
+        // doubleVec_tozero(innerNonloc, mesh.dVertex);
+        doubleVec_tozero(innerNonloc, mesh.outdim*mesh.outdim*mesh.dVertex);
+
+        if (Rdx == 0) {
+        } else {
+            //printf("\nInner Integral\n");
+            for (rTdx = 0; rTdx < Rdx; rTdx++) {
+                //printf("rTdx %i \n",rTdx);
+                for (i = 0; i < quadRule.nPy; i++) {
+                    // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
+                    toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Py[dim * i]), physical_quad);
+                    // Determinant of Triangle of retriangulation
+                    rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
+                    // inner Local integral with ker
+                    model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, kernel_val);
+                    // [x 16]
+                    // INNER LOCAL ORDER [(0,0), (0,1), (1,0), (1,1)] = KERNEL ORDER
+                    for (int o=0; o<mesh.outdim*mesh.outdim; o++){
+                        innerLocal[o] += kernel_val[o] * quadRule.dy[i] * rTdet; // Local Term
+                    }
+                    //innerLocal += kernel_val * quadRule.dy[i] * rTdet; // Local Term
+
+                    // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
+                    toRef(bT.E, physical_quad, reference_quad);
+                    // Evaluate ker on physical quad (note this is ker')
+                    model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, kernel_val);
+                    // Evaluate basis function on resulting reference quadrature point
+                    model_basisFunction(reference_quad, mesh.dim, psi_value);
+
+                    // [17]
+                    // INNER NON-LOCAL ORDER
+                    // [(b 0, ker (0,0)), (b 0, ker (0,1)), (b 0, ker (1,0)), (b 0, ker (1,1)),
+                    //  (b 1, ker (0,0)), (b 1, ker (0,1)), (b 1, ker (1,0)), (b 1, ker (1,1)),
+                    //  (b 2, ker (0,0)), (b 2, ker (0,1)), (b 2, ker (1,0)), (b 2, ker (1,1))]
+                    //  = (PSI ORDER) * (KERNEL ORDER)
+
+                    for (b = 0; b < mesh.dVertex*mesh.outdim*mesh.outdim; b++) {
+                        // for (b = 0; b < mesh.dVertex; b++) {
+                        // [x 18]
+                        innerNonloc[b] +=
+                                psi_value[b/(mesh.outdim*mesh.outdim)] *
+                                kernel_val[b%(mesh.outdim*mesh.outdim)] *
+                                quadRule.dy[i] * rTdet; // Nonlocal Term
+                        //innerNonloc[b] += psi_value[b] * kernel_val * quadRule.dy[i] * rTdet; // Nonlocal Term
+                    }
+                    //[DEBUG]
+                    //printf("i %i \n",i);
+                    //printf("GAM %17.16e\n", ker * dy[i] * rTdet);
+                    //printf("Basis0 %17.16e\n", psi_value[0]);
+                    //printf("Basis1 %17.16e\n", psi_value[1]);
+                    //printf("Basis2 %17.16e\n", psi_value[2]);
+                }
+                //printf("Chris: v0 %17.16e\nv1 %17.16e\nv2 %17.16e\n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
+                //printf("Chris: v %17.16e\n", innerLocal);
+            }
+        }
+
+        // TERM LOCAL & TERM NON-LOCAL ORDER
+        // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
+        // However it mimics the matrix which results from the multiplication.
+        //                                      Kernel switches back here. v
+        // [(a 0, b 0, ker (0,0)), (a 0, b 0, ker (0,1)), (a 0, b 1, ker (0,0)), (a 0, b 1, ker (0,1)), (a 0, b 2, ker (0,0)), (a 0, b 2, ker (0,1)),
+        //  (a 0, b 0, ker (1,0)), (a 0, b 0, ker (1,1)), (a 0, b 0, ker (1,0)), (a 0, b 1, ker (1,1)), (a 0, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+        //  (a 1, b 0, ker (0,0)), (a 1, b 0, ker (0,1)), (a 1, b 1, ker (0,0)), (a 1, b 1, ker (0,1)), (a 1, b 2, ker (0,0)), (a 1, b 2, ker (0,1)),
+        //  (a 1, b 0, ker (1,0)), (a 1, b 0, ker (1,1)), (a 1, b 0, ker (1,0)), (a 1, b 1, ker (1,1)), (a 1, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+        //  (a 2, b 0, ker (0,0)), (a 2, b 0, ker (0,1)), (a 2, b 1, ker (0,0)), (a 2, b 1, ker (0,1)), (a 2, b 2, ker (0,0)), (a 2, b 2, ker (0,1)),
+        //  (a 2, b 0, ker (1,0)), (a 2, b 0, ker (1,1)), (a 2, b 0, ker (1,0)), (a 2, b 1, ker (1,1)), (a 2, b 2, ker (1,0)), (a 2, b 2, ker (1,1))]
+
+        //  = (PSI ORDER) * (PSI ORDER) * (INNER LOCAL ORDER)
+        //  = (PSI ORDER) *' (INNER NON-LOCAL ORDER)
+
+        //printf("Local %17.16e\n", innerLocal);
+        //printf("Nonloc [%17.16e, %17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2], innerNonloc[3]);
+
+        // [x 19] for (a = 0; a < mesh.dVertex*mesh.outdim; a++) {
+        for (a = 0; a < mesh.dVertex * mesh.outdim; a++) {
+            // [x 20] for (b = 0; b < mesh.dVertex*mesh.outdim; b++) {
+            for (b = 0; b < mesh.dVertex * mesh.outdim; b++) {
+                // [x 21] termLocal[mesh.dVertex * mesh.outputdim * a + b] +=
+                termLocal[mesh.dVertex * mesh.outdim * a + b] +=
+                        2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) * quadRule.dx[k] *
+                        innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)]; //innerLocal
+                // psi_value_test[a/mesh.outdim]*psi_value_test[b/mesh.outdim]+innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)];
+                //printf("a %6.4e, b %6.4e, innerLocal %6.4e \n", psi_value_test[a/mesh.outdim], psi_value_test[b/mesh.outdim], innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)]);
+                // [x 22] 2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) * quadRule.dx[k] * ...
+
+                //printf("quadRule.psix(%i,%i) %17.16e\nquadRule.psix(%i,%i) %17.16e \n", a,k, quadRule.psix(a,k), b,k,quadRule.psix(b,k));
+                // [x 24] termNonloc[mesh.dVertex * mesh.outputdim * a + b] +=
+                termNonloc[mesh.dVertex * mesh.outdim * a + b] +=
+                        2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.dx[k] *
+                        innerNonloc[(a%mesh.outdim)*mesh.outdim +
+                                    mesh.outdim*mesh.outdim*(b/mesh.outdim) +
+                                    (b%mesh.outdim)];
+                //printf("a %6.4e, innerNonloc %6.4e \n", psi_value_test[a/mesh.outdim],
+                // innerNonloc[(a%mesh.outdim)*mesh.outdim + mesh.outdim*mesh.outdim*(b/mesh.outdim) + (b%mesh.outdim)]);
+                // [x 25] 2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.dx[k] *
+                //2 * aT.absDet * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                            const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                            double * termLocal, double * termNonloc){
@@ -495,6 +669,9 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
     }
 }
 
+
+
+
 void
 integrate_baryCenter(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                      const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc) {
@@ -599,6 +776,9 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
         }
     }
 }
+
+
+
 
 
 void
@@ -1155,6 +1335,137 @@ int method_retriangulate(const double * xCenter, const double * TE,
         return Rdx - 2; // So that, it acutally contains the number of triangles in the retriangulation
     }
 }
+
+
+int method_exact(const double * xCenter, const ElementType & T,
+                         const MeshType & mesh, double * reTriangleList, double * capsList, double * capsWeights,
+                         int * nCaps){
+    // C Variables and Arrays.
+    int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
+    double v=0, lam1=0, lam2=0, term1=0, term2=0;
+    double nu_a[2], nu_b[2], nu_c[2]; // Normals
+    arma::vec p(2);
+    arma::vec q(2);
+    arma::vec a(2);
+    arma::vec b(2);
+    arma::vec y1(2);
+    arma::vec y2(2);
+    arma::vec vec_x_center(xCenter, 2);
+    double orientation;
+
+    bool is_onEdge=false, is_firstPointLiesOnVertex=true;
+    // The upper bound for the number of required points is 9
+    // Hence 9*2 is an upper bound to encode all resulting triangles
+    // Hence we can hardcode how much space needs to bee allocated
+    // (This upper bound is thight! Check Christian Vollmann's thesis for more information.)
+
+    double R[9*2]; // Vector containing all intersection points.
+    doubleVec_tozero(R, 9*2);
+
+    // Compute Normals of the Triangle
+    orientation = -signDet(T.E);
+    rightNormal(&T.E[0], &T.E[2], orientation, nu_a);
+    rightNormal(&T.E[2], &T.E[4], orientation, nu_b);
+    rightNormal(&T.E[4], &T.E[0], orientation, nu_c);
+
+    for (k=0; k<3; k++){
+        edgdx0 = k;
+        edgdx1 = (k+1) % 3;
+
+        doubleVec_copyTo(&T.E[2*edgdx0], &p[0], 2);
+        doubleVec_copyTo(&T.E[2*edgdx1], &q[0], 2);
+
+        a = q - vec_x_center;
+        b = p - q;
+
+        if (vec_sqL2dist(&p[0], xCenter, 2) <= mesh.sqdelta){
+            doubleVec_copyTo(&p[0], &R[2*Rdx], 2);
+            is_onEdge = false; // This point does not lie on the edge.
+            Rdx += 1;
+        }
+        // PQ-Formula to solve quadratic problem
+        v = pow( dot(a, b), 2) - (dot(a, a) - mesh.sqdelta) * dot(b, b);
+        // If there is no sol to the quadratic problem, there is nothing to do.
+        if (v >= 0){
+            term1 = - dot(a, b) / dot(b, b);
+            term2 = sqrt(v) / dot(b, b);
+
+            // Vieta's Formula for computing the roots
+            if (term1 > 0){
+                lam1 = term1 + term2;
+                lam2 = 1/lam1*(dot(a, a) - mesh.sqdelta) / dot(b, b);
+            } else {
+                lam2 = term1 - term2;
+                lam1 = 1/lam2*(dot(a, a) - mesh.sqdelta) / dot(b, b);
+            }
+            y1 = lam1*b + q;
+            y2 = lam2*b + q;
+
+            // Check whether the first lambda "lies on the Triangle".
+            if ((0 <= lam1) && (lam1 <= 1)){
+                is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
+                // Check whether the predecessor lied on the edge
+                // if (is_onEdge && isPlacePointOnCap){
+                //    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                // }
+                // Append y1
+                doubleVec_copyTo(&y1[0], &R[2*Rdx], 2);
+                is_onEdge = true; // This point lies on the edge.
+                Rdx += 1;
+            }
+            // Check whether the second lambda "lies on the Triangle".
+            if ((0 <= lam2) && (lam2 <= 1) && (scal_sqL2dist(lam1, lam2) > 0)){
+                is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
+
+                // Check whether the predecessor lied on the edge
+                //   if (is_onEdge && isPlacePointOnCap){
+                //      Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                //  }
+                // Append y2
+                doubleVec_copyTo(&y2[0], &R[2*Rdx], 2);
+                is_onEdge = true; // This point lies on the edge.
+                Rdx += 1;
+            }
+        }
+    }
+    //[DEBUG]
+    //(len(RD)>1) cares for the case that either the first and the last point lie on an endge
+    // and there is no other point at all.
+    //shift=1;
+    //if (is_onEdge && (!is_firstPointLiesOnVertex && Rdx > 1)){
+    //    Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
+    //}
+
+    // Construct List of Triangles from intersection points
+    if (Rdx < 3){
+        // In this case the content of the array out_RE will not be touched.
+        return 0;
+    } else {
+
+        for (k=0; k < (Rdx - 2); k++){
+            for (i=0; i<2; i++){
+                // i is the index which runs first, then h (which does not exist here), then k
+                // hence if we increase i, the *-index (of the pointer) inreases in the same way.
+                // if we increase k, there is quite a 'jump'
+                reTriangleList[2 * (3 * k + 0) + i] = R[i];
+                reTriangleList[2 * (3 * k + 1) + i] = R[2 * (k + 1) + i];
+                reTriangleList[2 * (3 * k + 2) + i] = R[2 * (k + 2) + i];
+            }
+        }
+        // Excessing the bound out_Rdx will not lead to an error but simply to corrupted data!
+
+        return Rdx - 2; // So that, it acutally contains the number of triangles in the retriangulation
+    }
+}
+
+
+
+
+
+
+
+
+
 
 // Helpers Peridynamics ------------------------------------------------------------------------------------------------
 void setupElement(const MeshType &mesh, const long * Vdx_new, ElementType &T){
