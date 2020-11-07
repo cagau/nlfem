@@ -106,8 +106,9 @@ void f_constant(const double * x, double * forcing_out){
     forcing_out[0] = 1.0;
 }
 void fField_linear(const double * x, double * forcing_out){
-    forcing_out[0] = 0.0;
-    forcing_out[1] = -2. * (x[1] + 1.);
+    const double c = M_PI / 4.0;
+    forcing_out[0] = -c*(2.0 + 4*x[0]);
+    forcing_out[1] = -c*x[1];
 
 }
 void fField_constantRight(const double * x, double * forcing_out){
@@ -115,10 +116,11 @@ void fField_constantRight(const double * x, double * forcing_out){
     forcing_out[1] = 0.0;
 }
 void fField_constantDown(const double * x, double * forcing_out){
-    const double f1 = 0; //1e-3;
-    const double f2 = -1.*1e-3;
-    forcing_out[0] = f1;
-    forcing_out[1] = f2;
+    //const double f1 = 0; //1e-3;
+    //const double f2 = -1.*1e-3;
+    const double c = - M_PI;
+    forcing_out[0] = 0;
+    forcing_out[1] = c*2;
 }
 void fField_constantBoth(const double * x, double * forcing_out){
     //const double f1 = .5*1e-3;
