@@ -15,7 +15,7 @@ def main(conf, kernel):
     data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
 
     n_start = 12
-    n_layers = 4
+    n_layers = 2
     N = [n_start * 2 ** l for l in list(range(n_layers))]
     N_fine = N[-1]*4
 

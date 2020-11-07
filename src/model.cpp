@@ -79,8 +79,8 @@ void kernelField_linearPrototypeMicroelastic(const double * x, const long labelx
     z[0] = x[0] - y[0];
     z[1] = x[1] - y[1];
     double denominator = 1.0/pow(sqrt(vec_dot(z,z,2)),3);
-    double c =  12.0/(M_PI * pow(sqrt(sqdelta),3));
-
+    //double c =  12.0/(M_PI * pow(sqrt(sqdelta),3));
+    double c =  3.0/pow(sqrt(sqdelta),3);
     kernel_val[0] = c*denominator*z[0]*z[0];
     kernel_val[1] = c*denominator*z[0]*z[1];
     kernel_val[2] = c*denominator*z[1]*z[0];
@@ -108,6 +108,7 @@ void f_constant(const double * x, double * forcing_out){
 void fField_linear(const double * x, double * forcing_out){
     forcing_out[0] = 0.0;
     forcing_out[1] = -2. * (x[1] + 1.);
+
 }
 void fField_constantRight(const double * x, double * forcing_out){
     forcing_out[0] = 1.0e-1;
@@ -120,10 +121,14 @@ void fField_constantDown(const double * x, double * forcing_out){
     forcing_out[1] = f2;
 }
 void fField_constantBoth(const double * x, double * forcing_out){
-    const double f1 = .5*1e-3;
-    const double f2 = 3./2.*1e-3;
-    forcing_out[0] = f1;
-    forcing_out[1] = f2;
+    //const double f1 = .5*1e-3;
+    //const double f2 = 3./2.*1e-3;
+    //forcing_out[0] = f1;
+    //forcing_out[1] = f2;
+
+    const double c = - M_PI;
+    forcing_out[0] = c;
+    forcing_out[1] = c*2;
 }
 void f_linear(const double * x, double * forcing_out){
     *forcing_out = -2. * (x[1] + 1.);
