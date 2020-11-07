@@ -140,7 +140,11 @@ extern void (*model_f)(const double * x, double * forcing_out);
  */
 void f_constant(const double * x, double * forcing_out);
 /**
- * @brief Linear vector valued forcing function \f$f = (0, -2 (x_1 + 1))\f$.
+ * @brief Linear vector valued forcing function \f$f = (1 + 2 x_1, x_2 ) \frac{\pi}{2} \f$. This
+ * function is used for checking rates. The corresponding solution reads as
+ * \f[
+ *      u(x) = (x_2^2, x_1^2 x_2) \frac{2}{5}.
+ * \f]
  * @param x
  * @param forcing_out
  */

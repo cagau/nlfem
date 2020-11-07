@@ -106,8 +106,8 @@ void f_constant(const double * x, double * forcing_out){
     forcing_out[0] = 1.0;
 }
 void fField_linear(const double * x, double * forcing_out){
-    const double c = M_PI / 4.0;
-    forcing_out[0] = -c*(2.0 + 4*x[0]);
+    const double c = M_PI / 5.0;
+    forcing_out[0] = -c*(1.0 + 2*x[0]);
     forcing_out[1] = -c*x[1];
 
 }
