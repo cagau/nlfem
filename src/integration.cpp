@@ -1065,7 +1065,7 @@ int method_retriangulate(const double * xCenter, const double * TE,
 
     bool is_onEdge=false, is_firstPointLiesOnVertex=true;
     // The upper bound for the number of required points is 9
-    // Hence 9*3 is an upper bound to encode all resulting triangles
+    // Hence 9*2 is an upper bound to encode all resulting triangles
     // Hence we can hardcode how much space needs to bee allocated
     // (This upper bound is thight! Check Christian Vollmann's thesis for more information.)
 
