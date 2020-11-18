@@ -9,14 +9,20 @@ KERNELS = [
         "horizon": 0.1
     },
     {
-        "function": "linearPrototypeMicroelastic",
-        "horizon": 0.1
-    }
+       "function": "linearPrototypeMicroelastic",
+       "horizon": 0.1
+    },
+    # {
+    #     "function": "linearPrototypeMicroelasticField",
+    #     "horizon": 0.1
+    # }
 ]
 
-load = {
-    "function": "linear"
-}
+LOAD = [
+    {"function": "linear"},
+    {"function": "linear"}#,
+    #{"function": "linear"}
+]
 
 
 Px = np.array([[0.33333333333333,    0.33333333333333],
@@ -38,6 +44,66 @@ dy = dx
 tensorGaussDegree = 6
 
 CONFIGURATIONS = [
+    {
+        # "savePath": "pathA",
+        "ansatz": "DG", #DG
+        "approxBalls": {
+            "method": "retriangulate",
+            "isPlacePointOnCap": True,  # required for "retriangulate" only
+            #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
+        },
+        "quadrature": {
+            "outer": {
+                "points": Px,
+                "weights": dx
+            },
+            "inner": {
+                "points": Py,
+                "weights": dy
+            },
+            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+        }
+    },
+    {
+        # "savePath": "pathA",
+        "ansatz": "DG", #DG
+        "approxBalls": {
+            "method": "retriangulate",
+            "isPlacePointOnCap": False,  # required for "retriangulate" only
+            #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
+        },
+        "quadrature": {
+            "outer": {
+                "points": Px,
+                "weights": dx
+            },
+            "inner": {
+                "points": Py,
+                "weights": dy
+            },
+            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+        }
+    },
+    {
+        # "savePath": "pathA",
+        "ansatz": "DG", #DG
+        "approxBalls": {
+            "method": "baryCenter",
+            "isPlacePointOnCap": False,  # required for "retriangulate" only
+            #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
+        },
+        "quadrature": {
+            "outer": {
+                "points": Px,
+                "weights": dx
+            },
+            "inner": {
+                "points": Py,
+                "weights": dy
+            },
+            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+        }
+    },
     {
         # "savePath": "pathA",
         "ansatz": "CG", #DG

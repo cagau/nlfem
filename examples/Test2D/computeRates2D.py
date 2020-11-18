@@ -6,21 +6,20 @@ import nlfem as assemble
 import numpy as np
 from mesh import RegMesh2D
 from scipy.sparse.linalg import cg
-from Configuration import u_exact, CONFIGURATIONS, KERNELS, load, tensorGaussDegree
+from Configuration import u_exact, CONFIGURATIONS, KERNELS, LOAD, tensorGaussDegree
+from matplotlib.backends.backend_pdf import PdfPages
 
-
-def main(conf, kernel):
+def main(conf, kernel, pp = None):
     err_ = None
-    # pp = PdfPages(conf.fnames["triPlot.pdf"])
     data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
 
     n_start = 12
-    n_layers = 2
+    n_layers = 4
     N = [n_start * 2 ** l for l in list(range(n_layers))]
     N_fine = N[-1]*4
 
     for n in N:
-        mesh = RegMesh2D(kernel["horizon"], n, ufunc=u_exact)
+        mesh = RegMesh2D(kernel["horizon"], n, ufunc=u_exact, ansatz = conf["ansatz"])
         print("\n h: ", mesh.h)
         data["h"].append(mesh.h)
         data["nV_Omega"].append(mesh.nV_Omega)
@@ -45,7 +44,14 @@ def main(conf, kernel):
         A_O = A[:, :mesh.K_Omega]
         A_I = A[:, mesh.K_Omega:]
 
-        g = np.apply_along_axis(u_exact, 1, mesh.vertices[mesh.K_Omega:])
+        if conf["ansatz"] == "CG":
+            g = np.apply_along_axis(u_exact, 1, mesh.vertices[mesh.K_Omega:])
+        else:
+            g = np.zeros(mesh.K - mesh.K_Omega)
+            for i, E in enumerate(mesh.elements[mesh.nE_Omega:]):
+                for ii, Vdx in enumerate(E):
+                    vert = mesh.vertices[Vdx]
+                    g[3*i + ii] = u_exact(vert)
         f -= A_I @ g
 
         # Solve ---------------------------------------------------------------------------
@@ -54,7 +60,7 @@ def main(conf, kernel):
         x = cg(A_O, f, f)[0]
         # print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
         mesh.write_ud(x, u_exact)
-
+        #mesh.plot_ud(pp)
         # Some random quick Check....
         # filter = np.array(assemble.read_arma_mat("data/result.fd").flatten(), dtype=bool)
         # plt.scatter(mesh.vertices[filter][:,0], mesh.vertices[filter][:,1])
@@ -64,8 +70,9 @@ def main(conf, kernel):
         # Refine to N_fine ----------------------------------------------------------------
 
         mesh = RegMesh2D(kernel["horizon"], N_fine, ufunc=u_exact, coarseMesh=mesh,
-                         is_constructAdjaciencyGraph=False)
-
+                         is_constructAdjaciencyGraph=False,  ansatz=conf["ansatz"])
+        #mesh.plot_ud(pp)
+        #mesh.plot_u_exact(pp)
         # Evaluate L2 Error ---------------------------------------------------------------
         u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
         Mu_udiff = assemble.evaluateMass(mesh, u_diff,
@@ -83,17 +90,21 @@ def main(conf, kernel):
         else:
             data["Rates"].append(0)
         err_ = err
+    #pp.close()
     return data
 
 
 if __name__ == "__main__":
+    pp = PdfPages("results/plots.pdf")
     os.makedirs("results", exist_ok=True)
     tmpstmp = helpers.timestamp()
     fileHandle = open("results/rates" + tmpstmp + ".md", "w+")
-    for kernel in KERNELS:
+    for k, kernel in enumerate(KERNELS):
+        load = LOAD[k]
         fileHandle.write("# Kernel: " + kernel["function"] + "\n")
         for conf in CONFIGURATIONS:
-            data = main(conf, kernel)
+            data = main(conf, kernel, pp)
             helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle)
     fileHandle.close()
+    pp.close()
     os.system("pandoc results/rates" + tmpstmp + ".md -o results/rates" + tmpstmp + ".pdf")

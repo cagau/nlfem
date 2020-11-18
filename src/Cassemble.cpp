@@ -246,10 +246,11 @@ void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega
 
 void
 par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
-                 double *P, double *dx, const int dim, const int outdim) {
+                 double *P, double *dx, const int dim, const int outdim, const bool is_DiscontinuousGalerkin) {
     const int dVerts = dim+1;
     double tmp_psi[dVerts];
-    double *psi = (double *) malloc((dVerts)*nP*sizeof(double));
+    auto *psi = (double *) malloc((dVerts)*nP*sizeof(double));
+    long aDGdx[dVerts]; // Index for discontinuous Galerkin
 
     for(int k=0; k<nP; k++){
         //model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals){
@@ -272,14 +273,22 @@ par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, do
         for (int aTdx=0; aTdx < J; aTdx++){
             if (ElementLabels[aTdx] == 1) {
                 // Get index of ansatz functions in matrix compute_A.-------------------
-                // Continuous Galerkin
-                aAdx = &Elements[dVerts* aTdx];
+
                 // Discontinuous Galerkin
-                // - Not implemented -
+                if (is_DiscontinuousGalerkin) {
+                    // Discontinuous Galerkin
+                    //aDGdx[0] = (dVertex+1)*aTdx+1; aDGdx[1] = (dVertex+1)*aTdx+2; aDGdx[2] = (dVertex+1)*aTdx+3;
+                    for (int j = 0; j < dVerts; j++) {
+                        aDGdx[j] = dVerts * aTdx + j;
+                    }
+                    aAdx = aDGdx;
+                } else {
+                    // Continuous Galerkin
+                    aAdx = &Elements[dVerts* aTdx];
+                }
 
                 // Prepare Triangle information aTE and aTdet ------------------
-                // Copy coordinates of Triange a to aTE.
-                // this is done fore convenience only, actually those are unnecessary copies!
+                // Copy coordinates of Triangel a to aTE.
                 for (int jj=0; jj<dVerts; jj++){
                     for (int j = 0; j < dim; j++) {
                         aTE[dim * jj + j] = Verts[dim *aAdx[jj] + j];
@@ -356,7 +365,9 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
     printf("Function: par_system\n");
+    printf("Ansatz Space: %s\n", mesh.is_DiscontinuousGalerkin ? "DG" : "CG");
     printf("Mesh dimension: %i\n", mesh.dim);
+    printf("Output dimension: %i\n", mesh.outdim);
     printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
     lookup_configuration(conf);
     printf("Quadrule outer: %i\n", quadRule.nPx);
@@ -389,8 +400,8 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
 
     // default(none)  does not work well with g++.
-    const auto chunkSize = mesh.nE / omp_get_num_procs() ;
-    printf("Chunk Size %i\n", chunkSize);
+    //const auto chunkSize = mesh.nE / omp_get_num_procs() ;
+    //printf("Chunk Size %i\n", chunkSize);
 
     #pragma omp parallel shared(mesh, quadRule, conf, values_all, indices_all, nnz_total)
     {
@@ -525,10 +536,8 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
                         // Check whether bTdx is already visited.
                         if (visited[bTdx] == 0) {
-
                             // Prepare Triangle information bTE and bTdet ------------------
                             initializeTriangle(bTdx, mesh, bT);
-
                             //cout << aTdx << ", " << bTdx << endl;
 
                             // Retriangulation and integration ------------------------
@@ -695,9 +704,9 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     {
         //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
         int k = 0;
-        for (map<unsigned long, double>::iterator it = Ad.begin(); it != Ad.end(); it++) {
-            unsigned long adx = it->first;
-            double value = it->second;
+        for (auto & it : Ad) {
+            unsigned long adx = it.first;
+            double value = it.second;
             values_all(nnz_start + k) = value;
             // column major format of transposed matrix Ad
             indices_all(0, nnz_start + k) = adx % mesh.K;
@@ -708,11 +717,11 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     }
 
     }// End pragma omp parallel
-    //indices_all.save("indices_all");
-    //values_all.save("values_all");
+    indices_all.save("indices_all");
+    values_all.save("values_all");
     cout << "K_Omega " << mesh.K_Omega << endl;
     cout << "K " << mesh.K << endl;
-    cout << "NNZ " << nnz_total << endl;
+    //cout << "NNZ " << nnz_total << endl;
     //cout << arma::max(indices_all.row(1)) << endl;
     arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
     sp_Ad.save(conf.path_spAd);

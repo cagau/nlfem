@@ -10,7 +10,7 @@ import meshzoo
 
 class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
-                 dim=2, ansatz="CG", boundaryConditionType="Dirichlet",
+                 dim=2, outdim=1, ansatz="CG", boundaryConditionType="Dirichlet",
                  is_constructAdjaciencyGraph=True, zigzag=False):
         ### TEST 27.07.2020
         #self.Zeta = np.arange(12, dtype=np.int).reshape(4, 3)
@@ -28,7 +28,7 @@ class RegMesh2D:
                 xmin=-self.delta, xmax=1.0+self.delta,
                 ymin=-self.delta, ymax=1.0+self.delta,
                 nx=n+1, ny=n+1,
-                zigzag=zigzag
+                variant="up"
             )
             self.vertices = np.array(points[:, :2])
 
@@ -55,6 +55,9 @@ class RegMesh2D:
         for k, E in enumerate(self.elements):
             self.elementLabels[k] = self.get_elementLabel(E)
         self.nE_Omega = np.sum(self.elementLabels == 1)
+        order = np.argsort(self.elementLabels)
+        self.elements = self.elements[order]
+        self.elementLabels = self.elementLabels[order]
 
         # Read adjaciency list
         if is_constructAdjaciencyGraph:
@@ -72,15 +75,16 @@ class RegMesh2D:
             self.nE_Omega = self.nE
             self.nV_Omega = self.nV
             self.is_NeumannBoundary = True
-
+        self.outdim = outdim
         if ansatz == "DG":
-            self.K = self.nE*3
-            self.K_Omega = self.nE_Omega*3
+            self.K = self.nE*3*self.outdim
+            self.K_Omega = self.nE_Omega*3*self.outdim
             self.is_DiscontinuousGalerkin = True
         else:
-            self.K = self.nV
-            self.K_Omega = self.nV_Omega
+            self.K = self.nV*self.outdim
+            self.K_Omega = self.nV_Omega*self.outdim
             self.is_DiscontinuousGalerkin = False
+
 
         # Set Mesh Data if provided ------------------------------------------------------
         self.u_exact = None
@@ -92,8 +96,24 @@ class RegMesh2D:
                 self.set_u_exact(ufunc)
 
         if coarseMesh is not None:
-            self.interpolator = LinearNDInterpolator(coarseMesh.vertices, coarseMesh.ud)
-            self.ud = self.interpolator(self.vertices)
+            if coarseMesh.is_DiscontinuousGalerkin:
+                coarseDGverts = np.zeros((coarseMesh.K, coarseMesh.dim))
+                for i, E in enumerate(coarseMesh.elements):
+                    for ii, vdx in enumerate(E):
+                        vert = coarseMesh.vertices[vdx]
+                        coarseDGverts[3*i + ii] = vert
+                self.interpolator = LinearNDInterpolator(coarseDGverts, coarseMesh.ud)
+
+                ud_aux = self.interpolator(self.vertices)
+
+                self.ud = np.zeros(self.K)
+                for i, E in enumerate(self.elements):
+                    for ii, vdx in enumerate(E):
+                        self.ud[3*i + ii] = ud_aux[vdx]
+                # pass
+            else:
+                self.interpolator = LinearNDInterpolator(coarseMesh.vertices, coarseMesh.ud)
+                self.ud = self.interpolator(self.vertices)
 
     def save(self, path):
         import os
@@ -144,14 +164,27 @@ class RegMesh2D:
         self.elements = piVdx(self.elements)
 
     def set_u_exact(self, ufunc):
-        self.u_exact = np.zeros(self.vertices.shape[0])
-        for i, x in enumerate(self.vertices):
-            self.u_exact[i] = ufunc(x)
+        if self.is_DiscontinuousGalerkin:
+            self.u_exact = np.zeros(self.K)
+            for i, E in enumerate(self.elements):
+                for ii, Vdx in enumerate(E):
+                    vert = self.vertices[Vdx]
+                    self.u_exact[3*i + ii] = ufunc(vert)
+        else:
+            self.u_exact = np.zeros(self.vertices.shape[0])
+            for i, x in enumerate(self.vertices):
+                self.u_exact[i] = ufunc(x)
 
     def write_ud(self, udata, ufunc):
-        self.ud = np.zeros(self.vertices.shape[0])
-        for i, x in enumerate(self.vertices):
-            self.ud[i] = ufunc(x)
+        self.ud = np.zeros(self.K)
+        if self.is_DiscontinuousGalerkin:
+            for i, E in enumerate(self.elements[self.nE_Omega:]):
+                for ii, Vdx in enumerate(E):
+                    vert = self.vertices[Vdx]
+                    self.ud[self.K_Omega + 3*i + ii] = ufunc(vert)
+        else:
+            for i, x in enumerate(self.vertices):
+                self.ud[i] = ufunc(x)
         self.ud[:self.K_Omega] = udata
 
     def get_vertexLabel(self, v):
@@ -171,24 +204,54 @@ class RegMesh2D:
 
     def plot_ud(self, pp=None):
         if self.dim == 2:
-            plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud)
-            plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
-            #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
-            if pp is None:
-                plt.show()
+            if self.is_DiscontinuousGalerkin:
+                ud_aux = np.zeros(self.nV)
+                for i, E in enumerate(self.elements):
+                    for ii, Vdx in enumerate(E):
+                        ud_aux[Vdx] = self.ud[3*i + ii]
+
+                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, ud_aux)
+                plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements, lw=.1, color='white', alpha=.3)
+                #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+                if pp is None:
+                    plt.show()
+                else:
+                    plt.savefig(pp, format='pdf')
+                    plt.close()
             else:
-                plt.savefig(pp, format='pdf')
-                plt.close()
+                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud)
+                plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
+                #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+                if pp is None:
+                    plt.show()
+                else:
+                    plt.savefig(pp, format='pdf')
+                    plt.close()
     def plot_u_exact(self, pp=None):
         if self.dim == 2:
-            plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.u_exact)
-            plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
-            #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
-            if pp is None:
-                plt.show()
+            if self.is_DiscontinuousGalerkin:
+                ud_aux = np.zeros(self.nV)
+                for i, E in enumerate(self.elements):
+                    for ii, Vdx in enumerate(E):
+                        ud_aux[Vdx] = self.u_exact[3*i + ii]
+
+                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, ud_aux)
+                plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements, lw=.1, color='white', alpha=.3)
+                #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+                if pp is None:
+                    plt.show()
+                else:
+                    plt.savefig(pp, format='pdf')
+                    plt.close()
             else:
-                plt.savefig(pp, format='pdf')
-                plt.close()
+                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.u_exact)
+                plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
+                #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+                if pp is None:
+                    plt.show()
+                else:
+                    plt.savefig(pp, format='pdf')
+                    plt.close()
 
 
 def testInterpolation2D():
