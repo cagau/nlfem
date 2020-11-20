@@ -16,7 +16,6 @@ class RegMesh2D:
         #self.Zeta = np.arange(12, dtype=np.int).reshape(4, 3)
         #####
 
-
         self.n = n
         self.dim = dim
         self.delta = delta
@@ -31,7 +30,6 @@ class RegMesh2D:
                 zigzag=zigzag
             )
             self.vertices = np.array(points[:, :2])
-
 
         # Set up Delaunay Triangulation --------------------------------------------------
         # Construct and Sort Vertices ----------------------------------------------------
@@ -81,6 +79,10 @@ class RegMesh2D:
             self.K = self.nV
             self.K_Omega = self.nV_Omega
             self.is_DiscontinuousGalerkin = False
+
+        self.outdim = outdim
+        self.K *= self.outdim
+        self.K_Omega *= self.outdim
 
         # Set Mesh Data if provided ------------------------------------------------------
         self.u_exact = None
@@ -144,12 +146,12 @@ class RegMesh2D:
         self.elements = piVdx(self.elements)
 
     def set_u_exact(self, ufunc):
-        self.u_exact = np.zeros(self.vertices.shape[0])
+        self.u_exact = np.zeros(self.vertices.shape[0], self.outdim)
         for i, x in enumerate(self.vertices):
             self.u_exact[i] = ufunc(x)
 
     def write_ud(self, udata, ufunc):
-        self.ud = np.zeros(self.vertices.shape[0])
+        self.ud = np.zeros(self.vertices.shape[0], self.outdim)
         for i, x in enumerate(self.vertices):
             self.ud[i] = ufunc(x)
         self.ud[:self.K_Omega] = udata
@@ -170,7 +172,7 @@ class RegMesh2D:
         return 2
 
     def plot_ud(self, pp=None):
-        if self.dim == 2:
+        if (self.dim == 2) and (self.outdim == 1):
             plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud)
             plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
             #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
@@ -180,7 +182,7 @@ class RegMesh2D:
                 plt.savefig(pp, format='pdf')
                 plt.close()
     def plot_u_exact(self, pp=None):
-        if self.dim == 2:
+        if (self.dim == 2) and (self.outdim == 1):
             plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.u_exact)
             plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
             #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)

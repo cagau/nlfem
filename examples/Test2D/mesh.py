@@ -97,7 +97,7 @@ class RegMesh2D:
 
         if coarseMesh is not None:
             if coarseMesh.is_DiscontinuousGalerkin:
-                coarseDGverts = np.zeros((coarseMesh.K, coarseMesh.dim))
+                coarseDGverts = np.zeros(((coarseMesh.K // coarseMesh.outdim), coarseMesh.dim))
                 for i, E in enumerate(coarseMesh.elements):
                     for ii, vdx in enumerate(E):
                         vert = coarseMesh.vertices[vdx]
@@ -106,11 +106,11 @@ class RegMesh2D:
 
                 ud_aux = self.interpolator(self.vertices)
 
-                self.ud = np.zeros(self.K)
+                self.ud = np.zeros(((self.K // self.outdim), self.outdim))
                 for i, E in enumerate(self.elements):
                     for ii, vdx in enumerate(E):
                         self.ud[3*i + ii] = ud_aux[vdx]
-                # pass
+                pass
             else:
                 self.interpolator = LinearNDInterpolator(coarseMesh.vertices, coarseMesh.ud)
                 self.ud = self.interpolator(self.vertices)
@@ -165,27 +165,29 @@ class RegMesh2D:
 
     def set_u_exact(self, ufunc):
         if self.is_DiscontinuousGalerkin:
-            self.u_exact = np.zeros(self.K)
+            self.u_exact = np.zeros(( (self.K // self.outdim), self.outdim))
             for i, E in enumerate(self.elements):
                 for ii, Vdx in enumerate(E):
                     vert = self.vertices[Vdx]
                     self.u_exact[3*i + ii] = ufunc(vert)
         else:
-            self.u_exact = np.zeros(self.vertices.shape[0])
+            self.u_exact = np.zeros((self.vertices.shape[0], self.outdim))
             for i, x in enumerate(self.vertices):
                 self.u_exact[i] = ufunc(x)
 
     def write_ud(self, udata, ufunc):
-        self.ud = np.zeros(self.K)
+        nNodes = self.K // self.outdim
+        nNodesOmega = self.K_Omega // self.outdim
+        self.ud = np.zeros((nNodes, self.outdim))
         if self.is_DiscontinuousGalerkin:
             for i, E in enumerate(self.elements[self.nE_Omega:]):
                 for ii, Vdx in enumerate(E):
                     vert = self.vertices[Vdx]
-                    self.ud[self.K_Omega + 3*i + ii] = ufunc(vert)
+                    self.ud[nNodesOmega + 3*i + ii] = ufunc(vert)
         else:
             for i, x in enumerate(self.vertices):
                 self.ud[i] = ufunc(x)
-        self.ud[:self.K_Omega] = udata
+        self.ud[:nNodesOmega] = udata
 
     def get_vertexLabel(self, v):
         if np.max(np.abs(v - 0.5)) < 0.5:

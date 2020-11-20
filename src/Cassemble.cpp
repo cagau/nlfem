@@ -44,7 +44,7 @@ void lookup_configuration(ConfigurationType & conf){
     } else if (conf.model_f == "constantBothField"){
         model_f = fField_constantBoth;
     } else {
-        cout << "Error in par:assemble. Right hand side: " << conf.model_f << " is not implemented." << endl;
+        cout << "Error in Cassemble lookup_configuration. Right hand side: " << conf.model_f << " is not implemented." << endl;
         abort();
     }
 
@@ -71,7 +71,7 @@ void lookup_configuration(ConfigurationType & conf){
         model_kernel = kernelField_constant;
     }
     else {
-        cout << "Error in par:assemble. Kernel " << conf.model_kernel << " is not implemented." << endl;
+        cout << "Error in Cassemble lookup_configuration. Kernel " << conf.model_kernel << " is not implemented." << endl;
         abort();
     }
 
@@ -87,7 +87,7 @@ void lookup_configuration(ConfigurationType & conf){
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else {
-            cout << "Error in par:assemble. Integration method " << conf.integration_method <<
+            cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
                  " is not implemented." << endl;
             abort();
         }
@@ -129,7 +129,7 @@ void lookup_configuration(ConfigurationType & conf){
             conf.is_singularKernel = true; // Test Case
         }
         else {
-            cout << "Error in par:assemble. Integration method " << conf.integration_method <<
+            cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
                  " is not implemented." << endl;
             abort();
         }
@@ -717,8 +717,8 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     }
 
     }// End pragma omp parallel
-    indices_all.save("indices_all");
-    values_all.save("values_all");
+    //indices_all.save("indices_all");
+    //values_all.save("values_all");
     cout << "K_Omega " << mesh.K_Omega << endl;
     cout << "K " << mesh.K << endl;
     //cout << "NNZ " << nnz_total << endl;

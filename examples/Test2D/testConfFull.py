@@ -1,27 +1,32 @@
 import numpy as np
 
-def u_exact(x):
+def u_exact_linearRhs(x):
     return x[0] ** 2 * x[1] + x[1] ** 2
+def u_exact_FieldConstantBothRhs(x):
+    return np.array([x[1]**2, x[0]**2 * x[1]])*0.4
 
 KERNELS = [
     {
         "function": "constant",
-        "horizon": 0.1
+        "horizon": 0.1,
+        "outputdim": 1
     },
     {
        "function": "linearPrototypeMicroelastic",
-       "horizon": 0.1
+       "horizon": 0.1,
+       "outputdim": 1
     },
-    # {
-    #     "function": "linearPrototypeMicroelasticField",
-    #     "horizon": 0.1
-    # }
+    {
+        "function": "linearPrototypeMicroelasticField",
+        "horizon": 0.1,
+        "outputdim": 2
+    }
 ]
 
-LOAD = [
-    {"function": "linear"},
-    {"function": "linear"}#,
-    #{"function": "linear"}
+LOADS = [
+    {"function": "linear", "solution": u_exact_linearRhs},
+    {"function": "linear", "solution": u_exact_linearRhs},
+    {"function": "fField_constantBoth", "solution": u_exact_FieldConstantBothRhs}
 ]
 
 
