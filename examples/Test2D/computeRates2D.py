@@ -96,8 +96,9 @@ def main(conf, kernel, load, pp = None):
     return data
 
 if __name__ == "__main__":
-    from testConfFull import CONFIGURATIONS, KERNELS, LOADS
+    #from testConfFull import CONFIGURATIONS, KERNELS, LOADS
     #from testConfPeridyn import CONFIGURATIONS, KERNELS, LOADS
+    from testConfConstant import CONFIGURATIONS, KERNELS, LOADS
 
     pp = PdfPages("results/plots.pdf")
     os.makedirs("results", exist_ok=True)

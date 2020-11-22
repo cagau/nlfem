@@ -10,7 +10,7 @@ import meshzoo
 
 class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
-                 dim=2, ansatz="CG", boundaryConditionType="Dirichlet",
+                 outdim=1, dim=2, ansatz="CG", boundaryConditionType="Dirichlet",
                  is_constructAdjaciencyGraph=True, zigzag=False):
         ### TEST 27.07.2020
         #self.Zeta = np.arange(12, dtype=np.int).reshape(4, 3)
@@ -27,7 +27,7 @@ class RegMesh2D:
                 xmin=-self.delta, xmax=1.0+self.delta,
                 ymin=-self.delta, ymax=1.0+self.delta,
                 nx=n+1, ny=n+1,
-                zigzag=zigzag
+                variant="zigzag"
             )
             self.vertices = np.array(points[:, :2])
 

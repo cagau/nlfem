@@ -52,6 +52,8 @@ void lookup_configuration(ConfigurationType & conf){
     cout << "Kernel: " << conf.model_kernel << endl;
     if (conf.model_kernel == "constant"){
         model_kernel = kernel_constant;
+    } else if (conf.model_kernel == "constantTruncated") {
+        model_kernel = kernel_constantTruncated;
     } else if (conf.model_kernel == "labeled") {
         model_kernel = kernel_labeled;
     } else if (conf.model_kernel == "constant3D") {
@@ -121,9 +123,14 @@ void lookup_configuration(ConfigurationType & conf){
         } else if (conf.integration_method == "baryCenterRT") {
             integrate = integrate_baryCenterRT;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+
         } else if (conf.integration_method == "retriangulate") {
             integrate = integrate_retriangulate;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+
+        } else if (conf.integration_method == "noTruncation") {
+            integrate = integrate_fullyContained;
+
         } else if (conf.integration_method == "tensorgauss") {
             integrate = integrate_tensorgauss;
             conf.is_singularKernel = true; // Test Case

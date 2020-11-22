@@ -23,7 +23,23 @@ extern void (*model_kernel)(const double * x, long labelx, const double * y, lon
  */
 void kernel_constant(const double * x, long labelx, const double * y, long labely, double sqdelta,
                      double * kernel_val);
- /**
+/**
+ * @brief Constant kernel in 2D case which truncates itself.
+ * This means that the kernel returns 0, if \f$ |x-y| > \delta \f$. It is used to simulate a specific ball approximation.
+ * The constant is chosen such that the operator is equivalent to the laplacian for
+ * polynomials of degree less or equal to 2.
+ *
+ * @param x Physical point of the outer integration region.
+ * @param labelx Label of the outer triangle.
+ * @param y Physical point of the inner integration region.
+ * @param labely Label of inner triangle.
+ * @param sqdelta Squared delta.
+ * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
+ * of shape d x d in case of peridynamics.
+ */
+void kernel_constantTruncated(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+                              double *kernel_val);
+/**
   * @brief This kernel is defined by \f$ \delta^2 - \|z\|^2 \f$. It is radial but not
   * singular or constant. The second moment is given by \f$ \pi \delta ^6 / 12 \f$.
   * @param x
