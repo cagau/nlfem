@@ -12,7 +12,7 @@ def main():
     err_ = None
     pp = PdfPages(conf.fnames["triPlot.pdf"])
     for n in conf.N:
-        mesh=RegMesh2D(conf.delta, n, ufunc=conf.u_exact)
+        mesh=RegMesh2D(conf.delta, n, ufunc=conf.u_exact, ansatz=conf.ansatz)
         print("\n h: ", mesh.h)
         conf.data["h"].append(mesh.h)
         conf.data["nV_Omega"].append(mesh.nV_Omega)
@@ -35,13 +35,20 @@ def main():
         A_O = A[:, :mesh.K_Omega]
         A_I = A[:, mesh.K_Omega:]
 
-        g = np.apply_along_axis(conf.u_exact, 1, mesh.vertices[mesh.K_Omega:])
-        f -= A_I@g
+        if conf.ansatz == "CG":
+            g = np.apply_along_axis(conf.u_exact, 1, mesh.vertices[mesh.nV_Omega:])
+        else:
+            g = np.zeros(((mesh.K - mesh.K_Omega) // mesh.outdim, mesh.outdim))
+            for i, E in enumerate(mesh.elements[mesh.nE_Omega:]):
+                for ii, Vdx in enumerate(E):
+                    vert = mesh.vertices[Vdx]
+                    g[3*i + ii] = conf.u_exact(vert)
+        f -= A_I @ g.ravel()
 
         # Solve ---------------------------------------------------------------------------
         print("Solve...")
         #mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
-        x = cg(A_O, f, f)[0]
+        x = cg(A_O, f, f)[0].reshape((-1, mesh.outdim))
         #print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
         mesh.write_ud(x, conf.u_exact)
 
@@ -54,12 +61,12 @@ def main():
         # Refine to N_fine ----------------------------------------------------------------
         mesh.plot_ud(pp)
         mesh = RegMesh2D(conf.delta, conf.N_fine, ufunc=conf.u_exact, coarseMesh=mesh,
-                         is_constructAdjaciencyGraph=False)
+                         is_constructAdjaciencyGraph=False, ansatz=conf.ansatz)
 
         # Evaluate L2 Error ---------------------------------------------------------------
         u_diff = (mesh.u_exact - mesh.ud)[:mesh.K_Omega]
         Mu_udiff = assemble.evaluateMass(mesh, u_diff, conf.py_Px, conf.dx)
-        err = np.sqrt(u_diff @ Mu_udiff)
+        err = np.sqrt(u_diff.ravel() @ Mu_udiff)
 
         # Print Rates ---------------------------------------------------------------------
         print("L2 Error: ", err)

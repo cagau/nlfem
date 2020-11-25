@@ -14,7 +14,7 @@
 
 void abortIfFalse(const bool assertion, const char * message){
     if (!assertion){
-        cout << message << endl;
+        cout << "ERROR in checks.cpp: " << message << endl;
         abort();
     }
 }
@@ -60,6 +60,7 @@ void chk_Mesh(MeshType & mesh){
         }
     }
     abortIfFalse(mesh.nE_Omega == chk_nE_Omega , "Number of elements with label>0 does not coincide with nE_Omega.");
+    mesh.nE == chk_nE_Omega ? printf("WARNING: No Dirichlet boundary found! Check your element labels if that is not what you want."):0;
 
     if (mesh.is_DiscontinuousGalerkin) {
         abortIfFalse(mesh.outdim * mesh.nE * mesh.dVertex == mesh.K , "Matrix dimension does not match #basis functions and output dimension.");

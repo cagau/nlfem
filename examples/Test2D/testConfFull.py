@@ -26,7 +26,7 @@ KERNELS = [
 LOADS = [
     {"function": "linear", "solution": u_exact_linearRhs},
     {"function": "linear", "solution": u_exact_linearRhs},
-    {"function": "fField_constantBoth", "solution": u_exact_FieldConstantBothRhs}
+    {"function": "linearField", "solution": u_exact_FieldConstantBothRhs}
 ]
 
 

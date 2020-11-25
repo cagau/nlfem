@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 delta = .1
-ansatz = "CG"
+ansatz = "DG"
 boundaryConditionType = "Dirichlet" # "Neumann" #
 model_f = "linear" # "constant" #
 model_kernel = "constant"#"parabola" "linearPrototypeMicroelastic"# "constant" # "labeled" #
@@ -14,7 +14,7 @@ quadrule_inner = "1"
 tensorGaussDegree = 6
 
 n_start = 12
-n_layers = 4
+n_layers = 3
 N  = [n_start*2**(l) for l in list(range(n_layers))]
 N_fine = N[-1]*4
 def u_exact(x):

@@ -36,12 +36,12 @@ class RegMesh2D:
         # Set up Delaunay Triangulation --------------------------------------------------
         # Construct and Sort Vertices ----------------------------------------------------
         self.vertexLabels = np.array([self.get_vertexLabel(v) for v in self.vertices])
-        self.argsort_labels = np.argsort(self.vertexLabels)
+        self.argsort_labels = np.argsort(-self.vertexLabels)
         self.vertices = self.vertices[self.argsort_labels]
         self.vertexLabels = self.vertexLabels[self.argsort_labels]
 
         # Get Number of Vertices in Omega ------------------------------------------------
-        self.omega = np.where(self.vertexLabels == 1)[0]
+        self.omega = np.where(self.vertexLabels > 0)[0]
         self.nV = self.vertices.shape[0]
         self.nV_Omega = self.omega.shape[0]
 
@@ -54,8 +54,8 @@ class RegMesh2D:
         self.elementLabels = np.zeros(self.nE, dtype=np.int)
         for k, E in enumerate(self.elements):
             self.elementLabels[k] = self.get_elementLabel(E)
-        self.nE_Omega = np.sum(self.elementLabels == 1)
-        order = np.argsort(self.elementLabels)
+        self.nE_Omega = np.sum(self.elementLabels > 0)
+        order = np.argsort(-self.elementLabels)
         self.elements = self.elements[order]
         self.elementLabels = self.elementLabels[order]
 
@@ -193,16 +193,16 @@ class RegMesh2D:
         if np.max(np.abs(v - 0.5)) < 0.5:
             return 1
         else:
-            return 2
+            return -1
 
     def get_elementLabel(self, E):
         # If any vertex of an element lies in Omega then the element does.
         # This is due to the fact that only vertices in the interior of Omega
         # have label 1.
         for vdx in E:
-            if self.vertexLabels[vdx] == 1:
+            if self.vertexLabels[vdx] > 0:
                 return 1
-        return 2
+        return -1
 
     def plot_ud(self, pp=None):
         if self.dim == 2:
