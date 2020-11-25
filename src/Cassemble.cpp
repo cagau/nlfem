@@ -454,7 +454,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
         //if (aTdx == debugTdx){
         //    cout << "aTdx " << aTdx << endl;
         //}
-        if (mesh.LabelTriangles[aTdx] == 1) {
+        if (mesh.LabelTriangles[aTdx] > 0) {
             // It would be nice, if in future there is no dependency on the element ordering...
             //cout <<  aTdx << endl;
             //cout << "L " << mesh.LabelTriangles[aTdx] << endl;
@@ -691,8 +691,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                 }//End for loop BFS (j = 0; j < mesh.nNeighbours; j++)
                 is_firstbfslayer = false;
             }//End while loop BFS (!queue.empty())
-            //}// End if Label of (aTdx == 1)
-        }// End if LabelTriangles == 1
+        }// End if LabelTriangles > 0
     }// End parallel for
 
     int nnz_start = 0;
@@ -757,7 +756,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
         double termf[mesh.dVertex*mesh.outdim];
         #pragma omp for
         for (int aTdx = 0; aTdx < mesh.nE; aTdx++) {
-            if (mesh.LabelTriangles[aTdx] == 1) {
+            if (mesh.LabelTriangles[aTdx] > 0) {
                 // Get index of ansatz functions in matrix compute_A.-------------------
                 if (mesh.is_DiscontinuousGalerkin) {
                     // Discontinuous Galerkin
@@ -792,7 +791,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                     }
                 }// end for rhs
 
-            }// end outer if (mesh.LabelTriangles[aTdx] == 1)
+            }// end outer if (mesh.LabelTriangles[aTdx] > 0)
         }// end outer for loop (aTdx=0; aTdx<mesh.nE; aTdx++)
     }// end pragma omp parallel
     fd.save(conf.path_fd);
