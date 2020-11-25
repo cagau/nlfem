@@ -221,7 +221,7 @@ class RegMesh2D:
                     plt.savefig(pp, format='pdf')
                     plt.close()
             else:
-                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud)
+                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud.ravel())
                 plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
                 #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
                 if pp is None:

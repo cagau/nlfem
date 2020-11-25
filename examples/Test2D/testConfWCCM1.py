@@ -7,6 +7,11 @@ def u_exact_FieldConstantBothRhs(x):
 
 KERNELS = [
     {
+       "function": "linearPrototypeMicroelastic",
+       "horizon": 0.1,
+       "outputdim": 1
+    },
+    {
         "function": "linearPrototypeMicroelasticField",
         "horizon": 0.1,
         "outputdim": 2
@@ -14,8 +19,10 @@ KERNELS = [
 ]
 
 LOADS = [
+    {"function": "linear", "solution": u_exact_linearRhs},
     {"function": "linearField", "solution": u_exact_FieldConstantBothRhs}
 ]
+
 
 Px = np.array([[0.33333333333333,    0.33333333333333],
                   [0.47014206410511,    0.47014206410511],
@@ -31,8 +38,10 @@ dx = 0.5 * np.array([0.22500000000000,
                         0.12593918054483,
                         0.12593918054483,
                         0.12593918054483])
+
 Py = Px
 dy = dx
+tensorGaussDegree = 6
 
 CONFIGURATIONS = [
     {
@@ -40,7 +49,7 @@ CONFIGURATIONS = [
         "ansatz": "CG", #DG
         "approxBalls": {
             "method": "retriangulate",
-            "isPlacePointOnCap": False,  # required for "retriangulate" only
+            "isPlacePointOnCap": True,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
         "quadrature": {
@@ -52,27 +61,7 @@ CONFIGURATIONS = [
                 "points": Py,
                 "weights": dy
             },
-            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for weakly singular kernels.
-        }
-    },
-    {
-        # "savePath": "pathA",
-        "ansatz": "DG",
-        "approxBalls": {
-            "method": "retriangulate",
-            "isPlacePointOnCap": False,  # required for "retriangulate" only
-            #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
-        },
-        "quadrature": {
-            "outer": {
-                "points": Px,
-                "weights": dx
-            },
-            "inner": {
-                "points": Py,
-                "weights": dy
-            },
-            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
     }
 ]

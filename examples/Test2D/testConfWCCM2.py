@@ -7,7 +7,7 @@ def u_exact_FieldConstantBothRhs(x):
 
 KERNELS = [
     {
-        "function": "constant",
+        "function": "constantTruncated",
         "horizon": 0.1,
         "outputdim": 1
     }
@@ -16,6 +16,7 @@ KERNELS = [
 LOADS = [
     {"function": "linear", "solution": u_exact_linearRhs}
 ]
+
 
 Px = np.array([[0.33333333333333,    0.33333333333333],
                   [0.47014206410511,    0.47014206410511],
@@ -32,15 +33,16 @@ dx = 0.5 * np.array([0.22500000000000,
                         0.12593918054483,
                         0.12593918054483])
 
-Py = np.array([[0.33333333, 0.33333333]])
-dy = 0.5 * np.array([1.0])
+Py = Px
+dy = dx
+tensorGaussDegree = 6
 
 CONFIGURATIONS = [
     {
         # "savePath": "pathA",
         "ansatz": "CG", #DG
         "approxBalls": {
-            "method": "retriangulate",
+            "method": "noTruncation",
             "isPlacePointOnCap": True,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
@@ -53,7 +55,7 @@ CONFIGURATIONS = [
                 "points": Py,
                 "weights": dy
             },
-            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
     }
 ]

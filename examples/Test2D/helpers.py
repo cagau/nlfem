@@ -32,9 +32,10 @@ def append_output(data, conf, kernel, load, fileHandle):
     fileHandle.write("### Rates\n")
     columns = {
         "h":  data.get("h", []),
+        "dof": data.get("nV_Omega", []),
         "L2 Error": data.get("L2 Error", []),
         "Rates": data.get("Rates", []),
-        "Assembly Time": data.get("Assembly Time", []),
+        "Time [s]": data.get("Assembly Time", []),
     }
 
     write_columns(fileHandle, columns)

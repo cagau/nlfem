@@ -50,7 +50,7 @@ void chk_Mesh(MeshType & mesh){
     const long nZeta = mesh.nZeta;
 
     for(long k=0; k<nE; k++){
-        if (mesh.LabelTriangles(k)!=1) {
+        if (mesh.LabelTriangles(k)<=0) {
             for (unsigned long i = 0; i < d; i++) {
                 // For description of element labels see MeshTypes.h
                 abortIfFalse(mesh.Triangles(i, k) >= nV_Omega, "Incorrect vertex order or incorrect element label.");
@@ -59,7 +59,7 @@ void chk_Mesh(MeshType & mesh){
             chk_nE_Omega++;
         }
     }
-    abortIfFalse(mesh.nE_Omega == chk_nE_Omega , "Number of elements with label!=1 does not coincide with nE_Omega.");
+    abortIfFalse(mesh.nE_Omega == chk_nE_Omega , "Number of elements with label>0 does not coincide with nE_Omega.");
 
     if (mesh.is_DiscontinuousGalerkin) {
         abortIfFalse(mesh.outdim * mesh.nE * mesh.dVertex == mesh.K , "Matrix dimension does not match #basis functions and output dimension.");
