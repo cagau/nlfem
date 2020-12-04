@@ -227,8 +227,7 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
     doubleVec_tozero(reTriangle_list, 36 * mesh.dVertex * dim);
     double capsList[3*2];
     double capsWeights[3];
-    int nCaps;
-
+    int nCaps = 0;
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
     for (k = 0; k < quadRule.nPx; k++) {
@@ -310,6 +309,43 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
                 //printf("Chris: v %17.16e\n", innerLocal);
             }
         }
+
+        // integration for the caps
+        for (i = 0; i < nCaps; i++) {
+            //cout << "hallo" << endl;
+            //abort();
+            // inner Local integral with ker
+            model_kernel(x, aT.label, &capsList[2*i], bT.label, mesh.sqdelta, kernel_val);
+            // INNER LOCAL ORDER [(0,0), (0,1), (1,0), (1,1)] = KERNEL ORDER
+            for (int o=0; o<mesh.outdim*mesh.outdim; o++){
+                innerLocal[o] += kernel_val[o] * capsWeights[i]; // Local Term
+            }
+            //innerLocal += kernel_val * quadRule.dy[i] * rTdet; // Local Term
+
+            // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
+            toRef(bT.E, &capsList[2*i], reference_quad);
+            // Evaluate ker on physical quad (note this is ker')
+            model_kernel(&capsList[2*i], bT.label, x, aT.label, mesh.sqdelta, kernel_val);
+            // Evaluate basis function on resulting reference quadrature point
+            model_basisFunction(reference_quad, mesh.dim, psi_value);
+
+            for (b = 0; b < mesh.dVertex*mesh.outdim*mesh.outdim; b++) {
+                // for (b = 0; b < mesh.dVertex; b++) {
+                // [x 18]
+                innerNonloc[b] +=
+                        psi_value[b/(mesh.outdim*mesh.outdim)] *
+                        kernel_val[b%(mesh.outdim*mesh.outdim)] *
+                        capsWeights[i]; // Nonlocal Term
+                //innerNonloc[b] += psi_value[b] * kernel_val * quadRule.dy[i] * rTdet; // Nonlocal Term
+            }
+
+        }
+
+
+
+
+
+
 
         // TERM LOCAL & TERM NON-LOCAL ORDER
         // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
@@ -1079,6 +1115,60 @@ int placePointOnCap(const double * y_predecessor, const double * y_current,
     }
 }
 
+double placePointCapCenter(const double * y_predecessor, const double * y_current,
+                    const double * x_center, const double sqdelta, const double * TE,
+                    const double * nu_a, const double * nu_b, const double * nu_c,
+                    const double orientation, double * capsList){
+    // Place a point on the cap.
+    //y_predecessor = &R[2*(Rdx-1)];
+    double capCentroid[2], s_midpoint[2], s_projectionDirection[2];
+    double scalingFactor;
+    double alpha = 0;
+    double p1[2];
+    double p2[2];
+
+    doubleVec_scale(-1, y_predecessor, p1, 2);
+    doubleVec_scale(-1, y_current, p2, 2);
+    doubleVec_add(x_center, p1, p1, 2);
+    doubleVec_add(x_center, p2, p2, 2);
+    alpha = 0.5 * acos(vec_dot(p1, p2,2) / sqdelta );
+
+
+    doubleVec_midpoint(y_predecessor, y_current, s_midpoint, 2);
+    // Note, this yields the left normal from y_predecessor to y0
+    rightNormal(y_current, y_predecessor, orientation, s_projectionDirection);
+
+    double E[6];
+    double scalingJohn = sqrt( sqdelta / vec_dot(s_projectionDirection, s_projectionDirection, 2));
+    doubleVec_copyTo(y_predecessor, &E[0], 2);
+    doubleVec_copyTo(y_current, &E[2], 2);
+    doubleVec_copyTo(s_projectionDirection, &E[4], 2);
+    doubleVec_scale(scalingJohn, &E[4], &E[4], 2);
+    doubleVec_add(x_center, &E[4], &E[4], 2);
+    double area = absDet(E, 2)/2.;
+
+    scalingFactor = (4*sqrt(sqdelta)*pow(sin(alpha),3)) / (3*(2*alpha-sin(2*alpha))) * sqrt( 1. / vec_dot(s_projectionDirection, s_projectionDirection, 2)); // here change!!!
+    doubleVec_scale(scalingFactor, s_projectionDirection, s_projectionDirection, 2);
+    doubleVec_add(x_center, s_projectionDirection, capCentroid, 2);
+
+    // a = y_predecessor, b = y_current, c = scalingJohn * s_projectionDirection
+    //printf("P1^TP2 %f\n", vec_dot(p1, p2,2) / sqdelta);
+    //printf("alpha %f\n", alpha);
+    //printf("scaling cap, scaling john %f, %f\n", (4*sqrt(sqdelta)*pow(sin(alpha),3)) / (3*(2*alpha-sin(2*alpha))),sqrt( sqdelta));
+
+
+    if ( inTriangle(capCentroid, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
+        // Append capCentroid (Point on the cap)
+        doubleVec_copyTo(capCentroid, capsList, 2);
+        //printf("Approx Caps %f, Exact Caps: %f\n", area, (sqdelta/2) * (2*alpha - sin(2*alpha)));
+        return (sqdelta/2) * (2*alpha - sin(2*alpha));
+    } else {
+        return 0;
+    }
+}
+
+
+
 bool isFullyContained(const ElementType & aT, const ElementType & bT, const MeshType & mesh){
     //cout << "Max Diameter: " << mesh.maxDiameter << endl;
     //abort();
@@ -1289,10 +1379,16 @@ int method_exact(const double * xCenter, const double * TE,
             // Check whether the first lambda "lies on the Triangle".
             if ((0 <= lam1) && (lam1 <= 1)){
                 is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
+
+                // HERE CHANGE FOR EXACT CAPS --------------------------------------------------
                 // Check whether the predecessor lied on the edge
-                // if (is_onEdge && isPlacePointOnCap){
-                //    Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
-                // }
+                if (is_onEdge && (*prtnCaps < 3)){
+                    //Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                    //printf("nCaps %i \n", *prtnCaps);
+                    capsWeights[*prtnCaps] = placePointCapCenter(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, &(capsList[(*prtnCaps)*2]));
+                    *prtnCaps += (capsWeights[*prtnCaps] > 0);
+                }
+
                 // Append y1
                 doubleVec_copyTo(&y1[0], &R[2*Rdx], 2);
                 is_onEdge = true; // This point lies on the edge.
@@ -1302,10 +1398,15 @@ int method_exact(const double * xCenter, const double * TE,
             if ((0 <= lam2) && (lam2 <= 1) && (scal_sqL2dist(lam1, lam2) > 0)){
                 is_firstPointLiesOnVertex = is_firstPointLiesOnVertex && (bool)Rdx;
 
+                // HERE CHANGE FOR EXACT CAPS --------------------------------------------------
                 // Check whether the predecessor lied on the edge
-                //   if (is_onEdge && isPlacePointOnCap){
-                //      Rdx += placePointOnCap(&R[2*(Rdx-1)], &y2[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
-                //  }
+                if (is_onEdge && (*prtnCaps < 3)){
+                    //Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                    //printf("nCaps %i \n", *prtnCaps);
+                    capsWeights[*prtnCaps] = placePointCapCenter(&R[2*(Rdx-1)], &y2[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, &(capsList[(*prtnCaps)*2]));
+                    *prtnCaps += (capsWeights[*prtnCaps] > 0);
+                }
+
                 // Append y2
                 doubleVec_copyTo(&y2[0], &R[2*Rdx], 2);
                 is_onEdge = true; // This point lies on the edge.
@@ -1317,9 +1418,14 @@ int method_exact(const double * xCenter, const double * TE,
     //(len(RD)>1) cares for the case that either the first and the last point lie on an endge
     // and there is no other point at all.
     //shift=1;
-    //if (is_onEdge && (!is_firstPointLiesOnVertex && Rdx > 1)){
-    //    Rdx += placePointOnCap(&R[2*(Rdx-1)], &R[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
-    //}
+
+    // HERE CHANGE FOR EXACT CAPS --------------------------------------------------
+    if (is_onEdge && (*prtnCaps < 3)){
+        //Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
+        //printf("nCaps %i \n", *prtnCaps);
+        capsWeights[*prtnCaps] = placePointCapCenter(&R[2*(Rdx-1)], &R[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, &(capsList[(*prtnCaps)*2]));
+        *prtnCaps += (capsWeights[*prtnCaps] > 0);
+    }
 
     // Construct List of Triangles from intersection points
     if (Rdx < 3){

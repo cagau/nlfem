@@ -325,7 +325,7 @@ int method_subSuperSetBalls(const double * x_center, const ElementType & T, cons
  * @return 0 if there is no interaction, -1 otherwise.
  */
 int method_exact(const double * xCenter, const ElementType & T,
-                 const MeshType & mesh, double * reTriangleList, double * capsList, double * capsWeights, int * nCaps);
+                 const MeshType & mesh, double * reTriangleList, double * capsList, double * capsWeights, int * prtnCaps);
 
 
 
