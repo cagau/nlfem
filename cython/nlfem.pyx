@@ -146,6 +146,7 @@ def assemble(
         tensorGaussDegree=0,
         averageWeights = [1.0, 1.0, 1.0]
     ):
+    print("New retriangulate wrappers")
     is_tmpAd = False
     if path_spAd is None:
         is_tmpAd = True
@@ -353,13 +354,13 @@ def solve_cg(Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 5
     return {"x": x, "its": k, "res": res_new}
 
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
-from Cassemble cimport method_retriangulate
+from Cassemble cimport method_retriangulate, method_exact
 def py_retriangulate(
         double [:] x_center,
         double [:] TE,
         double delta,
         int is_placePointOnCaps,
-        pp
+        pp=None
     ):
 
     TriangleList =  np.zeros(9*3*2)
@@ -369,6 +370,29 @@ def py_retriangulate(
     Rdx = method_retriangulate(&x_center[0], &TE[0], sqdelta, &cTriangleList[0], is_placePointOnCaps)
 
     return Rdx, TriangleList
+
+
+def py_exact(
+        double [:] x_center,
+        double [:] TE,
+        double delta,
+        int is_placePointOnCaps,
+        pp=None
+    ):
+
+    TriangleList =  np.zeros(9*3*2)
+    CapsList = np.zeros(3*2)
+    CapsWeights = np.zeros(3)
+    cdef:
+        double sqdelta = pow(delta,2)
+        double [:] cTriangleList = TriangleList
+        double[:] cCapsList = CapsList
+        double [:] cCapsWeights = CapsWeights
+        int nCaps = 1
+    Rdx = method_exact(&x_center[0], &TE[0], sqdelta, &cTriangleList[0], &cCapsList[0], &cCapsWeights[0],
+                     &nCaps)
+
+    return Rdx, TriangleList, CapsList[:nCaps*2], CapsWeights[:nCaps], nCaps
 
 from Cassemble cimport toRef
 def py_toRef(
