@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../../")
 from mesh import RegMesh2D
 from scipy.spatial.distance import euclidean as l2dist
 import helpers as helpers
