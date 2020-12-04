@@ -226,7 +226,9 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
     double reTriangle_list[36 * mesh.dVertex * dim];
     doubleVec_tozero(reTriangle_list, 36 * mesh.dVertex * dim);
     double capsList[3*2];
+    doubleVec_tozero(capsList, 3*2);
     double capsWeights[3];
+    doubleVec_tozero(capsWeights, 3);
     int nCaps = 0;
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
@@ -239,7 +241,6 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
 
         //is_placePointOnCap = true;
         Rdx = method_exact(x, bT, mesh, reTriangle_list, capsList, capsWeights, &nCaps); // innerInt_retriangulate
-
         //[DEBUG]
         //printf("Retriangulation Rdx %i\n", Rdx);
         //for (i=0;i<Rdx;i++){
@@ -1163,7 +1164,7 @@ double placePointCapCenter(const double * y_predecessor, const double * y_curren
         //printf("Approx Caps %f, Exact Caps: %f\n", area, (sqdelta/2) * (2*alpha - sin(2*alpha)));
         return (sqdelta/2) * (2*alpha - sin(2*alpha));
     } else {
-        return 0;
+        return 0.0;
     }
 }
 
@@ -1315,6 +1316,7 @@ int method_retriangulate(const double * xCenter, const ElementType & T,
 int method_exact(const double * xCenter, const double * TE,
                          const double sqdelta, double * reTriangleList, double * capsList, double * capsWeights,
                          int * prtnCaps){
+    *prtnCaps = 0;
     // C Variables and Arrays.
     int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
     double v=0, lam1=0, lam2=0, term1=0, term2=0;
@@ -1327,7 +1329,6 @@ int method_exact(const double * xCenter, const double * TE,
     arma::vec y2(2);
     arma::vec vec_x_center(xCenter, 2);
     double orientation;
-
     bool is_onEdge=false, is_firstPointLiesOnVertex=true;
     // The upper bound for the number of required points is 9
     // Hence 9*2 is an upper bound to encode all resulting triangles
@@ -1383,10 +1384,9 @@ int method_exact(const double * xCenter, const double * TE,
                 // HERE CHANGE FOR EXACT CAPS --------------------------------------------------
                 // Check whether the predecessor lied on the edge
                 if (is_onEdge && (*prtnCaps < 3)){
-                    //Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
-                    //printf("nCaps %i \n", *prtnCaps);
-                    capsWeights[*prtnCaps] = placePointCapCenter(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, &(capsList[(*prtnCaps)*2]));
-                    *prtnCaps += (capsWeights[*prtnCaps] > 0);
+                    //Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                    capsWeights[*prtnCaps] = placePointCapCenter(&R[2*(Rdx-1)], &y1[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, &(capsList[(*prtnCaps)*2]));
+                    *prtnCaps += !double_eq(capsWeights[*prtnCaps], 0.);
                 }
 
                 // Append y1
@@ -1401,10 +1401,9 @@ int method_exact(const double * xCenter, const double * TE,
                 // HERE CHANGE FOR EXACT CAPS --------------------------------------------------
                 // Check whether the predecessor lied on the edge
                 if (is_onEdge && (*prtnCaps < 3)){
-                    //Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
-                    //printf("nCaps %i \n", *prtnCaps);
-                    capsWeights[*prtnCaps] = placePointCapCenter(&R[2*(Rdx-1)], &y2[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, &(capsList[(*prtnCaps)*2]));
-                    *prtnCaps += (capsWeights[*prtnCaps] > 0);
+                    //Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+                    capsWeights[*prtnCaps] = placePointCapCenter(&R[2*(Rdx-1)], &y2[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, &(capsList[(*prtnCaps)*2]));
+                    *prtnCaps += !double_eq(capsWeights[*prtnCaps], 0.);
                 }
 
                 // Append y2
@@ -1421,10 +1420,9 @@ int method_exact(const double * xCenter, const double * TE,
 
     // HERE CHANGE FOR EXACT CAPS --------------------------------------------------
     if (is_onEdge && (*prtnCaps < 3)){
-        //Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, Rdx, R);
-        //printf("nCaps %i \n", *prtnCaps);
-        capsWeights[*prtnCaps] = placePointCapCenter(&R[2*(Rdx-1)], &R[0], xCenter, mesh.sqdelta, T.E, nu_a, nu_b, nu_c, orientation, &(capsList[(*prtnCaps)*2]));
-        *prtnCaps += (capsWeights[*prtnCaps] > 0);
+        //Rdx += placePointOnCap(&R[2*(Rdx-1)], &y1[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, Rdx, R);
+        capsWeights[*prtnCaps] = placePointCapCenter(&R[2*(Rdx-1)], &R[0], xCenter, sqdelta, TE, nu_a, nu_b, nu_c, orientation, &(capsList[(*prtnCaps)*2]));
+        *prtnCaps += !double_eq(capsWeights[*prtnCaps], 0.);
     }
 
     // Construct List of Triangles from intersection points
