@@ -1314,7 +1314,7 @@ int method_retriangulate(const double * xCenter, const ElementType & T,
 // Signature for debugging purpose only (Appears in Cassemble.h)
 int method_exact(const double * xCenter, const double * TE,
                          const double sqdelta, double * reTriangleList, double * capsList, double * capsWeights,
-                         int * nCaps){
+                         int * prtnCaps){
     // C Variables and Arrays.
     int i=0, k=0, edgdx0=0, edgdx1=0, Rdx=0;
     double v=0, lam1=0, lam2=0, term1=0, term2=0;
@@ -1453,8 +1453,8 @@ int method_exact(const double * xCenter, const double * TE,
 // Actual function signature (Appears in integration.h)
 int method_exact(const double * xCenter, const ElementType & T,
                          const MeshType & mesh, double * reTriangleList, double * capsList, double * capsWeights,
-                         int * nCaps){
-    return method_exact(xCenter, T.E, mesh.sqdelta, reTriangleList, capsList, capsWeights, nCaps);
+                         int * prtnCaps){
+    return method_exact(xCenter, T.E, mesh.sqdelta, reTriangleList, capsList, capsWeights, prtnCaps);
 }
 
 

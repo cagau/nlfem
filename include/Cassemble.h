@@ -58,7 +58,7 @@ int method_retriangulate(const double * xCenter, const double * TE,
                          int isPlacePointOnCap);
 int method_exact(const double * xCenter, const double * TE,
                          const double sqdelta, double * reTriangleList, double * capsList, double * capsWeights,
-                         int * nCaps);
+                         int * prtnCaps);
 void toRef(const double * E, const double * phys_x, double * ref_p);     // Pull point to Reference Element (performs 2x2 Solve)
 void toPhys(const double * E, const double * p, double * out_x);         // Push point to Physical Element
 void toPhys(const double * E, const double * p, int dim, double * out_x);
