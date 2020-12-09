@@ -25,6 +25,7 @@ add_library(Cassemble SHARED
         ./src/integration.cpp
         )
 target_compile_options(Cassemble PUBLIC "-fopenmp" "-Wall")
+set_target_properties(Cassemble PROPERTIES PUBLIC_HEADER "include/Cassemble.h;include/MeshTypes.h")
 
 # external libraries ---------------------------------------------------------------------------------------------------
 target_link_libraries(Cassemble PRIVATE lapack blas armadillo)
@@ -46,5 +47,11 @@ add_subdirectory(./examples/CompareCodes)
 
 # install --------------------------------------------------------------------------------------------------------------
 # When calling "Install" libCassemble.a is written to ~/lib
-install(TARGETS Cassemble DESTINATION $ENV{HOME}/lib)
-
+INSTALL(TARGETS Cassemble
+        LIBRARY DESTINATION $ENV{HOME}/lib
+        PUBLIC_HEADER DESTINATION $ENV{HOME}/lib/include
+        )
+INSTALL(TARGETS Cassemble
+LIBRARY DESTINATION /usr/lib/nlfem
+PUBLIC_HEADER DESTINATION /usr/lib/nlfem
+)

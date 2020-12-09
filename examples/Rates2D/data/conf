@@ -1,8 +1,8 @@
 model_kernel
-linearPrototypeMicroelastic
+constant
 model_f
 linear
 integration_method
 retriangulate
 is_PlacePointOnCap
-False
+True

@@ -147,7 +147,7 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
  * @param quadRule Quadrature rules for inner, and outer elements as well as for the singular kernels.
  * @param conf General configuration, namely kernel, and forcing functions, as well as integration method.
  */
-void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
+void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 
 /**
  * @brief Parallel assembly of forcing term. Forcing functions can be defined in *model* see model_f() for

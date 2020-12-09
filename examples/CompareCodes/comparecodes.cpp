@@ -227,7 +227,8 @@ int read_configuration(const string &path, idx_t nparts){
     for (int k=0; k<mesh.nV; k++){
         partition[k] = static_cast<double>(npart[k]);
     }
-    par_system(mesh, quadRule, conf);
+    map<unsigned long, double> Ad;
+    par_system(Ad, mesh, quadRule, conf);
 
     //Ad.save(path_Ad.c_str(), arma::raw_binary);
     // Vertex-zerlegung speichern

@@ -204,7 +204,7 @@ void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega
     double tmp_psi[3];
     long * aAdx;
 
-    double *psi = (double *) malloc(3*nP*sizeof(double));
+    auto *psi = (double *) malloc(3*nP*sizeof(double));
 
     for(j=0; j<nP; j++){
        model_basisFunction(&P[2*j], &tmp_psi[0]);
@@ -343,7 +343,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const double * Pg, const int degree, const double * dg, double maxDiameter) {
     //const long * ptrZeta;
     //cout << "nZeta is" << nZeta << endl;
-
+    map<unsigned long, double> Ad;
     // [1]
     // Mesh will contain K_Omega = outdim*nV_Omega in CG case,
     // K_Omega = outdim*3*nE_Omega in DG [X] Not implemented!
@@ -362,14 +362,43 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     chk_Conf(mesh, conf, quadRule);
 
     if (compute=="system") {
-        par_system(mesh, quadRule, conf);
+        par_system(Ad, mesh, quadRule, conf);
+
+        cout << "K_Omega " << mesh.K_Omega << endl;
+        cout << "K " << mesh.K << endl;
+        int nnz_total = static_cast<int>(Ad.size());
+        arma::vec values_all(nnz_total);
+        arma::umat indices_all(2, nnz_total);
+        cout << "Total nnz" << nnz_total << endl;
+
+
+        //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
+        int k = 0;
+        for (auto &it : Ad) {
+            unsigned long adx = it.first;
+            double value = it.second;
+            values_all(k) = value;
+            // column major format of transposed matrix Ad
+            indices_all(0, k) = adx % mesh.K;
+            indices_all(1, k) = adx / mesh.K;
+            //printf("Index a %llu, b %llu, k %i\n", indices_all(0, k), indices_all(1, k), k);
+            k++;
+        }
+
+        //cout << "K_Omega " << mesh.K_Omega << endl;
+        //cout << "K " << mesh.K << endl;
+        //cout << "NNZ " << nnz_total << endl;
+        //cout << arma::max(indices_all.row(1)) << endl;
+        arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
+        sp_Ad.save(conf.path_spAd);
+        //cout << "Data saved." << endl;
     }
     if (compute=="forcing") {
         par_forcing(mesh, quadRule, conf);
     }
 }
 
-void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
+void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
     printf("Function: par_system\n");
     printf("Ansatz Space: %s\n", mesh.is_DiscontinuousGalerkin ? "DG" : "CG");
@@ -409,7 +438,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     // default(none)  does not work well with g++.
     //const auto chunkSize = mesh.nE / omp_get_num_procs() ;
     //printf("Chunk Size %i\n", chunkSize);
-    map<unsigned long, double> Ad;
+
 
     #pragma omp parallel shared(mesh, quadRule, conf,  Ad)
     {
@@ -652,7 +681,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                             // [x 6]
                                             // termLocal and termNonloc come with larger dimension already..
                                             // Ad[Adx] += termLocal[mesh.dVertex * a + b] * weight;
-#pragma omp critical
+                                            #pragma omp critical
                                             {
                                                 Ad[Adx] += termLocal[mesh.dVertex * mesh.outdim * a + b] * weight;
                                             }
@@ -661,7 +690,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                             Adx =   (mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim) * mesh.K +
                                                      mesh.outdim*bAdx[b/mesh.outdim] + b%mesh.outdim;
                                             //Adx = aAdx[a]*mesh.K + bAdx[b];
-#pragma omp critical
+                                            #pragma omp critical
                                             {
                                                 Ad[Adx] += -termNonloc[mesh.dVertex * mesh.outdim * a + b] * weight;
                                             }
@@ -698,34 +727,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
     }// End pragma omp parallel
 
-    cout << "K_Omega " << mesh.K_Omega << endl;
-    cout << "K " << mesh.K << endl;
-    int nnz_total = static_cast<int>(Ad.size());
-    arma::vec values_all(nnz_total);
-    arma::umat indices_all(2, nnz_total);
-    cout << "Total nnz" << nnz_total << endl;
 
-
-    //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
-    int k = 0;
-    for (auto &it : Ad) {
-        unsigned long adx = it.first;
-        double value = it.second;
-        values_all(k) = value;
-        // column major format of transposed matrix Ad
-        indices_all(0, k) = adx % mesh.K;
-        indices_all(1, k) = adx / mesh.K;
-        //printf("Index a %llu, b %llu, k %i\n", indices_all(0, k), indices_all(1, k), k);
-        k++;
-    }
-
-    //cout << "K_Omega " << mesh.K_Omega << endl;
-    //cout << "K " << mesh.K << endl;
-    //cout << "NNZ " << nnz_total << endl;
-    //cout << arma::max(indices_all.row(1)) << endl;
-    arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
-    sp_Ad.save(conf.path_spAd);
-    //cout << "Data saved." << endl;
 }// End function par_system
 
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {

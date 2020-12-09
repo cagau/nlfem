@@ -41,7 +41,7 @@ dx = 0.5 * np.array([0.22500000000000,
 
 Py = Px
 dy = dx
-tensorGaussDegree = 6
+tensorGaussDegree = 3
 
 CONFIGURATIONS = [
     {
@@ -61,7 +61,7 @@ CONFIGURATIONS = [
                 "points": Py,
                 "weights": dy
             },
-            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 3,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
     }
 ]
