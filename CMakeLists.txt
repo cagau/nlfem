@@ -51,7 +51,7 @@ INSTALL(TARGETS Cassemble
         LIBRARY DESTINATION $ENV{HOME}/lib
         PUBLIC_HEADER DESTINATION $ENV{HOME}/lib/include
         )
-INSTALL(TARGETS Cassemble
-LIBRARY DESTINATION /usr/lib/nlfem
-PUBLIC_HEADER DESTINATION /usr/lib/nlfem
-)
+#INSTALL(TARGETS Cassemble
+#LIBRARY DESTINATION /usr/lib/nlfem
+#PUBLIC_HEADER DESTINATION /usr/lib/nlfem
+#)
