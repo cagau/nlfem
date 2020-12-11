@@ -399,10 +399,6 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
 
 
 
-
-
-
-
 void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                            const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                            double * termLocal, double * termNonloc){
@@ -545,6 +541,169 @@ void integrate_fullyContained(const ElementType &aT, const ElementType &bT, cons
 }
 
 void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
+                             double *termNonloc) {
+
+
+    if ((mesh.maxDiameter > EPSILON) && (mesh.delta - 2*mesh.maxDiameter > 0) && isFullyContained(aT, bT, mesh)){
+        integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
+        return;
+    }
+
+    const int dim = mesh.dim;
+    int k = 0, a = 0, b = 0;
+    double x[dim];
+    // [x 11] [mesh.outdim*mesh.outdim]
+    //double innerLocal = 0;
+    double innerLocal[mesh.outdim*mesh.outdim];
+
+    // [x 12] [mesh.outdim*mesh.outdim*mesh.dVertex]
+    // double innerNonloc[mesh.dVertex];
+    double innerNonloc[mesh.outdim*mesh.outdim*mesh.dVertex];
+
+    int i = 0, rTdx = 0, Rdx = 0;
+    // [x 13] kernel_val [mesh.outdim*mesh.outdim]
+    double kernel_val[mesh.outdim*mesh.outdim];
+
+    double rTdet = 0;
+    double physical_quad[dim];
+    double reference_quad[dim];
+    double psi_value[mesh.dVertex];
+    //double psi_value_test[3] = {20., 30., 50.};
+    double reTriangle_list[36 * mesh.dVertex * dim];
+    doubleVec_tozero(reTriangle_list, 36 * mesh.dVertex * dim);
+
+    //[DEBUG]
+    //printf("\nouterInt_full----------------------------------------\n");
+    for (k = 0; k < quadRule.nPx; k++) {
+        //printf("k %i, quadRule.nPx %i\n", k, quadRule.nPx);
+        toPhys(aT.E, &(quadRule.Px[dim * k]), mesh.dim, x);
+        //printf("\nInner Integral, Iterate %i\n", k);
+        //printf("\Physical x [%17.16e, %17.16e]\n",  x[0], x[1]);
+        //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
+
+        //is_placePointOnCap = true;
+        Rdx = method_retriangulate(x, bT, mesh, reTriangle_list, conf.is_placePointOnCap); // innerInt_retriangulate
+        //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list, is_placePointOnCap);
+        //Rdx = quadRule.interactionMethod(x, bT, mesh, reTriangle_list);
+
+        //[DEBUG]
+        //printf("Retriangulation Rdx %i\n", Rdx);
+        //for (i=0;i<Rdx;i++){
+        //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i], reTriangle_list[2 * 3 * i+1]);
+        //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+2], reTriangle_list[2 * 3 * i+3]);
+        //printf("[%17.16e, %17.16e]\n", reTriangle_list[2 * 3 * i+4], reTriangle_list[2 * 3 * i+5]);
+        //printf("absDet %17.16e\n", absDet(&reTriangle_list[2 * 3 * i]));
+        //}
+        // [x 14] doubleVec_tozero(innerLocal, mesh.outdim*mesh.outdim);
+        //innerLocal = 0.0;
+        doubleVec_tozero(innerLocal, mesh.outdim*mesh.outdim);
+
+        // [x 15] doubleVec_tozero(innerLocal, mesh.outdim*mesh.outdim*mesh.dVertex);
+        // doubleVec_tozero(innerNonloc, mesh.dVertex);
+        doubleVec_tozero(innerNonloc, mesh.outdim*mesh.outdim*mesh.dVertex);
+
+        if (Rdx == 0) {
+        } else {
+            //printf("\nInner Integral\n");
+            for (rTdx = 0; rTdx < Rdx; rTdx++) {
+                //printf("rTdx %i \n",rTdx);
+                for (i = 0; i < quadRule.nPy; i++) {
+                    // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
+                    toPhys(&reTriangle_list[dim * mesh.dVertex * rTdx], &(quadRule.Py[dim * i]), physical_quad);
+                    // Determinant of Triangle of retriangulation
+                    rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
+                    // inner Local integral with ker
+                    model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, kernel_val);
+                    // [x 16]
+                    // INNER LOCAL ORDER [(0,0), (0,1), (1,0), (1,1)] = KERNEL ORDER
+                    for (int o=0; o<mesh.outdim*mesh.outdim; o++){
+                              innerLocal[o] += kernel_val[o] * quadRule.dy[i] * rTdet; // Local Term
+                    }
+                    //innerLocal += kernel_val * quadRule.dy[i] * rTdet; // Local Term
+
+                    // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
+                    toRef(bT.E, physical_quad, reference_quad);
+                    // Evaluate ker on physical quad (note this is ker')
+                    model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, kernel_val);
+                    // Evaluate basis function on resulting reference quadrature point
+                    model_basisFunction(reference_quad, mesh.dim, psi_value);
+
+                    // [17]
+                    // INNER NON-LOCAL ORDER
+                    // [(b 0, ker (0,0)), (b 0, ker (0,1)), (b 0, ker (1,0)), (b 0, ker (1,1)),
+                    //  (b 1, ker (0,0)), (b 1, ker (0,1)), (b 1, ker (1,0)), (b 1, ker (1,1)),
+                    //  (b 2, ker (0,0)), (b 2, ker (0,1)), (b 2, ker (1,0)), (b 2, ker (1,1))]
+                    //  = (PSI ORDER) * (KERNEL ORDER)
+
+                    for (b = 0; b < mesh.dVertex*mesh.outdim*mesh.outdim; b++) {
+                    // for (b = 0; b < mesh.dVertex; b++) {
+                        // [x 18]
+                        innerNonloc[b] +=
+                                psi_value[b/(mesh.outdim*mesh.outdim)] *
+                                kernel_val[b%(mesh.outdim*mesh.outdim)] *
+                                quadRule.dy[i] * rTdet; // Nonlocal Term
+                        //innerNonloc[b] += psi_value[b] * kernel_val * quadRule.dy[i] * rTdet; // Nonlocal Term
+                    }
+                    //[DEBUG]
+                    //printf("i %i \n",i);
+                    //printf("GAM %17.16e\n", ker * dy[i] * rTdet);
+                    //printf("Basis0 %17.16e\n", psi_value[0]);
+                    //printf("Basis1 %17.16e\n", psi_value[1]);
+                    //printf("Basis2 %17.16e\n", psi_value[2]);
+                }
+                //printf("Chris: v0 %17.16e\nv1 %17.16e\nv2 %17.16e\n", innerNonloc[0], innerNonloc[1], innerNonloc[2]);
+                //printf("Chris: v %17.16e\n", innerLocal);
+            }
+        }
+
+        // TERM LOCAL & TERM NON-LOCAL ORDER
+        // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
+        // However it mimics the matrix which results from the multiplication.
+        //                                      Kernel switches back here. v
+        // [(a 0, b 0, ker (0,0)), (a 0, b 0, ker (0,1)), (a 0, b 1, ker (0,0)), (a 0, b 1, ker (0,1)), (a 0, b 2, ker (0,0)), (a 0, b 2, ker (0,1)),
+        //  (a 0, b 0, ker (1,0)), (a 0, b 0, ker (1,1)), (a 0, b 0, ker (1,0)), (a 0, b 1, ker (1,1)), (a 0, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+        //  (a 1, b 0, ker (0,0)), (a 1, b 0, ker (0,1)), (a 1, b 1, ker (0,0)), (a 1, b 1, ker (0,1)), (a 1, b 2, ker (0,0)), (a 1, b 2, ker (0,1)),
+        //  (a 1, b 0, ker (1,0)), (a 1, b 0, ker (1,1)), (a 1, b 0, ker (1,0)), (a 1, b 1, ker (1,1)), (a 1, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+        //  (a 2, b 0, ker (0,0)), (a 2, b 0, ker (0,1)), (a 2, b 1, ker (0,0)), (a 2, b 1, ker (0,1)), (a 2, b 2, ker (0,0)), (a 2, b 2, ker (0,1)),
+        //  (a 2, b 0, ker (1,0)), (a 2, b 0, ker (1,1)), (a 2, b 0, ker (1,0)), (a 2, b 1, ker (1,1)), (a 2, b 2, ker (1,0)), (a 2, b 2, ker (1,1))]
+
+        //  = (PSI ORDER) * (PSI ORDER) * (INNER LOCAL ORDER)
+        //  = (PSI ORDER) *' (INNER NON-LOCAL ORDER)
+
+        //printf("Local %17.16e\n", innerLocal);
+        //printf("Nonloc [%17.16e, %17.16e, %17.16e, %17.16e] \n", innerNonloc[0], innerNonloc[1], innerNonloc[2], innerNonloc[3]);
+
+        // [x 19] for (a = 0; a < mesh.dVertex*mesh.outdim; a++) {
+        for (a = 0; a < mesh.dVertex * mesh.outdim; a++) {
+            // [x 20] for (b = 0; b < mesh.dVertex*mesh.outdim; b++) {
+            for (b = 0; b < mesh.dVertex * mesh.outdim; b++) {
+                // [x 21] termLocal[mesh.dVertex * mesh.outputdim * a + b] +=
+                termLocal[mesh.dVertex * mesh.outdim * a + b] +=
+                        2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) * quadRule.dx[k] *
+                        innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)]; //innerLocal
+                // psi_value_test[a/mesh.outdim]*psi_value_test[b/mesh.outdim]+innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)];
+                //printf("a %6.4e, b %6.4e, innerLocal %6.4e \n", psi_value_test[a/mesh.outdim], psi_value_test[b/mesh.outdim], innerLocal[mesh.outdim*(a%mesh.outdim) + (b%mesh.outdim)]);
+                // [x 22] 2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k) * quadRule.dx[k] * ...
+
+                //printf("quadRule.psix(%i,%i) %17.16e\nquadRule.psix(%i,%i) %17.16e \n", a,k, quadRule.psix(a,k), b,k,quadRule.psix(b,k));
+                // [x 24] termNonloc[mesh.dVertex * mesh.outputdim * a + b] +=
+                termNonloc[mesh.dVertex * mesh.outdim * a + b] +=
+                        2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.dx[k] *
+                        innerNonloc[(a%mesh.outdim)*mesh.outdim +
+                                    mesh.outdim*mesh.outdim*(b/mesh.outdim) +
+                                    (b%mesh.outdim)];
+                //printf("a %6.4e, innerNonloc %6.4e \n", psi_value_test[a/mesh.outdim],
+                // innerNonloc[(a%mesh.outdim)*mesh.outdim + mesh.outdim*mesh.outdim*(b/mesh.outdim) + (b%mesh.outdim)]);
+                // [x 25] 2 * aT.absDet * quadRule.psix(a/mesh.outdim, k) * quadRule.dx[k] *
+                //2 * aT.absDet * quadRule.psix(a, k) * quadRule.dx[k] * innerNonloc[b]; //innerNonloc
+            }
+        }
+    }
+}
+
+
+void integrate_shifted(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc) {
 
@@ -1183,6 +1342,7 @@ bool isFullyContained(const ElementType & aT, const ElementType & bT, const Mesh
 
     return ((mesh.delta - 2*mesh.maxDiameter) > 0) && ( l2dist < pow(mesh.delta - 2*mesh.maxDiameter,2) );
 }
+
 
 // Signature used for purpose of dubugging only!
 int method_retriangulate(const double * xCenter, const double * TE,

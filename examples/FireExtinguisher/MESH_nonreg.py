@@ -18,7 +18,7 @@ import bib3 as bib
 
 
 
-def prepare_mesh_gmsh(n, geofile = "unit_square_2"):
+def prepare_mesh_gmsh(n, geofile = "unit_square_3_2"):
     h = 12/n/10
     os.system('gmsh mesh/' + geofile + '.geo -v 0 -2 -format msh2 -clscale ' + str(h) + ' -o mesh/' + geofile + '.msh')
     verts, lines, triangles = bib.read_mesh('mesh/' + geofile + '.msh')

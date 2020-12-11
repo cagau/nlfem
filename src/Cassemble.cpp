@@ -123,6 +123,9 @@ void lookup_configuration(ConfigurationType & conf){
         } else if (conf.integration_method == "retriangulate") {
             integrate = integrate_retriangulate;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else if (conf.integration_method == "shiftedBall") {
+            integrate = integrate_shifted;
+            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else if (conf.integration_method == "tensorgauss") {
             integrate = integrate_tensorgauss;
             conf.is_singularKernel = true; // Test Case

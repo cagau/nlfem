@@ -100,8 +100,9 @@ def main(conf, kernel, load, pp = None):
 
 if __name__ == "__main__":
     #from testConfExactCaps import CONFIGURATIONS, KERNELS, LOADS
-    from testConfAverage import CONFIGURATIONS, KERNELS, LOADS
+    #from testConfAverage import CONFIGURATIONS, KERNELS, LOADS
     #from testConfBarycenter import CONFIGURATIONS, KERNELS, LOADS
+    from testConfShifted import CONFIGURATIONS, KERNELS, LOADS
 
     
     pp = PdfPages("results/plots.pdf")

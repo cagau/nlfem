@@ -35,6 +35,27 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc);
 /**
+ * @brief This integration routines uses method_retriangulate() to truncate the *inner domain* bT. See integrate()
+ * for general information about the integration routines.
+ *
+ *  termLocal = int_aT phiA(x) phiB(x) int_bT ker(x,y) dy dx,\n
+ *  termNonloc = int_aT phiA(x) int_bT phiB(y) ker(y,x) dy dx.
+ *
+ * Please note that the nonlocal term has to be subtracted, while the local term has to be added to the stiffness
+ * matrix.
+ * @param aT    Triangle of the outer integral.
+ * @param bT    Triangle of the inner integral.
+ * @param quadRule Quadrature rule.
+ * @param mesh  Mesh.
+ * @param conf  Confuration.
+ * @param is_firstbfslayer (Unused)
+ * @param termLocal This term contains the local part of the integral
+ * @param termNonloc This term contains the nonlocal part of the integral
+ */
+void integrate_shifted(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
+                             double *termNonloc);
+/**
  * @brief . This integration routines uses method_baryCenter() to truncate the *inner domain* bT. See integrate()
  * for general information about the integration routines.
  *
