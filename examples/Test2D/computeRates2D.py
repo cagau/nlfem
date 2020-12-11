@@ -38,7 +38,8 @@ def main(conf, kernel, load, pp = None):
                                  integration_method=conf["approxBalls"]["method"],
                                  is_PlacePointOnCap=conf["approxBalls"]["isPlacePointOnCap"],
                                  compute="systemforcing",
-                                 tensorGaussDegree=conf["quadrature"]["tensorGaussDegree"])
+                                 tensorGaussDegree=conf["quadrature"]["tensorGaussDegree"],
+                                 averageWeights = conf["approxBalls"]["averageBallWeights"])
 
         data["Assembly Time"].append(time() - start)
 
