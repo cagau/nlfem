@@ -5,12 +5,8 @@ project(nonlocal_assembly)
 
 # flags ----------------------------------------------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 14)
-
 add_compile_options("-O2")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # Equivalent to -fPIC option in the compiler
-
-# files ----------------------------------------------------------------------------------------------------------------
-# Abbreviations for file names...
 
 # include --------------------------------------------------------------------------------------------------------------
 include_directories(./include/ ./src/)
@@ -19,7 +15,7 @@ include_directories(./include/ ./src/)
 # Adds the library Cassemble. Leads to: libCassemble.a
 add_library(Cassemble SHARED
         ./src/Cassemble.cpp ./include/Cassemble.h
-        ./include/MeshTypes.cpp
+        ./src/MeshTypes.cpp
         ./src/mathhelpers.cpp
         ./src/model.cpp
         ./src/integration.cpp

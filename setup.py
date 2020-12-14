@@ -11,7 +11,7 @@ ext_modules = [
         name=name,
         sources=["cython/nlfem.pyx",
                     "src/Cassemble.cpp",
-                    "./include/MeshTypes.cpp",
+                    "./src/MeshTypes.cpp",
                     "./src/mathhelpers.cpp",
                     "./src/model.cpp",
                     "./src/integration.cpp"],
