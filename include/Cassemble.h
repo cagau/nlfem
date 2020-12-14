@@ -48,7 +48,7 @@
 #ifndef CASSEMBLE_H
 #define CASSEMBLE_H
 #include <armadillo>
-#include "MeshTypes.h"
+#include <MeshTypes.h>
 #include "cstring"
 using namespace std;
 

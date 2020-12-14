@@ -20,8 +20,9 @@ add_library(Cassemble SHARED
         ./src/model.cpp
         ./src/integration.cpp
         )
+
 target_compile_options(Cassemble PUBLIC "-fopenmp" "-Wall")
-set_target_properties(Cassemble PROPERTIES PUBLIC_HEADER "include/Cassemble.h;include/MeshTypes.h")
+set_target_properties(Cassemble PROPERTIES PUBLIC_HEADER "include/MeshTypes.h;include/Cassemble.h")
 
 # external libraries ---------------------------------------------------------------------------------------------------
 target_link_libraries(Cassemble PRIVATE lapack blas armadillo)
@@ -31,23 +32,17 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(Cassemble PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-
-#add_subdirectory(./examples/Rates2DCpp)
+# others ---------------------------------------------------------------------------------------------------------------
 add_subdirectory(./examples/CompareCodes)
 # Add tests to project
-#option(PACKAGE_TESTS "Build the tests" ON)
+option(PACKAGE_TESTS "Build the tests" ON)
 #if(PACKAGE_TESTS)
 #    enable_testing()
 #    add_subdirectory(tests)
 #endif()
 
 # install --------------------------------------------------------------------------------------------------------------
-# When calling "Install" libCassemble.a is written to ~/lib
 INSTALL(TARGETS Cassemble
         LIBRARY DESTINATION $ENV{HOME}/lib
         PUBLIC_HEADER DESTINATION $ENV{HOME}/lib/include
         )
-#INSTALL(TARGETS Cassemble
-#LIBRARY DESTINATION /usr/lib/nlfem
-#PUBLIC_HEADER DESTINATION /usr/lib/nlfem
-#)
