@@ -1,5 +1,4 @@
 from time import time
-
 import os
 import helpers
 import nlfem as assemble
@@ -8,13 +7,13 @@ from mesh import RegMesh2D
 from scipy.sparse.linalg import cg
 from matplotlib.backends.backend_pdf import PdfPages
 
-def main(conf, kernel, load, pp = None):
+def main(conf, kernel, load, layerDepth, pp = None):
     err_ = None
     data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
     u_exact = load["solution"]
 
     n_start = 12
-    n_layers = 4
+    n_layers = layerDepth
     N = [n_start * 2 ** l for l in list(range(n_layers))]
     N_fine = N[-1]*4
 
@@ -107,11 +106,13 @@ if __name__ == "__main__":
     os.makedirs("results", exist_ok=True)
     tmpstmp = helpers.timestamp()
     fileHandle = open("results/rates" + tmpstmp + ".md", "w+")
+    layerDepth = 3
+
     for k, kernel in enumerate(KERNELS):
         load = LOADS[k]
         fileHandle.write("# Kernel: " + kernel["function"] + "\n")
         for conf in CONFIGURATIONS:
-            data = main(conf, kernel, load, pp)
+            data = main(conf, kernel, load, layerDepth, pp)
             helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle)
     fileHandle.close()
     pp.close()
