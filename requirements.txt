@@ -2,7 +2,5 @@ numpy~=1.18.3
 scipy~=1.4.1
 matplotlib~=3.2.1
 meshzoo~=0.6.3
-nlfem~=0.0.1
-assemble~=0.0.0
 Cython~=0.29.17
 setuptools~=39.0.1
