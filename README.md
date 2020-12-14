@@ -14,7 +14,7 @@ If you want to contribute follow the instructions below.
 In order to use this code you have to meet the following rewuirements
 ## Requirements
 
-- The **basic requirements** for are the programs `gcc`, `g++, python3-venv`. You further need
+- The **basic requirements** for are the programs `gcc`, `g++, python3-dev, python3-venv`. You further need
 the libraries `libarmadillo-dev`, and the Python 3 packages `numpy`, `Cython` and `scipy`.
 - For **running the examples** you additionally need to install the Python 3 packages 
 `matplotlib, pathos, meshio, meshzoo, quadpy`.
