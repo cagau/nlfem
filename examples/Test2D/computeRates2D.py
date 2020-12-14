@@ -14,7 +14,7 @@ def main(conf, kernel, load, pp = None):
     u_exact = load["solution"]
 
     n_start = 12
-    n_layers = 5
+    n_layers = 4
     N = [n_start * 2 ** l for l in list(range(n_layers))]
     N_fine = N[-1]*4
 
@@ -98,8 +98,8 @@ def main(conf, kernel, load, pp = None):
 if __name__ == "__main__":
     #from testConfFull import CONFIGURATIONS, KERNELS, LOADS
     #from testConfPeridyn import CONFIGURATIONS, KERNELS, LOADS
-    #from testConfConstant import CONFIGURATIONS, KERNELS, LOADS
-    from testConfExactCaps import CONFIGURATIONS, KERNELS, LOADS
+    from testConfConstant import CONFIGURATIONS, KERNELS, LOADS
+    #from testConfExactCaps import CONFIGURATIONS, KERNELS, LOADS
     #from testConfWCCM1 import CONFIGURATIONS, KERNELS, LOADS
     #from testConfWCCM2 import CONFIGURATIONS, KERNELS, LOADS
     

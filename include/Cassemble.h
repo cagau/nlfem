@@ -142,6 +142,9 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
  *  finds the interacting elements bT without traversing all of them. This approach requires setting up the dual
  *  graph of the mesh which is to be found in mesh.neighbours.
  *
+ * @param Ad, Pointer to map<unsigned long, double> which is used to store matrix values. This map is shared between all threads and the value updates
+ * happen in critical sections. This makes sense because in case of nonlocal operators Ad can turn out to be very large.
+ * Storing Ad separately in separate threads and finally merging the different maps results in a significant overhead.
  * @param mesh The mesh is of type MeshType and contains all information about the finite element descretization.
  * See MeshStruct for more information.
  * @param quadRule Quadrature rules for inner, and outer elements as well as for the singular kernels.

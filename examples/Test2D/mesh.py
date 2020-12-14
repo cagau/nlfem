@@ -1,10 +1,9 @@
-import scipy.spatial as sp
-from scipy.spatial import Delaunay
 from scipy.spatial.distance import euclidean as l2dist
 from scipy.interpolate import LinearNDInterpolator
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+
 from nlfem import constructAdjaciencyGraph
 import meshzoo
 
