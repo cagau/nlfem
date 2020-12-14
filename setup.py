@@ -18,7 +18,7 @@ ext_modules = [
         extra_link_args=['-fopenmp', '-larmadillo'],
         extra_compile_args=['-fopenmp'],
         language="c++",
-        include_dirs=["include", numpy.get_include()]
+        include_dirs=["include", "src", numpy.get_include()]
     )
 ]
 
@@ -32,6 +32,6 @@ setup(
     python_requires='>=3.6',
     include_package_data=True,
     install_requires=[['numpy'], ['scipy'], ['Cython']],
-    cmdclass={"build_ext": build_ext},
-    options={"bdist_wheel": {"universal": "1"}}
+    cmdclass={"build_ext": build_ext}
+    #options={"bdist_wheel": {"universal": "1"}}
 )

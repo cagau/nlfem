@@ -49,9 +49,16 @@ void lookup_configuration(ConfigurationType & conf){
     }
 
     // Lookup kernel ---------------------------------------------------------------------------------------------------
+    // Alternatively to if we can lookup the kernel in a map. As in given below for the constant kernel case.
+    // https://stackoverflow.com/questions/17762232/use-string-to-class-lookup-table-in-c-to-instantiate-classes
+    map<string, void (*)(const double *, long, const double *, long, double, double *)> lookupKernelName {
+            {"constant", kernel_constant}
+    };
+
     cout << "Kernel: " << conf.model_kernel << endl;
     if (conf.model_kernel == "constant"){
-        model_kernel = kernel_constant;
+        //model_kernel = kernel_constant;
+        model_kernel = lookupKernelName[conf.model_kernel];
     } else if (conf.model_kernel == "constantTruncated") {
         model_kernel = kernel_constantTruncated;
     } else if (conf.model_kernel == "labeled") {
@@ -197,63 +204,9 @@ void compute_f(     const ElementType & aT,
     }
 }
 
-void par_assembleMass(double * Ad, long * Triangles, double * Verts, int K_Omega, int J_Omega, int nP, double * P, double * dx){
-    int aTdx=0, a=0, b=0, j=0;
-    double aTE[2*3];
-    double aTdet;
-    double tmp_psi[3];
-    long * aAdx;
-
-    auto *psi = (double *) malloc(3*nP*sizeof(double));
-
-    for(j=0; j<nP; j++){
-       model_basisFunction(&P[2*j], &tmp_psi[0]);
-       psi[nP*0+j] = tmp_psi[0];
-       psi[nP*1+j] = tmp_psi[1];
-       psi[nP*2+j] = tmp_psi[2];
-    }
-
-    #pragma omp parallel for private(aAdx, a, b, aTE, aTdet, j)
-    for (aTdx=0; aTdx < J_Omega; aTdx++){
-        // Get index of ansatz functions in matrix compute_A.-------------------
-        // Continuous Galerkin
-        aAdx = &Triangles[4*aTdx+1];
-        // Discontinuous Galerkin
-        // - Not implemented -
-
-        // Prepare Triangle information aTE and aTdet ------------------
-        // Copy coordinates of Triange a to aTE.
-        // this is done fore convenience only, actually those are unnecessary copies!
-        for (j=0; j<2; j++){
-            aTE[2*0+j] = Verts[2*Triangles[4*aTdx+1] + j];
-            aTE[2*1+j] = Verts[2*Triangles[4*aTdx+2] + j];
-            aTE[2*2+j] = Verts[2*Triangles[4*aTdx+3] + j];
-        }
-        // compute Determinant
-        aTdet = absDet(&aTE[0]);
-
-        for (a=0; a<3; a++){
-            if (aAdx[a] < K_Omega){
-                for (b=0; b<3; b++){
-                    if (aAdx[b] < K_Omega){
-                        for (j=0; j<nP; j++){
-                            // Assembly
-                            #pragma omp atomic update
-                            Ad[aAdx[a]*K_Omega + aAdx[b]] += psi[nP*a+j]*psi[nP*b+j]*aTdet*dx[j];
-                            // Evaluation
-                            //vd[aAdx[a]] += psi[nP*a+j]*psi[nP*b+j]*aTdet*dx[j]*ud[aAdx[b]];
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-}
-
-void
-par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
-                 double *P, double *dx, const int dim, const int outdim, const bool is_DiscontinuousGalerkin) {
+void par_evaluateMass(double *vd, double *ud, long *Elements,
+                      long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
+                      double *P, double *dx, const int dim, const int outdim, const bool is_DiscontinuousGalerkin) {
     const int dVerts = dim+1;
     double tmp_psi[dVerts];
     auto *psi = (double *) malloc((dVerts)*nP*sizeof(double));
@@ -399,7 +352,6 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 }
 
 void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
-
     printf("Function: par_system\n");
     printf("Ansatz Space: %s\n", mesh.is_DiscontinuousGalerkin ? "DG" : "CG");
     printf("Mesh dimension: %i\n", mesh.dim);
@@ -723,7 +675,6 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
         }// End if LabelTriangles > 0
     }// End parallel for
 
-    int nnz_start = 0;
 
     }// End pragma omp parallel
 

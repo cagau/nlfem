@@ -45,11 +45,13 @@
  * function to model.cpp obeying the common function signature. In order to make it accessible as
  * option you have change the function lookup_configuration() accordingly.
  */
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #ifndef CASSEMBLE_H
 #define CASSEMBLE_H
 #include <armadillo>
 #include <MeshTypes.h>
 #include "cstring"
+#include "model.h"
 using namespace std;
 
 ////// Retriangulation Routine ---------------------------------------------------------------------------------------------
@@ -183,6 +185,4 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
 void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
                  double *P, double *dx, int dim, int outdim=1, bool is_DiscontinuousGalerkin=false);
 //[DEBUG]
-
-
 #endif /* Cassemble.h */

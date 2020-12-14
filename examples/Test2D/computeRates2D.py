@@ -1,5 +1,6 @@
 from time import time
 import os
+import subprocess
 import helpers
 import nlfem as assemble
 import numpy as np
@@ -116,4 +117,4 @@ if __name__ == "__main__":
             helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle)
     fileHandle.close()
     pp.close()
-    os.system("pandoc results/rates" + tmpstmp + ".md -o results/rates" + tmpstmp + ".pdf")
+    subprocess.run("pandoc results/rates" + tmpstmp + ".md -o results/rates" + tmpstmp + ".pdf", shell=True)

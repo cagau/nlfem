@@ -246,7 +246,7 @@ int read_configuration(const string &path, idx_t nparts){
     // Breadth First Search to determine interaction graph
 
     // Breadth First Search --------------------------------------
-    long maxSize=0;
+    //long maxSize=0;
     map<unsigned long, unsigned long> interaction;
     arma::Col<int> visited(mesh.nE, arma::fill::zeros);
     arma::Col<int> colored(mesh.nE, arma::fill::zeros);
