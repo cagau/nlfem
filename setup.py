@@ -9,7 +9,8 @@ name = "nlfem"
 ext_modules = [
     Extension(
         name=name,
-        sources=["cython/nlfem.pyx", "src/Cassemble.cpp",
+        sources=["cython/nlfem.pyx",
+                    "src/Cassemble.cpp",
                     "./include/MeshTypes.cpp",
                     "./src/mathhelpers.cpp",
                     "./src/model.cpp",
