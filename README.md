@@ -11,7 +11,7 @@ If you want to contribute follow the instructions below.
 
 # Build and Install
 
-In order to use this code you have to meet the following rewuirements
+In order to use this code you have to meet the following requirements
 ## Requirements
 
 - The **basic requirements** for are the programs `gcc`, `g++, python3-dev, python3-venv`. You further need
@@ -32,7 +32,7 @@ Cython assumes that there have been no changes.
 ## Step by Step Guide
 To prepare the basic requirements do.
 
-`sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev python3-venv`
+`sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev python3-venv python3-dev`
 
 `mkdir nlfemvenv`
 
@@ -42,7 +42,7 @@ To prepare the basic requirements do.
 
 `(nlfemvenv) python3 -m pip install numpy scipy Cython`
 
-`(nlfemvenv) python3 -m pip install matplotlib pathos meshio meshzoo quadpy`
+`(nlfemvenv) python3 -m pip install matplotlib meshzoo`
 
 To clone the default branch (C++) do
 

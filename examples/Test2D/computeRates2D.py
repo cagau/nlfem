@@ -8,7 +8,7 @@ from mesh import RegMesh2D
 from scipy.sparse.linalg import cg
 from matplotlib.backends.backend_pdf import PdfPages
 
-def main(conf, kernel, load, layerDepth, pp = None):
+def runTest(conf, kernel, load, layerDepth, pp = None):
     err_ = None
     data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
     u_exact = load["solution"]
@@ -96,24 +96,31 @@ def main(conf, kernel, load, layerDepth, pp = None):
     return data
 
 if __name__ == "__main__":
-    #from testConfFull import CONFIGURATIONS, KERNELS, LOADS
-    #from testConfPeridyn import CONFIGURATIONS, KERNELS, LOADS
-    from testConfConstant import CONFIGURATIONS, KERNELS, LOADS
-    #from testConfExactCaps import CONFIGURATIONS, KERNELS, LOADS
-    #from testConfWCCM1 import CONFIGURATIONS, KERNELS, LOADS
-    #from testConfWCCM2 import CONFIGURATIONS, KERNELS, LOADS
-    
-    pp = PdfPages("results/plots.pdf")
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Run convergence test for the given configuration file.')
+    parser.add_argument('-f', default="testConfFull", type=str, help='Enter here the filename of test configuration python file.')
+    parser.add_argument('-s', default=1, type=int, help='Number of steps of the convergence test.')
+    args = parser.parse_args()
+    testFilename = str(args.f)
+    layerDepth = int(args.s)
+
+    print("\n### TESTING "+testFilename+"\n")
+    if testFilename[-3:] != ".py":
+        testFilename += ".py"
+    os.system("cp " + testFilename + " testConfiguration.py")
+    from testConfiguration import CONFIGURATIONS, KERNELS, LOADS
+
     os.makedirs("results", exist_ok=True)
+    pp = PdfPages("results/plots.pdf")
     tmpstmp = helpers.timestamp()
     fileHandle = open("results/rates" + tmpstmp + ".md", "w+")
-    layerDepth = 3
 
     for k, kernel in enumerate(KERNELS):
         load = LOADS[k]
         fileHandle.write("# Kernel: " + kernel["function"] + "\n")
         for conf in CONFIGURATIONS:
-            data = main(conf, kernel, load, layerDepth, pp)
+            data = runTest(conf, kernel, load, layerDepth, pp)
             helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle)
     fileHandle.close()
     pp.close()
