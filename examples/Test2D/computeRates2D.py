@@ -1,8 +1,8 @@
 from time import time
 import os
 import subprocess
+import nlfem
 import helpers
-import nlfem as assemble
 import numpy as np
 from mesh import RegMesh2D
 from scipy.sparse.linalg import cg
@@ -13,7 +13,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
     data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
     u_exact = load["solution"]
 
-    # Delta is assumend to be of the form deltaK/10. so we obtain D by
+    # Delta is assumed to be of the form deltaK/10 in the mesh, so we obtain deltaK by
     deltaK = int(np.round(kernel["horizon"] * 10))
     if not deltaK:
         raise ValueError("Delta has to be of the form delta = deltaK/10. for deltaK in N.")
@@ -30,7 +30,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
 
         # Assembly ------------------------------------------------------------------------
         start = time()
-        A, f = assemble.assemble(mesh,
+        A, f = nlfem.assemble(mesh,
                                  conf["quadrature"]["outer"]["points"],
                                  conf["quadrature"]["inner"]["points"],
                                  conf["quadrature"]["outer"]["weights"],
