@@ -8,12 +8,12 @@ def u_exact_FieldConstantBothRhs(x):
 KERNELS = [
     {
        "function": "linearPrototypeMicroelastic",
-       "horizon": 0.1,
+       "horizon": 0.1,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
        "outputdim": 1
     },
     {
         "function": "linearPrototypeMicroelasticField",
-        "horizon": 0.1,
+        "horizon": 0.1,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
         "outputdim": 2
     }
 ]

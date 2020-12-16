@@ -13,14 +13,17 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
     data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
     u_exact = load["solution"]
 
-    n_start = 12
-    n_layers = layerDepth
-    N = [n_start * 2 ** l for l in list(range(n_layers))]
+    # Delta is assumend to be of the form deltaK/10. so we obtain D by
+    deltaK = int(np.round(kernel["horizon"] * 10))
+    if not deltaK:
+        raise ValueError("Delta has to be of the form delta = deltaK/10. for deltaK in N.")
+    n_start = 10 + 2*deltaK
+    N = [n_start * 2 ** l for l in list(range(layerDepth))]
     N_fine = N[-1]*4
 
     for n in N:
         mesh = RegMesh2D(kernel["horizon"], n, ufunc=u_exact,
-                         ansatz = conf["ansatz"], outdim=kernel["outputdim"])
+                         ansatz=conf["ansatz"], outdim=kernel["outputdim"])
         print("\n h: ", mesh.h)
         data["h"].append(mesh.h)
         data["nV_Omega"].append(mesh.nV_Omega)
@@ -61,7 +64,8 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         x = cg(A_O, f, f)[0].reshape((-1, mesh.outdim))
         # print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
         mesh.write_ud(x, u_exact)
-        #mesh.plot_ud(pp)
+        if kernel["outputdim"] == 1:
+            mesh.plot_ud(pp)
         # Some random quick Check....
         # filter = np.array(assemble.read_arma_mat("data/result.fd").flatten(), dtype=bool)
         # plt.scatter(mesh.vertices[filter][:,0], mesh.vertices[filter][:,1])

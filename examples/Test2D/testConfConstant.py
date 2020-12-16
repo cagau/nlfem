@@ -8,7 +8,7 @@ def u_exact_FieldConstantBothRhs(x):
 KERNELS = [
     {
         "function": "constant",
-        "horizon": 0.1,
+        "horizon": 10./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
         "outputdim": 1
     }
 ]

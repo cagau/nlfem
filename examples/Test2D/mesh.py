@@ -8,13 +8,23 @@ from nlfem import constructAdjaciencyGraph
 import meshzoo
 
 class RegMesh2D:
-    def __init__(self, delta, n, ufunc=None, coarseMesh=None,
-                 dim=2, outdim=1, ansatz="CG", boundaryConditionType="Dirichlet",
-                 is_constructAdjaciencyGraph=True, variant="up"):
+    def __init__(self, delta, n,
+                 ufunc=None,
+                 coarseMesh=None,
+                 dim=2, outdim=1,
+                 n_start=12,
+                 ansatz="CG",
+                 boundaryConditionType="Dirichlet",
+                 is_constructAdjaciencyGraph=True,
+                 variant="up"):
         ### TEST 27.07.2020
         #self.Zeta = np.arange(12, dtype=np.int).reshape(4, 3)
         #####
 
+        deltaK = int(np.round(delta * 10))
+        if not deltaK:
+            raise ValueError("Delta has to be of the form delta = deltaK/10. for deltaK in N.")
+        n_start = 10 + 2*deltaK
 
         self.n = n
         self.dim = dim
@@ -22,7 +32,7 @@ class RegMesh2D:
         self.sqdelta = delta**2
         # Construct Meshgrid -------------------------------------------------------------
         if self.dim == 2:
-            self.h = 12/n/10
+            self.h = n_start/n/10.
             points, cells = meshzoo.rectangle(
                 xmin=-self.delta, xmax=1.0+self.delta,
                 ymin=-self.delta, ymax=1.0+self.delta,
