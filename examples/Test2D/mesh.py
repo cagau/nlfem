@@ -10,7 +10,7 @@ import meshzoo
 class RegMesh2D:
     def __init__(self, delta, n, ufunc=None, coarseMesh=None,
                  dim=2, outdim=1, ansatz="CG", boundaryConditionType="Dirichlet",
-                 is_constructAdjaciencyGraph=True, zigzag=False):
+                 is_constructAdjaciencyGraph=True, variant="up"):
         ### TEST 27.07.2020
         #self.Zeta = np.arange(12, dtype=np.int).reshape(4, 3)
         #####
@@ -27,7 +27,7 @@ class RegMesh2D:
                 xmin=-self.delta, xmax=1.0+self.delta,
                 ymin=-self.delta, ymax=1.0+self.delta,
                 nx=n+1, ny=n+1,
-                variant="up"
+                variant=variant
             )
             self.vertices = np.array(points[:, :2])
 
@@ -66,7 +66,7 @@ class RegMesh2D:
             self.neighbours = None
 
         # Set Matrix Dimensions ----------------------------------------------------------
-        # In case of Neumann conditions we assemble a Maitrx over Omega + OmegaI.
+        # In case of Neumann conditions we assemble a Matrix over Omega + OmegaI.
         # In order to achieve that we "redefine" Omega := Omega + OmegaI
         # This is rather a shortcut to make things work quickly.
         self.is_NeumannBoundary = False
@@ -282,8 +282,8 @@ def plotRegMesh():
 
     def baryCenter(E):
         return np.sum(E, axis=0)/3
-    mesh1 = RegMesh2D(0.1, n, zigzag=False)
-    mesh2 = RegMesh2D(0.1, n, zigzag=True)
+    mesh1 = RegMesh2D(0.1, n, variant="up")
+    mesh2 = RegMesh2D(0.1, n, variant="zigzag")
 
     bC1 = np.array([baryCenter(mesh1.vertices[Vdx]) for Vdx in mesh1.elements])
     bC2 = np.array([baryCenter(mesh2.vertices[Vdx]) for Vdx in mesh2.elements])
