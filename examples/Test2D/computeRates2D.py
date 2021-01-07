@@ -81,7 +81,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         #mesh.plot_u_exact(pp)
         # Evaluate L2 Error ---------------------------------------------------------------
         u_diff = (mesh.u_exact - mesh.ud)[:(mesh.K_Omega // mesh.outdim)]
-        Mu_udiff = assemble.evaluateMass(mesh, u_diff,
+        Mu_udiff = nlfem.evaluateMass(mesh, u_diff,
                                          conf["quadrature"]["outer"]["points"],
                                          conf["quadrature"]["outer"]["weights"])
         err = np.sqrt(u_diff.ravel() @ Mu_udiff)
