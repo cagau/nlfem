@@ -33,7 +33,7 @@ To prepare the basic requirements on Ubuntu do.
 
 `(nlfemvenv) python3 -m pip install matplotlib meshzoo`
 
-To clone the default branch (C++) do
+To clone the default branch (master) do
 
 `git clone https://gitlab.uni-trier.de/klar/nonlocal-assembly.git path/to/nlfem`
 
