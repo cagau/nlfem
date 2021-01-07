@@ -30,7 +30,7 @@ It might happen that recompilation or translation is skipped because
 Cython assumes that there have been no changes.
 
 ## Step by Step Guide
-To prepare the basic requirements do.
+To prepare the basic requirements on Ubuntu do.
 
 `sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev python3-venv python3-dev`
 
