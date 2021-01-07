@@ -128,4 +128,7 @@ if __name__ == "__main__":
             helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle)
     fileHandle.close()
     pp.close()
-    subprocess.run("pandoc results/rates" + tmpstmp + ".md -o results/rates" + tmpstmp + ".pdf", shell=True)
+    subprocess.run(f"pandoc results/rates{tmpstmp}.md -o results/rates{tmpstmp}.pdf", shell=True)
+    print("\n* Diff of results ********************************************************")
+    subprocess.run(f"diff results/rates{tmpstmp}.md results/result_{testFilename[:-3]}.md", shell=True)
+    print("**************************************************************************")

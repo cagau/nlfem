@@ -1,14 +1,3 @@
-# Collaboration Workflow
-
-If you want to contribute follow the instructions below.
-
- - Create an Issue #n with a description of what should be done in the project.
- - `git checkout -b issue_n` Create a new branch on your local repository.
- - Change the code...
- - `git add x; git commit -m "Issue #n"` Commit your changes locally.
- - `git push --set-upstream origin issue_n` Push your branch to origin.
- - Create a merge request to issue_n -> master.
-
 # Build and Install
 
 In order to use this code you have to meet the following requirements
@@ -85,6 +74,4 @@ is also to be found in this file.
 
 # Documentation
 
-Here you find the 
-[documentation](http://klar.gitlab-pages.uni-trier.de/nonlocal-assembly/)
-of the C++ Code.
+Find a documentation of the C++ code in `docs/html`.

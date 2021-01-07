@@ -1,0 +1,23 @@
+\form#0:\[ A(u,v) = \int_{\Omega} v(x) \int_{\Omega \cup \Omega_I}(u(x)-u(y))\gamma(x,y) dx dy, \]
+\form#1:$ \gamma(x,y) $
+\form#2:$\Omega$
+\form#3:$\Omega_I$
+\form#4:$ R^d $
+\form#5:$ d = 2,3$
+\form#6:$ u(x) \in R^c$
+\form#7:$c \geq 1$
+\form#8:\[ A(\phi_j,\phi_k) = \int_{aT} phi_j(x) \int_{bT \cup \Omega_I}(\phi_k(x)-\phi_ku(y))\gamma(x,y) dx dy, \]
+\form#9:$ [-1, 1]^4 $
+\form#10:$ [0, 1]^4 $
+\form#11:$\left\lbrace z | z_2 \in [0,1], z_1 \ in [0,z_2] \right\rbrace$
+\form#12:$\left\lbrace z | z_1 \in [0,1], z_2 \ in [0,1-z_1] \right\rbrace$
+\form#13:$ \delta^2 - \|z\|^2 $
+\form#14:$ \pi \delta ^6 / 12 $
+\form#15:\[ \gamma(x,y) = \frac{1}{\| x - y \|} \frac{3}{\pi \delta ^3}. \]
+\form#16:\[ \gamma(x,y) = (x-y) \otimes (x-y) \frac{1}{\| x - y \|^3} \frac{12}{\pi \delta ^3}. \]
+\form#17:$\mu = \lambda = \frac{\pi}{4}$
+\form#18:$f = (0, -2 (x_1 + 1))$
+\form#19:$f = -2 (x_1 + 1)$
+\form#20:$f = -2 (x+ 1)$
+\form#21:$f = (1 + 2 x_1, x_2 ) \frac{\pi}{2} $
+\form#22:\[ u(x) = (x_2^2, x_1^2 x_2) \frac{2}{5}. \]
