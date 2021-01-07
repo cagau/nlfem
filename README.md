@@ -59,6 +59,7 @@ To build and install the `nlfem` package do.
 To test the rates for the constant kernel run
 
 `(nlfemvenv) cd path/to/nlfem/examples/Test2D`
+
 `(nlfemvenv) python3 computeRates2D.py -f testConfConstant -s 3`
 
 Run a more extensive test via the option `-f testConfFull -s 3`. Get help via the option `-h`.
