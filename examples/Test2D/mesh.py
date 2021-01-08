@@ -7,17 +7,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 from nlfem import constructAdjaciencyGraph
 import meshzoo
 
-class BaseMesh:
-    def __init__(self,
-                 elements,
-                 elementLabels,
-                 vertices,
-                 vertexLabels,
-                 kernel,
-                 configuration):
-        # The vertices, are assumed to be ordered, such that
-        return
-
 class RegMesh2D:
     def __init__(self, delta, n,
                  ufunc=None,
@@ -55,18 +44,13 @@ class RegMesh2D:
         # Set up Delaunay Triangulation --------------------------------------------------
         # Construct and Sort Vertices ----------------------------------------------------
         self.vertexLabels = np.array([self.get_vertexLabel(v) for v in self.vertices])
-        #self.argsort_labels = np.argsort(-self.vertexLabels)
-        #self.vertices = self.vertices[self.argsort_labels]
-        #self.vertexLabels = self.vertexLabels[self.argsort_labels]
 
         # Get Number of Vertices in Omega ------------------------------------------------
-        self.omega = np.where(self.vertexLabels > 0)[0]
         self.nV = self.vertices.shape[0]
-        self.nV_Omega = self.omega.shape[0]
+        self.nV_Omega = np.sum(self.vertexLabels > 0)
 
         # Set up Delaunay Triangulation --------------------------------------------------
         self.elements = np.array(cells, dtype=np.int)
-        #self.remapElements()
 
         # Get Triangle Labels ------------------------------------------------------------
         self.nE = self.elements.shape[0]
@@ -74,11 +58,8 @@ class RegMesh2D:
         for k, E in enumerate(self.elements):
             self.elementLabels[k] = self.get_elementLabel(E)
         self.nE_Omega = np.sum(self.elementLabels > 0)
-        #order = np.argsort(-self.elementLabels)
-        #self.elements = self.elements[order]
-        #self.elementLabels = self.elementLabels[order]
 
-        # Read adjaciency list
+        # Read adjaciency list -----------------------------------------------------------
         if is_constructAdjaciencyGraph:
             self.neighbours = constructAdjaciencyGraph(self.elements)
             self.nNeighbours = self.neighbours.shape[1]
@@ -86,11 +67,8 @@ class RegMesh2D:
             self.neighbours = None
 
         # Set Matrix Dimensions ----------------------------------------------------------
-        # In case of Neumann conditions we assemble a Matrix over Omega + OmegaI.
         self.is_NeumannBoundary = False
         # This option is deprecated. It is sufficient to simply not
-        # assign negative labels (Dirichlet labels).
-
         self.outdim = outdim
         if ansatz == "DG":
             self.K = self.nE*(self.dim+1)*self.outdim
@@ -165,20 +143,6 @@ class RegMesh2D:
         np.save(path + "/neighbours.npy", self.neighbours)
         np.save(path + "/elementsLabels.npy", self.elementLabels)
         np.save(path + "/verticesLabels.npy", self.vertexLabels)
-
-    #def remapElements(self):
-    #    def invert_permutation(p):
-    #        """
-    #        The function inverts a given permutation.
-    #        :param p: nd.array, shape (m,) The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1.
-    #        :return: nd.array, shape (m,) Returns an array s, where s[i] gives the index of i in p.
-    #        """
-    #        s = np.empty(p.size, p.dtype)
-    #        s[p] = np.arange(p.size)
-    #        return s
-    #    piVdx_invargsort = invert_permutation(self.argsort_labels)
-    #    piVdx = lambda dx: piVdx_invargsort[dx]  # Permutation definieren
-    #    self.elements = piVdx(self.elements)
 
     def set_u_exact(self, ufunc):
         if self.is_DiscontinuousGalerkin:

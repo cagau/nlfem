@@ -43,7 +43,6 @@ void chk_BasisFunction(QuadratureType & quadRule){
 }
 
 void chk_Mesh(MeshType & mesh){
-    long nV_Omega = mesh.nV_Omega;
     const long nE = mesh.nE;
     long chk_nE_Omega=0;
     const unsigned long d = mesh.dim;

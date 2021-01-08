@@ -134,13 +134,16 @@ def stiffnessMatrix(
     """
     Computes stiffness matrix of nonlocal operator on a given mesh.
     The input parameters are expected to be dictionaries. Find more information
-    on the expected content in the example/Test2D/testConfConstant.py
+    on the expected content in the example/Test2D/testConfFull.py
 
-    :param mesh: Dictionary of containing the mesh information.
-    :param kernel: Dictionary of containing the kernel information.
-    :param configuration: Dictionary of containing the configuration.
+    :param mesh: Dictionary containing the mesh information ("elements", "elementLabels",
+    "vertices", "vertexLabels", "neighbours"). The list "neighbours" can be obtained from
+    constructAdjaciencyGraph(lements).
+    :param kernel: Dictionary containing the kernel information (find an example in testConfFull.py).
+    :param configuration: Dictionary containing the configuration (find an example in testConfFull.py).
 
-    :return: Matrix A in scipy csr-sparse format
+    :return: Matrix A in scipy csr-sparse format of shape K x K where
+    K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim (Discontinuous Galerkin).
     """
     tmstmp = timestamp()
     path_spAd = configuration.get("savePath", f"tmp_spAd_{tmstmp}")
@@ -148,8 +151,16 @@ def stiffnessMatrix(
 
     cdef long[:] neighbours = mesh["neighbours"].flatten()#nE*np.ones((nE*dVertex), dtype=int)
     cdef int nNeighbours = mesh["neighbours"].shape[1]
+
+    cdef long dim = mesh["elements"].shape[1] - 1
+
+    cdef long nE = mesh["elements"].shape[0]
+    cdef long nE_Omega = np.sum(mesh["elementLabels"] > 0)
     cdef long[:] elements = mesh["elements"].flatten()
     cdef long[:] elementLabels = mesh["elementLabels"].flatten()
+
+    cdef long nV = mesh["vertices"].shape[0]
+    cdef long nV_Omega = np.sum(mesh["vertexLabels"] > 0)
     cdef double[:] vertices = mesh["vertices"].flatten()
     cdef long[:] vertexLabels = mesh["vertexLabels"].flatten()
 
@@ -197,14 +208,22 @@ def stiffnessMatrix(
     maxDiameter = mesh.get("diam", 0.0)
     is_DG = configuration.get("ansatz", "CG") == "DG"
 
+    cdef long K_Omega, K
+    if is_DG:
+        K = nE * (dim+1) * outdim_
+        K_Omega = nE_Omega * (dim+1) * outdim_
+    else:
+        K = nV * outdim_
+        K_Omega = nV_Omega * outdim_
+
     # Compute Assembly --------------------------------
     start = time.time()
     Cassemble.par_assemble( "system".encode('UTF-8'), path_spAd_,
                             "".encode('UTF-8'),
-                            mesh.get("K_Omega"), mesh.get("K"),
+                            K_Omega, K,
                             &elements[0], &elementLabels[0], &vertices[0], &vertexLabels[0],
-                            mesh["nE"] , mesh["nE_Omega"],
-                            mesh["nV"], mesh["nV_Omega"],
+                            nE , nE_Omega,
+                            nV, nV_Omega,
                             &ptrPx[0], nPx, &ptrdx[0],
                             &ptrPy[0], nPy, &ptrdy[0],
                             kernel["horizon"]**2,
@@ -213,10 +232,10 @@ def stiffnessMatrix(
                             is_DG,
                             0,
                             &model_kernel_[0],
-                            "constant".encode('UTF-8'),
+                            "".encode('UTF-8'),
                             &integration_method_[0],
                             is_PlacePointOnCap_,
-                            mesh["dim"], outdim_,
+                            dim, outdim_,
                             ptrZetaIndicator, nZeta,
                             ptrPg, tensorGaussDegree, ptrdg,
                             maxDiameter)
@@ -235,14 +254,35 @@ def loadVector(
         load,
         configuration
     ):
+    """
+    Computes load vector.
+    The input parameters are expected to be dictionaries. Find more information
+    on the expected content in the example/Test2D/testConfFull.py
+
+    :param mesh: Dictionary containing the mesh information ("elements", "elementLabels",
+    "vertices", "vertexLabels", "outdim"), where "outdim" is the output-dimension of the kernel. For scalar
+    kernels this would be 1, for the linear prototype microelastic kernel this would be 2.
+    :param load: Dictionary containing the load information (find an example in testConfFull.py).
+    :param configuration: Dictionary containing the configuration (find an example in testConfFull.py).
+
+    :return: Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim
+    (Discontinuous Galerkin)
+    """
     tmstmp = timestamp()
     path_fd = configuration.get("savePath", f"tmp_fd_{tmstmp}")
     cdef string path_fd_ = path_fd.encode('UTF-8')
 
     cdef long[:] neighbours = mesh["neighbours"].flatten()#nE*np.ones((nE*dVertex), dtype=int)
     cdef int nNeighbours = mesh["neighbours"].shape[1]
+
+    cdef long dim = mesh["elements"].shape[1] - 1
+    cdef long nE = mesh["elements"].shape[0]
+    cdef long nE_Omega = np.sum(mesh["elementLabels"] > 0)
     cdef long[:] elements = mesh["elements"].flatten()
     cdef long[:] elementLabels = mesh["elementLabels"].flatten()
+
+    cdef long nV = mesh["vertices"].shape[0]
+    cdef long nV_Omega = np.sum(mesh["vertexLabels"] > 0)
     cdef double[:] vertices = mesh["vertices"].flatten()
     cdef long[:] vertexLabels = mesh["vertexLabels"].flatten()
 
@@ -278,32 +318,33 @@ def loadVector(
 
     cdef int outdim_ = mesh["outdim"]
 
-    maxDiameter = mesh.get("diam", 0.0)
     is_DG = configuration.get("ansatz", "CG") == "DG"
+
+    cdef long K_Omega, K
+    if is_DG:
+        K = nE * (dim+1) * outdim_
+        K_Omega = nE_Omega * (dim+1) * outdim_
+    else:
+        K = nV * outdim_
+        K_Omega = nV_Omega * outdim_
 
     # Compute Assembly --------------------------------
     start = time.time()
     Cassemble.par_assemble( "forcing".encode('UTF-8'), "".encode('UTF-8'),
                             path_fd_,
-                            mesh.get("K_Omega"), mesh.get("K"),
-                            &elements[0], &elementLabels[0], &vertices[0], &vertexLabels[0],
-                            mesh["nE"] , mesh["nE_Omega"],
-                            mesh["nV"], mesh["nV_Omega"],
+                            K_Omega, K,
+                            &elements[0], &elementLabels[0],
+                            &vertices[0], &vertexLabels[0],
+                            nE, nE_Omega,
+                            nV, nV_Omega,
                             &ptrPx[0], nPx, &ptrdx[0],
                             &ptrPx[0], nPx, &ptrdx[0],
-                            0.0,
-                            &neighbours[0],
-                            nNeighbours,
-                            is_DG,
-                            0,
-                            "constant".encode('UTF-8'),
+                            0.0, NULL, 0, is_DG, 0, "".encode('UTF-8'),
                             model_load_,
-                            &integration_method_[0],
-                            is_PlacePointOnCap_,
-                            mesh["dim"], outdim_,
+                            "".encode('UTF-8'), False,
+                            dim, outdim_,
                             ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg,
-                            maxDiameter)
+                            NULL, 0, NULL, 0.0)
 
     total_time = time.time() - start
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")

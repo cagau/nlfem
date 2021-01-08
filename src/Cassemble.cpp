@@ -44,8 +44,10 @@ void lookup_configuration(ConfigurationType & conf){
     } else if (conf.model_f == "constantBothField"){
         model_f = fField_constantBoth;
     } else {
-        cout << "Error in Cassemble lookup_configuration. Right hand side: " << conf.model_f << " is not implemented." << endl;
-        abort();
+        cout << "No right hand side chosen" << endl;
+        model_kernel = nullptr;
+        //cout << "Error in Cassemble lookup_configuration. Right hand side: " << conf.model_f << " is not implemented." << endl;
+        //abort();
     }
 
     // Lookup kernel ---------------------------------------------------------------------------------------------------
@@ -80,8 +82,10 @@ void lookup_configuration(ConfigurationType & conf){
         model_kernel = kernelField_constant;
     }
     else {
-        cout << "Error in Cassemble lookup_configuration. Kernel " << conf.model_kernel << " is not implemented." << endl;
-        abort();
+        cout << "No kernel chosen" << endl;
+        model_kernel = nullptr;
+        //cout << "Error in Cassemble lookup_configuration. Kernel " << conf.model_kernel << " is not implemented." << endl;
+        //abort();
     }
 
     // Lookup integration method  --------------------------------------------------------------------------------------
@@ -96,9 +100,11 @@ void lookup_configuration(ConfigurationType & conf){
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else {
-            cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
-                 " is not implemented." << endl;
-            abort();
+            cout << "No integration method chosen" << endl;
+            model_kernel = nullptr;
+            //cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
+            //     " is not implemented." << endl;
+            //abort();
         }
     } else if ( conf.model_kernel == "linearPrototypeMicroelastic" ||
                 conf.model_kernel == "linearPrototypeMicroelasticField") {
@@ -111,9 +117,11 @@ void lookup_configuration(ConfigurationType & conf){
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else {
-            cout << "Error in par:assemble. Integration method " << conf.integration_method <<
-                 " is not implemented." << endl;
-            abort();
+            cout << "No integration method chosen" << endl;
+            model_kernel = nullptr;
+            // cout << "Error in par:assemble. Integration method " << conf.integration_method <<
+            //     " is not implemented." << endl;
+            // abort();
         }
     }  else {
         if (conf.integration_method == "baryCenter") {
@@ -143,9 +151,11 @@ void lookup_configuration(ConfigurationType & conf){
             conf.is_singularKernel = true; // Test Case
         }
         else {
-            cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
-                 " is not implemented." << endl;
-            abort();
+            cout << "No integration method chosen" << endl;
+            model_kernel = nullptr;
+            //cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
+            //     " is not implemented." << endl;
+            //abort();
         }
     }
 }
@@ -294,27 +304,22 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim, const int outdim, const long * ptrZeta, const long nZeta,
                   const double * Pg, const int degree, const double * dg, double maxDiameter) {
-    //const long * ptrZeta;
-    //cout << "nZeta is" << nZeta << endl;
-    map<unsigned long, double> Ad;
-    // [1]
-    // Mesh will contain K_Omega = outdim*nV_Omega in CG case,
-    // K_Omega = outdim*3*nE_Omega in DG [X] Not implemented!
+
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, ptrLabelVerts, nE, nE_Omega,
                      nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter};
-    // [2]
-    // Above should be checked
-    chk_Mesh(mesh);
 
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
     chk_QuadratureRule(quadRule);
+
     ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
-    // [3]
-    // kernel has to match outdim. Can we, or do we want to check this?
-    chk_Conf(mesh, conf, quadRule);
 
     if (compute=="system") {
+        map<unsigned long, double> Ad;
+
+        chk_Mesh(mesh);
+        chk_Conf(mesh, conf, quadRule);
+
         par_system(Ad, mesh, quadRule, conf);
 
         cout << "K_Omega " << mesh.K_Omega << endl;
@@ -322,10 +327,8 @@ void par_assemble(const string compute, const string path_spAd, const string pat
         int nnz_total = static_cast<int>(Ad.size());
         arma::vec values_all(nnz_total);
         arma::umat indices_all(2, nnz_total);
-        cout << "Total nnz" << nnz_total << endl;
+        cout << "Total NNZ " << nnz_total << endl;
 
-
-        //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
         int k = 0;
         for (auto &it : Ad) {
             unsigned long adx = it.first;
@@ -337,15 +340,10 @@ void par_assemble(const string compute, const string path_spAd, const string pat
             //printf("Index a %llu, b %llu, k %i\n", indices_all(0, k), indices_all(1, k), k);
             k++;
         }
-
-        //cout << "K_Omega " << mesh.K_Omega << endl;
-        //cout << "K " << mesh.K << endl;
-        //cout << "NNZ " << nnz_total << endl;
-        //cout << arma::max(indices_all.row(1)) << endl;
         arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K);
         sp_Ad.save(conf.path_spAd);
-        //cout << "Data saved." << endl;
     }
+
     if (compute=="forcing") {
         par_forcing(mesh, quadRule, conf);
     }
@@ -361,15 +359,6 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
     printf("Quadrule outer: %i\n", quadRule.nPx);
     printf("Quadrule inner: %i\n", quadRule.nPy);
 
-    //const int dVertex = dim + 1;
-    // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
-    //arma::Mat<double> Ad(ptrAd, mesh.K, mesh.K_Omega, false, true);
-    //Ad.zeros();
-    //arma::sp_mat sp_Ad(mesh.K, mesh.K_Omega);
-    //arma::vec values_all;
-    //arma::umat indices_all(2,0);
-    //int nnz_total=0;
-
     for(int h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(& quadRule.Px[mesh.dim*h], mesh.dim, & quadRule.psix[mesh.dVertex * h]);
@@ -379,18 +368,6 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
         model_basisFunction(& quadRule.Py[mesh.dim*h], mesh.dim,& quadRule.psiy[mesh.dVertex * h]);
     }
     chk_BasisFunction(quadRule);
-    // Unfortunately Armadillo thinks in Column-Major order. So everything is transposed!
-    // Contains one row more than number of verticies as label information is contained here
-    //const arma::Mat<long> Triangles(mesh.ptrTriangles, mesh.dVertex+1, mesh.nE);
-    //mesh.Triangles = arma::Mat<long>(mesh.ptrTriangles, mesh.dVertex+1, mesh.nE);
-    // Contains number of direct neighbours of an element + 1 (itself).
-    //const arma::Mat<long> Neighbours(mesh.ptrNeighbours, mesh.dVertex, mesh.nE);
-    //const arma::Mat<double> Verts(mesh.ptrVerts, mesh.dim, mesh.L);
-
-    // default(none)  does not work well with g++.
-    //const auto chunkSize = mesh.nE / omp_get_num_procs() ;
-    //printf("Chunk Size %i\n", chunkSize);
-
 
     #pragma omp parallel shared(mesh, quadRule, conf,  Ad)
     {
@@ -409,8 +386,7 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
     ElementType aT, bT;
     aT.matE = arma::vec(mesh.dim*(mesh.dim+1));
     bT.matE = arma::vec(mesh.dim*(mesh.dim+1));
-    //double aTE[3*2];
-    //double bTE[3*2];
+
     // Integration information ------------------------------------
     // (Pointer to) Vector of indices of Basisfuntions (Adx) for triangle a and b
     const long * aAdx;
@@ -419,30 +395,15 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
     long bDGdx[mesh.dVertex];
 
     // Buffers for integration solutions
-    //double termf[mesh.dVertex];
     double termLocal[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
     double termNonloc[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
-    //[DEBUG]
-    /*
-    double DEBUG_termTotalLocal[3*3];
-    double DEBUG_termTotalNonloc[3*3];
-    */
-    //[End DEBUG]
-    //long debugTdx = 570;
 
     #pragma omp for
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
-        //if (aTdx == debugTdx){
-        //    cout << "aTdx " << aTdx << endl;
-        //}
         if (mesh.LabelTriangles[aTdx] > 0) {
-            //cout <<  aTdx << endl;
-            //cout << "L " << mesh.LabelTriangles[aTdx] << endl;
-            //if (mesh.LabelTriangles[aTdx] == 1) {
 
             //[DEBUG]
             /*
-            //if (false){
             if (aTdx==7){
                 cout << endl << "Total Local Term" << endl ;
                 printf ("[%17.16e, %17.16e, %17.16e] \n", DEBUG_termTotalLocal[0], DEBUG_termTotalLocal[1], DEBUG_termTotalLocal[2]);
@@ -457,19 +418,11 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                 abort();
             }
             */
-            //[End DEBUG]
-
             //[DEBUG]
-            /*
-            doubleVec_tozero(DEBUG_termTotalLocal, 9);
-            doubleVec_tozero(DEBUG_termTotalNonloc, 9);
-            */
-            //[End DEBUG]
 
-            // Get index of ansatz functions in matrix compute_A.-------------------
+            // Get index of Ansatz functions in matrix compute_A.-------------------
             if (mesh.is_DiscontinuousGalerkin) {
                 // Discontinuous Galerkin
-                //aDGdx[0] = (dVertex+1)*aTdx+1; aDGdx[1] = (dVertex+1)*aTdx+2; aDGdx[2] = (dVertex+1)*aTdx+3;
                 for (int j = 0; j < mesh.dVertex; j++) {
                     aDGdx[j] = mesh.dVertex * aTdx + j;
                 }
@@ -480,21 +433,6 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
             }
             // Prepare Triangle information aTE and aTdet ------------------
             initializeTriangle(aTdx, mesh, aT);
-            // Assembly of right side ---------------------------------------
-            // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
-            //doubleVec_tozero(termf, mesh.dVertex); // Initialize Buffer
-            //compute_f(aT, quadRule, mesh, termf); // Integrate and fill buffer
-            // Add content of buffer to the right side.
-            //for (a = 0; a < mesh.dVertex; a++) {
-                // Assembly happens in the interior of Omega only, so we throw away some values
-            //    if (mesh.is_DiscontinuousGalerkin || (aAdx[a] < mesh.L_Omega)) {
-            //        #pragma omp atomic update
-            //        fd[aAdx[a]] += termf[a];
-            //    }
-            //}
-
-            // Of course some uneccessary computation happens but only for some verticies of thos triangles which lie
-            // on the boundary. This saves us from the pain to carry the information (a) into the integrator compute_f.
 
             // BFS -------------------------------------------------------------
             // Intialize search queue with current outer triangle
@@ -512,23 +450,20 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                 // Get all the neighbours of sTdx.
                 NTdx = &mesh.Neighbours(0, sTdx);
                 // Run through the list of neighbours.
-                // 3 at max in 2D, 4 in 3D.
                 for (int j = 0; j < mesh.nNeighbours; j++) {
                     // The next valid neighbour is our candidate for the inner Triangle b.
                     int bTdx = NTdx[j];
 
-                    // Check how many neighbours sTdx has. It can be 3 at max.
-                    // In order to be able to store the list as contiguous array we fill up the empty spots with the number nE
+                    // Check how many neighbours sTdx has.
+                    // In order to be able to store the list as contiguous array we fill
+                    // up the empty spots with the number nE
                     // i.e. the total number of Triangles (which cannot be an index).
                     if (bTdx < mesh.nE) {
-
                         // Check whether bTdx is already visited.
                         if (visited[bTdx] == 0) {
                             // Prepare Triangle information bTE and bTdet ------------------
                             initializeTriangle(bTdx, mesh, bT);
-                            //cout << aTdx << ", " << bTdx << endl;
-
-                            // Retriangulation and integration ------------------------
+                            // Retriangulation and integration -----------------------------
                             if (mesh.is_DiscontinuousGalerkin) {
                                 // Discontinuous Galerkin
                                 for (int jj = 0; jj < mesh.dVertex; jj++) {
@@ -538,26 +473,18 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                             } else {
                                 // Get (pointer to) index of basis function (in Continuous Galerkin)
                                 bAdx = &mesh.Triangles(0, bTdx);
-                                // The first entry (index 0) of each row in triangles contains the Label of each point!
-                                // Hence, in order to get an pointer to the three Triangle idices, which we need here
-                                // we choose &Triangles[4*aTdx+1];
                             }
                             // Assembly of matrix ---------------------------------------
                             doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
                             doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
                             // Compute integrals and write to buffer
                             integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
-                            // [DEBUG]
-                            //doubleVec_add(termLocal, DEBUG_termTotalLocal, DEBUG_termTotalLocal, 9);
-                            //doubleVec_add(termNonloc, DEBUG_termTotalNonloc, DEBUG_termTotalNonloc, 9);
-                            // [End DEBUG]
 
                             // If bT interacts it will be a candidate for our BFS, so it is added to the queue
 
                             //[DEBUG]
                             /*
                             if (aTdx == 0 && bTdx == 45){
-                            //if (true){
 
                             printf("aTdx %i\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
                             printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aT.E[0],aT.E[1],aT.E[2],aT.E[3],aT.E[4],aT.E[5]);
@@ -577,7 +504,6 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                             //    abort();
                             //}
                             abort();
-
                             }
                             */
                             //[End DEBUG]
@@ -588,30 +514,20 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                                 double zeta = arma::dot(mesh.ZetaIndicator.col(aTdx), mesh.ZetaIndicator.col(bTdx));
                                 weight = 1./zeta;
                             }
-                            //if (aTdx == debugTdx){
-                            //    cout << bTdx << ", ";
-                            //}
+
                             if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) ||
                                 doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)) {
                                 queue.push(bTdx);
-                                // In order to speed up the integration we only check whether the integral
+                                // We only check whether the integral
                                 // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
                                 // However, this works only if we can guarantee that interacting triangles do actually
                                 // also contribute a non-zero entry, i.e. the Kernel as to be > 0 everywhere on its support for example.
                                 // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
-                                //printf("aTdx %i \nbTdx %i\n", aTdx, bTdx);
                                 for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
-                                    // [x 3]
-                                    // for (int a = 0; a < mesh.dVertex*mesh.outdim; a++){ ...
-
                                     if (mesh.is_DiscontinuousGalerkin || (mesh.LabelVerts[aAdx[a/mesh.outdim]] > 0)) {
                                         for (int b = 0; b < mesh.dVertex*mesh.outdim; b++) {
-                                            // [x 4]
-                                            // for (int b = 0; b < mesh.dVertex*mesh.outdim; b++){ ...
-
-                                            // INDEX CHECK
                                             //printf("Local: a %i, b %i, ker (%i, %i) \nAdx %lu \n", a/mesh.outdim, b/mesh.outdim, a%mesh.outdim, b%mesh.outdim, Adx);
                                             // TERM LOCAL & TERM NON-LOCAL ORDER
                                             // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
@@ -624,45 +540,24 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                                             //  (a 2, b 0, ker (0,0)), (a 2, b 0, ker (0,1)), (a 2, b 1, ker (0,0)), (a 2, b 1, ker (0,1)), (a 2, b 2, ker (0,0)), (a 2, b 2, ker (0,1)),
                                             //  (a 2, b 0, ker (1,0)), (a 2, b 0, ker (1,1)), (a 2, b 0, ker (1,0)), (a 2, b 1, ker (1,1)), (a 2, b 2, ker (1,0)), (a 2, b 2, ker (1,1))]
 
-                                            // [x 5]
                                             Adx =  (mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim) * mesh.K +
                                                     mesh.outdim*aAdx[b/mesh.outdim] + b%mesh.outdim;
-                                            //Adx = aAdx[a]*mesh.K + aAdx[b];
 
-                                            // [x 6]
-                                            // termLocal and termNonloc come with larger dimension already..
-                                            // Ad[Adx] += termLocal[mesh.dVertex * a + b] * weight;
                                             #pragma omp critical
                                             {
                                                 Ad[Adx] += termLocal[mesh.dVertex * mesh.outdim * a + b] * weight;
                                             }
 
-                                            // [6]
                                             Adx =   (mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim) * mesh.K +
                                                      mesh.outdim*bAdx[b/mesh.outdim] + b%mesh.outdim;
-                                            //Adx = aAdx[a]*mesh.K + bAdx[b];
                                             #pragma omp critical
                                             {
                                                 Ad[Adx] += -termNonloc[mesh.dVertex * mesh.outdim * a + b] * weight;
                                             }
-
-                                            //if (aTdx == debugTdx){
-                                            //    cout << termLocal[mesh.dVertex * a + b] << ", ";
-                                            //    cout << -termNonloc[mesh.dVertex * a + b] << ", ";
-                                            //}
-
-                                            // Caution: -----------------------------------------------
-                                            // If k does not match the key of any element in the container,
-                                            // the []-method inserts a new element with that key and
-                                            // returns a reference to its mapped value.
-                                            // >> This unnecessarily eats up memory, if you want to read only. Use find().
                                         }
                                     }
                                 }
-                            }// End if (doubleVec_any(termNonloc, ...)
-                            //if (aTdx == debugTdx){
-                            //    cout << endl;
-                            //}
+                            }
 
                         }// End if BFS (visited[bTdx] == 0)
                         // Mark bTdx as visited
@@ -674,9 +569,7 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
         }// End if LabelTriangles > 0
     }// End parallel for
 
-
     }// End pragma omp parallel
-
 
 }// End function par_system
 

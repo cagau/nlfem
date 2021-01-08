@@ -21,7 +21,7 @@ ext_modules = [
                     "./src/model.cpp",
                     "./src/integration.cpp"],
         extra_link_args=['-fopenmp', '-larmadillo'],
-        extra_compile_args=['-fopenmp'],
+        extra_compile_args=['-fopenmp' '-O3'],
         language="c++",
         include_dirs=["include", "src", numpy.get_include()]
     )
