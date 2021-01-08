@@ -31,21 +31,21 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         # Assembly ------------------------------------------------------------------------
         start = time()
         A = nlfem.stiffnessMatrix(mesh.__dict__, kernel, conf)
-        f = nlfem.loadVector(mesh.__dict__, load, conf)
-
+        f_OI = nlfem.loadVector(mesh.__dict__, load, conf)
         data["Assembly Time"].append(time() - start)
 
-        A_O = A[:, :mesh.K_Omega]
-        A_I = A[:, mesh.K_Omega:]
+        A_O = A[mesh.nodeLabels > 0][:, mesh.nodeLabels > 0]
+        A_I = A[mesh.nodeLabels > 0][:, mesh.nodeLabels < 0]
+        f = f_OI[mesh.nodeLabels > 0]
 
         if conf["ansatz"] == "CG":
-            g = np.apply_along_axis(u_exact, 1, mesh.vertices[mesh.nV_Omega:])
+            g = np.apply_along_axis(u_exact, 1, mesh.vertices[mesh.vertexLabels < 0])
         else:
             g = np.zeros(((mesh.K - mesh.K_Omega) // mesh.outdim, mesh.outdim))
-            for i, E in enumerate(mesh.elements[mesh.nE_Omega:]):
+            for i, E in enumerate(mesh.elements[mesh.elementLabels < 0]):
                 for ii, Vdx in enumerate(E):
                     vert = mesh.vertices[Vdx]
-                    g[3*i + ii] = u_exact(vert)
+                    g[(mesh.dim+1)*i + ii] = u_exact(vert)
         f -= A_I @ g.ravel()
 
         # Solve ---------------------------------------------------------------------------
@@ -70,7 +70,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         #mesh.plot_ud(pp)
         #mesh.plot_u_exact(pp)
         # Evaluate L2 Error ---------------------------------------------------------------
-        u_diff = (mesh.u_exact - mesh.ud)[:(mesh.K_Omega // mesh.outdim)]
+        u_diff = (mesh.u_exact - mesh.ud)[(mesh.nodeLabels > 0)[::mesh.outdim]]
         Mu_udiff = nlfem.evaluateMass(mesh, u_diff,
                                          conf["quadrature"]["outer"]["points"],
                                          conf["quadrature"]["outer"]["weights"])

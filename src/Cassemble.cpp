@@ -342,7 +342,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
         //cout << "K " << mesh.K << endl;
         //cout << "NNZ " << nnz_total << endl;
         //cout << arma::max(indices_all.row(1)) << endl;
-        arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K_Omega);
+        arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K);
         sp_Ad.save(conf.path_spAd);
         //cout << "Data saved." << endl;
     }
@@ -681,7 +681,7 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
 }// End function par_system
 
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
-    arma::vec fd(mesh.K_Omega, arma::fill::zeros);
+    arma::vec fd(mesh.K, arma::fill::zeros);
 
     printf("Function: par_forcing\n");
     printf("Mesh dimension: %i\n", mesh.dim);

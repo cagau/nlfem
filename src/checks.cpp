@@ -53,7 +53,7 @@ void chk_Mesh(MeshType & mesh){
         if (mesh.LabelTriangles(k)<=0) {
             for (unsigned long i = 0; i < d; i++) {
                 // For description of element labels see MeshTypes.h
-                abortIfFalse(mesh.Triangles(i, k) >= nV_Omega, "Incorrect vertex order or incorrect element label.");
+                //abortIfFalse(mesh.Triangles(i, k) >= nV_Omega, "Incorrect vertex order or incorrect element label.");
             }
         } else {
             chk_nE_Omega++;
