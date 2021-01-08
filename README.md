@@ -50,9 +50,9 @@ To test the rates for the constant kernel run
 
 `(nlfemvenv) cd path/to/nlfem/examples/Test2D`
 
-`(nlfemvenv) python3 computeRates2D.py -f testConfConstant -s 3`
+`(nlfemvenv) python3 computeRates2D.py -f testConfConstant -s 4`
 
-Run a more extensive test via the option `-f testConfFull -s 3`. Get help via the option `-h`.
+Run a more extensive test via the option `-f testConfFull -s 4`. Get help via the option `-h`.
 
 ## Changing the Operator or the right hand side
 If you want to change the model you have to alter the file `src/model.cpp`. You find

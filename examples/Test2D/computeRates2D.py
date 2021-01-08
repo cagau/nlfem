@@ -30,7 +30,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
 
         # Assembly ------------------------------------------------------------------------
         start = time()
-        A, f = nlfem.assemble(mesh,
+        A, f = nlfem.assemble(  mesh,
                                  conf["quadrature"]["outer"]["points"],
                                  conf["quadrature"]["inner"]["points"],
                                  conf["quadrature"]["outer"]["weights"],

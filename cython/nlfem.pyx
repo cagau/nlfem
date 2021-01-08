@@ -8,23 +8,23 @@
 # Assembly routine
 from libcpp.string cimport string
 cimport Cassemble
-cimport MeshTypes
 
 import numpy as np
 import time
 from libc.math cimport pow
 import scipy.sparse as sparse
 cimport numpy as c_np
+import datetime
 
-cdef class Element:
-    cdef MeshTypes.ElementClass element
+def timestamp():
+    """
+    Returns current timestamp as string.
 
-    def __cinit__(self, int dim):
-        self.element = MeshTypes.ElementClass(dim)
-
-def showElement(int dim):
-    E = Element(dim)
-    return MeshTypes.getElement(E.element)
+    :return: string, format %m%d_%H-%M-%S
+    """
+    # Link to strftime Doc
+    # http://strftime.org/
+    return datetime.datetime.now().strftime("%m%d_%H-%M-%S")
 
 def read_arma_mat(path, is_verbose=False):
     """
@@ -126,6 +126,123 @@ class tensorgauss:
             for dx in dxRow:
                 self.weights[k] *= w[dx]
 
+def stiffnesMatrix(
+        # Mesh information ------------------------------------
+        mesh,
+        kernel,
+        configuration,
+        Px,
+        Py,
+        # Weights for quadrature rule
+        dx,
+        dy,
+        double delta,
+        model_kernel="constant",
+        model_f = "constant",
+        integration_method = "retriangulate",
+        is_PlacePointOnCap = 1
+    ):
+    """
+
+    :param mesh:
+    :param kernel:
+    :param configuration:
+    :param Px:
+    :param Py:
+    :param dx:
+    :param dy:
+    :param delta:
+    :param model_kernel:
+    :param model_f:
+    :param integration_method:
+    :param is_PlacePointOnCap:
+    :return:
+    """
+    tmstmp = timestamp()
+    path_spAd = configuration.get("savePath", f"tmp_spAd_{tmstmp}")
+    cdef string path_spAd_ = path_spAd.encode('UTF-8')
+
+    cdef long[:] neighbours = mesh["neighbours"].flatten()#nE*np.ones((nE*dVertex), dtype=int)
+    cdef int nNeighbours = mesh["neighbours"].shape[1]
+    cdef long[:] elements = mesh["elements"].flatten()
+    cdef long[:] elementLabels = mesh["elementLabels"].flatten()
+    cdef double[:] vertices = mesh["vertices"].flatten()
+
+    cdef string model_kernel_ = kernel["function"].encode('UTF-8')
+    cdef string integration_method_ = configuration["approxBalls"]["method"].encode('UTF-8')
+    cdef int is_PlacePointOnCap_ = configuration["approxBalls"].get("is_PlacePointOnCap", 1)
+
+    cdef double [:] ptrPx = configuration["quadrature"]["outer"]["points"].flatten()
+    cdef double [:] ptrPy = configuration["quadrature"]["inner"]["points"].flatten()
+    cdef double [:] ptrdx = configuration["quadrature"]["outer"]["weights"].flatten()
+    cdef double [:] ptrdy = configuration["quadrature"]["inner"]["weights"].flatten()
+
+    cdef double [:] Pg
+    cdef const double * ptrPg = NULL
+    cdef double [:] dg
+    cdef const double * ptrdg = NULL
+
+    tensorGaussDegree = configuration["quadrature"].get("tensorGaussDegree", 0)
+    if tensorGaussDegree != 0:
+        quadgauss = tensorgauss(tensorGaussDegree)
+        Pg = quadgauss.points.flatten()
+        ptrPg = &Pg[0]
+        dg = quadgauss.weights.flatten()
+        ptrdg = &dg[0]
+
+    cdef long [:] ZetaIndicator
+    cdef long * ptrZetaIndicator = NULL
+    cdef long nZeta
+
+    try:
+        nZeta = mesh.get("ZetaIndicator").shape[1]
+        ZetaIndicator = mesh.get("ZetaIndicator").flatten()
+        if nZeta > 0:
+            ptrZetaIndicator = &ZetaIndicator[0]
+    except KeyError:
+        #print("Zeta not found.")
+        nZeta = 0
+
+    cdef int outdim_ = kernel["outputdim"]
+    if mesh["outdim"] != kernel["outputdim"]:
+        raise ValueError("The output dimension of the mesh has to be equal to the output dimension of the kernel.")
+
+    maxDiameter = mesh.get("diam", 0.0)
+    is_DG = configuration.get("ansatz", "CG") == "DG"
+
+    # Compute Assembly --------------------------------
+    start = time.time()
+    Cassemble.par_assemble( "system".encode('UTF-8'), path_spAd_,
+                            "".encode('UTF-8'),
+                            mesh.get("K_Omega"), mesh.get("K"),
+                            &elements[0], &elementLabels[0], &vertices[0],
+                            mesh["nE"] , mesh["nE_Omega"],
+                            mesh["nV"], mesh["nV_Omega"],
+                            &ptrPx[0], Px.shape[0], &ptrdx[0],
+                            &ptrPy[0], Py.shape[0], &ptrdy[0],
+                            kernel["horizon"]**2,
+                            &neighbours[0],
+                            nNeighbours,
+                            is_DG,
+                            0,
+                            &model_kernel_[0],
+                            NULL,
+                            &integration_method_[0],
+                            is_PlacePointOnCap_,
+                            mesh["dim"], outdim_,
+                            ptrZetaIndicator, nZeta,
+                            ptrPg, tensorGaussDegree, ptrdg,
+                            maxDiameter)
+
+    total_time = time.time() - start
+    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+
+    Ad = read_arma_spMat(path_spAd)
+    if path_spAd == f"tmp_spAd_{tmstmp}":
+        remove_arma_tmp(path_spAd)
+
+
+    return Ad
 
 def assemble(
         # Mesh information ------------------------------------
@@ -334,7 +451,7 @@ def constructAdjaciencyGraph(long[:,:] elements):
         colj *= ((elemenIndices[k-1]-elemenIndices[k])==0)
         colj += ((elemenIndices[k-1]-elemenIndices[k])==0)
         neigs[elemenIndices[k], colj] =  neighbourIndices[k]
-    return neigs#, grph_neigs2
+    return neigs
 
 def solve_cg(Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 500):
     cdef int n = b.size
