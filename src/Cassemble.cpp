@@ -286,7 +286,7 @@ void par_evaluateMass(double *vd, double *ud, long *Elements,
 
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
-                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int nE,
+                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const long * ptrLabelVerts, const int nE,
                   const int nE_Omega, const int nV, const int nV_Omega, const double *Px, const int nPx, const double *dx,
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int nNeighbours,
@@ -300,7 +300,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     // [1]
     // Mesh will contain K_Omega = outdim*nV_Omega in CG case,
     // K_Omega = outdim*3*nE_Omega in DG [X] Not implemented!
-    MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, nE, nE_Omega,
+    MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, ptrLabelVerts, nE, nE_Omega,
                      nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter};
     // [2]
@@ -436,7 +436,6 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
         //    cout << "aTdx " << aTdx << endl;
         //}
         if (mesh.LabelTriangles[aTdx] > 0) {
-            // It would be nice, if in future there is no dependency on the element ordering...
             //cout <<  aTdx << endl;
             //cout << "L " << mesh.LabelTriangles[aTdx] << endl;
             //if (mesh.LabelTriangles[aTdx] == 1) {
@@ -607,7 +606,7 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                                     // [x 3]
                                     // for (int a = 0; a < mesh.dVertex*mesh.outdim; a++){ ...
 
-                                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a/mesh.outdim] < mesh.nV_Omega)) {
+                                    if (mesh.is_DiscontinuousGalerkin || (mesh.LabelVerts[aAdx[a/mesh.outdim]] > 0)) {
                                         for (int b = 0; b < mesh.dVertex*mesh.outdim; b++) {
                                             // [x 4]
                                             // for (int b = 0; b < mesh.dVertex*mesh.outdim; b++){ ...
@@ -738,7 +737,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                 }
 
                 for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
-                    if (mesh.is_DiscontinuousGalerkin || (aAdx[a/mesh.outdim] < mesh.nV_Omega)) {
+                    if (mesh.is_DiscontinuousGalerkin || (mesh.LabelVerts[aAdx[a/mesh.outdim]] > 0)) {
                         #pragma omp atomic update
                         fd[mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim] += termf[a]*weight;
                     }

@@ -80,6 +80,7 @@ struct MeshStruct{
     const long * ptrTriangles;
     const long * ptrLabelTriangles;
     const double * ptrVerts;
+    const long * ptrLabelVerts;
     // Number of Triangles and number of Triangles in Omega
     const int nE;
     const int nE_Omega;
@@ -111,6 +112,7 @@ struct MeshStruct{
     // Label of Triangles inside Omega = 1
     // Label of Triangles in OmegaI = 2
     const arma::Col<long> LabelTriangles{arma::Col<long>(this->ptrLabelTriangles, this->nE)};
+    const arma::Col<long> LabelVerts{arma::Col<long>(this->ptrLabelVerts, this->nV)};
     // Zeta is an optional parameter. In case we get a Zeta matrix,
     // the memory is already allocated we only need a wrapper.
     const arma::Mat<long> ZetaIndicator{arma::Mat<long>(this-> ptrZeta, this-> nZeta, this-> nE)};

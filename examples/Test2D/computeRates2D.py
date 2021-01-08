@@ -30,7 +30,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
 
         # Assembly ------------------------------------------------------------------------
         start = time()
-        A = nlfem.stiffnesMatrix(mesh.__dict__, kernel, conf)
+        A = nlfem.stiffnessMatrix(mesh.__dict__, kernel, conf)
         f = nlfem.loadVector(mesh.__dict__, load, conf)
 
         data["Assembly Time"].append(time() - start)

@@ -10,7 +10,8 @@ from libcpp.string cimport string
 
 cdef extern from "Cassemble.h":
     void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
-                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int nE,
+                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const long * ptrLabelVerts,
+                  const int nE,
                   const int nE_Omega, const int L, const int L_Omega, const double *Px, const int nPx, const double *dx,
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int nNeighbours,

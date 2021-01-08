@@ -125,12 +125,23 @@ class tensorgauss:
             for dx in dxRow:
                 self.weights[k] *= w[dx]
 
-def stiffnesMatrix(
+def stiffnessMatrix(
         # Mesh information ------------------------------------
         mesh,
         kernel,
         configuration
     ):
+    """
+    Computes stiffness matrix of nonlocal operator on a given mesh.
+    The input parameters are expected to be dictionaries. Find more information
+    on the expected content in the example/Test2D/testConfConstant.py
+
+    :param mesh: Dictionary of containing the mesh information.
+    :param kernel: Dictionary of containing the kernel information.
+    :param configuration: Dictionary of containing the configuration.
+
+    :return: Matrix A in scipy csr-sparse format
+    """
     tmstmp = timestamp()
     path_spAd = configuration.get("savePath", f"tmp_spAd_{tmstmp}")
     cdef string path_spAd_ = path_spAd.encode('UTF-8')
@@ -140,6 +151,7 @@ def stiffnesMatrix(
     cdef long[:] elements = mesh["elements"].flatten()
     cdef long[:] elementLabels = mesh["elementLabels"].flatten()
     cdef double[:] vertices = mesh["vertices"].flatten()
+    cdef long[:] vertexLabels = mesh["vertexLabels"].flatten()
 
     cdef string model_kernel_ = kernel["function"].encode('UTF-8')
     cdef string integration_method_ = configuration["approxBalls"]["method"].encode('UTF-8')
@@ -190,7 +202,7 @@ def stiffnesMatrix(
     Cassemble.par_assemble( "system".encode('UTF-8'), path_spAd_,
                             "".encode('UTF-8'),
                             mesh.get("K_Omega"), mesh.get("K"),
-                            &elements[0], &elementLabels[0], &vertices[0],
+                            &elements[0], &elementLabels[0], &vertices[0], &vertexLabels[0],
                             mesh["nE"] , mesh["nE_Omega"],
                             mesh["nV"], mesh["nV_Omega"],
                             &ptrPx[0], nPx, &ptrdx[0],
@@ -232,6 +244,7 @@ def loadVector(
     cdef long[:] elements = mesh["elements"].flatten()
     cdef long[:] elementLabels = mesh["elementLabels"].flatten()
     cdef double[:] vertices = mesh["vertices"].flatten()
+    cdef long[:] vertexLabels = mesh["vertexLabels"].flatten()
 
     cdef string model_load_ = load["function"].encode('UTF-8')
     cdef string integration_method_ = configuration["approxBalls"]["method"].encode('UTF-8')
@@ -248,14 +261,7 @@ def loadVector(
     cdef const double * ptrPg = NULL
     cdef double [:] dg
     cdef const double * ptrdg = NULL
-
-    tensorGaussDegree = configuration["quadrature"].get("tensorGaussDegree", 0)
-    if tensorGaussDegree != 0:
-        quadgauss = tensorgauss(tensorGaussDegree)
-        Pg = quadgauss.points.flatten()
-        ptrPg = &Pg[0]
-        dg = quadgauss.weights.flatten()
-        ptrdg = &dg[0]
+    tensorGaussDegree = 0
 
     cdef long [:] ZetaIndicator
     cdef long * ptrZetaIndicator = NULL
@@ -280,7 +286,7 @@ def loadVector(
     Cassemble.par_assemble( "forcing".encode('UTF-8'), "".encode('UTF-8'),
                             path_fd_,
                             mesh.get("K_Omega"), mesh.get("K"),
-                            &elements[0], &elementLabels[0], &vertices[0],
+                            &elements[0], &elementLabels[0], &vertices[0], &vertexLabels[0],
                             mesh["nE"] , mesh["nE_Omega"],
                             mesh["nV"], mesh["nV_Omega"],
                             &ptrPx[0], nPx, &ptrdx[0],
@@ -344,6 +350,7 @@ def assemble(
     cdef long[:] elements = mesh.elements.flatten()
     cdef long[:] elementLabels = mesh.elementLabels.flatten()
     cdef double[:] vertices = mesh.vertices.flatten()
+    cdef long[:] vertexLabels = mesh["vertexLabels"].flatten()
     #cdef double[:] ptrAd = Ad
     cdef double[:] ptrfd = fd
     cdef string model_kernel_ = model_kernel.encode('UTF-8')
@@ -401,7 +408,7 @@ def assemble(
     if (compute=="system" or compute=="systemforcing"):
         start = time.time()
         Cassemble.par_assemble( compute_system_, path_spAd_, path_fd_, mesh.K_Omega, mesh.K,
-                            &elements[0], &elementLabels[0], &vertices[0],
+                            &elements[0], &elementLabels[0], &vertices[0], &vertexLabels[0],
                             mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
                             &ptrPx[0], Px.shape[0], &ptrdx[0],
                             &ptrPy[0], Py.shape[0], &ptrdy[0],
@@ -427,7 +434,7 @@ def assemble(
     if (compute=="forcing" or compute =="systemforcing"):
         print("")
         Cassemble.par_assemble( compute_forcing_, path_spAd_, path_fd_, mesh.K_Omega, mesh.K,
-                            &elements[0], &elementLabels[0], &vertices[0],
+                            &elements[0], &elementLabels[0], &vertices[0], &vertexLabels[0],
                             mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
                             &ptrPx[0], Px.shape[0], &ptrdx[0],
                             &ptrPy[0], Py.shape[0], &ptrdy[0],

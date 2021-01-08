@@ -85,6 +85,7 @@ void solve2x2(const double * A, const double * b, double * x);
  * @param ptrTriangles <B>(nE, d+1)</B> Pointer to elements. Label 1 for elements in Omega, Label 2 for elements in OmegaI.
  * @param ptrLabelTriangles <B>(nE,)</B> Pointer to element labels
  * @param ptrVerts <B>(L, d)</B> Pointer to vertices
+ * @param ptrLabelVerts Pointer to vertex labels
  * @param nE         Number of elements
  * @param nE_Omega   Number of elements in Omega
  * @param nV         Number of vertices
@@ -114,7 +115,8 @@ void solve2x2(const double * A, const double * b, double * x);
  * @param maxDiameter Maximal diameter of finite elements (optional). Might increase speed of retriangulation if provided.
  * */
 void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega, int K,
-                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, int nE,
+                  const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const long * ptrLabelVerts,
+                  int nE,
                   int nE_Omega, int nV, int nV_Omega, const double *Px, int nPx, const double *dx,
                   const double *Py, int nPy, const double *dy, double sqdelta, const long *ptrNeighbours,
                   int nNeighbours,
