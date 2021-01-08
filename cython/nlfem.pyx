@@ -1,9 +1,8 @@
 #-*- coding:utf-8 -*-
-# distutils: include_dirs = ../include
+#distutils: include_dirs = include
 
 #cython: language_level=3
-#cython: boundscheck=True, wraparound=True, cdivision=False
-# Setting this compiler directive will given a minor increase of speed.
+#cython: boundscheck=False, wraparound=False, cdivision=True
 
 # Assembly routine
 from libcpp.string cimport string
@@ -130,34 +129,8 @@ def stiffnesMatrix(
         # Mesh information ------------------------------------
         mesh,
         kernel,
-        configuration,
-        Px,
-        Py,
-        # Weights for quadrature rule
-        dx,
-        dy,
-        double delta,
-        model_kernel="constant",
-        model_f = "constant",
-        integration_method = "retriangulate",
-        is_PlacePointOnCap = 1
+        configuration
     ):
-    """
-
-    :param mesh:
-    :param kernel:
-    :param configuration:
-    :param Px:
-    :param Py:
-    :param dx:
-    :param dy:
-    :param delta:
-    :param model_kernel:
-    :param model_f:
-    :param integration_method:
-    :param is_PlacePointOnCap:
-    :return:
-    """
     tmstmp = timestamp()
     path_spAd = configuration.get("savePath", f"tmp_spAd_{tmstmp}")
     cdef string path_spAd_ = path_spAd.encode('UTF-8')
@@ -176,6 +149,8 @@ def stiffnesMatrix(
     cdef double [:] ptrPy = configuration["quadrature"]["inner"]["points"].flatten()
     cdef double [:] ptrdx = configuration["quadrature"]["outer"]["weights"].flatten()
     cdef double [:] ptrdy = configuration["quadrature"]["inner"]["weights"].flatten()
+    cdef int nPx = configuration["quadrature"]["outer"]["weights"].shape[0]
+    cdef int nPy = configuration["quadrature"]["inner"]["weights"].shape[0]
 
     cdef double [:] Pg
     cdef const double * ptrPg = NULL
@@ -195,8 +170,8 @@ def stiffnesMatrix(
     cdef long nZeta
 
     try:
-        nZeta = mesh.get("ZetaIndicator").shape[1]
-        ZetaIndicator = mesh.get("ZetaIndicator").flatten()
+        nZeta = mesh["ZetaIndicator"].shape[1]
+        ZetaIndicator = mesh["ZetaIndicator"].flatten()
         if nZeta > 0:
             ptrZetaIndicator = &ZetaIndicator[0]
     except KeyError:
@@ -218,15 +193,15 @@ def stiffnesMatrix(
                             &elements[0], &elementLabels[0], &vertices[0],
                             mesh["nE"] , mesh["nE_Omega"],
                             mesh["nV"], mesh["nV_Omega"],
-                            &ptrPx[0], Px.shape[0], &ptrdx[0],
-                            &ptrPy[0], Py.shape[0], &ptrdy[0],
+                            &ptrPx[0], nPx, &ptrdx[0],
+                            &ptrPy[0], nPy, &ptrdy[0],
                             kernel["horizon"]**2,
                             &neighbours[0],
                             nNeighbours,
                             is_DG,
                             0,
                             &model_kernel_[0],
-                            NULL,
+                            "constant".encode('UTF-8'),
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh["dim"], outdim_,
@@ -240,9 +215,97 @@ def stiffnesMatrix(
     Ad = read_arma_spMat(path_spAd)
     if path_spAd == f"tmp_spAd_{tmstmp}":
         remove_arma_tmp(path_spAd)
-
-
     return Ad
+
+def loadVector(
+        # Mesh information ------------------------------------
+        mesh,
+        load,
+        configuration
+    ):
+    tmstmp = timestamp()
+    path_fd = configuration.get("savePath", f"tmp_fd_{tmstmp}")
+    cdef string path_fd_ = path_fd.encode('UTF-8')
+
+    cdef long[:] neighbours = mesh["neighbours"].flatten()#nE*np.ones((nE*dVertex), dtype=int)
+    cdef int nNeighbours = mesh["neighbours"].shape[1]
+    cdef long[:] elements = mesh["elements"].flatten()
+    cdef long[:] elementLabels = mesh["elementLabels"].flatten()
+    cdef double[:] vertices = mesh["vertices"].flatten()
+
+    cdef string model_load_ = load["function"].encode('UTF-8')
+    cdef string integration_method_ = configuration["approxBalls"]["method"].encode('UTF-8')
+    cdef int is_PlacePointOnCap_ = configuration["approxBalls"].get("is_PlacePointOnCap", 1)
+
+    cdef double [:] ptrPx = configuration["quadrature"]["outer"]["points"].flatten()
+    #cdef double [:] ptrPy = configuration["quadrature"]["inner"]["points"].flatten()
+    cdef double [:] ptrdx = configuration["quadrature"]["outer"]["weights"].flatten()
+    #cdef double [:] ptrdy = configuration["quadrature"]["inner"]["weights"].flatten()
+    cdef int nPx = configuration["quadrature"]["outer"]["weights"].shape[0]
+    #cdef int nPy = configuration["quadrature"]["inner"]["weights"].shape[0]
+
+    cdef double [:] Pg
+    cdef const double * ptrPg = NULL
+    cdef double [:] dg
+    cdef const double * ptrdg = NULL
+
+    tensorGaussDegree = configuration["quadrature"].get("tensorGaussDegree", 0)
+    if tensorGaussDegree != 0:
+        quadgauss = tensorgauss(tensorGaussDegree)
+        Pg = quadgauss.points.flatten()
+        ptrPg = &Pg[0]
+        dg = quadgauss.weights.flatten()
+        ptrdg = &dg[0]
+
+    cdef long [:] ZetaIndicator
+    cdef long * ptrZetaIndicator = NULL
+    cdef long nZeta
+
+    try:
+        nZeta = mesh["ZetaIndicator"].shape[1]
+        ZetaIndicator = mesh["ZetaIndicator"].flatten()
+        if nZeta > 0:
+            ptrZetaIndicator = &ZetaIndicator[0]
+    except KeyError:
+        #print("Zeta not found.")
+        nZeta = 0
+
+    cdef int outdim_ = mesh["outdim"]
+
+    maxDiameter = mesh.get("diam", 0.0)
+    is_DG = configuration.get("ansatz", "CG") == "DG"
+
+    # Compute Assembly --------------------------------
+    start = time.time()
+    Cassemble.par_assemble( "forcing".encode('UTF-8'), "".encode('UTF-8'),
+                            path_fd_,
+                            mesh.get("K_Omega"), mesh.get("K"),
+                            &elements[0], &elementLabels[0], &vertices[0],
+                            mesh["nE"] , mesh["nE_Omega"],
+                            mesh["nV"], mesh["nV_Omega"],
+                            &ptrPx[0], nPx, &ptrdx[0],
+                            &ptrPx[0], nPx, &ptrdx[0],
+                            0.0,
+                            &neighbours[0],
+                            nNeighbours,
+                            is_DG,
+                            0,
+                            "constant".encode('UTF-8'),
+                            model_load_,
+                            &integration_method_[0],
+                            is_PlacePointOnCap_,
+                            mesh["dim"], outdim_,
+                            ptrZetaIndicator, nZeta,
+                            ptrPg, tensorGaussDegree, ptrdg,
+                            maxDiameter)
+
+    total_time = time.time() - start
+    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+
+    fd = read_arma_mat(path_fd)[:,0]
+    if path_fd == f"tmp_fd_{tmstmp}":
+        remove_arma_tmp(path_fd)
+    return fd
 
 def assemble(
         # Mesh information ------------------------------------

@@ -51,14 +51,14 @@ void lookup_configuration(ConfigurationType & conf){
     // Lookup kernel ---------------------------------------------------------------------------------------------------
     // Alternatively to if we can lookup the kernel in a map. As in given below for the constant kernel case.
     // https://stackoverflow.com/questions/17762232/use-string-to-class-lookup-table-in-c-to-instantiate-classes
-    map<string, void (*)(const double *, long, const double *, long, double, double *)> lookupKernelName {
-            {"constant", kernel_constant}
-    };
+    //map<string, void (*)(const double *, long, const double *, long, double, double *)> lookupKernelName {
+    //        {"constant", kernel_constant}
+    //};
 
     cout << "Kernel: " << conf.model_kernel << endl;
     if (conf.model_kernel == "constant"){
-        //model_kernel = kernel_constant;
-        model_kernel = lookupKernelName[conf.model_kernel];
+        model_kernel = kernel_constant;
+        //model_kernel = lookupKernelName[conf.model_kernel];
     } else if (conf.model_kernel == "constantTruncated") {
         model_kernel = kernel_constantTruncated;
     } else if (conf.model_kernel == "labeled") {

@@ -30,18 +30,8 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
 
         # Assembly ------------------------------------------------------------------------
         start = time()
-        A, f = nlfem.assemble(  mesh,
-                                 conf["quadrature"]["outer"]["points"],
-                                 conf["quadrature"]["inner"]["points"],
-                                 conf["quadrature"]["outer"]["weights"],
-                                 conf["quadrature"]["inner"]["weights"],
-                                 kernel["horizon"],
-                                 model_kernel=kernel["function"],
-                                 model_f=load["function"],
-                                 integration_method=conf["approxBalls"]["method"],
-                                 is_PlacePointOnCap=conf["approxBalls"]["isPlacePointOnCap"],
-                                 compute="systemforcing",
-                                 tensorGaussDegree=conf["quadrature"]["tensorGaussDegree"])
+        A = nlfem.stiffnesMatrix(mesh.__dict__, kernel, conf)
+        f = nlfem.loadVector(mesh.__dict__, load, conf)
 
         data["Assembly Time"].append(time() - start)
 

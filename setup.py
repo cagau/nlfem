@@ -1,9 +1,10 @@
 from setuptools import setup
 from setuptools.extension import Extension
 import numpy
+
 try:
     from Cython.Build import cythonize
-    cythonize("cython/nlfem.pyx")
+    cythonize("cython/nlfem.pyx", include_path=["include"])
 except ModuleNotFoundError:
     print("\nWARNING: Cython was not found. Install Cython if you want that changes in cython/nlfem.pyx have any effect!\n")
 
