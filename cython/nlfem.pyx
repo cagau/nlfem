@@ -139,7 +139,19 @@ def stiffnessMatrix(
     :param mesh: Dictionary containing the mesh information ("elements", "elementLabels",
     "vertices", "vertexLabels", "neighbours"). The list "neighbours" can be obtained from
     constructAdjaciencyGraph(lements).
-    :param kernel: Dictionary containing the kernel information (find an example in testConfFull.py).
+
+    The arrays "elementLabels" and "vertexLabels" are expected to be of datatype int (Python). Labels in the domain
+    have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this
+    purpose it does not matter
+    which positive or negative number is used, but the kernels can depend on the element labels.
+    The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin
+     this means that the signs of the element labels and corresponding vertex labels coincide. In case of
+     Continuous Galerkin this means that elements with negative label have only vertices with negative label.
+
+    :param kernel: The kernel is assumed to be a dictionary containing the keys "function", and "outputdim", where "outputdim"
+    is the output-dimension of the kernel function. In case of a scalar valued kernel this would be 1. In case
+    of the kernel "linearPrototypeMicroelasticField" this would be 2 (find an example in testConfFull.py).
+
     :param configuration: Dictionary containing the configuration (find an example in testConfFull.py).
 
     :return: Matrix A in scipy csr-sparse format of shape K x K where
@@ -260,8 +272,9 @@ def loadVector(
     on the expected content in the example/Test2D/testConfFull.py
 
     :param mesh: Dictionary containing the mesh information ("elements", "elementLabels",
-    "vertices", "vertexLabels", "outdim"), where "outdim" is the output-dimension of the kernel. For scalar
-    kernels this would be 1, for the linear prototype microelastic kernel this would be 2.
+    "vertices", "vertexLabels", "outdim"), where "outdim" is the output-dimension of the kernel.
+    In this function the output dimension is read from "outdim", as no kernel is expected.
+
     The arrays "elementLabels" and "vertexLabels" are expected to be of datatype int (Python). Labels in the domain
     have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this
     purpose it does not matter
@@ -269,6 +282,7 @@ def loadVector(
     The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin
      this means that the signs of the element labels and corresponding vertex labels coincide. In case of
      Continuous Galerkin this means that elements with negative label have only vertices with negative label.
+
     :param load: Dictionary containing the load information (find an example in testConfFull.py).
     :param configuration: Dictionary containing the configuration (find an example in testConfFull.py).
 
