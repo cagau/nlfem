@@ -393,16 +393,16 @@ def assemble(
         is_PlacePointOnCap = 1,
         tensorGaussDegree=0
     ):
-        """
-        Computes stiffness matrix and load vector. This function is deprecated. It expects a class mesh
-        and some other input parameters. It returns a load vector of shape K_Omega, instead of K, which assumes
-        that the nodes are ordered such that Dirichlet nodes appear as last values. In case of Continuous Galerkin
-        this means that vertices with positve label appear last. In case of Discontinuous Galerkin this means
-        that elements with negative label appear last.
+    """
+    Computes stiffness matrix and load vector. This function is deprecated. It expects a class mesh
+    and some other input parameters. It returns a load vector of shape K_Omega, instead of K, which assumes
+    that the nodes are ordered such that Dirichlet nodes appear as last values. In case of Continuous Galerkin
+    this means that vertices with positve label appear last. In case of Discontinuous Galerkin this means
+    that elements with negative label appear last.
 
-        :return: Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim
-        (Discontinuous Galerkin)
-        """
+    :return: Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim
+    (Discontinuous Galerkin)
+    """
     is_tmpAd = False
     if path_spAd is None:
         is_tmpAd = True
