@@ -499,7 +499,7 @@ def assemble(
         total_time = time.time() - start
         print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 
-        Ad = read_arma_spMat(path_spAd)
+        Ad = read_arma_spMat(path_spAd)[:mesh.K_Omega]
         if is_tmpAd:
             remove_arma_tmp(path_spAd)
 
