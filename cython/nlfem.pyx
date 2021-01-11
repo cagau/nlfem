@@ -522,7 +522,7 @@ def assemble(
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
                             ptrPg, tensorGaussDegree, ptrdg, maxDiameter)
 
-        fd = read_arma_mat(path_fd)[:,0]
+        fd = read_arma_mat(path_fd)[:mesh.K_Omega,0]
         if is_tmpfd:
             remove_arma_tmp(path_fd)
 
