@@ -262,6 +262,13 @@ def loadVector(
     :param mesh: Dictionary containing the mesh information ("elements", "elementLabels",
     "vertices", "vertexLabels", "outdim"), where "outdim" is the output-dimension of the kernel. For scalar
     kernels this would be 1, for the linear prototype microelastic kernel this would be 2.
+    The arrays "elementLabels" and "vertexLabels" are expected to be of datatype int (Python). Labels in the domain
+    have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this
+    purpose it does not matter
+    which positive or negative number is used, but the kernels can depend on the element labels.
+    The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin
+     this means that the signs of the element labels and corresponding vertex labels coincide. In case of
+     Continuous Galerkin this means that elements with negative label have only vertices with negative label.
     :param load: Dictionary containing the load information (find an example in testConfFull.py).
     :param configuration: Dictionary containing the configuration (find an example in testConfFull.py).
 
@@ -372,6 +379,16 @@ def assemble(
         is_PlacePointOnCap = 1,
         tensorGaussDegree=0
     ):
+        """
+        Computes stiffness matrix and load vector. This function is deprecated. It expects a class mesh
+        and some other input parameters. It returns a load vector of shape K_Omega, instead of K, which assumes
+        that the nodes are ordered such that Dirichlet nodes appear as last values. In case of Continuous Galerkin
+        this means that vertices with positve label appear last. In case of Discontinuous Galerkin this means
+        that elements with negative label appear last.
+
+        :return: Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim
+        (Discontinuous Galerkin)
+        """
     is_tmpAd = False
     if path_spAd is None:
         is_tmpAd = True
@@ -391,7 +408,7 @@ def assemble(
     cdef long[:] elements = mesh.elements.flatten()
     cdef long[:] elementLabels = mesh.elementLabels.flatten()
     cdef double[:] vertices = mesh.vertices.flatten()
-    cdef long[:] vertexLabels = mesh["vertexLabels"].flatten()
+    cdef long[:] vertexLabels = mesh.vertexLabels.flatten()
     #cdef double[:] ptrAd = Ad
     cdef double[:] ptrfd = fd
     cdef string model_kernel_ = model_kernel.encode('UTF-8')
