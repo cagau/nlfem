@@ -271,9 +271,11 @@ void par_evaluateMass(double *vd, double *ud, long *Elements,
                 aTdet = absDet(&aTE[0], dim);
 
                 for (int a = 0; a < dVerts; a++) {
+                    //TODO: Change if to if(vertexLabel[ aAdx[a] ] > 0
                     if (aAdx[a] < K_Omega/outdim) {
                         for (int aOut = 0; aOut < outdim; aOut++) {
                             for (int b = 0; b < dVerts; b++) {
+                                //TODO: Change if to if(vertexLabel[ aAdx[b] ] > 0
                                 if (aAdx[b] < K_Omega/outdim) {
                                     for (int bOut = 0; bOut < outdim; bOut++) {
                                         for (int j = 0; j < nP; j++) {
@@ -281,6 +283,7 @@ void par_evaluateMass(double *vd, double *ud, long *Elements,
 #pragma omp atomic update
                                             vd[outdim*aAdx[a] + aOut] +=
                                                     psi[nP * a + j] * psi[nP * b + j] * aTdet * dx[j] * ud[outdim*aAdx[b] + bOut];
+                                            // TODO: vd has to be of shape K, not K_Omega.
                                         }
                                     }
                                 }

@@ -14,6 +14,8 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
     u_exact = load["solution"]
 
     # Delta is assumed to be of the form deltaK/10 in the mesh, so we obtain deltaK by
+    # This is a restriction due to the simplified mesh-generation and independent of the
+    # assembly routine!
     deltaK = int(np.round(kernel["horizon"] * 10))
     if not deltaK:
         raise ValueError("Delta has to be of the form delta = deltaK/10. for deltaK in N.")
@@ -54,7 +56,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         x = cg(A_O, f, f)[0].reshape((-1, mesh.outdim))
         # print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
         mesh.write_ud(x, u_exact)
-        if kernel["outputdim"] == 1:
+        if kernel["outputdim"] == 1 and mesh.dim == 2:
             mesh.plot_ud(pp)
         # Some random quick Check....
         # filter = np.array(assemble.read_arma_mat("data/result.fd").flatten(), dtype=bool)

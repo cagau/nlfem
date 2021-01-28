@@ -35,7 +35,7 @@ def append_output(data, conf, kernel, load, fileHandle):
         "dof": data.get("nV_Omega", []),
         "L2 Error": data.get("L2 Error", []),
         "Rates": data.get("Rates", [])#,
-        #"Time [s]": data.get("Assembly Time", []),
+        #"Time [s]": data.get("Assembly Time", [])#,
     }
 
     write_columns(fileHandle, columns)
