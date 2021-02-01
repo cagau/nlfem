@@ -244,6 +244,15 @@ double vec_sqL2dist(const double * x, const double * y, const int len){
     return r;
 }
 
+double vec_LInfdist(const double * x, const double * y, const int len){
+    double r=0;
+    int i=0;
+    for (i=0; i<len; i++){
+        r = max(absolute(x[i] - y[i]), r);
+    }
+    return r;
+}
+
 void doubleVec_tozero(double * vec, const int len){
     for (auto entry = vec; entry < vec+len; entry++){
         *entry  = 0.0;

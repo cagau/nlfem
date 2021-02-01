@@ -20,7 +20,7 @@ ext_modules = [
                     "./src/mathhelpers.cpp",
                     "./src/model.cpp",
                     "./src/integration.cpp"],
-        extra_link_args=['-fopenmp', '-larmadillo'],
+        extra_link_args=['-fopenmp', '-larmadillo', '-lCGAL', '-lgmp', '-lmpfr'],
         extra_compile_args=['-fopenmp', '-O3', '-DARMA_NO_DEBUG'],
         language="c++",
         include_dirs=["include", "src", numpy.get_include()]

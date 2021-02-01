@@ -617,7 +617,7 @@ def solve_cg(Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 5
     return {"x": x, "its": k, "res": res_new}
 
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
-from Cassemble cimport method_retriangulate
+from Cassemble cimport method_retriangulate, method_retriangulateInfty
 def py_retriangulate(
         double [:] x_center,
         double [:] TE,
@@ -632,6 +632,20 @@ def py_retriangulate(
         double [:] cTriangleList = TriangleList
     Rdx = method_retriangulate(&x_center[0], &TE[0], sqdelta, &cTriangleList[0], is_placePointOnCaps)
 
+    return Rdx, TriangleList
+def py_retriangulateInfty(
+        double [:] x_center,
+        double [:] TE,
+        double delta,
+        int is_placePointOnCaps,
+        pp
+    ):
+
+    TriangleList =  np.zeros(9*3*2)
+    cdef:
+        double sqdelta = pow(delta,2)
+        double [:] cTriangleList = TriangleList
+    Rdx = method_retriangulateInfty(&x_center[0], &TE[0], sqdelta, &cTriangleList[0], is_placePointOnCaps)
     return Rdx, TriangleList
 
 from Cassemble cimport toRef

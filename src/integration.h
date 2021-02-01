@@ -5,12 +5,21 @@
 #ifndef NONLOCAL_ASSEMBLY_INTEGRATION_H
 #define NONLOCAL_ASSEMBLY_INTEGRATION_H
 // ___ INTEGRATION DECLARATION _________________________________________________________________________________________
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Triangulation_2.h>
+
+// Library for integration of L-infty Ball
+typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+typedef CGAL::Triangulation_2<K>         Triangulation;
+typedef Triangulation::Point             Point;
+typedef Triangulation::Finite_faces_iterator Finite_face_iterator;
 
 // Integration Routine #################################################################################################
 
 extern void (*integrate)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                   const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
-
+extern int (*method)(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList,
+              int isPlacePointOnCap);
 // Integration Methods #################################################################################################
 // Methods -------------------------------------------------------------------------------------------------------------
 /**
@@ -34,6 +43,7 @@ extern void (*integrate)(const ElementType &aT, const ElementType &bT, const Qua
 void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc);
+
 /**
  * @brief . This integration routines uses method_baryCenter() to truncate the *inner domain* bT. See integrate()
  * for general information about the integration routines.
@@ -264,7 +274,7 @@ void integrate_linearPrototypeMicroelastic_baryCenterRT(const ElementType &aT, c
 int method_baryCenter(const double * x_center, const ElementType & T, const MeshType & mesh, double * reTriangle_list, int is_placePointOnCap);
 /**
  * @brief This truncation method retriangulates the triangle bT depending
- * on the distance of xCenter to bT. The function writes the list of triangles
+ * on the distance of xCenter to bT w.r.t. the L2-norm ball. The function writes the list of triangles
  * which are obtained from the trunaction into reTriangle_list.
  *
  * @param x_center Physical quadrature point. This point is obtained by mapping a quadrature point
@@ -276,6 +286,21 @@ int method_baryCenter(const double * x_center, const ElementType & T, const Mesh
  * @return 0 if there is no interaction, -1 otherwise.
  */
 int method_retriangulate(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList, int isPlacePointOnCap);
+/**
+ * @brief This truncation method retriangulates the triangle bT depending
+ * on the distance of xCenter to bT w.r.t. the L-infinity-norm ball. The function writes the list of triangles
+ * which are obtained from the trunaction into reTriangle_list.
+ *
+ * @param x_center Physical quadrature point. This point is obtained by mapping a quadrature point
+ * of the reference element to the triangle aT of the outer domain.
+ * @param T Triangle of the inner integral.
+ * @param mesh Mesh
+ * @param reTriangle_list List of triangles which are obtained from the retriangulation.
+ * @param is_placePointOnCap Switch for with caps integration.
+ * @return 0 if there is no interaction, -1 otherwise.
+ */
+int method_retriangulateInfty(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList,
+                              int isPlacePointOnCap);
 /**
  * @brief This truncation method returns the number of vertices of triangle T which interact
  * with x_center, i.e. have a l2 distance smaller than delta.

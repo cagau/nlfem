@@ -44,6 +44,8 @@ neighbours have to be handled with special care.
 const double SCALEDET = 0.0625;
 void (*integrate)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                          const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
+int (*method)(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList,
+                int isPlacePointOnCap);
 // ___ INTEGRATION IMPLEMENTATION ______________________________________________________________________________________
 
 // Integration Methods #################################################################################################
@@ -385,7 +387,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
         //innerInt_retriangulate(x, aT, bT, quadRule, sqdelta, &innerLocal, innerNonloc);
 
         //is_placePointOnCap = true;
-        Rdx = method_retriangulate(x, bT, mesh, reTriangle_list, conf.is_placePointOnCap); // innerInt_retriangulate
+        Rdx = method(x, bT, mesh, reTriangle_list, conf.is_placePointOnCap); // innerInt_retriangulate
         //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list, is_placePointOnCap);
         //Rdx = quadRule.interactionMethod(x, bT, mesh, reTriangle_list);
 
@@ -1046,6 +1048,116 @@ int method_retriangulate(const double * xCenter, const ElementType & T,
     }
 }
 
+int method_retriangulateInfty(const double * xCenter, const double * TE,
+                          double sqdelta, double * reTriangleList,
+                          int isPlacePointOnCap){
+    //printf("Hello World");
+    vector<Point> points;
+    double delta = sqrt(sqdelta);
+    double nu_a[2], nu_b[2], nu_c[2]; // Normals
+    arma::vec p(2);
+    arma::vec q(2);
+    arma::vec a(2);
+    arma::vec b(2);
+    arma::vec y1(2);
+    arma::vec y2(2);
+    arma::vec vec_x_center(xCenter, 2);
+    arma::vec xPoint(2);
+
+    for (int k=0; k<3; k++) {
+        int edgdx0 = k;
+        int edgdx1 = (k + 1) % 3;
+
+        doubleVec_copyTo(&TE[2 * edgdx0], &p[0], 2);
+        doubleVec_copyTo(&TE[2 * edgdx1], &q[0], 2);
+
+        if (vec_LInfdist(&TE[2 * edgdx0], xCenter, 2) <= delta){
+            points.emplace_back(Point(TE[2 * edgdx0], TE[2 * edgdx0+1] ));
+        }
+        a = q - vec_x_center;
+        b = p - q;
+        int lambdaType[4];
+        intVec_tozero(lambdaType, 4);
+        double lambda[4];
+        doubleVec_tozero(lambda, 4);
+
+        if(abs(b[0]) > 0.){
+            lambda[0] = (xCenter[0] + delta - q[0]) / b[0];
+            lambda[1] = (xCenter[0] - delta - q[0]) / b[0];
+        }
+        if(abs(b[1]) > 0.){
+            lambda[2] = (xCenter[1] + delta - q[1]) / b[1];
+            lambda[3] = (xCenter[1] - delta - q[1]) / b[1];
+        }
+
+        for (int i = 0; i < 4; i++){
+            //cout << "i:" << i << ", lam " << lambda[i] << endl;
+            if ((lambda[i] > 0.) and (lambda[i] < 1.)) {
+                xPoint = q + b*lambda[i];
+                if (vec_LInfdist(xPoint.memptr(), xCenter, 2) <= delta*(1+EPSILON)){
+                    points.emplace_back(Point(xPoint[0], xPoint[1]));
+                }
+            }
+        }
+
+    }
+
+    double lInfVert[2];
+    int orientation = -signDet(TE);
+    rightNormal(&TE[0], &TE[2], orientation, nu_a);
+    rightNormal(&TE[2], &TE[4], orientation, nu_b);
+    rightNormal(&TE[4], &TE[0], orientation, nu_c);
+
+    lInfVert[0] = xCenter[0] + delta;
+    lInfVert[1] = xCenter[1] + delta;
+    if (inTriangle(lInfVert, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
+        points.emplace_back(Point(lInfVert[0], lInfVert[1]));
+    }
+
+    lInfVert[0] = xCenter[0] + delta;
+    lInfVert[1] = xCenter[1] - delta;
+    if (inTriangle(lInfVert, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
+        points.emplace_back(Point(lInfVert[0], lInfVert[1]));
+    }
+
+    lInfVert[0] = xCenter[0] - delta;
+    lInfVert[1] = xCenter[1] - delta;
+    if (inTriangle(lInfVert, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
+        points.emplace_back(Point(lInfVert[0], lInfVert[1]));
+    }
+
+    lInfVert[0] = xCenter[0] - delta;
+    lInfVert[1] = xCenter[1] + delta;
+    if (inTriangle(lInfVert, &TE[0], &TE[2], &TE[4], nu_a, nu_b, nu_c)){
+        points.emplace_back(Point(lInfVert[0], lInfVert[1]));
+    }
+
+    //cout << "Set up points" << endl;
+    Triangulation T;
+    T.insert(points.begin(), points.end());
+    int Rdx=0;
+    //cout << "Set up Triangulation" << endl;
+    for(Finite_face_iterator it = T.finite_faces_begin();
+        it != T.finite_faces_end();
+        ++it){
+        for (int k=0; k<3; k++){
+            Point p = it->vertex(k)->point();
+            //std::cout << "x " << p.x() << ", ";
+            //std::cout << "y " << p.y() << std::endl;
+            reTriangleList[2 * (3 * Rdx + k) + 0] = p.x();
+            reTriangleList[2 * (3 * Rdx + k) + 1] = p.y();
+        }
+        Rdx++;
+    }
+    //cout << "Success!" << endl;
+    return Rdx;
+}
+
+int method_retriangulateInfty(const double * xCenter, const ElementType & T,
+                              const MeshType & mesh, double * reTriangleList,
+                              int isPlacePointOnCap){
+    return method_retriangulateInfty(xCenter, T.E, mesh.sqdelta, reTriangleList, isPlacePointOnCap);
+}
 
 int method_retriangulate(const double * xCenter, const double * TE,
                          double sqdelta, double * reTriangleList,

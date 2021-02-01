@@ -97,8 +97,13 @@ void lookup_configuration(ConfigurationType & conf){
             integrate = integrate_linearPrototypeMicroelastic_baryCenterRT;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else if (conf.integration_method == "retriangulate") {
+            method = method_retriangulate;
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else if (conf.integration_method == "retriangulateLinfty") {
+            method = method_retriangulateInfty;
+            integrate = integrate_linearPrototypeMicroelastic_retriangulate;
+            //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else {
             cout << "No integration method chosen" << endl;
             model_kernel = nullptr;
@@ -114,8 +119,13 @@ void lookup_configuration(ConfigurationType & conf){
             integrate = integrate_linearPrototypeMicroelastic_baryCenterRT;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else if (conf.integration_method == "retriangulate") {
+            method = method_retriangulate;
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else if (conf.integration_method == "retriangulateLinfty") {
+            method = method_retriangulateInfty;
+            integrate = integrate_linearPrototypeMicroelastic_retriangulate;
+            //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else {
             cout << "No integration method chosen" << endl;
             model_kernel = nullptr;
@@ -140,9 +150,14 @@ void lookup_configuration(ConfigurationType & conf){
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
 
         } else if (conf.integration_method == "retriangulate") {
+            method = method_retriangulate;
             integrate = integrate_retriangulate;
             printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
 
+        } else if (conf.integration_method == "retriangulateLinfty") {
+            method = method_retriangulateInfty;
+            integrate = integrate_retriangulate;
+            //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else if (conf.integration_method == "noTruncation") {
             integrate = integrate_fullyContained;
 

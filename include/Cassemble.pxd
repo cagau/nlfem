@@ -28,6 +28,9 @@ cdef extern from "Cassemble.h":
     int method_retriangulate(const double * x_center, const double * TE,
                            const double sqdelta, double * re_Triangle_list,
                            int is_placePointOnCap)
+    int method_retriangulateInfty(const double * xCenter, const double * TE,
+                                double sqdelta, double * reTriangleList,
+                                int isPlacePointOnCap)
     void toRef(const double * E, const double * phys_x, double * ref_p)    # Pull point to Reference Element (performs 2x2 Solve)
     void toPhys(const double * E, const double * p, int dim, double * out_x)
     void solve2x2(const double * A, const double * b, double * x)

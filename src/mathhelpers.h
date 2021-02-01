@@ -32,6 +32,7 @@ void toPhys(const double * E, const double * p, int dim, double * out_x);
 
 // Double
 double vec_sqL2dist(const double * x, const double * y, int len);      // L2 Distance
+double vec_LInfdist(const double * x, const double * y, const int len);
 double vec_dot(const double * x, const double * y, int len);           // Scalar Product
 double vec_sum(const double *x, int len);                               // Vector Sum
 int doubleVec_any(const double * vec, int len);                        // Any
