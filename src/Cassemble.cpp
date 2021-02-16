@@ -158,6 +158,8 @@ void lookup_configuration(ConfigurationType & conf){
             method = method_retriangulateInfty;
             integrate = integrate_retriangulate;
             //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else if  (conf.integration_method == "exactBall") {
+            integrate = integrate_exact;
         } else if (conf.integration_method == "noTruncation") {
             integrate = integrate_fullyContained;
 

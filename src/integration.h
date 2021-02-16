@@ -43,7 +43,27 @@ extern int (*method)(const double * xCenter, const ElementType & T, const MeshTy
 void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc);
-
+/**
+ * @brief This integration routines uses method_exact() to truncate the *inner domain* bT. See integrate()
+ * for general information about the integration routines.
+ *
+ *  termLocal = int_aT phiA(x) phiB(x) int_bT ker(x,y) dy dx,\n
+ *  termNonloc = int_aT phiA(x) int_bT phiB(y) ker(y,x) dy dx.
+ *
+ * Please note that the nonlocal term has to be subtracted, while the local term has to be added to the stiffness
+ * matrix.
+ * @param aT    Triangle of the outer integral.
+ * @param bT    Triangle of the inner integral.
+ * @param quadRule Quadrature rule.
+ * @param mesh  Mesh.
+ * @param conf  Confuration.
+ * @param is_firstbfslayer (Unused)
+ * @param termLocal This term contains the local part of the integral
+ * @param termNonloc This term contains the nonlocal part of the integral
+ */
+void integrate_exact(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                     const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
+                     double *termNonloc);
 /**
  * @brief . This integration routines uses method_baryCenter() to truncate the *inner domain* bT. See integrate()
  * for general information about the integration routines.
@@ -302,6 +322,25 @@ int method_retriangulate(const double * xCenter, const ElementType & T, const Me
 int method_retriangulateInfty(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList,
                               int isPlacePointOnCap);
 /**
+ * @brief This truncation method retriangulates the triangle bT depending
+ * on the distance of xCenter to bT w.r.t. an exact quadrature rule for caps. The function writes the list of triangles
+ * which are obtained from the trunaction into reTriangle_list, and additionally probides one point in the cap center
+ * with the corresponding weight.
+ *
+ * @param x_center Physical quadrature point. This point is obtained by mapping a quadrature point
+ * of the reference element to the triangle aT of the outer domain.
+ * @param T Triangle of the inner integral.
+ * @param mesh Mesh
+ * @param reTriangle_list List of triangles which are obtained from the retriangulation.
+ * @param capsList List of cap center points
+ * @param capsWeights Corresponding weights of the quadrature
+ * @param prtnCaps Number of caps.
+ * @return
+ */
+int method_exact(const double * xCenter, const ElementType & T,
+                 const MeshType & mesh, double * reTriangleList, double * capsList, double * capsWeights,
+                 int * prtnCaps);
+/**
  * @brief This truncation method returns the number of vertices of triangle T which interact
  * with x_center, i.e. have a l2 distance smaller than delta.
  *
@@ -317,7 +356,10 @@ int placePointOnCap(const double * y_predecessor, const double * y_current,
                     const double * x_center, double sqdelta, const double * TE,
                     const double * nu_a, const double * nu_b, const double * nu_c,
                     double orientation, int Rdx, double * R);
-
+double placePointCapCenter(const double * y_predecessor, const double * y_current,
+                           const double * x_center, const double sqdelta, const double * TE,
+                           const double * nu_a, const double * nu_b, const double * nu_c,
+                           const double orientation, double * capsList);
 bool inTriangle(const double * y_new, const double * p, const double * q, const double * r,
                 const double *  nu_a, const double * nu_b, const double * nu_c);
 

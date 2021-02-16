@@ -116,6 +116,7 @@ struct MeshStruct{
     // Zeta is an optional parameter. In case we get a Zeta matrix,
     // the memory is already allocated we only need a wrapper.
     const arma::Mat<long> ZetaIndicator{arma::Mat<long>(this-> ptrZeta, this-> nZeta, this-> nE)};
+
 };
 typedef MeshStruct MeshType;
 
