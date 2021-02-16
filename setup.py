@@ -15,13 +15,13 @@ ext_modules = [
     Extension(
         name=name,
         sources=["cython/nlfem.cpp",
-                    "src/Cassemble.cpp",
-                    "./src/MeshTypes.cpp",
-                    "./src/mathhelpers.cpp",
-                    "./src/model.cpp",
-                    "./src/integration.cpp"],
-        extra_link_args=['-fopenmp', '-larmadillo', '-lCGAL', '-lgmp', '-lmpfr'],
-        extra_compile_args=['-fopenmp', '-O3', '-DARMA_NO_DEBUG'],
+                 "src/Cassemble.cpp",
+                 "./src/MeshTypes.cpp",
+                 "./src/mathhelpers.cpp",
+                 "./src/model.cpp",
+                 "./src/integration.cpp"],
+        extra_link_args=['-larmadillo', '-lCGAL', '-lgmp', '-lmpfr', '-fopenmp'],
+        extra_compile_args=['-O3', '-DARMA_NO_DEBUG', '-fopenmp'],
         language="c++",
         include_dirs=["include", "src", numpy.get_include()]
     )
