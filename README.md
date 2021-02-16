@@ -3,7 +3,7 @@
 In order to use this code you have to meet the following requirements
 ## Requirements
 
-- The **basic requirements** for are the programs `gcc`, `g++, python3-dev, python3-venv`. You further need
+- The **basic requirements** for are the programs `gcc`, `g++, python3-dev, python3-venv, libgmp-dev, libcgal-dev`. You further need
 the libraries `libarmadillo-dev`, and the Python 3 packages `numpy` and `scipy`. If you want to change
   the Cython code, you require the package `Cython`.
 - For **running the examples** you additionally need to install the Python packages 
@@ -22,7 +22,7 @@ Cython assumes that there have been no changes.
 ## Step by Step Guide
 To prepare the basic requirements on Ubuntu do.
 
-`sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev python3-venv python3-dev`
+`sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev python3-venv python3-dev libgmp-dev libcgal-dev`
 
 `mkdir nlfemvenv`
 
