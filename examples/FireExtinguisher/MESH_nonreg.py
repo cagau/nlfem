@@ -130,6 +130,6 @@ if 0:
         omega = triangles[np.where(triangles[:, 0] == label)[0]]
         plot_tri(omega[:, 1:], closed=True, fill=False, color=color[label - 1])
     plt.axis('equal')
-    plt.savefig("a-zigzag.pdf", dpi=500)
-    plt.show()
-
+    # plt.savefig("a-zigzag.pdf", dpi=500)
+    # plt.show()
+#
