@@ -28,12 +28,14 @@ class RegMesh2D:
             points, cells, self.h_min, self.h_max = MESH_nonreg.prepare_mesh_gmsh(n)#MESH_nonreg.prepare_mesh_nonreg(n)#
 
             if 0:
-                meshzoo.rectangle(
+                points, cells =   meshzoo.rectangle(
                 xmin=-self.delta, xmax=1.0+self.delta,
                 ymin=-self.delta, ymax=1.0+self.delta,
                 nx=n+1, ny=n+1,
-                variant="up"
-            )
+                variant="zigzag" )
+                self.h_min = self.h*np.sqrt(2)
+                self.h_max = self.h*np.sqrt(2)
+
             self.vertices = np.array(points[:, :2])
 
 
@@ -219,6 +221,7 @@ class RegMesh2D:
                 plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, ud_aux)
                 plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements, lw=.1, color='white', alpha=.3)
                 #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+                plt.axis('equal')
                 if pp is None:
                     plt.show()
                 else:
@@ -228,6 +231,7 @@ class RegMesh2D:
                 plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud.ravel())
                 plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
                 #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+                plt.axis('equal')
                 if pp is None:
                     plt.show()
                 else:
@@ -243,6 +247,7 @@ class RegMesh2D:
 
                 plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, ud_aux)
                 plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements, lw=.1, color='white', alpha=.3)
+                plt.axis('equal')
                 #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
                 if pp is None:
                     plt.show()
@@ -252,6 +257,7 @@ class RegMesh2D:
             else:
                 plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.u_exact)
                 plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
+                plt.axis('equal')
                 #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
                 if pp is None:
                     plt.show()

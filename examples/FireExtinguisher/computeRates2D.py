@@ -14,7 +14,7 @@ def main(conf, kernel, load, pp = None):
     u_exact = load["solution"]
 
     n_start = 12
-    n_layers = 4
+    n_layers = 3
     N = [n_start * 2 ** l for l in list(range(n_layers))]
     N_fine = N[-1]*4
 
@@ -99,16 +99,16 @@ def main(conf, kernel, load, pp = None):
     return data
 
 if __name__ == "__main__":
-    #from testConfExactCaps import CONFIGURATIONS, KERNELS, LOADS
-    #from testConfAverage import CONFIGURATIONS, KERNELS, LOADS
-    #from testConfBarycenter import CONFIGURATIONS, KERNELS, LOADS
-    from testConfShifted import CONFIGURATIONS, KERNELS, LOADS
+    # from testALL import CONFIGURATIONS, KERNELS, LOADS
+    # from testConfAverage import CONFIGURATIONS, KERNELS, LOADS
+    from testConfBarycenter import CONFIGURATIONS, KERNELS, LOADS
+    # from testConfShifted import CONFIGURATIONS, KERNELS, LOADS
 
     
     pp = PdfPages("results/plots.pdf")
     os.makedirs("results", exist_ok=True)
     tmpstmp = helpers.timestamp()
-    fileHandle = open("results/rates" + tmpstmp + ".md", "w+")
+    fileHandle = open("results/rates_" + tmpstmp + ".md", "w+")
     for k, kernel in enumerate(KERNELS):
         load = LOADS[k]
         fileHandle.write("# Kernel: " + kernel["function"] + "\n")
@@ -117,4 +117,4 @@ if __name__ == "__main__":
             helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle)
     fileHandle.close()
     pp.close()
-    os.system("pandoc results/rates" + tmpstmp + ".md -o results/rates" + tmpstmp + ".pdf")
+    os.system("pandoc results/rates_" + tmpstmp + ".md -o results/rates" + tmpstmp + ".pdf")

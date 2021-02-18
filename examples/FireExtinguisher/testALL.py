@@ -223,4 +223,46 @@ CONFIGURATIONS = [
             "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
     }
+    ,
+    {
+        # "savePath": "pathA",
+        "ansatz": "CG",  # DG
+        "approxBalls": {
+            "method": "shiftedBall",
+            "isPlacePointOnCap": True,  # required for "retriangulate" only
+            "averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
+        },
+        "quadrature": {
+            "outer": {
+                "points": Px,
+                "weights": dx
+            },
+            "inner": {
+                "points": Py,
+                "weights": dy
+            },
+            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+        }
+    }
+    ,
+    {
+        # "savePath": "pathA",
+        "ansatz": "CG",  # DG
+        "approxBalls": {
+            "method": "shiftedBall",
+            "isPlacePointOnCap": False,  # required for "retriangulate" only
+            "averageBallWeights": [0., 1., 1.]  # required for "averageBall" only
+        },
+        "quadrature": {
+            "outer": {
+                "points": Px,
+                "weights": dx
+            },
+            "inner": {
+                "points": Py,
+                "weights": dy
+            },
+            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+        }
+    }
 ]
