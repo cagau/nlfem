@@ -21,6 +21,11 @@ void kernel_constant(const double *x, const long labelx, const double *y, const 
     *kernel_val = 4 / (M_PI * pow(sqdelta, 2));
 }
 
+void kernel_constantLinf2D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+                     double *kernel_val) {
+    *kernel_val = 3 / (4 * pow(sqdelta, 2));
+}
+
 void kernel_constantTruncated(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
                      double *kernel_val) {
     double z[2];

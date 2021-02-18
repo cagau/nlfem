@@ -7,19 +7,13 @@ def u_exact_FieldConstantBothRhs(x):
 
 KERNELS = [
     {
-        "function": "constant",
-        "horizon": 1./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
-        "outputdim": 1
-    },
-    {
-        "function": "constant",
+        "function": "constantLinf2D",
         "horizon": 1./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
         "outputdim": 1
     }
 ]
 
 LOADS = [
-    {"function": "linear", "solution": u_exact_linearRhs},
     {"function": "linear", "solution": u_exact_linearRhs}
 ]
 
@@ -45,27 +39,8 @@ dy = 0.5 * np.array([1.0])
 tensorGaussDegree = 1
 
 CONFIGURATIONS = [
-    {
-        # "savePath": "pathA",
-        "ansatz": "CG", #DG
-        "approxBalls": {
-            "method": "retriangulate",
-            "isPlacePointOnCap": True,  # required for "retriangulate" only
-            #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
-        },
-        "quadrature": {
-            "outer": {
-                "points": Px,
-                "weights": dx
-            },
-            "inner": {
-                "points": Py,
-                "weights": dy
-            },
-            "tensorGaussDegree": tensorGaussDegree,  # Degree of tensor Gauss quadrature for weakly singular kernels.
-        }
-    },
-    {
+
+{
         # "savePath": "pathA",
         "ansatz": "CG", #DG
         "approxBalls": {

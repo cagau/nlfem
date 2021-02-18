@@ -63,6 +63,8 @@ void lookup_configuration(ConfigurationType & conf){
         //model_kernel = lookupKernelName[conf.model_kernel];
     } else if (conf.model_kernel == "constantTruncated") {
         model_kernel = kernel_constantTruncated;
+    } else if (conf.model_kernel == "constantLinf2D") {
+        model_kernel = kernel_constantLinf2D;
     } else if (conf.model_kernel == "labeled") {
         model_kernel = kernel_labeled;
     } else if (conf.model_kernel == "constant3D") {
