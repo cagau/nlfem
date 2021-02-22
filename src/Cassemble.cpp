@@ -419,6 +419,8 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
     // Buffers for integration solutions
     double termLocal[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
     double termNonloc[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
+    //double termLocalPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
+    //double termNonlocPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
 
     #pragma omp for
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
@@ -499,6 +501,8 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                             // Assembly of matrix ---------------------------------------
                             doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
                             doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
+                            //doubleVec_tozero(termLocalPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
+                            //doubleVec_tozero(termNonlocPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
                             // Compute integrals and write to buffer
                             integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
 
