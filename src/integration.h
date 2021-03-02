@@ -17,7 +17,8 @@ typedef Triangulation::Finite_faces_iterator Finite_face_iterator;
 // Integration Routine #################################################################################################
 
 extern void (*integrate)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                  const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
+                  const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                         double *termLocalPrime, double *termNonlocPrime);
 extern int (*method)(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList,
               int isPlacePointOnCap);
 // Integration Methods #################################################################################################
@@ -41,8 +42,8 @@ extern int (*method)(const double * xCenter, const ElementType & T, const MeshTy
  * @param termNonloc This term contains the nonlocal part of the integral
  */
 void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
-                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
-                             double *termNonloc);
+                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+                             double *termLocal, double *termNonloc, double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routines uses method_exact() to truncate the *inner domain* bT. See integrate()
  * for general information about the integration routines.

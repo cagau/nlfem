@@ -34,7 +34,9 @@ def append_output(data, conf, kernel, load, fileHandle):
         "h":  data.get("h", []),
         "dof": data.get("nV_Omega", []),
         "L2 Error": data.get("L2 Error", []),
-        "Rates": data.get("Rates", [])#,
+        "Rates": data.get("Rates", []),
+        "min EigV":  data.get("min EigV", []),
+        #"dist to const": data.get("distTo1", [])
         #"Time [s]": data.get("Assembly Time", [])#,
     }
 
@@ -63,6 +65,7 @@ def write_columns(f, columns, titles=None):
         col_number = 0 # ColumNumber
         for key, value in columns.items():
             if row < n_rows[col_number]:
+                #f.write("| " + "{0:1.10e}".format(value[row]) + " ")
                 f.write("| " + "{0:1.2e}".format(value[row]) + " ")
             else:
                 f.write("| ")

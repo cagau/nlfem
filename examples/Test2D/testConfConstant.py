@@ -40,14 +40,14 @@ CONFIGURATIONS = [
         # "savePath": "pathA",
         "ansatz": "CG", #DG
         "approxBalls": {
-            "method": "retriangulate",
+            "method": "retriangulate",#"retriangulate",
             "isPlacePointOnCap": True,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
         "quadrature": {
             "outer": {
-                "points": Px,
-                "weights": dx
+                "points": Py,
+                "weights": dy
             },
             "inner": {
                 "points": Py,

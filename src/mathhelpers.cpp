@@ -211,7 +211,7 @@ void toRef(const double * E, const double * phys_x, double * ref_p){
 int doubleVec_any(const double * vec, const int len){
     int i=0;
     for (i=0; i < len; i++){
-        if (vec[i] != 0){
+        if (vec[i] != 0.0){
             return 1;
         }
     }

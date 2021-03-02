@@ -7,10 +7,12 @@ import numpy as np
 from mesh import RegMesh2D
 from scipy.sparse.linalg import cg
 from matplotlib.backends.backend_pdf import PdfPages
+import scipy.sparse as sp
+import matplotlib.pyplot as plt
 
 def runTest(conf, kernel, load, layerDepth, pp = None):
     err_ = None
-    data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
+    data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": [], "min EigV": [], "distTo1": []}
     u_exact = load["solution"]
 
     # Delta is assumed to be of the form deltaK/10 in the mesh, so we obtain deltaK by
@@ -33,10 +35,59 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         # Assembly ------------------------------------------------------------------------
         start = time()
         A = nlfem.stiffnessMatrix(mesh.__dict__, kernel, conf)
+
+        #print("##### SYMMETRIFY! ###################")
+        #A += A.T
+        #A /= 2.0
+        #A = sp.triu(A, k=0) + sp.tril(A.T, k=-1)
+        #print("## SYMM CHK: ", np.linalg.norm(A_dense - A_dense.T), "##############################")
+        #plt.imshow(A_dense)
+        #plt.show()
+        #eigvals, eigvecs = np.linalg.eig(A_dense)
+        #eigdx = np.argsort(eigvals)
+        #basisT = eigvecs[:, eigdx[0]]
+        #plt.plot(basisT)
+        #minEigval = eigvals[eigdx[0]]
+        #data["min EigV"].append(minEigval)
+        #A_dense = np.array(A.todense())
+        #im1 = np.sum(A_dense, axis=0)
+        #plt.title("Row Sum")
+        #plt.plot(im1)
+        #plt.show()
+
+        #im2 = np.sum(A_dense, axis=1)
+        #plt.title("Col Sum")
+        #plt.plot(im2)
+        #plt.show()
+        #diffToConst = np.array(basisT) - np.mean(basisT)
+        #import copy
+        #mesh_ = copy.deepcopy(mesh)
+        #mesh_.K_Omega = mesh_.K
+        #mesh_.elementLabels += 10
+        #MdiffToConst = nlfem.evaluateMass(mesh_, diffToConst,
+        #                              conf["quadrature"]["outer"]["points"],
+        #                              conf["quadrature"]["outer"]["weights"])
+        #data["distTo1"].append(np.sqrt(np.dot(diffToConst.ravel(), MdiffToConst)))
+        #eigvals, eigvecs = np.linalg.eig(A_dense.T())
+        #eigdx = np.argsort(eigvals)
+        #basisT = eigvecs[:, eigdx[0]]
+        #plt.plot(basisT)
+
+        print("Symm Diff:", np.linalg.norm((A - A.T).todense()))
+
         f_OI = nlfem.loadVector(mesh.__dict__, load, conf)
         data["Assembly Time"].append(time() - start)
 
+
+
+
         A_O = A[mesh.nodeLabels > 0][:, mesh.nodeLabels > 0]
+        AO_dense = np.array(A_O.todense())
+        AO_symmDiff = np.linalg.norm(AO_dense - AO_dense.T)
+        print("## SYMM CHK: ", AO_symmDiff, "##############################")
+
+
+
         A_I = A[mesh.nodeLabels > 0][:, mesh.nodeLabels < 0]
         f = f_OI[mesh.nodeLabels > 0]
 
