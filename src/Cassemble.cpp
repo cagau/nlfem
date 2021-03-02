@@ -419,12 +419,12 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
     // Buffers for integration solutions
     double termLocal[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
     double termNonloc[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
-    //double termLocalPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
-    //double termNonlocPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
+    double termLocalPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
+    double termNonlocPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
 
     #pragma omp for
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
-        if (mesh.LabelTriangles[aTdx] > 0) {
+        //if (mesh.LabelTriangles[aTdx] > 0) {
 
             //[DEBUG]
             /*
@@ -501,10 +501,10 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                             // Assembly of matrix ---------------------------------------
                             doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
                             doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-                            //doubleVec_tozero(termLocalPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-                            //doubleVec_tozero(termNonlocPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
+                            doubleVec_tozero(termLocalPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
+                            doubleVec_tozero(termNonlocPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
                             // Compute integrals and write to buffer
-                            integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc);
+                            integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc, termLocalPrime, termNonlocPrime);
 
                             // If bT interacts it will be a candidate for our BFS, so it is added to the queue
 
@@ -542,7 +542,9 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                             }
 
                             if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) ||
-                                doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex)) {
+                                doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex) ||
+                                doubleVec_any(termNonlocPrime, mesh.dVertex * mesh.dVertex) ||
+                                doubleVec_any(termLocalPrime, mesh.dVertex * mesh.dVertex)) {
                                 queue.push(bTdx);
                                 // We only check whether the integral
                                 // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
@@ -552,33 +554,47 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
 
                                 // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
                                 for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
-                                    if (mesh.is_DiscontinuousGalerkin || (mesh.LabelVerts[aAdx[a/mesh.outdim]] > 0)) {
-                                        for (int b = 0; b < mesh.dVertex*mesh.outdim; b++) {
-                                            //printf("Local: a %i, b %i, ker (%i, %i) \nAdx %lu \n", a/mesh.outdim, b/mesh.outdim, a%mesh.outdim, b%mesh.outdim, Adx);
-                                            // TERM LOCAL & TERM NON-LOCAL ORDER
-                                            // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
-                                            // However it mimics the matrix which results from the multiplication.
-                                            //                                      Kernel switches back here. v
-                                            // [(a 0, b 0, ker (0,0)), (a 0, b 0, ker (0,1)), (a 0, b 1, ker (0,0)), (a 0, b 1, ker (0,1)), (a 0, b 2, ker (0,0)), (a 0, b 2, ker (0,1)),
-                                            //  (a 0, b 0, ker (1,0)), (a 0, b 0, ker (1,1)), (a 0, b 0, ker (1,0)), (a 0, b 1, ker (1,1)), (a 0, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
-                                            //  (a 1, b 0, ker (0,0)), (a 1, b 0, ker (0,1)), (a 1, b 1, ker (0,0)), (a 1, b 1, ker (0,1)), (a 1, b 2, ker (0,0)), (a 1, b 2, ker (0,1)),
-                                            //  (a 1, b 0, ker (1,0)), (a 1, b 0, ker (1,1)), (a 1, b 0, ker (1,0)), (a 1, b 1, ker (1,1)), (a 1, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
-                                            //  (a 2, b 0, ker (0,0)), (a 2, b 0, ker (0,1)), (a 2, b 1, ker (0,0)), (a 2, b 1, ker (0,1)), (a 2, b 2, ker (0,0)), (a 2, b 2, ker (0,1)),
-                                            //  (a 2, b 0, ker (1,0)), (a 2, b 0, ker (1,1)), (a 2, b 0, ker (1,0)), (a 2, b 1, ker (1,1)), (a 2, b 2, ker (1,0)), (a 2, b 2, ker (1,1))]
+                                    for (int b = 0; b < mesh.dVertex*mesh.outdim; b++) {
+                                        //printf("Local: a %i, b %i, ker (%i, %i) \nAdx %lu \n", a/mesh.outdim, b/mesh.outdim, a%mesh.outdim, b%mesh.outdim, Adx);
+                                        // TERM LOCAL & TERM NON-LOCAL ORDER
+                                        // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
+                                        // However it mimics the matrix which results from the multiplication.
+                                        //                                      Kernel switches back here. v
+                                        // [(a 0, b 0, ker (0,0)), (a 0, b 0, ker (0,1)), (a 0, b 1, ker (0,0)), (a 0, b 1, ker (0,1)), (a 0, b 2, ker (0,0)), (a 0, b 2, ker (0,1)),
+                                        //  (a 0, b 0, ker (1,0)), (a 0, b 0, ker (1,1)), (a 0, b 0, ker (1,0)), (a 0, b 1, ker (1,1)), (a 0, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+                                        //  (a 1, b 0, ker (0,0)), (a 1, b 0, ker (0,1)), (a 1, b 1, ker (0,0)), (a 1, b 1, ker (0,1)), (a 1, b 2, ker (0,0)), (a 1, b 2, ker (0,1)),
+                                        //  (a 1, b 0, ker (1,0)), (a 1, b 0, ker (1,1)), (a 1, b 0, ker (1,0)), (a 1, b 1, ker (1,1)), (a 1, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+                                        //  (a 2, b 0, ker (0,0)), (a 2, b 0, ker (0,1)), (a 2, b 1, ker (0,0)), (a 2, b 1, ker (0,1)), (a 2, b 2, ker (0,0)), (a 2, b 2, ker (0,1)),
+                                        //  (a 2, b 0, ker (1,0)), (a 2, b 0, ker (1,1)), (a 2, b 0, ker (1,0)), (a 2, b 1, ker (1,1)), (a 2, b 2, ker (1,0)), (a 2, b 2, ker (1,1))]
 
-                                            Adx =  (mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim) * mesh.K +
-                                                    mesh.outdim*aAdx[b/mesh.outdim] + b%mesh.outdim;
-
+                                        if (mesh.is_DiscontinuousGalerkin || (mesh.LabelVerts[aAdx[a/mesh.outdim]] > 0)) {
+                                            Adx = (mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim) * mesh.K +
+                                                  mesh.outdim * aAdx[b / mesh.outdim] + b % mesh.outdim;
                                             #pragma omp critical
                                             {
                                                 Ad[Adx] += termLocal[mesh.dVertex * mesh.outdim * a + b] * weight;
                                             }
 
                                             Adx =   (mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim) * mesh.K +
-                                                     mesh.outdim*bAdx[b/mesh.outdim] + b%mesh.outdim;
+                                                    mesh.outdim*bAdx[b/mesh.outdim] + b%mesh.outdim;
                                             #pragma omp critical
                                             {
                                                 Ad[Adx] += -termNonloc[mesh.dVertex * mesh.outdim * a + b] * weight;
+                                            }
+                                        }
+                                        if (mesh.is_DiscontinuousGalerkin || (mesh.LabelVerts[bAdx[b / mesh.outdim]] > 0)) {
+                                            Adx = (mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim ) * mesh.K +
+                                                  mesh.outdim * bAdx[a / mesh.outdim] + a % mesh.outdim;
+                                            #pragma omp critical
+                                            {
+                                                Ad[Adx] += termLocalPrime[mesh.dVertex * mesh.outdim * a + b] * weight;
+                                            }
+
+                                            Adx = (mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim) * mesh.K +
+                                                  mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim;
+                                            #pragma omp critical
+                                            {
+                                                Ad[Adx] += -termNonlocPrime[mesh.dVertex * mesh.outdim * a + b] * weight;
                                             }
                                         }
                                     }
@@ -592,7 +608,7 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                 }//End for loop BFS (j = 0; j < mesh.nNeighbours; j++)
                 is_firstbfslayer = false;
             }//End while loop BFS (!queue.empty())
-        }// End if LabelTriangles > 0
+       // }// End if LabelTriangles > 0
     }// End parallel for
 
     }// End pragma omp parallel

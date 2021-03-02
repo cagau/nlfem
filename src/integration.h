@@ -17,7 +17,8 @@ typedef Triangulation::Finite_faces_iterator Finite_face_iterator;
 // Integration Routine #################################################################################################
 
 extern void (*integrate)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                  const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
+                  const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                  double *termLocalPrime, double *termNonlocPrime);
 extern int (*method)(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList,
               int isPlacePointOnCap);
 // Integration Methods #################################################################################################
@@ -27,7 +28,9 @@ extern int (*method)(const double * xCenter, const ElementType & T, const MeshTy
  * for general information about the integration routines.
  *
  *  termLocal = int_aT phiA(x) phiB(x) int_bT ker(x,y) dy dx,\n
- *  termNonloc = int_aT phiA(x) int_bT phiB(y) ker(y,x) dy dx.
+ *  termNonloc = int_aT phiA(x) int_bT phiB(y) ker'(y,x) dy dx.
+ *  termLocalPrime = int_aT  int_bT phiA(y) phiB(y) ker'(x,y) dy dx,\n
+ *  termNonlocPrime = int_aT phiA(x) int_bT phiB(y) ker(y,x) dy dx.
  *
  * Please note that the nonlocal term has to be subtracted, while the local term has to be added to the stiffness
  * matrix.
@@ -39,10 +42,12 @@ extern int (*method)(const double * xCenter, const ElementType & T, const MeshTy
  * @param is_firstbfslayer (Unused)
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
-                             double *termNonloc);
+                             double *termNonloc, double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routines uses method_exact() to truncate the *inner domain* bT. See integrate()
  * for general information about the integration routines.
@@ -60,10 +65,12 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
  * @param is_firstbfslayer (Unused)
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_exact(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                      const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
-                     double *termNonloc);
+                     double *termNonloc, double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief . This integration routines uses method_baryCenter() to truncate the *inner domain* bT. See integrate()
  * for general information about the integration routines.
@@ -81,9 +88,12 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
  * @param is_firstbfslayer (Unused)
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_baryCenter(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                          const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
+                          const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                          double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routines uses method_retriangulate() to truncate the *outer domain* bT. See integrate()
  * for general information about the integration routines.
@@ -101,10 +111,12 @@ void integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Qu
  * @param is_firstbfslayer (Unused)
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
-                            double *termLocal, double *termNonloc);
+                            double *termLocal, double *termNonloc, double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routines uses method_subSuperSetBalls() to truncate the *inner domain* bT. See integrate()
  * for general information about the integration routines.
@@ -122,10 +134,13 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
  * @param is_firstbfslayer (Unused)
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void
 integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                           const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc);
+                           const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                           double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routine performs no truncation of any domain. It can be applied to integrate in cases where
  * no truncation is needed. See integrate()
@@ -144,10 +159,12 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
  * @param is_firstbfslayer (Unused)
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_fullyContained(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                               const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
-                              double *termLocal, double *termNonloc);
+                              double *termLocal, double *termNonloc, double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routine is tied tie the singular kernels *kernel_linearPrototypeMicroelastic*
  * and *kernelField_linearPrototypeMicroelastic*. It handles the weak singularity close to the origin.
@@ -168,10 +185,13 @@ void integrate_fullyContained(const ElementType &aT, const ElementType &bT, cons
  * @param is_firstbfslayer (Unused)
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                                                        const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
-                                                       double * termLocal, double * termNonloc);
+                                                       double * termLocal, double * termNonloc,
+                                                       double *termLocalPrime, double *termNonlocPrime);
 
 /**
  * @brief This integration routine is used for testing. It integrates the direct neighbors of the outer
@@ -192,10 +212,13 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
  * @param is_firstbfslayer Tells, whether bT is a direct neighbor of the outer triangle aT.
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                                                        const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
-                                                       double * termLocal, double * termNonloc);
+                                                       double * termLocal, double * termNonloc,
+                                                       double *termLocalPrime, double *termNonlocPrime);
 
 /**
  * @brief This integration routine is tied tie the singular kernels *kernel_linearPrototypeMicroelastic*
@@ -217,12 +240,15 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
  * care due to the singularity in the origin of the kernel function.
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_linearPrototypeMicroelastic_retriangulate(const ElementType &aT, const ElementType &bT,
                                                          const QuadratureType &quadRule,
                                                          const MeshType &mesh, const ConfigurationType &conf,
                                                          bool is_firstbfslayer, double *termLocal,
-                                                         double *termNonloc);
+                                                         double *termNonloc,
+                                                         double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routine is tied tie the singular kernels *kernel_linearPrototypeMicroelastic*
  * and *kernelField_linearPrototypeMicroelastic*. It calls integrate_baryCenter() for remote triangles.
@@ -243,12 +269,15 @@ void integrate_linearPrototypeMicroelastic_retriangulate(const ElementType &aT, 
  * care due to the singularity in the origin of the kernel function.
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_linearPrototypeMicroelastic_baryCenter(const ElementType &aT, const ElementType &bT,
                                                       const QuadratureType &quadRule,
                                                       const MeshType &mesh, const ConfigurationType &conf,
                                                       bool is_firstbfslayer, double *termLocal,
-                                                      double *termNonloc);
+                                                      double *termNonloc,
+                                                      double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routine is tied tie the singular kernels *kernel_linearPrototypeMicroelastic*
  * and *kernelField_linearPrototypeMicroelastic*. It calls integrate_baryCenterRT() for remote triangles.
@@ -269,12 +298,15 @@ void integrate_linearPrototypeMicroelastic_baryCenter(const ElementType &aT, con
  * care due to the singularity in the origin of the kernel function.
  * @param termLocal This term contains the local part of the integral
  * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
  */
 void integrate_linearPrototypeMicroelastic_baryCenterRT(const ElementType &aT, const ElementType &bT,
                                                         const QuadratureType &quadRule,
                                                         const MeshType &mesh, const ConfigurationType &conf,
                                                         bool is_firstbfslayer, double *termLocal,
-                                                        double *termNonloc);
+                                                        double *termNonloc,
+                                                        double *termLocalPrime, double *termNonlocPrime);
 
 // Helpers -------------------------------------------------------------------------------------------------------------
 /**

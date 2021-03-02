@@ -37,6 +37,8 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         data["Assembly Time"].append(time() - start)
 
         A_O = A[mesh.nodeLabels > 0][:, mesh.nodeLabels > 0]
+        #A_Odense = np.array(A_O.todense())
+        #print("########### Sym Check: ", np.linalg.norm(A_Odense - A_Odense.T))
         A_I = A[mesh.nodeLabels > 0][:, mesh.nodeLabels < 0]
         f = f_OI[mesh.nodeLabels > 0]
 

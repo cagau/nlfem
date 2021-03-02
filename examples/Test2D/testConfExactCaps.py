@@ -50,8 +50,8 @@ CONFIGURATIONS = [
                 "weights": dx
             },
             "inner": {
-                "points": Py,
-                "weights": dy
+                "points": Px,
+                "weights": dx
             },
             "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
@@ -70,8 +70,8 @@ CONFIGURATIONS = [
                 "weights": dx
             },
             "inner": {
-                "points": Py,
-                "weights": dy
+                "points": Px,
+                "weights": dx
             },
             "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
