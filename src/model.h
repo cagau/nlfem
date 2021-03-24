@@ -6,9 +6,11 @@
 #define NONLOCAL_ASSEMBLY_MODEL_H
 
 #include <cmath>
+#include "MeshTypes.h"
+
 // Pointer -------------------------------------------------------------------------------------------------------------
 //// Kernel pointer and implementations
-extern void (*model_kernel)(const double * x, long labelx, const double * y, long labely, double sqdelta, double * kernel_val);
+extern void (*model_kernel)(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val);
 /**
  * @brief Constant kernel in 2D case. The constant is chosen such that the operator is equivalent to the laplacian for
  * polynomials of degree less or equal to 2.
@@ -17,11 +19,11 @@ extern void (*model_kernel)(const double * x, long labelx, const double * y, lon
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
-void kernel_constant(const double * x, long labelx, const double * y, long labely, double sqdelta,
+void kernel_constant(const double * x, long labelx, const double * y, long labely, const MeshType &mesh,
                      double * kernel_val);
 /**
  * @brief Constant kernel in 2D case with Linf truncation. The constant is chosen such that the operator is equivalent
@@ -31,11 +33,11 @@ void kernel_constant(const double * x, long labelx, const double * y, long label
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
-void kernel_constantLinf2D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_constantLinf2D(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                      double *kernel_val);
 
 /**
@@ -48,11 +50,11 @@ void kernel_constantLinf2D(const double *x, const long labelx, const double *y, 
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
-void kernel_constantTruncated(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_constantTruncated(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                               double *kernel_val);
 /**
   * @brief This kernel is defined by \f$ \delta^2 - \|z\|^2 \f$. It is radial but not
@@ -64,7 +66,7 @@ void kernel_constantTruncated(const double *x, const long labelx, const double *
   * @param sqdelta
   * @param kernel_val
   */
-void kernel_parabola(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_parabola(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                      double *kernel_val);
 /**
  * @brief Constant kernel in 1D case. The constant is chosen such that the operator is equivalent to the laplacian for
@@ -74,11 +76,11 @@ void kernel_parabola(const double *x, const long labelx, const double *y, const 
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
-void kernel_constant1D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_constant1D(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                        double *kernel_val);
 /**
  * @brief Constant kernel in 3D case. The constant is chosen such that the operator is equivalent to the laplacian for
@@ -88,11 +90,11 @@ void kernel_constant1D(const double *x, const long labelx, const double *y, cons
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
-void kernel_constant3D(const double * x, long labelx, const double * y, long labely, double sqdelta,
+void kernel_constant3D(const double * x, long labelx, const double * y, long labely, const MeshType &mesh,
                        double * kernel_val);
 /**
  * @brief Kernel depending on the triangle labels. Can be used to model nonlocal to nonlocal coupling.
@@ -101,11 +103,11 @@ void kernel_constant3D(const double * x, long labelx, const double * y, long lab
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
-void kernel_labeled(const double * x, long labelx, const double * y, long labely, double sqdelta,
+void kernel_labeled(const double * x, long labelx, const double * y, long labely, const MeshType &mesh,
                     double * kernel_val);
 
 /**
@@ -121,12 +123,12 @@ void kernel_labeled(const double * x, long labelx, const double * y, long labely
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
 void kernel_linearPrototypeMicroelastic(const double * x, long labelx, const double * y, long labely,
-                                        double sqdelta, double * kernel_val);
+                                           const MeshType &mesh, double * kernel_val);
 /**
  * @brief Kernel for fractional Laplacian. The scalar valued weakly singular kernel reads as
  *
@@ -140,12 +142,12 @@ void kernel_linearPrototypeMicroelastic(const double * x, long labelx, const dou
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
 void kernel_fractional(const double * x, const long labelx, const double * y, const long labely,
-                       const double sqdelta, double * kernel_val);
+                         const MeshType &mesh, double * kernel_val);
 /**
  * @brief Kernel for the peridynamics model. The matrix valued weakly singular kernel reads as
  *
@@ -161,12 +163,12 @@ void kernel_fractional(const double * x, const long labelx, const double * y, co
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
 void kernelField_linearPrototypeMicroelastic(const double * x, long labelx, const double * y, long labely,
-                                             double sqdelta, double * kernel_val);
+                                                const MeshType &mesh, double * kernel_val);
 /**
  * @brief Constant matrix valued kernel. For testing. The constant is the same as in the scalar case.
  *
@@ -174,12 +176,12 @@ void kernelField_linearPrototypeMicroelastic(const double * x, long labelx, cons
  * @param labelx Label of the outer triangle.
  * @param y Physical point of the inner integration region.
  * @param labely Label of inner triangle.
- * @param sqdelta Squared delta.
+ * @param mesh Mesh
  * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
  * of shape d x d in case of peridynamics.
  */
 void kernelField_constant(const double * x, long labelx, const double * y, long labely,
-                          double sqdelta, double * kernel_val);
+                             const MeshType &mesh, double * kernel_val);
 
 
 extern void (*model_f)(const double * x, double * forcing_out);

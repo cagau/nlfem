@@ -162,7 +162,7 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
             toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
 
             // Eval Kernel(x-y)
-            model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh.sqdelta, kernel_val);
+            model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh, kernel_val);
 
             //cout << "x " << endl;
             //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
@@ -275,7 +275,7 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
                 //toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
 
                 // Eval Kernel(x-y)
-                model_kernel(x, aTsorted.label, y, bTsorted.label, mesh.sqdelta, kernel_val);
+                model_kernel(x, aTsorted.label, y, bTsorted.label, mesh, kernel_val);
 
                 //cout << "x " << endl;
                 //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
@@ -340,7 +340,7 @@ void integrate_fractional(const ElementType &aT, const ElementType &bT, const Qu
 
         double factors;
         //const int dim = mesh.dim;
-        double alpha[4], traffodet, x[2], y[2], alphaCanceled[4];//, kernel_val=0.;
+        double alpha[4], x[2], y[2], alphaCanceled[4];//, kernel_val=0.;
         double x_canceled[2], y_canceled[2], traffodetCanceled;
 
         double kernel_val[mesh.outdim*mesh.outdim];
@@ -386,7 +386,7 @@ void integrate_fractional(const ElementType &aT, const ElementType &bT, const Qu
                 toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
 
                 // Eval Kernel(x-y)
-                model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh.sqdelta, kernel_val);
+                model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh, kernel_val);
 
                 //cout << "x " << endl;
                 //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
@@ -460,8 +460,8 @@ void integrate_fullyContained(const ElementType &aT, const ElementType &bT, cons
             toPhys(bT.E, &(quadRule.Py[dim * i]), dim, y);
 
             // Eval Kernel(x-y)
-            model_kernel(x, aT.label, y, bT.label, mesh.sqdelta, kernel_val);
-            model_kernel(y, bT.label, x, aT.label, mesh.sqdelta, kernelT_val);
+            model_kernel(x, aT.label, y, bT.label, mesh, kernel_val);
+            model_kernel(y, bT.label, x, aT.label, mesh, kernelT_val);
 
             for (int a = 0; a < mesh.dVertex * mesh.outdim; a++) {
                 for (int b = 0; b < mesh.dVertex * mesh.outdim; b++) {
@@ -561,7 +561,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
                     // Determinant of Triangle of retriangulation
                     rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
                     // inner Local integral with ker
-                    model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, kernel_val);
+                    model_kernel(x, aT.label, physical_quad, bT.label, mesh, kernel_val);
                     // [x 16]
                     // INNER LOCAL ORDER [(0,0), (0,1), (1,0), (1,1)] = KERNEL ORDER
                     for (int o=0; o<mesh.outdim*mesh.outdim; o++){
@@ -572,7 +572,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
                     // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
                     toRef(bT.E, physical_quad, reference_quad);
                     // Evaluate ker on physical quad (note this is ker')
-                    model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, kernelPrime_val);
+                    model_kernel(physical_quad, bT.label, x, aT.label, mesh, kernelPrime_val);
                     // Evaluate basis function on resulting reference quadrature point
                     model_basisFunction(reference_quad, mesh.dim, psi_value);
 
@@ -752,7 +752,7 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
                     // Determinant of Triangle of retriangulation
                     rTdet = absDet(&reTriangle_list[dim * mesh.dVertex * rTdx]);
                     // inner Local integral with ker
-                    model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, kernel_val);
+                    model_kernel(x, aT.label, physical_quad, bT.label, mesh, kernel_val);
                     // [x 16]
                     // INNER LOCAL ORDER [(0,0), (0,1), (1,0), (1,1)] = KERNEL ORDER
                     for (int o=0; o<mesh.outdim*mesh.outdim; o++){
@@ -763,7 +763,7 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
                     // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
                     toRef(bT.E, physical_quad, reference_quad);
                     // Evaluate ker on physical quad (note this is ker')
-                    model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, kernel_val);
+                    model_kernel(physical_quad, bT.label, x, aT.label, mesh, kernel_val);
                     // Evaluate basis function on resulting reference quadrature point
                     model_basisFunction(reference_quad, mesh.dim, psi_value);
 
@@ -800,7 +800,7 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
             //cout << "hallo" << endl;
             //abort();
             // inner Local integral with ker
-            model_kernel(x, aT.label, &capsList[2*i], bT.label, mesh.sqdelta, kernel_val);
+            model_kernel(x, aT.label, &capsList[2*i], bT.label, mesh, kernel_val);
             // INNER LOCAL ORDER [(0,0), (0,1), (1,0), (1,1)] = KERNEL ORDER
             for (int o=0; o<mesh.outdim*mesh.outdim; o++){
                 innerLocal[o] += kernel_val[o] * capsWeights[i]; // Local Term
@@ -810,7 +810,7 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
             // Pull resulting physical point ry to the (underlying!) reference Triangle aT.
             toRef(bT.E, &capsList[2*i], reference_quad);
             // Evaluate ker on physical quad (note this is ker')
-            model_kernel(&capsList[2*i], bT.label, x, aT.label, mesh.sqdelta, kernel_val);
+            model_kernel(&capsList[2*i], bT.label, x, aT.label, mesh, kernel_val);
             // Evaluate basis function on resulting reference quadrature point
             model_basisFunction(reference_quad, mesh.dim, psi_value);
 
@@ -913,13 +913,13 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
                 // Determinant of Triangle of retriangulation
                 rTdet = absDet(bT.E, mesh.dim);
                 // inner Local integral with ker
-                model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, kernel_val);
+                model_kernel(x, aT.label, physical_quad, bT.label, mesh, kernel_val);
                 // [x 29]
                 for (int o=0; o<mesh.outdim*mesh.outdim; o++) {
                     innerLocal[o] += rTdet * kernel_val[o] * quadRule.dy[i]; // Local Term
                 }
                 // Evaluate ker on physical quad (note this is ker')
-                model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, kernel_val);
+                model_kernel(physical_quad, bT.label, x, aT.label, mesh, kernel_val);
                 // Evaluate basis function on resulting reference quadrature point
 
                 // INNER NON-LOCAL ORDER
@@ -1046,13 +1046,13 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
                 // Determinant of Triangle of retriangulation
                 rTdet = absDet(bT.E, mesh.dim);
                 // inner Local integral with ker
-                model_kernel(x, aT.label, physical_quad, bT.label, mesh.sqdelta, kernel_val);
+                model_kernel(x, aT.label, physical_quad, bT.label, mesh, kernel_val);
                 // [x 29]
                 for (int o=0; o<mesh.outdim*mesh.outdim; o++) {
                     innerLocal[o] += averageWeights[nContained-1] * rTdet * kernel_val[o] * quadRule.dy[i]; // Local Term
                 }
                 // Evaluate ker on physical quad (note this is ker')
-                model_kernel(physical_quad, bT.label, x, aT.label, mesh.sqdelta, kernel_val);
+                model_kernel(physical_quad, bT.label, x, aT.label, mesh, kernel_val);
                 // Evaluate basis function on resulting reference quadrature point
 
                 // INNER NON-LOCAL ORDER
@@ -1164,14 +1164,14 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
                     toPhys(bT.E, &(quadRule.Py[dim * i]), mesh.dim, y);
                     // inner Local integral with ker
                     // Local Term
-                    model_kernel(physical_quad, aT.label, y, bT.label, mesh.sqdelta, kernel_val);
+                    model_kernel(physical_quad, aT.label, y, bT.label, mesh, kernel_val);
                     // [x 40]
                     for (int o = 0; o < mesh.outdim * mesh.outdim; o++) {
                         // innerLocal[o] += kernel_val[o] * quadRule.dy[i] * rTdet; // Local Term
                         innerLocal[o] += kernel_val[o] * quadRule.dy[i] * bTdet;
                     }
                     // Evaluate kernel on physical quad (note this is kernel')
-                    model_kernel(y, bT.label, physical_quad, aT.label, mesh.sqdelta, kernel_val);
+                    model_kernel(y, bT.label, physical_quad, aT.label, mesh, kernel_val);
                     // Evaluate basis function on resulting reference quadrature point
                     // [x 41]
                     for (b = 0; b < mesh.dVertex * mesh.outdim * mesh.outdim; b++) {
@@ -1291,7 +1291,6 @@ double placePointCapCenter(const double * y_predecessor, const double * y_curren
     doubleVec_copyTo(s_projectionDirection, &E[4], 2);
     doubleVec_scale(scalingJohn, &E[4], &E[4], 2);
     doubleVec_add(x_center, &E[4], &E[4], 2);
-    double area = absDet(E, 2)/2.;
 
     scalingFactor = (4*sqrt(sqdelta)*pow(sin(alpha),3)) / (3*(2*alpha-sin(2*alpha))) * sqrt( 1. / vec_dot(s_projectionDirection, s_projectionDirection, 2)); // here change!!!
     doubleVec_scale(scalingFactor, s_projectionDirection, s_projectionDirection, 2);

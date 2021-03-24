@@ -10,68 +10,67 @@
 
 #include "model.h"
 #include "mathhelpers.h"
-#include "MeshTypes.h"
 
 using namespace std;
 
 // ### KERNEL ##########################################################################################################
-void (*model_kernel)(const double * x, long labelx, const double * y, long labely, double sqdelta, double * kernel_val);
+void (*model_kernel)(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val);
 
 // Implementations -----------------------------------------------------------------------------------------------------
-void kernel_constant(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_constant(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                      double *kernel_val) {
-    *kernel_val = 4 / (M_PI * pow(sqdelta, 2));
+    *kernel_val = 4 / (M_PI * pow(mesh.sqdelta, 2));
 }
 
-void kernel_constantLinf2D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_constantLinf2D(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                      double *kernel_val) {
-    *kernel_val = 3 / (4 * pow(sqdelta, 2));
+    *kernel_val = 3 / (4 * pow(mesh.sqdelta, 2));
 }
 
-void kernel_constantTruncated(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_constantTruncated(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                      double *kernel_val) {
     double z[2];
     z[0] = x[0] - y[0];
     z[1] = x[1] - y[1];
-    bool doesInteract = (sqdelta > vec_dot(z,z,2) );
-    *kernel_val = doesInteract * 4 / (M_PI * pow(sqdelta, 2));
+    bool doesInteract = (mesh.sqdelta > vec_dot(z,z,2) );
+    *kernel_val = doesInteract * 4 / (M_PI * pow(mesh.sqdelta, 2));
 }
 
-void kernel_constant1D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_constant1D(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                      double *kernel_val) {
-    *kernel_val = 3./(2. * pow(sqrt(sqdelta), 3));
+    *kernel_val = 3./(2. * pow(mesh.delta, 3));
 }
-void kernel_parabola(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_parabola(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                      double *kernel_val) {
     double z[2];
     z[0] = x[0] - y[0];
     z[1] = x[1] - y[1];
-    const double value = sqdelta - vec_dot(z,z,2);
-    const double c =  12./(M_PI * pow(sqdelta, 3));
+    const double value = mesh.sqdelta - vec_dot(z,z,2);
+    const double c =  12./(M_PI * pow(mesh.sqdelta, 3));
     *kernel_val = c*value;
 }
 
-void kernel_constant3D(const double *x, const long labelx, const double *y, const long labely, const double sqdelta,
+void kernel_constant3D(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                        double *kernel_val) {
-    *kernel_val = 15 / (M_PI * 4 * pow(sqrt(sqdelta), 5));
+    *kernel_val = 15 / (M_PI * 4 * pow(mesh.delta, 5));
 }
 
-void kernel_labeled(const double * x, const long labelx, const double * y, const long labely, const double sqdelta,
+void kernel_labeled(const double * x, const long labelx, const double * y, const long labely, const MeshType &mesh,
                       double * kernel_val){
     double dist;
     long label;
 
     label = 10*labelx + labely;
     dist = vec_sqL2dist(x, y, 2);
-    if (dist >= sqdelta) {
+    if (dist >= mesh.sqdelta) {
         cout << "Error in model_kernel. Distance smaller delta not expected." << endl;
         cout << dist << endl;
         abort();
     }
     if (label <= 12) {
-        *kernel_val = 0.01 * 3. / (4*pow(sqdelta, 2));
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
     } else if (label>=21){
-        *kernel_val = (100 *  3. / (4*pow(sqdelta, 2))) * (1 - (dist/sqdelta) );
+        *kernel_val = (100 *  3. / (4*pow(mesh.sqdelta, 2))) * (1 - (dist/mesh.sqdelta) );
     } else if (label == 13){
         *kernel_val = 0.0;
     } else {
@@ -80,50 +79,54 @@ void kernel_labeled(const double * x, const long labelx, const double * y, const
     }
 }
 void kernel_linearPrototypeMicroelastic(const double * x, const long labelx, const double * y, const long labely,
-                                             const double sqdelta, double * kernel_val) {
+                                             const MeshType &mesh, double * kernel_val) {
     double z[2];
     z[0] = x[0] - y[0];
     z[1] = x[1] - y[1];
     const double denominator = 1.0/sqrt(vec_dot(z,z,2));
-    const double c =  3.0/(M_PI * pow(sqrt(sqdelta),3));
+    const double c =  3.0/(M_PI * pow(mesh.delta,3));
     *kernel_val = c*denominator;
 }
 
 void kernel_fractional(const double * x, const long labelx, const double * y, const long labely,
-                                        const double sqdelta, double * kernel_val) {
-    const double s=0.5;
-    double z[2];
-    z[0] = x[0] - y[0];
-    z[1] = x[1] - y[1];
-    const double denominator = 1.0/sqrt(vec_dot(z,z,2));
-    const double c =  (4*s)/(M_PI*pow(sqdelta,s));
+                                        const MeshType &mesh, double * kernel_val) {
+    const double exponent = mesh.dim+2*mesh.fractional_s;
+    double z[mesh.dim];
+    for (int i = 0; i < mesh.dim; i++){
+        z[i] = x[i] - y[i];
+    }
+    const double denominator = 1.0/pow(sqrt(vec_dot(z,z,mesh.dim)), exponent);
+    // Constant is wrong I guess..
+    //const double c =  (4*mesh.fractional_s)/(M_PI*pow(mesh.sqdelta, mesh.fractional_s));
+    const double c =  (mesh.fractional_s)/(M_PI*pow(mesh.sqdelta, mesh.fractional_s));
+    //const double c =  3.0/(M_PI * pow(mesh.delta,3));
     *kernel_val = c*denominator;
 }
 
 void kernelField_linearPrototypeMicroelastic(const double * x, const long labelx, const double * y, const long labely,
-                                        const double sqdelta, double * kernel_val) {
+                                        const MeshType &mesh, double * kernel_val) {
     double z[2];
     z[0] = x[0] - y[0];
     z[1] = x[1] - y[1];
     double denominator = 1.0/pow(sqrt(vec_dot(z,z,2)),3);
-    //double f0 = 2*sqdelta - vec_dot(z,z,2); // Sign changing.
-    //double c =  12.0/(M_PI * pow(sqrt(sqdelta),3));
-    double c =  3.0/pow(sqrt(sqdelta),3);
+    //double f0 = 2*mesh.sqdelta - vec_dot(z,z,2); // Sign changing.
+    //double c =  12.0/(M_PI * pow(mesh.delta,3));
+    double c =  3.0/pow(mesh.delta,3);
     kernel_val[0] = c*denominator*z[0]*z[0] ;//+ f0;
     kernel_val[1] = c*denominator*z[0]*z[1];
     kernel_val[2] = c*denominator*z[1]*z[0];
     kernel_val[3] = c*denominator*z[1]*z[1] ;//+ f0;
 }
 void kernelField_constant(const double * x, const long labelx, const double * y, const long labely,
-                                             const double sqdelta, double * kernel_val) {
+                                             const MeshType &mesh, double * kernel_val) {
     //double z[2];
     //z[0] = x[0] - y[0];
     //z[1] = x[1] - y[1];
     //*kernel_val = 1./sqrt(vec_dot(z,z,2));
     // KERNEL ORDER [ker (0,0), ker (0,1), ker (1,0), ker (1,1)]
-    kernel_val[0] = 4. / (M_PI * pow(sqdelta, 2));
+    kernel_val[0] = 4. / (M_PI * pow(mesh.sqdelta, 2));
     kernel_val[1] = 0.0;
-    kernel_val[2] = 4. / (M_PI * pow(sqdelta, 2));
+    kernel_val[2] = 4. / (M_PI * pow(mesh.sqdelta, 2));
     kernel_val[3] = 0.0;
 }
 

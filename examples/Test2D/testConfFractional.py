@@ -12,17 +12,17 @@ KERNELS = [
        "outputdim": 1,
         "fractional_s": -0.5
     },
-    #{
-    #    "function": "linearPrototypeMicroelasticField",
-    #    "horizon": 0.3,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
-    #    "outputdim": 2,
-    #    "fractional_s": -0.5
-    #}
+    {
+        "function": "fractional",
+        "horizon": 0.3,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
+        "outputdim": 1,
+        "fractional_s": 0.5
+    }
 ]
 
 LOADS = [
-    {"function": "linear", "solution": u_exact_linearRhs}#,
-    #{"function": "linearField", "solution": u_exact_FieldConstantBothRhs}
+    {"function": "linear", "solution": u_exact_linearRhs},
+    {"function": "linear", "solution": u_exact_linearRhs}
 ]
 
 
