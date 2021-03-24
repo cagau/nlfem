@@ -220,6 +220,11 @@ void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const Q
                                                        double * termLocal, double * termNonloc,
                                                        double *termLocalPrime, double *termNonlocPrime);
 
+
+void integrate_fractional(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                           const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+                           double * termLocal, double * termNonloc,
+                           double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routine is tied tie the singular kernels *kernel_linearPrototypeMicroelastic*
  * and *kernelField_linearPrototypeMicroelastic*. It calls integrate_retriangulate() for remote triangles.

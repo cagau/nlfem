@@ -106,6 +106,11 @@ struct MeshStruct{
     // Optional Argument Mesh Diameter
     const double maxDiameter; // Should be set to 0 if unused.
 
+    const double fractional_s;
+    // This corresponds to a kernel with no singularity.
+    // Therefore the integration for fractional kernels can be used for non-singular kernels as well
+    // Makes sense for tests e.g.
+
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
     const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->nE)};

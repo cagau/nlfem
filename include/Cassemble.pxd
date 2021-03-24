@@ -19,7 +19,7 @@ cdef extern from "Cassemble.h":
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim, const int outdim,
                   const long * ptrZeta, const long nZeta,
-                  const double * Pg, const int nPg, const double * dg, double maxDiameter)
+                  const double * Pg, const int nPg, const double * dg, double maxDiameter, double fractional_s)
     # Mass matrix evaluation ----------------------------------------------------------------------------------------------
     void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int nE, int nP,
                      double *P, double *dx, const int dim, int outdim)

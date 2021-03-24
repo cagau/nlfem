@@ -10,6 +10,8 @@
 
 #include "model.h"
 #include "mathhelpers.h"
+#include "MeshTypes.h"
+
 using namespace std;
 
 // ### KERNEL ##########################################################################################################
@@ -87,18 +89,30 @@ void kernel_linearPrototypeMicroelastic(const double * x, const long labelx, con
     *kernel_val = c*denominator;
 }
 
+void kernel_fractional(const double * x, const long labelx, const double * y, const long labely,
+                                        const double sqdelta, double * kernel_val) {
+    const double s=0.5;
+    double z[2];
+    z[0] = x[0] - y[0];
+    z[1] = x[1] - y[1];
+    const double denominator = 1.0/sqrt(vec_dot(z,z,2));
+    const double c =  (4*s)/(M_PI*pow(sqdelta,s));
+    *kernel_val = c*denominator;
+}
+
 void kernelField_linearPrototypeMicroelastic(const double * x, const long labelx, const double * y, const long labely,
                                         const double sqdelta, double * kernel_val) {
     double z[2];
     z[0] = x[0] - y[0];
     z[1] = x[1] - y[1];
     double denominator = 1.0/pow(sqrt(vec_dot(z,z,2)),3);
+    //double f0 = 2*sqdelta - vec_dot(z,z,2); // Sign changing.
     //double c =  12.0/(M_PI * pow(sqrt(sqdelta),3));
     double c =  3.0/pow(sqrt(sqdelta),3);
-    kernel_val[0] = c*denominator*z[0]*z[0];
+    kernel_val[0] = c*denominator*z[0]*z[0] ;//+ f0;
     kernel_val[1] = c*denominator*z[0]*z[1];
     kernel_val[2] = c*denominator*z[1]*z[0];
-    kernel_val[3] = c*denominator*z[1]*z[1];
+    kernel_val[3] = c*denominator*z[1]*z[1] ;//+ f0;
 }
 void kernelField_constant(const double * x, const long labelx, const double * y, const long labely,
                                              const double sqdelta, double * kernel_val) {
@@ -171,4 +185,10 @@ void model_basisFunction(const double * p, const int dim, double *psi_vals){
         psi_vals[0] -= p[i];
         psi_vals[i+1] = p[i];
     }
+}
+
+void model_basisFunction_substracted(const double * alpha, const int dim, double *psi_vals){
+    psi_vals[0] = -alpha[0] - alpha[1] + alpha[2] + alpha[3];
+    psi_vals[1] = alpha[0] - alpha[2];
+    psi_vals[2] = alpha[1] - alpha[3];
 }

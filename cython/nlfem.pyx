@@ -210,12 +210,14 @@ def stiffnessMatrix(
         if nZeta > 0:
             ptrZetaIndicator = &ZetaIndicator[0]
     except KeyError:
-        #print("Zeta not found.")
+        print("Cython: Zeta not found.")
         nZeta = 0
 
     cdef int outdim_ = kernel["outputdim"]
     if mesh["outdim"] != kernel["outputdim"]:
         raise ValueError("The output dimension of the mesh has to be equal to the output dimension of the kernel.")
+
+    cdef double fractional_s  = kernel.get("fractional_s", -1.0)
 
     maxDiameter = mesh.get("diam", 0.0)
     is_DG = configuration.get("ansatz", "CG") == "DG"
@@ -250,7 +252,8 @@ def stiffnessMatrix(
                             dim, outdim_,
                             ptrZetaIndicator, nZeta,
                             ptrPg, tensorGaussDegree, ptrdg,
-                            maxDiameter)
+                            maxDiameter,
+                            fractional_s)
 
     total_time = time.time() - start
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -365,7 +368,7 @@ def loadVector(
                             "".encode('UTF-8'), False,
                             dim, outdim_,
                             ptrZetaIndicator, nZeta,
-                            NULL, 0, NULL, 0.0)
+                            NULL, 0, NULL, 0.0, -1.0)
 
     total_time = time.time() - start
     print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -403,6 +406,9 @@ def assemble(
     :return: Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim
     (Discontinuous Galerkin)
     """
+    print("This function is deprecated. Please use stiffnessMatrix()")
+    raise KeyboardInterrupt
+
     is_tmpAd = False
     if path_spAd is None:
         is_tmpAd = True
@@ -494,7 +500,7 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0)
 
         total_time = time.time() - start
         print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -520,7 +526,7 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0)
 
         fd = read_arma_mat(path_fd)[:mesh.K_Omega,0]
         if is_tmpfd:

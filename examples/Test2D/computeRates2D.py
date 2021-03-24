@@ -38,7 +38,9 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
 
         A_O = A[mesh.nodeLabels > 0][:, mesh.nodeLabels > 0]
         #A_Odense = np.array(A_O.todense())
-        #print("########### Sym Check: ", np.linalg.norm(A_Odense - A_Odense.T))
+        #test =  np.linalg.norm(A_Odense - A_Odense.T)
+        #print("########### Sym Check: ", test)
+
         A_I = A[mesh.nodeLabels > 0][:, mesh.nodeLabels < 0]
         f = f_OI[mesh.nodeLabels > 0]
 
@@ -90,6 +92,10 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         else:
             data["Rates"].append(0)
         err_ = err
+
+        A = None
+        A_O = None
+        A_I = None
     #pp.close()
     return data
 

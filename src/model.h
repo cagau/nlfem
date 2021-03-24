@@ -128,6 +128,25 @@ void kernel_labeled(const double * x, long labelx, const double * y, long labely
 void kernel_linearPrototypeMicroelastic(const double * x, long labelx, const double * y, long labely,
                                         double sqdelta, double * kernel_val);
 /**
+ * @brief Kernel for fractional Laplacian. The scalar valued weakly singular kernel reads as
+ *
+ *  \f[
+ * \gamma(x,y) = \frac{1}{\| x - y \|}  \frac{3}{\pi \delta ^3}.
+ *  \f]
+ * The constant is chosen such that the operator is equivalent to the laplacian for
+ * polynomials of degree less or equal to 2.
+ *
+ * @param x Physical point of the outer integration region.
+ * @param labelx Label of the outer triangle.
+ * @param y Physical point of the inner integration region.
+ * @param labely Label of inner triangle.
+ * @param sqdelta Squared delta.
+ * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
+ * of shape d x d in case of peridynamics.
+ */
+void kernel_fractional(const double * x, const long labelx, const double * y, const long labely,
+                       const double sqdelta, double * kernel_val);
+/**
  * @brief Kernel for the peridynamics model. The matrix valued weakly singular kernel reads as
  *
  *  \f[
@@ -226,4 +245,13 @@ void model_basisFunction(const double * p, double *psi_vals);
   * @param psi_vals  Value of 3 or 4 basis functions, depending on the dimension.
   */
 void model_basisFunction(const double * p, int dim, double *psi_vals);
+/**
+ * @brief  Definition of basis function terms as they appear in the representation necessary for
+ * the fractional laplacian.
+ *
+ * @param alpha Quadrature point of dim 4.
+ * @param dim Dimension of domain (2).
+ * @param psi_vals  Value of 3 basis functions.
+ */
+void model_basisFunction_substracted(const double * alpha, const int dim, double *psi_vals);
 #endif //NONLOCAL_ASSEMBLY_MODEL_H

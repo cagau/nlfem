@@ -82,6 +82,9 @@ void lookup_configuration(ConfigurationType & conf){
         conf.is_singularKernel = true;
     } else if (conf.model_kernel == "constantField") {
         model_kernel = kernelField_constant;
+    } else if (conf.model_kernel == "fractional") {
+        model_kernel = kernel_fractional;
+        conf.is_singularKernel = true;
     }
     else {
         cout << "No kernel chosen" << endl;
@@ -114,7 +117,8 @@ void lookup_configuration(ConfigurationType & conf){
             //abort();
         }
     } else if ( conf.model_kernel == "linearPrototypeMicroelastic" ||
-                conf.model_kernel == "linearPrototypeMicroelasticField") {
+                conf.model_kernel == "linearPrototypeMicroelasticField" ||
+                conf.model_kernel == "fractional") {
         if (conf.integration_method == "baryCenter") {
             integrate = integrate_linearPrototypeMicroelastic_baryCenter;
         } else if (conf.integration_method == "baryCenterRT") {
@@ -127,6 +131,10 @@ void lookup_configuration(ConfigurationType & conf){
         } else if (conf.integration_method == "retriangulateLinfty") {
             method = method_retriangulateInfty;
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
+            //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+        } else if (conf.integration_method == "fractional") {
+            method = method_retriangulate;
+            integrate = integrate_fractional;
             //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else {
             cout << "No integration method chosen" << endl;
@@ -325,11 +333,11 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim, const int outdim, const long * ptrZeta, const long nZeta,
-                  const double * Pg, const int degree, const double * dg, double maxDiameter) {
+                  const double * Pg, const int degree, const double * dg, double maxDiameter, double fractional_s) {
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, ptrLabelVerts, nE, nE_Omega,
                      nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter};
+                     is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter, fractional_s};
 
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
     chk_QuadratureRule(quadRule);
@@ -509,8 +517,8 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                             // If bT interacts it will be a candidate for our BFS, so it is added to the queue
 
                             //[DEBUG]
-                            /*
-                            if (aTdx == 0 && bTdx == 45){
+/*
+                            if (is_firstbfslayer){//aTdx == 0 && bTdx == 0){
 
                             printf("aTdx %i\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
                             printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aT.E[0],aT.E[1],aT.E[2],aT.E[3],aT.E[4],aT.E[5]);
@@ -526,12 +534,23 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                             printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[0], termNonloc[1], termNonloc[2]);
                             printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[3], termNonloc[4], termNonloc[5]);
                             printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[6], termNonloc[7], termNonloc[8]);
+
+                            cout << endl << "Local Term Prime" << endl ;
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[0], termLocalPrime[1], termLocalPrime[2]);
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[3], termLocalPrime[4], termLocalPrime[5]);
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[6], termLocalPrime[7], termLocalPrime[8]);
+
+                            cout << endl << "Nonlocal Term Prime" << endl ;
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[0], termNonlocPrime[1], termNonlocPrime[2]);
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[3], termNonlocPrime[4], termNonlocPrime[5]);
+                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[6], termNonlocPrime[7], termNonlocPrime[8]);
                             //if (aTdx == 10){
                             //    abort();
                             //}
-                            abort();
+
                             }
-                            */
+                            if ((aTdx == 1) && !is_firstbfslayer) abort();
+*/
                             //[End DEBUG]
 
                             // Domain decomposition. If Zeta is empty, the weight is set to 1.
@@ -579,7 +598,7 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                                                     mesh.outdim*bAdx[b/mesh.outdim] + b%mesh.outdim;
                                             #pragma omp critical
                                             {
-                                                Ad[Adx] += -termNonloc[mesh.dVertex * mesh.outdim * a + b] * weight;
+                                               Ad[Adx] += -termNonloc[mesh.dVertex * mesh.outdim * a + b] * weight;
                                             }
                                         }
                                         if (mesh.is_DiscontinuousGalerkin || (mesh.LabelVerts[bAdx[b / mesh.outdim]] > 0)) {
