@@ -183,6 +183,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
  * @param Elements  List of elements of a finite element triangulation (CSR-format, row major order).
  * @param ElementLabels List of element Labels.
  * @param Verts     List of vertices (row major order).
+ * @param VertexLabels List of vertex Labels.
  * @param K_Omega   Number of rows and columns in M. Example: If you use continuous Galerkin basis functions and
  * want to solve a scalar problem K_Omega = J.
  * @param J         Number of elements in the triangulation.

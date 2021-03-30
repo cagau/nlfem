@@ -9,9 +9,9 @@ def u_exact_FieldConstantBothRhs(x):
 KERNELS = [
     {
         "function": "fractional",
-        "horizon": 0.5,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
+        "horizon": 0.3,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
         "outputdim": 1,
-        "fractional_s": 0.9
+        "fractional_s": 0.5
     }
 ]
 
@@ -66,7 +66,7 @@ CONFIGURATIONS = [
                 "points": quadrules["7point"][0],
                 "weights": quadrules["7point"][1]
             },
-            "tensorGaussDegree": 5 # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 4 # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
     }
 ]
