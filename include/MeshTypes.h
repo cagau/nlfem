@@ -71,6 +71,7 @@ struct ConfigurationStruct {
     const string integration_method;
     const bool is_placePointOnCap;
     bool is_singularKernel=false;
+    const int verbose;
 };
 typedef ConfigurationStruct ConfigurationType;
 

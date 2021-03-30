@@ -90,16 +90,15 @@ void kernel_linearPrototypeMicroelastic(const double * x, const long labelx, con
 
 void kernel_fractional(const double * x, const long labelx, const double * y, const long labely,
                                         const MeshType &mesh, double * kernel_val) {
-    const double exponent = mesh.dim+2*mesh.fractional_s;
+    const double exponent = mesh.dim+2.*mesh.fractional_s;
+    const double constant_exponent = 2. - 2.*mesh.fractional_s;
     double z[mesh.dim];
     for (int i = 0; i < mesh.dim; i++){
         z[i] = x[i] - y[i];
     }
     const double denominator = 1.0/pow(sqrt(vec_dot(z,z,mesh.dim)), exponent);
     // Constant is wrong I guess..
-    //const double c =  (4*mesh.fractional_s)/(M_PI*pow(mesh.sqdelta, mesh.fractional_s));
-    const double c =  (mesh.fractional_s)/(M_PI*pow(mesh.sqdelta, mesh.fractional_s));
-    //const double c =  3.0/(M_PI * pow(mesh.delta,3));
+    const double c =  (constant_exponent)/(M_PI*pow(mesh.delta, constant_exponent));
     *kernel_val = c*denominator;
 }
 

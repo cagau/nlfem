@@ -19,6 +19,7 @@ def append_output(data, conf, kernel, load, fileHandle):
     columns = {
         "Right hand side": load["function"],
         "**Kernel**": "**"+kernel["function"]+"**",
+        "s": kernel.get("fractional_s", -1),
         "**Integration Method**": "**"+conf["approxBalls"]["method"]+"**",
         "With caps": conf["approxBalls"]["isPlacePointOnCap"],
         "Quadrule outer": len(conf["quadrature"]["outer"]["weights"]),

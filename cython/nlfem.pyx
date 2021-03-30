@@ -179,6 +179,7 @@ def stiffnessMatrix(
     cdef string model_kernel_ = kernel["function"].encode('UTF-8')
     cdef string integration_method_ = configuration["approxBalls"]["method"].encode('UTF-8')
     cdef int is_PlacePointOnCap_ = configuration["approxBalls"].get("is_PlacePointOnCap", 1)
+    cdef int verbose = configuration["approxBalls"].get("verbose", 0)
 
     cdef double [:] ptrPx = configuration["quadrature"]["outer"]["points"].flatten()
     cdef double [:] ptrPy = configuration["quadrature"]["inner"]["points"].flatten()
@@ -210,7 +211,7 @@ def stiffnessMatrix(
         if nZeta > 0:
             ptrZetaIndicator = &ZetaIndicator[0]
     except KeyError:
-        print("Cython: Zeta not found.")
+        if (verbose): print("Cython: Zeta not found.")
         nZeta = 0
 
     cdef int outdim_ = kernel["outputdim"]
@@ -253,10 +254,10 @@ def stiffnessMatrix(
                             ptrZetaIndicator, nZeta,
                             ptrPg, tensorGaussDegree, ptrdg,
                             maxDiameter,
-                            fractional_s)
+                            fractional_s, verbose)
 
     total_time = time.time() - start
-    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+    if (verbose): print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 
     Ad = read_arma_spMat(path_spAd)
     if path_spAd == f"tmp_spAd_{tmstmp}":
@@ -313,6 +314,7 @@ def loadVector(
     cdef string model_load_ = load["function"].encode('UTF-8')
     cdef string integration_method_ = configuration["approxBalls"]["method"].encode('UTF-8')
     cdef int is_PlacePointOnCap_ = configuration["approxBalls"].get("is_PlacePointOnCap", 1)
+    cdef int verbose = configuration["approxBalls"].get("verbose", 0)
 
     cdef double [:] ptrPx = configuration["quadrature"]["outer"]["points"].flatten()
     #cdef double [:] ptrPy = configuration["quadrature"]["inner"]["points"].flatten()
@@ -368,10 +370,10 @@ def loadVector(
                             "".encode('UTF-8'), False,
                             dim, outdim_,
                             ptrZetaIndicator, nZeta,
-                            NULL, 0, NULL, 0.0, -1.0)
+                            NULL, 0, NULL, 0.0, -1.0, verbose)
 
     total_time = time.time() - start
-    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+    if (verbose): print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 
     fd = read_arma_mat(path_fd)[:,0]
     if path_fd == f"tmp_fd_{tmstmp}":
@@ -406,8 +408,13 @@ def assemble(
     :return: Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim
     (Discontinuous Galerkin)
     """
-    print("This function is deprecated. Please use stiffnessMatrix()")
-    raise KeyboardInterrupt
+    #print("This function is deprecated. Please use stiffnessMatrix()")
+    #raise KeyboardInterrupt
+    cdef int verbose  = 1
+    try:
+        verbose = mesh.verbose
+    except AttributeError:
+        print("Verbose Mode")
 
     is_tmpAd = False
     if path_spAd is None:
@@ -455,13 +462,13 @@ def assemble(
         if nZeta > 0:
             ptrZetaIndicator = &ZetaIndicator[0]
     except AttributeError:
-        print("Zeta not found.")
+        if (verbose): print("Zeta not found.")
         nZeta = 0
 
     try:
         outdim = mesh.outdim
     except AttributeError:
-        print("Mesh out dim not found.")
+        if (verbose): print("Mesh out dim not found.")
         outdim = 1
 
     cdef double [:] Pg
@@ -473,7 +480,7 @@ def assemble(
     try:
         maxDiameter = mesh.diam
     except AttributeError:
-        print("Element diameter not found.")
+        if (verbose): print("Element diameter not found.")
 
     if tensorGaussDegree != 0:
         quadgauss = tensorgauss(tensorGaussDegree)
@@ -500,17 +507,17 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, verbose)
 
         total_time = time.time() - start
-        print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+        if (verbose): print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 
         Ad = read_arma_spMat(path_spAd)[:mesh.K_Omega]
         if is_tmpAd:
             remove_arma_tmp(path_spAd)
 
     if (compute=="forcing" or compute =="systemforcing"):
-        print("")
+        if (verbose): print("")
         Cassemble.par_assemble( compute_forcing_, path_spAd_, path_fd_, mesh.K_Omega, mesh.K,
                             &elements[0], &elementLabels[0], &vertices[0], &vertexLabels[0],
                             mesh.nE , mesh.nE_Omega, mesh.nV, mesh.nV_Omega,
@@ -526,7 +533,7 @@ def assemble(
                             &integration_method_[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, verbose)
 
         fd = read_arma_mat(path_fd)[:mesh.K_Omega,0]
         if is_tmpfd:
@@ -542,13 +549,14 @@ def evaluateMass(
             # Weights for quadrature rule
             dx
         ):
-    vd = np.zeros(mesh.K_Omega)
+    vd = np.zeros(mesh.K)
     cdef double[:] ptrvd = vd
     cdef double[:] ptrud = ud.flatten()
 
     cdef long[:] elements = mesh.elements.flatten()
     cdef long [:] elementLabels = mesh.elementLabels.flatten()
     cdef double[:] vertices = mesh.vertices.flatten()
+    cdef long [:] vertexLabels = mesh.vertexLabels.flatten()
 
     cdef double[:] ptrPx = Px.flatten()
     cdef double[:] ptrdx = dx.flatten()
@@ -565,13 +573,14 @@ def evaluateMass(
             &elements[0],
             &elementLabels[0],
             &vertices[0],
+            &vertexLabels[0],
             mesh.K_Omega,
             mesh.nE_Omega,
             Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim, outdim)
     return vd
 
 def constructAdjaciencyGraph(long[:,:] elements):
-    print("Constructing adjaciency graph...")
+    #print("Constructing adjaciency graph...")
     nE = elements.shape[0]
     nV = np.max(elements)+1
     cdef int dVerts = elements.shape[1]
@@ -846,7 +855,7 @@ def py_check_par_assemble(
             plt.close()
 
     total_time = time.time() - start
-    print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
+    if (verbose): print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
 
 
     return py_fd

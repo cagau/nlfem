@@ -118,6 +118,7 @@ void solve2x2(const double * A, const double * b, double * x);
  * @param maxDiameter Maximal diameter of finite elements (optional). Might increase speed of retriangulation if provided.
  * @param fractional_s  Degree of fractional kernel (d=2 only). Required for the correct choice of the integration routine.
  *                      Default is s=-1.0, which corresponds to a kernel with no singularity.
+ * @param verbose    switch for verbose mode.
  * */
 void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega, int K,
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const long * ptrLabelVerts,
@@ -129,7 +130,7 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
                   string str_model_f, string str_integration_method, int is_PlacePointOnCap,
                   int dim, int outdim, const long * ptrZeta = nullptr, long nZeta = 0,
                   const double * Pg = nullptr, int degree = 0, const double * dg = nullptr, double maxDiameter = 0.0,
-                  double fractional_s=-1.0);
+                  double fractional_s=-1.0, int verbose=0);
 
 /**
  * @brief Parallel assembly of nonlocal operator using a finite element approach.
@@ -190,7 +191,8 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
  * @param dx        <B>(nPx,)</B> Pointer to quadrature weights.
  * @param dim       Dimension of the domain Omega (2 or 3).
  */
-void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
+void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, long *VertexLabels,
+                      int K_Omega, int J, int nP,
                  double *P, double *dx, int dim, int outdim=1, bool is_DiscontinuousGalerkin=false);
 //[DEBUG]
 #endif /* Cassemble.h */

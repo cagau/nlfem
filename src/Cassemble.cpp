@@ -26,9 +26,9 @@ using namespace std;
  *
  * @param conf
  */
-void lookup_configuration(ConfigurationType & conf){
+void lookup_configuration(ConfigurationType & conf, int verbose=0){
     // Lookup right hand side ------------------------------------------------------------------------------------------
-    cout << "Right hand side: " << conf.model_f << endl;
+    if (verbose) cout << "Right hand side: " << conf.model_f << endl;
     if (conf.model_f == "linear") {
         model_f = f_linear;
     } else if (conf.model_f == "linear3D") {
@@ -44,8 +44,8 @@ void lookup_configuration(ConfigurationType & conf){
     } else if (conf.model_f == "constantBothField"){
         model_f = fField_constantBoth;
     } else {
-        cout << "No right hand side chosen" << endl;
-        model_kernel = nullptr;
+        if (verbose) cout << "No right hand side chosen" << endl;
+        model_f = nullptr;
         //cout << "Error in Cassemble lookup_configuration. Right hand side: " << conf.model_f << " is not implemented." << endl;
         //abort();
     }
@@ -57,7 +57,7 @@ void lookup_configuration(ConfigurationType & conf){
     //        {"constant", kernel_constant}
     //};
 
-    cout << "Kernel: " << conf.model_kernel << endl;
+    if (verbose) cout << "Kernel: " << conf.model_kernel << endl;
     if (conf.model_kernel == "constant"){
         model_kernel = kernel_constant;
         //model_kernel = lookupKernelName[conf.model_kernel];
@@ -87,30 +87,30 @@ void lookup_configuration(ConfigurationType & conf){
         conf.is_singularKernel = true;
     }
     else {
-        cout << "No kernel chosen" << endl;
+        if (verbose) cout << "No kernel chosen" << endl;
         model_kernel = nullptr;
         //cout << "Error in Cassemble lookup_configuration. Kernel " << conf.model_kernel << " is not implemented." << endl;
         //abort();
     }
 
     // Lookup integration method  --------------------------------------------------------------------------------------
-    cout << "Integration Method: " << conf.integration_method << endl;
+    if (verbose) cout << "Integration Method: " << conf.integration_method << endl;
     if ( conf.model_kernel == "constantField"){ // Test Case
         if (conf.integration_method == "baryCenter") {
             integrate = integrate_linearPrototypeMicroelastic_baryCenter;
         } else if (conf.integration_method == "baryCenterRT") {
             integrate = integrate_linearPrototypeMicroelastic_baryCenterRT;
-            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else if (conf.integration_method == "retriangulate") {
             method = method_retriangulate;
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
-            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else if (conf.integration_method == "retriangulateLinfty") {
             method = method_retriangulateInfty;
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
             //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else {
-            cout << "No integration method chosen" << endl;
+            if (verbose) cout << "No integration method chosen" << endl;
             model_kernel = nullptr;
             //cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
             //     " is not implemented." << endl;
@@ -123,11 +123,11 @@ void lookup_configuration(ConfigurationType & conf){
             integrate = integrate_linearPrototypeMicroelastic_baryCenter;
         } else if (conf.integration_method == "baryCenterRT") {
             integrate = integrate_linearPrototypeMicroelastic_baryCenterRT;
-            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else if (conf.integration_method == "retriangulate") {
             method = method_retriangulate;
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
-            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else if (conf.integration_method == "retriangulateLinfty") {
             method = method_retriangulateInfty;
             integrate = integrate_linearPrototypeMicroelastic_retriangulate;
@@ -137,7 +137,7 @@ void lookup_configuration(ConfigurationType & conf){
             integrate = integrate_fractional;
             //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
         } else {
-            cout << "No integration method chosen" << endl;
+            if (verbose) cout << "No integration method chosen" << endl;
             model_kernel = nullptr;
             // cout << "Error in par:assemble. Integration method " << conf.integration_method <<
             //     " is not implemented." << endl;
@@ -157,12 +157,12 @@ void lookup_configuration(ConfigurationType & conf){
 
         } else if (conf.integration_method == "baryCenterRT") {
             integrate = integrate_baryCenterRT;
-            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
 
         } else if (conf.integration_method == "retriangulate") {
             method = method_retriangulate;
             integrate = integrate_retriangulate;
-            printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
+            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
 
         } else if (conf.integration_method == "retriangulateLinfty") {
             method = method_retriangulateInfty;
@@ -178,7 +178,7 @@ void lookup_configuration(ConfigurationType & conf){
             conf.is_singularKernel = true; // Test Case
         }
         else {
-            cout << "No integration method chosen" << endl;
+            if (verbose) cout << "No integration method chosen" << endl;
             model_kernel = nullptr;
             //cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
             //     " is not implemented." << endl;
@@ -242,7 +242,7 @@ void compute_f(     const ElementType & aT,
 }
 
 void par_evaluateMass(double *vd, double *ud, long *Elements,
-                      long *ElementLabels, double *Verts, int K_Omega, int J, int nP,
+                      long *ElementLabels, double *Verts, long * VertexLabels, int K_Omega, int J, int nP,
                       double *P, double *dx, const int dim, const int outdim, const bool is_DiscontinuousGalerkin) {
     const int dVerts = dim+1;
     double tmp_psi[dVerts];
@@ -298,19 +298,16 @@ void par_evaluateMass(double *vd, double *ud, long *Elements,
                 aTdet = absDet(&aTE[0], dim);
 
                 for (int a = 0; a < dVerts; a++) {
-                    //TODO: Change if to if(vertexLabel[ aAdx[a] ] > 0
-                    if (aAdx[a] < K_Omega/outdim) {
+                    if(is_DiscontinuousGalerkin || VertexLabels[ aAdx[a] ] > 0) {
                         for (int aOut = 0; aOut < outdim; aOut++) {
                             for (int b = 0; b < dVerts; b++) {
-                                //TODO: Change if to if(vertexLabel[ aAdx[b] ] > 0
-                                if (aAdx[b] < K_Omega/outdim) {
+                                if(is_DiscontinuousGalerkin || VertexLabels[ aAdx[b] ] > 0) {
                                     for (int bOut = 0; bOut < outdim; bOut++) {
                                         for (int j = 0; j < nP; j++) {
                                             // Evaluation
 #pragma omp atomic update
                                             vd[outdim*aAdx[a] + aOut] +=
                                                     psi[nP * a + j] * psi[nP * b + j] * aTdet * dx[j] * ud[outdim*aAdx[b] + bOut];
-                                            // TODO: vd has to be of shape K, not K_Omega.
                                         }
                                     }
                                 }
@@ -333,7 +330,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
                   const int dim, const int outdim, const long * ptrZeta, const long nZeta,
-                  const double * Pg, const int degree, const double * dg, double maxDiameter, double fractional_s) {
+                  const double * Pg, const int degree, const double * dg, double maxDiameter, double fractional_s, int verbose) {
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, ptrLabelVerts, nE, nE_Omega,
                      nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
@@ -342,22 +339,22 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
     chk_QuadratureRule(quadRule);
 
-    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap), false, verbose};
 
     if (compute=="system") {
         map<unsigned long, double> Ad;
 
-        chk_Mesh(mesh);
+        chk_Mesh(mesh, verbose);
         chk_Conf(mesh, conf, quadRule);
 
         par_system(Ad, mesh, quadRule, conf);
 
-        cout << "K_Omega " << mesh.K_Omega << endl;
-        cout << "K " << mesh.K << endl;
+        if (verbose) cout << "K_Omega " << mesh.K_Omega << endl;
+        if (verbose) cout << "K " << mesh.K << endl;
         int nnz_total = static_cast<int>(Ad.size());
         arma::vec values_all(nnz_total);
         arma::umat indices_all(2, nnz_total);
-        cout << "Total NNZ " << nnz_total << endl;
+        if (verbose) cout << "Total NNZ " << nnz_total << endl;
 
         int k = 0;
         for (auto &it : Ad) {
@@ -380,14 +377,17 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 }
 
 void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
-    printf("Function: par_system\n");
-    printf("Ansatz Space: %s\n", mesh.is_DiscontinuousGalerkin ? "DG" : "CG");
-    printf("Mesh dimension: %i\n", mesh.dim);
-    printf("Output dimension: %i\n", mesh.outdim);
-    printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
-    lookup_configuration(conf);
-    printf("Quadrule outer: %i\n", quadRule.nPx);
-    printf("Quadrule inner: %i\n", quadRule.nPy);
+
+    const int verbose = conf.verbose;
+
+    if (verbose) printf("Function: par_system\n");
+    if (verbose) printf("Ansatz Space: %s\n", mesh.is_DiscontinuousGalerkin ? "DG" : "CG");
+    if (verbose) printf("Mesh dimension: %i\n", mesh.dim);
+    if (verbose) printf("Output dimension: %i\n", mesh.outdim);
+    if (verbose) printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
+    lookup_configuration(conf, verbose);
+    if (verbose) printf("Quadrule outer: %i\n", quadRule.nPx);
+    if (verbose) printf("Quadrule inner: %i\n", quadRule.nPy);
 
     for(int h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
@@ -636,12 +636,12 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
 
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
     arma::vec fd(mesh.K, arma::fill::zeros);
-
-    printf("Function: par_forcing\n");
-    printf("Mesh dimension: %i\n", mesh.dim);
-    printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
+    const int verbose = conf.verbose;
+    if (verbose) printf("Function: par_forcing\n");
+    //printf("Mesh dimension: %i\n", mesh.dim);
+    //printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
     lookup_configuration(conf);
-    printf("Quadrule outer: %i\n", quadRule.nPx);
+    //printf("Quadrule outer: %i\n", quadRule.nPx);
     //printf("Quadrule inner: %i\n", quadRule.nPy);
 
     for (int h = 0; h < quadRule.nPx; h++) {

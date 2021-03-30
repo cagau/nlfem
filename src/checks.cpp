@@ -42,7 +42,7 @@ void chk_BasisFunction(QuadratureType & quadRule){
     abortIfFalse(double_eq(psiy_integral, elementIntegral, EPSILON_CHKS) , "Wrong integral of basis function w.r.t. weights dy.");
 }
 
-void chk_Mesh(MeshType & mesh){
+void chk_Mesh(MeshType & mesh, int verbose=0){
     const long nE = mesh.nE;
     long chk_nE_Omega=0;
     const unsigned long d = mesh.dim;
@@ -59,7 +59,7 @@ void chk_Mesh(MeshType & mesh){
         }
     }
     abortIfFalse(mesh.nE_Omega == chk_nE_Omega , "Number of elements with label>0 does not coincide with nE_Omega.");
-    mesh.nE == chk_nE_Omega ? printf("WARNING: No Dirichlet boundary found! Check your element labels if that is not what you want."):0;
+    mesh.nE == chk_nE_Omega && verbose ? printf("WARNING: No Dirichlet boundary found! Check your element labels if that is not what you want."):0;
 
     if (mesh.is_DiscontinuousGalerkin) {
         abortIfFalse(mesh.outdim * mesh.nE * mesh.dVertex == mesh.K , "Matrix dimension does not match #basis functions and output dimension.");

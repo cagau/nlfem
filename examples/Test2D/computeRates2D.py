@@ -76,7 +76,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         #mesh.plot_ud(pp)
         #mesh.plot_u_exact(pp)
         # Evaluate L2 Error ---------------------------------------------------------------
-        u_diff = (mesh.u_exact - mesh.ud)[(mesh.nodeLabels > 0)[::mesh.outdim]]
+        u_diff = (mesh.u_exact - mesh.ud)#[(mesh.nodeLabels > 0)[::mesh.outdim]]
         Mu_udiff = nlfem.evaluateMass(mesh, u_diff,
                                          conf["quadrature"]["outer"]["points"],
                                          conf["quadrature"]["outer"]["weights"])
@@ -85,7 +85,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         # Print Rates ---------------------------------------------------------------------
         print("L2 Error: ", err)
         data["L2 Error"].append(err)
-        if err_ is not None:
+        if err_ is not None and err_ > 1e-16:
             rate = np.log2(err_ / err)
             print("Rate: \t", rate)
             data["Rates"].append(rate)
