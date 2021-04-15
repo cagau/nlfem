@@ -177,9 +177,10 @@ def stiffnessMatrix(
     cdef long[:] vertexLabels = mesh["vertexLabels"].flatten()
 
     cdef string model_kernel_ = kernel["function"].encode('UTF-8')
-    cdef string integration_method_ = configuration["approxBalls"]["method"].encode('UTF-8')
+    cdef string integration_method_remote = configuration["approxBalls"]["method"].encode('UTF-8')
+    cdef string integration_method_close = configuration.get("closeElements", configuration["approxBalls"]["method"]).encode('UTF-8')
     cdef int is_PlacePointOnCap_ = configuration["approxBalls"].get("is_PlacePointOnCap", 1)
-    cdef int verbose = configuration["approxBalls"].get("verbose", 0)
+    cdef int verbose = configuration.get("verbose", 0)
 
     cdef double [:] ptrPx = configuration["quadrature"]["outer"]["points"].flatten()
     cdef double [:] ptrPy = configuration["quadrature"]["inner"]["points"].flatten()
@@ -248,7 +249,8 @@ def stiffnessMatrix(
                             0,
                             &model_kernel_[0],
                             "".encode('UTF-8'),
-                            &integration_method_[0],
+                            &integration_method_remote[0],
+                            &integration_method_close[0],
                             is_PlacePointOnCap_,
                             dim, outdim_,
                             ptrZetaIndicator, nZeta,
@@ -312,9 +314,10 @@ def loadVector(
     cdef long[:] vertexLabels = mesh["vertexLabels"].flatten()
 
     cdef string model_load_ = load["function"].encode('UTF-8')
-    cdef string integration_method_ = configuration["approxBalls"]["method"].encode('UTF-8')
+    cdef string integration_method_remote = configuration["approxBalls"]["method"].encode('UTF-8')
+    cdef string integration_method_close = configuration.get("closeElements", configuration["approxBalls"]["method"]).encode('UTF-8')
     cdef int is_PlacePointOnCap_ = configuration["approxBalls"].get("is_PlacePointOnCap", 1)
-    cdef int verbose = configuration["approxBalls"].get("verbose", 0)
+    cdef int verbose = configuration.get("verbose", 0)
 
     cdef double [:] ptrPx = configuration["quadrature"]["outer"]["points"].flatten()
     #cdef double [:] ptrPy = configuration["quadrature"]["inner"]["points"].flatten()
@@ -367,7 +370,7 @@ def loadVector(
                             &ptrPx[0], nPx, &ptrdx[0],
                             0.0, NULL, 0, is_DG, 0, "".encode('UTF-8'),
                             model_load_,
-                            "".encode('UTF-8'), False,
+                            "".encode('UTF-8'), "".encode('UTF-8'), False,
                             dim, outdim_,
                             ptrZetaIndicator, nZeta,
                             NULL, 0, NULL, 0.0, -1.0, verbose)
@@ -440,7 +443,8 @@ def assemble(
     cdef double[:] ptrfd = fd
     cdef string model_kernel_ = model_kernel.encode('UTF-8')
     cdef string model_f_ = model_f.encode('UTF-8')
-    cdef string integration_method_ = integration_method.encode('UTF-8')
+    cdef string integration_method_remote = integration_method.encode('UTF-8')
+    cdef string integration_method_close = integration_method.encode('UTF-8')
 
     cdef string compute_system_ = "system".encode('UTF-8')
     cdef string compute_forcing_ = "forcing".encode('UTF-8')
@@ -504,7 +508,8 @@ def assemble(
                             mesh.is_NeumannBoundary,
                             &model_kernel_[0],
                             &model_f_[0],
-                            &integration_method_[0],
+                            &integration_method_remote[0],
+                            &integration_method_close[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
                             ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, verbose)
@@ -530,7 +535,8 @@ def assemble(
                             mesh.is_NeumannBoundary,
                             &model_kernel_[0],
                             &model_f_[0],
-                            &integration_method_[0],
+                            &integration_method_remote[0],
+                            &integration_method_close[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
                             ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, verbose)
@@ -561,6 +567,8 @@ def evaluateMass(
     cdef double[:] ptrPx = Px.flatten()
     cdef double[:] ptrdx = dx.flatten()
 
+    cdef int isDG = mesh.is_DiscontinuousGalerkin;
+
     cdef long outdim = 1
     try:
         outdim = mesh.outdim
@@ -576,7 +584,7 @@ def evaluateMass(
             &vertexLabels[0],
             mesh.K_Omega,
             mesh.nE_Omega,
-            Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim, outdim)
+            Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim, outdim, isDG)
     return vd
 
 def constructAdjaciencyGraph(long[:,:] elements):
@@ -983,7 +991,7 @@ cdef double [:] baryCenter(double [:] E):
 #         py_vd = np.zeros(self.K_Omega).flatten("C")
 #         cdef:
 #             double[:] vd = py_vd
-#         par_evaluateMass(&vd[0], &ud[0], &self.c_Triangles[0], &self.c_Verts[0], self.K_Omega, self.nE_Omega, self.nP, &self.P[0], &self.dx[0])
+#         par_evaluateMass(&vd[0], &ud[0], &self.c_Triangles[0], &self.c_Verts[0], self.K_Omega, self.nE_Omega, self.nP, &self.P[0], &self.dx[0], isDG)
 #         return py_vd
 # [END] ASSEMBLY OF MASS MATRICIES -------------------------------------------------------------------------------------------
 

@@ -14,12 +14,14 @@ KERNELS = [
     {
        "function": "linearPrototypeMicroelastic",
        "horizon": 1./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
-       "outputdim": 1
+       "outputdim": 1,
+        "fractional_s": -0.5
     },
     {
         "function": "linearPrototypeMicroelasticField",
         "horizon": 1./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
-        "outputdim": 2
+        "outputdim": 2,
+        "fractional_s": -0.5
     }
 ]
 
@@ -57,6 +59,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": True,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
+        "closeElements": "weakSingular", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,
@@ -67,7 +70,8 @@ CONFIGURATIONS = [
                 "weights": dx
             },
             "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
-        }
+        },
+        "verbose": False
     },
     {
         # "savePath": "pathA",
@@ -77,6 +81,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": False,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
+        "closeElements": "weakSingular", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,
@@ -97,6 +102,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": False,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
+        "closeElements": "weakSingular", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,
@@ -117,6 +123,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": True,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
+        "closeElements": "fractional", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,
@@ -137,6 +144,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": False,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
+        "closeElements": "fractional", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,
@@ -157,6 +165,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": False,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
+        "closeElements": "fractional", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,

@@ -68,9 +68,10 @@ struct ConfigurationStruct {
     const string path_fd;
     const string model_kernel;
     const string model_f;
-    const string integration_method;
+    const string integration_method_remote;
+    const string integration_method_close;
     const bool is_placePointOnCap;
-    bool is_singularKernel=false;
+    bool is_singularKernel;
     const int verbose;
 };
 typedef ConfigurationStruct ConfigurationType;
@@ -164,4 +165,23 @@ struct entryStruct{
 };
 typedef entryStruct entryType;
 
+class MatrixSparstiyPattern {
+    public:
+    const MeshType mesh;
+    const long K;
+    double stump=0;
+    arma::Col<long> nnzRows {arma::Col<long>(K, arma::fill::zeros)};
+
+    MatrixSparstiyPattern(MeshType & mesh_):mesh(mesh_), K(mesh.K){};
+    double & operator[](const long aTdx){
+        nnzRows(aTdx / K) += 1;
+        return stump;
+    }
+    long getEstimate(){
+        long estimate = arma::max(nnzRows)/mesh.dVertex/mesh.dVertex/mesh.outdim/mesh.outdim/4;
+        if (mesh.is_DiscontinuousGalerkin)
+            return estimate*mesh.dVertex*mesh.dVertex*1.5;
+        return lround(estimate/mesh.dVertex*1.1);
+    }
+};
 #endif //NONLOCAL_ASSEMBLY_MESHTYPES_H

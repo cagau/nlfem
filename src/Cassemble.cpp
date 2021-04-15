@@ -29,162 +29,104 @@ using namespace std;
 void lookup_configuration(ConfigurationType & conf, int verbose=0){
     // Lookup right hand side ------------------------------------------------------------------------------------------
     if (verbose) cout << "Right hand side: " << conf.model_f << endl;
-    if (conf.model_f == "linear") {
-        model_f = f_linear;
-    } else if (conf.model_f == "linear3D") {
-        model_f = f_linear3D;
-    } else if (conf.model_f == "constant"){
-        model_f = f_constant;
-    } else if (conf.model_f == "linearField"){
-        model_f = fField_linear;
-    } else if (conf.model_f == "constantRightField"){
-        model_f = fField_constantRight;
-    } else if (conf.model_f == "constantDownField"){
-        model_f = fField_constantDown;
-    } else if (conf.model_f == "constantBothField"){
-        model_f = fField_constantBoth;
+    //void (*model_f)(const double * x, double * forcing_out);
+    map<string, void (*)(const double * x, double * forcing_out)> lookup_f = {
+            {"linear", f_linear},
+            {"linear3D", f_linear3D},
+            {"constant", f_constant},
+            {"linearField", fField_linear},
+            {"constantRightField", fField_constantRight},
+            {"constantDownField", fField_constantDown},
+            {"constantBothField", fField_constantBoth}
+    };
+    map<string, void (*)(const double * x, double * forcing_out)>::iterator it_f;
+    it_f = lookup_f.find(conf.model_f);
+    if (it_f != lookup_f.end()){
+        if (verbose) cout << "Forcing: " << conf.model_f << endl;
+        model_f = lookup_f[conf.model_f];
     } else {
-        if (verbose) cout << "No right hand side chosen" << endl;
+        if (verbose) cout << "No forcing function chosen." << endl;
         model_f = nullptr;
-        //cout << "Error in Cassemble lookup_configuration. Right hand side: " << conf.model_f << " is not implemented." << endl;
-        //abort();
     }
 
-    // Lookup kernel ---------------------------------------------------------------------------------------------------
-    // Alternatively to if we can lookup the kernel in a map. As in given below for the constant kernel case.
-    // https://stackoverflow.com/questions/17762232/use-string-to-class-lookup-table-in-c-to-instantiate-classes
-    //map<string, void (*)(const double *, long, const double *, long, double, double *)> lookupKernelName {
-    //        {"constant", kernel_constant}
-    //};
+    map<string, void (*)(const double * x, long labelx, const double * y, long labely,
+            const MeshType &mesh, double * kernel_val)> lookup_kernel = {
+            {"constantTruncated", kernel_constantTruncated},
+            {"constant", kernel_constant},
+            {"constantLinf2D", kernel_constantLinf2D},
+            {"labeled", kernel_labeled},
+            {"constant3D", kernel_constant3D},
+            {"constant1D", kernel_constant1D},
+            {"parabola", kernel_parabola},
+            {"linearPrototypeMicroelastic", kernel_linearPrototypeMicroelastic},
+            {"linearPrototypeMicroelasticField", kernelField_linearPrototypeMicroelastic},
+            {"constantField", kernelField_constant},
+            {"fractional", kernel_fractional}
+    };
+    map<string, void (*)(const double * x, long labelx, const double * y, long labely,
+    const MeshType &mesh, double * kernel_val)>::iterator it_kernel;
 
-    if (verbose) cout << "Kernel: " << conf.model_kernel << endl;
-    if (conf.model_kernel == "constant"){
-        model_kernel = kernel_constant;
-        //model_kernel = lookupKernelName[conf.model_kernel];
-    } else if (conf.model_kernel == "constantTruncated") {
-        model_kernel = kernel_constantTruncated;
-    } else if (conf.model_kernel == "constantLinf2D") {
-        model_kernel = kernel_constantLinf2D;
-    } else if (conf.model_kernel == "labeled") {
-        model_kernel = kernel_labeled;
-    } else if (conf.model_kernel == "constant3D") {
-        model_kernel = kernel_constant3D;
-    } else if (conf.model_kernel == "constant1D") {
-        model_kernel = kernel_constant1D;
-    } else if (conf.model_kernel == "parabola") {
-        model_kernel = kernel_parabola;
-        conf.is_singularKernel = true;
-    } else if (conf.model_kernel == "linearPrototypeMicroelastic") {
-        model_kernel = kernel_linearPrototypeMicroelastic;
-        conf.is_singularKernel = true;
-    } else if (conf.model_kernel == "linearPrototypeMicroelasticField") {
-        model_kernel = kernelField_linearPrototypeMicroelastic;
-        conf.is_singularKernel = true;
-    } else if (conf.model_kernel == "constantField") {
-        model_kernel = kernelField_constant;
-    } else if (conf.model_kernel == "fractional") {
-        model_kernel = kernel_fractional;
-        conf.is_singularKernel = true;
-    }
-    else {
-        if (verbose) cout << "No kernel chosen" << endl;
+    it_kernel = lookup_kernel.find(conf.model_kernel);
+    if (it_kernel != lookup_kernel.end()){
+        if (verbose) cout << "Kernel: " << conf.model_kernel << endl;
+        model_kernel = lookup_kernel[conf.model_kernel];
+    } else {
+        if (verbose) cout << "No kernel chosen." << endl;
         model_kernel = nullptr;
-        //cout << "Error in Cassemble lookup_configuration. Kernel " << conf.model_kernel << " is not implemented." << endl;
-        //abort();
     }
+
+    map<string, bool> lookup_singularKernels = {
+            {"linearPrototypeMicroelastic", true},
+            {"linearPrototypeMicroelasticField", true},
+            {"fractional", true}
+    };
+    conf.is_singularKernel = lookup_singularKernels[conf.model_kernel];
+
 
     // Lookup integration method  --------------------------------------------------------------------------------------
-    if (verbose) cout << "Integration Method: " << conf.integration_method << endl;
-    if ( conf.model_kernel == "constantField"){ // Test Case
-        if (conf.integration_method == "baryCenter") {
-            integrate = integrate_linearPrototypeMicroelastic_baryCenter;
-        } else if (conf.integration_method == "baryCenterRT") {
-            integrate = integrate_linearPrototypeMicroelastic_baryCenterRT;
-            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-        } else if (conf.integration_method == "retriangulate") {
-            method = method_retriangulate;
-            integrate = integrate_linearPrototypeMicroelastic_retriangulate;
-            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-        } else if (conf.integration_method == "retriangulateLinfty") {
-            method = method_retriangulateInfty;
-            integrate = integrate_linearPrototypeMicroelastic_retriangulate;
-            //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-        } else {
-            if (verbose) cout << "No integration method chosen" << endl;
-            model_kernel = nullptr;
-            //cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
-            //     " is not implemented." << endl;
-            //abort();
-        }
-    } else if ( conf.model_kernel == "linearPrototypeMicroelastic" ||
-                conf.model_kernel == "linearPrototypeMicroelasticField" ||
-                conf.model_kernel == "fractional") {
-        if (conf.integration_method == "baryCenter") {
-            integrate = integrate_linearPrototypeMicroelastic_baryCenter;
-        } else if (conf.integration_method == "baryCenterRT") {
-            integrate = integrate_linearPrototypeMicroelastic_baryCenterRT;
-            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-        } else if (conf.integration_method == "retriangulate") {
-            method = method_retriangulate;
-            integrate = integrate_linearPrototypeMicroelastic_retriangulate;
-            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-        } else if (conf.integration_method == "retriangulateLinfty") {
-            method = method_retriangulateInfty;
-            integrate = integrate_linearPrototypeMicroelastic_retriangulate;
-            //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-        } else if (conf.integration_method == "fractional") {
-            method = method_retriangulate;
-            integrate = integrate_fractional;
-            //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-        } else {
-            if (verbose) cout << "No integration method chosen" << endl;
-            model_kernel = nullptr;
-            // cout << "Error in par:assemble. Integration method " << conf.integration_method <<
-            //     " is not implemented." << endl;
-            // abort();
-        }
-    }  else {
-        if (conf.integration_method == "baryCenter") {
-            integrate = integrate_baryCenter;
-        } else if (conf.integration_method == "subSetBall") {
-            integrate = integrate_subSuperSetBalls;
-
-        } else if (conf.integration_method == "superSetBall") {
-            integrate = integrate_subSuperSetBalls;
-
-        } else if (conf.integration_method == "averageBall") {
-            integrate = integrate_subSuperSetBalls;
-
-        } else if (conf.integration_method == "baryCenterRT") {
-            integrate = integrate_baryCenterRT;
-            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-
-        } else if (conf.integration_method == "retriangulate") {
-            method = method_retriangulate;
-            integrate = integrate_retriangulate;
-            if (verbose) printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-
-        } else if (conf.integration_method == "retriangulateLinfty") {
-            method = method_retriangulateInfty;
-            integrate = integrate_retriangulate;
-            //printf("With caps: %s\n", conf.is_placePointOnCap ? "true" : "false");
-        } else if  (conf.integration_method == "exactBall") {
-            integrate = integrate_exact;
-        } else if (conf.integration_method == "noTruncation") {
-            integrate = integrate_fullyContained;
-
-        } else if (conf.integration_method == "tensorgauss") {
-            integrate = integrate_tensorgauss;
-            conf.is_singularKernel = true; // Test Case
-        }
-        else {
-            if (verbose) cout << "No integration method chosen" << endl;
-            model_kernel = nullptr;
-            //cout << "Error in Cassemble lookup_configuration. Integration method " << conf.integration_method <<
-            //     " is not implemented." << endl;
-            //abort();
-        }
+    map<string, int (*)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                         const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                         double *termLocalPrime, double *termNonlocPrime)> lookup_integrate {
+                    {"baryCenter", integrate_baryCenter},
+                    {"subSetBall", integrate_subSuperSetBalls},
+                    {"averageBall", integrate_subSuperSetBalls},
+                    {"baryCenterRT", integrate_baryCenterRT},
+                    {"retriangulate", integrate_retriangulate},
+                    {"retriangulateLinfty", integrate_retriangulate},
+                    {"exactBall", integrate_exact},
+                    {"noTruncation", integrate_fullyContained},
+                    {"fractional", integrate_fractional},
+                    {"weakSingular", integrate_weakSingular}
+             };
+    map<string, int (*)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                         const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                         double *termLocalPrime, double *termNonlocPrime)>::iterator it_integrator;
+    it_integrator = lookup_integrate.find(conf.integration_method_remote);
+    if (it_integrator != lookup_integrate.end()){
+        if (verbose) cout << "Integration Method Remote: " << conf.integration_method_remote << endl;
+        integrate_remote = lookup_integrate[conf.integration_method_remote];
+    } else {
+        if (verbose) cout << "No integration routine for remote elements chosen." << endl;
+        integrate_remote = nullptr;
     }
+
+    it_integrator = lookup_integrate.find(conf.integration_method_close);
+    if (it_integrator != lookup_integrate.end()){
+        if (verbose) cout << "Integration Method Close: " << conf.integration_method_close << endl;
+        integrate_close = lookup_integrate[conf.integration_method_close];
+    } else {
+        if (verbose) cout << "No integration routine for close elements chosen." << endl;
+        integrate_close = nullptr;
+    }
+
+    if (conf.integration_method_remote == "retriangulateLinfty" || conf.integration_method_close == "retriangulateLinfty") {
+        method = method_retriangulateInfty;
+    } else {
+        // Becomes effective only if integrate_retriangulate is actually used. Has no meaning otherwise.
+        method = method_retriangulate;
+    }
+
+
 }
 
 void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
@@ -241,9 +183,9 @@ void compute_f(     const ElementType & aT,
     }
 }
 
-void par_evaluateMass(double *vd, double *ud, long *Elements,
-                      long *ElementLabels, double *Verts, long * VertexLabels, int K_Omega, int J, int nP,
-                      double *P, double *dx, const int dim, const int outdim, const bool is_DiscontinuousGalerkin) {
+void par_evaluateMass(double *vd, const double *ud, long *Elements,
+                      const long *ElementLabels, const double *Verts, const long * VertexLabels, int K_Omega, int J, int nP,
+                      double *P, const double *dx, const int dim, const int outdim, const int is_DiscontinuousGalerkin) {
     const int dVerts = dim+1;
     double tmp_psi[dVerts];
     auto *psi = (double *) malloc((dVerts)*nP*sizeof(double));
@@ -288,7 +230,7 @@ void par_evaluateMass(double *vd, double *ud, long *Elements,
                 // Copy coordinates of Triangel a to aTE.
                 for (int jj=0; jj<dVerts; jj++){
                     for (int j = 0; j < dim; j++) {
-                        aTE[dim * jj + j] = Verts[dim *aAdx[jj] + j];
+                        aTE[dim * jj + j] = Verts[dim * Elements[dVerts * aTdx + jj] + j];
                     }
                     //aTE[2 * 0 + j] = Verts[2 * Elements[4 * aTdx + 1] + j];
                     //aTE[2 * 1 + j] = Verts[2 * Elements[4 * aTdx + 2] + j];
@@ -321,6 +263,103 @@ void par_evaluateMass(double *vd, double *ud, long *Elements,
     free(psi);
 }
 
+void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
+    const int sampleSize = 3;
+    int indexList[sampleSize];
+    int nE = mesh.nE;
+    bool isDG = mesh.is_DiscontinuousGalerkin;
+
+    ElementType aT, bT;
+    aT.matE = arma::vec(mesh.dim*(mesh.dim+1));
+    bT.matE = arma::vec(mesh.dim*(mesh.dim+1));
+    
+    arma::Col<int> rowCount(mesh.K, arma::fill::zeros);
+    arma::Col<int> bvertexVisited(mesh.nV, arma::fill::zeros);
+    arma::Col<int> avertexVisited(mesh.nV, arma::fill::zeros);
+
+    // Traverse Triangles by Neighbours
+    for (int & k : indexList){
+        k = rand() % nE;
+    }
+    // Breadth First Search --------------------------------------
+    // Every Thread owns its copy!
+    arma::Col<int> visited(nE, arma::fill::zeros);
+
+    // Queue for Breadth first search
+    queue<int> queue;
+    // List of visited neighbours
+    const long *NTdx;
+    //for (int aTdx=0; aTdx<mesh.nE; aTdx++)
+    for (int & aTdx : indexList){
+        initializeTriangle(aTdx, mesh, aT);
+        // Intialize search queue with current outer triangle
+        queue.push(aTdx);
+        // Initialize vector of visited triangles with 0
+        visited.zeros();
+
+        while (!queue.empty()) {
+            // Get and delete the next Triangle indexList of the queue. The first one will be the triangle aTdx itself.
+            int sTdx = queue.front();
+            queue.pop();
+            // Get all the neighbours of sTdx.
+            NTdx = &mesh.Neighbours(0, sTdx);
+
+            // Run through the list of neighbours.
+            for (int j = 0; j < mesh.nNeighbours; j++) {
+
+                // The next valid neighbour is our candidate for the inner Triangle b.
+                int bTdx = NTdx[j];
+                // Check how many neighbours sTdx has.
+                // In order to be able to store the list as contiguous array we fill
+                // up the empty spots with the number nE
+                // i.e. the total number of Triangles (which cannot be an indexList).
+                if (bTdx < mesh.nE) {
+                    // Check whether bTdx is already visited.
+                    if (!visited(bTdx)){
+                        initializeTriangle(bTdx, mesh, bT);
+
+                        double abary[mesh.dim], bbary[mesh.dim];
+                        baryCenter(mesh.dim, aT.E, abary);
+                        baryCenter(mesh.dim, bT.E, bbary);
+                        double dist = sqrt(vec_sqL2dist(abary, bbary, mesh.dim));
+                        if (dist < mesh.delta + mesh.maxDiameter){
+                            queue.push(bTdx);
+
+                            if (isDG) {
+                                rowCount(3*aTdx) += 3;
+                                rowCount(3*aTdx+1) += 3;
+                                rowCount(3*aTdx+2) += 3;
+                            } else {
+                                for (int i = 0; i < mesh.dVertex; i++) {
+                                    int bVdx = mesh.Triangles(i, bTdx);
+                                    if (!bvertexVisited(bVdx)) {
+                                        for (int k = 0; k < mesh.dVertex; k++) {
+                                            int aVdx = mesh.Triangles(k, aTdx);
+                                            if (!avertexVisited(aVdx)) {
+                                                //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
+                                                rowCount(aVdx) += 1;
+                                            }
+                                        } // End for (int k = 0; k < mesh.dVertex; k++)
+                                        bvertexVisited(bVdx) = 1;
+                                    } // End if (!bvertexVisited(bVdx))
+                                } // End for (int i = 0; i < mesh.dVertex; i++)
+                            } // End if (isDG)
+
+                        } // End  if (dist < mesh.delta + mesh.maxDiameter)
+                    } // End visited[bTdx] = 1;
+                    visited[bTdx] = 1;
+                } // if (bTdx < mesh.nE)
+            } // End for (int j = 0; j < mesh.nNeighbours; j++)
+        } // End while (!queue.empty())
+        for (int k = 0; k < mesh.dVertex; k++) {
+            int aVdx = mesh.Triangles(k, aTdx);
+            avertexVisited(aVdx) = 1;
+        }
+    } // End for (int aTdx=0; aTdx<mesh.nE; aTdx++)
+
+    printf("C++ Estimated Row NNZ %i\n", arma::max(rowCount));
+} // End estimateNNZperRow
+
 // Assembly algorithm with BFS -----------------------------------------------------------------------------------------
 void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const long * ptrLabelVerts, const int nE,
@@ -328,7 +367,9 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int nNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
-                  const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
+                  const string str_model_f, const string str_integration_method_remote,
+                  const string str_integration_method_close,
+                  const int is_PlacePointOnCap,
                   const int dim, const int outdim, const long * ptrZeta, const long nZeta,
                   const double * Pg, const int degree, const double * dg, double maxDiameter, double fractional_s, int verbose) {
 
@@ -336,21 +377,22 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                      nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter, fractional_s};
 
-    QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
-    chk_QuadratureRule(quadRule);
+    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method_remote, str_integration_method_close,
+                              static_cast<bool>(is_PlacePointOnCap), false, verbose};
 
-    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method, static_cast<bool>(is_PlacePointOnCap), false, verbose};
+    QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
 
     if (compute=="system") {
         map<unsigned long, double> Ad;
-
         chk_Mesh(mesh, verbose);
         chk_Conf(mesh, conf, quadRule);
 
-        par_system(Ad, mesh, quadRule, conf);
+        estimateNNZperRow(mesh, conf);
 
+        par_system(Ad, mesh, quadRule, conf);
         if (verbose) cout << "K_Omega " << mesh.K_Omega << endl;
         if (verbose) cout << "K " << mesh.K << endl;
+
         int nnz_total = static_cast<int>(Ad.size());
         arma::vec values_all(nnz_total);
         arma::umat indices_all(2, nnz_total);
@@ -368,6 +410,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
             k++;
         }
         arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K);
+
         sp_Ad.save(conf.path_spAd);
     }
 
@@ -375,8 +418,8 @@ void par_assemble(const string compute, const string path_spAd, const string pat
         par_forcing(mesh, quadRule, conf);
     }
 }
-
-void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
+template <typename T_Matrix>
+void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
     const int verbose = conf.verbose;
 
@@ -432,7 +475,7 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
 
     #pragma omp for
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
-        //if (mesh.LabelTriangles[aTdx] > 0) {
+        if (mesh.LabelTriangles[aTdx]) {
 
             //[DEBUG]
             /*
@@ -506,52 +549,6 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                                 // Get (pointer to) index of basis function (in Continuous Galerkin)
                                 bAdx = &mesh.Triangles(0, bTdx);
                             }
-                            // Assembly of matrix ---------------------------------------
-                            doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-                            doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-                            doubleVec_tozero(termLocalPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-                            doubleVec_tozero(termNonlocPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-                            // Compute integrals and write to buffer
-                            integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc, termLocalPrime, termNonlocPrime);
-
-                            // If bT interacts it will be a candidate for our BFS, so it is added to the queue
-
-                            //[DEBUG]
-/*
-                            if (is_firstbfslayer){//aTdx == 0 && bTdx == 0){
-
-                            printf("aTdx %i\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
-                            printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aT.E[0],aT.E[1],aT.E[2],aT.E[3],aT.E[4],aT.E[5]);
-                            printf("bTdx %i\ndet %17.16e, label %li \n", bTdx, bT.absDet, bT.label);
-                            printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bT.E[0],bT.E[1],bT.E[2],bT.E[3],bT.E[4],bT.E[5]);
-
-                            cout << endl << "Local Term" << endl ;
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[0], termLocal[1], termLocal[2]);
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[3], termLocal[4], termLocal[5]);
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[6], termLocal[7], termLocal[8]);
-
-                            cout << endl << "Nonlocal Term" << endl ;
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[0], termNonloc[1], termNonloc[2]);
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[3], termNonloc[4], termNonloc[5]);
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[6], termNonloc[7], termNonloc[8]);
-
-                            cout << endl << "Local Term Prime" << endl ;
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[0], termLocalPrime[1], termLocalPrime[2]);
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[3], termLocalPrime[4], termLocalPrime[5]);
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[6], termLocalPrime[7], termLocalPrime[8]);
-
-                            cout << endl << "Nonlocal Term Prime" << endl ;
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[0], termNonlocPrime[1], termNonlocPrime[2]);
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[3], termNonlocPrime[4], termNonlocPrime[5]);
-                            printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[6], termNonlocPrime[7], termNonlocPrime[8]);
-                            //if (aTdx == 10){
-                            //    abort();
-                            //}
-
-                            }
-                            if ((aTdx == 1) && !is_firstbfslayer) abort();
-*/
-                            //[End DEBUG]
 
                             // Domain decomposition. If Zeta is empty, the weight is set to 1.
                             double weight = 1.;
@@ -560,10 +557,55 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                                 weight = 1./zeta;
                             }
 
-                            if (doubleVec_any(termNonloc, mesh.dVertex * mesh.dVertex) ||
-                                doubleVec_any(termLocal, mesh.dVertex * mesh.dVertex) ||
-                                doubleVec_any(termNonlocPrime, mesh.dVertex * mesh.dVertex) ||
-                                doubleVec_any(termLocalPrime, mesh.dVertex * mesh.dVertex)) {
+                            // Assembly of matrix ---------------------------------------
+                            doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
+                            doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
+                            doubleVec_tozero(termLocalPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
+                            doubleVec_tozero(termNonlocPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
+
+                            // Compute integrals and write to buffer
+                            if (integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer,
+                                          termLocal, termNonloc, termLocalPrime, termNonlocPrime)) {
+
+                                // If bT interacts it will be a candidate for our BFS, so it is added to the queue
+
+                                //[DEBUG]
+                                /*
+                                if (is_firstbfslayer){//aTdx == 0 && bTdx == 0){
+
+                                printf("aTdx %i\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
+                                printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aT.E[0],aT.E[1],aT.E[2],aT.E[3],aT.E[4],aT.E[5]);
+                                printf("bTdx %i\ndet %17.16e, label %li \n", bTdx, bT.absDet, bT.label);
+                                printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bT.E[0],bT.E[1],bT.E[2],bT.E[3],bT.E[4],bT.E[5]);
+
+                                cout << endl << "Local Term" << endl ;
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[0], termLocal[1], termLocal[2]);
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[3], termLocal[4], termLocal[5]);
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[6], termLocal[7], termLocal[8]);
+
+                                cout << endl << "Nonlocal Term" << endl ;
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[0], termNonloc[1], termNonloc[2]);
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[3], termNonloc[4], termNonloc[5]);
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[6], termNonloc[7], termNonloc[8]);
+
+                                cout << endl << "Local Term Prime" << endl ;
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[0], termLocalPrime[1], termLocalPrime[2]);
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[3], termLocalPrime[4], termLocalPrime[5]);
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[6], termLocalPrime[7], termLocalPrime[8]);
+
+                                cout << endl << "Nonlocal Term Prime" << endl ;
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[0], termNonlocPrime[1], termNonlocPrime[2]);
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[3], termNonlocPrime[4], termNonlocPrime[5]);
+                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[6], termNonlocPrime[7], termNonlocPrime[8]);
+                                //if (aTdx == 10){
+                                //    abort();
+                                //}
+
+                                }
+                                if ((aTdx == 1) && !is_firstbfslayer) abort();
+                                */
+                                //[End DEBUG]
+
                                 queue.push(bTdx);
                                 // We only check whether the integral
                                 // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
@@ -627,7 +669,7 @@ void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &
                 }//End for loop BFS (j = 0; j < mesh.nNeighbours; j++)
                 is_firstbfslayer = false;
             }//End while loop BFS (!queue.empty())
-       // }// End if LabelTriangles > 0
+       }// End if LabelTriangles != 0
     }// End parallel for
 
     }// End pragma omp parallel

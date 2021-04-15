@@ -75,15 +75,29 @@ void chk_Mesh(MeshType & mesh, int verbose=0){
 
 void chk_Conf(MeshType & mesh, ConfigurationType & conf, QuadratureType & quadRule){
     if (mesh.dim == 3 || mesh.dim == 1){
-        abortIfFalse(conf.integration_method == "baryCenter" ,
+        abortIfFalse(conf.integration_method_remote == "baryCenter" ,
         "Only Bary-Center is currently implemented as integration method for 3D and 1D.");
     } else if (mesh.dim != 2 )
     {
         cout << "Dimension is not equal to 1, 2 or 3." << endl;
         abort();
     }
-    if(conf.integration_method == "linearPrototypeMicroelastic" ){
-        abortIfFalse(quadRule.tensorGaussDegree, "You chose a singular kernel, but no quadrature rule for it.");
+    if(conf.integration_method_close == "fractional" || conf.integration_method_close == "weakSingular" ){
+        abortIfFalse(quadRule.tensorGaussDegree, "You chose an integration routing for singular kernels, but no quadrature rule for it.");
     }
+    abortIfFalse(
+            conf.integration_method_remote != "fractional" &&
+            conf.integration_method_remote != "weakSingular",
+            "The fractional and fractional_weakSingular integration routines are meant for close elements only.");
+
+    abortIfFalse(!(conf.integration_method_close == "fractional"  && mesh.is_DiscontinuousGalerkin),
+    "The fractional integration routine cannot be used for DG ansatz spaces. Try using the weakSingular integration"
+    " routine if your singularity is of degree 2+2s for s<=0.5.");
+    abortIfFalse(
+            !(conf.model_kernel == "linearPrototypeMicroelastic" ||
+                    conf.model_kernel == "linearPrototypeMicroelasticField")
+            || mesh.fractional_s == -.5,
+            "The fractional_s corresponding to the linearPrototypeMicroelastic kernels is "
+            "s=-0.5, as 2+2s = 1. Please set fractional_s.");
 }
 #endif //NONLOCAL_ASSEMBLY_CHECKS_CPP

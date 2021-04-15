@@ -33,6 +33,8 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         # Assembly ------------------------------------------------------------------------
         start = time()
         A = nlfem.stiffnessMatrix(mesh.__dict__, kernel, conf)
+        nnzRows = np.max(np.sum(A != 0, axis=0))
+        print("nnzRows are ", nnzRows)
         f_OI = nlfem.loadVector(mesh.__dict__, load, conf)
         data["Assembly Time"].append(time() - start)
 
@@ -58,6 +60,9 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         print("Solve...")
         # mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
         x = cg(A_O, f, f)[0].reshape((-1, mesh.outdim))
+        A = None
+        A_O = None
+        A_I = None
         # print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
         mesh.write_ud(x, u_exact)
         if kernel["outputdim"] == 1 and mesh.dim == 2:
@@ -93,9 +98,6 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
             data["Rates"].append(0)
         err_ = err
 
-        A = None
-        A_O = None
-        A_I = None
     #pp.close()
     return data
 

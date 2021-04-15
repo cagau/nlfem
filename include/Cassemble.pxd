@@ -16,14 +16,15 @@ cdef extern from "Cassemble.h":
                   const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
                   const int nNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
-                  const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap,
+                  const string str_model_f, const string str_integration_method_remote,
+                  const string str_integration_method_close, const int is_PlacePointOnCap,
                   const int dim, const int outdim,
                   const long * ptrZeta, const long nZeta,
                   const double * Pg, const int nPg, const double * dg, double maxDiameter, double fractional_s, int verbose)
     # Mass matrix evaluation ----------------------------------------------------------------------------------------------
-    void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels,
-    double *Verts, long * VertexLabels,
-    int K_Omega, int nE, int nP, double *P, double *dx, const int dim, int outdim)
+    void par_evaluateMass(double *vd, const double *ud, long *Elements,
+                          const long *ElementLabels, const double *Verts, const long * VertexLabels, int K_Omega, int J, int nP,
+                          double *P, const double *dx, int dim, int outdim, int is_DiscontinuousGalerkin)
 
     # DEBUG Helpers and test functions
     int method_retriangulate(const double * x_center, const double * TE,

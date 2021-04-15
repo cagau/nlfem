@@ -42,61 +42,41 @@ neighbours have to be handled with special care.
 #include "integration.h"
 
 const double SCALEDET = 0.0625;
-void (*integrate)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                         const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
-                         double *termLocalPrime, double *termNonlocPrime);
+//int (*integrate)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+//                         const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+//                         double *termLocalPrime, double *termNonlocPrime);
+int (*integrate_remote)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                  const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                  double *termLocalPrime, double *termNonlocPrime);
+int (*integrate_close)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                  const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                  double *termLocalPrime, double *termNonlocPrime);
 int (*method)(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList,
                 int isPlacePointOnCap);
 // ___ INTEGRATION IMPLEMENTATION ______________________________________________________________________________________
-
-// Integration Methods #################################################################################################
-
-void integrate_linearPrototypeMicroelastic_retriangulate(const ElementType &aT, const ElementType &bT,
+// TODO Return int = 1, if interaction, 0 otherwise. This helps to set other values here if required
+int integrate(const ElementType &aT, const ElementType &bT,
                                                          const QuadratureType &quadRule,
                                                          const MeshType &mesh, const ConfigurationType &conf,
                                                          bool is_firstbfslayer, double *termLocal,
                                                          double *termNonloc, double *termLocalPrime, double *termNonlocPrime){
     if (is_firstbfslayer) {
-        integrate_linearPrototypeMicroelastic_tensorgauss(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal,
+        return integrate_close(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal,
                                                           termNonloc, termLocalPrime, termNonlocPrime);
     } else {
-        integrate_retriangulate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
+        return integrate_remote(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
                                 termLocalPrime, termNonlocPrime);
     }
 }
-void integrate_linearPrototypeMicroelastic_baryCenter(const ElementType &aT, const ElementType &bT,
-                                                      const QuadratureType &quadRule,
-                                                      const MeshType &mesh, const ConfigurationType &conf,
-                                                      bool is_firstbfslayer, double *termLocal,
-                                                      double *termNonloc, double *termLocalPrime, double *termNonlocPrime){
-    if (is_firstbfslayer) {
-        integrate_linearPrototypeMicroelastic_tensorgauss(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal,
-                                                          termNonloc, termLocalPrime, termNonlocPrime);
-    } else {
-        integrate_baryCenter(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
-                             termLocalPrime, termNonlocPrime);
-    }
-}
-void integrate_linearPrototypeMicroelastic_baryCenterRT(const ElementType &aT, const ElementType &bT,
-                                                        const QuadratureType &quadRule,
-                                                        const MeshType &mesh, const ConfigurationType &conf,
-                                                        bool is_firstbfslayer, double *termLocal,
-                                                        double *termNonloc, double *termLocalPrime, double *termNonlocPrime){
-    if (is_firstbfslayer) {
-        integrate_linearPrototypeMicroelastic_tensorgauss(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal,
-                                                          termNonloc, termLocalPrime, termNonlocPrime);
-    } else {
-        integrate_baryCenterRT(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
-                               termLocalPrime, termNonlocPrime);
-    }
-}
 
-void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, const ElementType &bT,
-                                                       const QuadratureType &quadRule,
-                                                       const MeshType &mesh, const ConfigurationType &conf,
-                                                       bool is_firstbfslayer,
-                                                       double * termLocal, double * termNonloc,
-                                                       double *termLocalPrime, double *termNonlocPrime){
+// Integration Methods #################################################################################################
+int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
+                            const QuadratureType &quadRule,
+                            const MeshType &mesh, const ConfigurationType &conf,
+                            bool is_firstbfslayer,
+                            double * termLocal, double * termNonloc,
+                            double *termLocalPrime, double *termNonlocPrime){
+
     const std::list<double(*)(double *)> traffoCommonVertex = {traffoCommonVertex0,
                                                                traffoCommonVertex1};
     const std::list<double(*)(double *)> traffoCommonEdge = {traffoCommonEdge0,
@@ -132,7 +112,7 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
     } else if (nEqual == 3) {
         traffoList = traffoIdentical;
     } else {
-        cout << "Error in integrate_linearPrototypeMicroelastic_tensorgauss: This should not have happened." << endl;
+        cout << "Error in integrate_weakSingular: This should not have happened." << endl;
         abort();
     }
 
@@ -146,7 +126,7 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
             scale(alpha);
             scale(alphaCanceled);
 
-            traffodetCanceled = pow(alphaCanceled[0], 2);
+            traffodetCanceled = pow(alphaCanceled[0], 3-2-2*mesh.fractional_s);
             alphaCanceled[0] = 1.0;
 
             traffo(alpha);
@@ -175,6 +155,7 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
             //double outTest[mesh.outdim*mesh.outdim*mesh.dVertex*mesh.dVertex];
             // double psitest[3] = {20., 30., 50.};
             // [7] for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
+
             for (int a = 0; a < mesh.dVertex; a++) {
                 for (int aOut = 0; aOut < mesh.outdim; aOut++) {
                     for (int b = 0; b < mesh.dVertex; b++) {
@@ -182,18 +163,23 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
                             //outTest[mesh.outdim*mesh.dVertex * a + b] = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim]
                             //        + psitest[a/mesh.outdim]*psitest[b/mesh.outdim];
                             //cout << outTest[mesh.outdim*mesh.dVertex * a + b] << ",   ";
-
                             factors =
                                     kernel_val[mesh.outdim * aOut + bOut] * traffodetCanceled *
                                     SCALEDET *
                                     quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
                             //factors = kernel_val * traffodet * scaledet * quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
                             termLocal[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut) +
-                                      argSortA[b]*mesh.outdim + bOut] += 2 * factors * psix[a] * psix[b];
+                                      argSortA[b]*mesh.outdim + bOut] += factors * psix[a] * psix[b];
+                            termLocalPrime[mesh.outdim * mesh.dVertex * (argSortB[a]*mesh.outdim + aOut) +
+                                      argSortB[b]*mesh.outdim + bOut] += factors * psiy[a] * psiy[b];
                             //termLocal[mesh.dVertex * a + b] += 2*factors* psix[a] * psix[b];
                             // [10] siehe [9]
                             termNonloc[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
-                                      + argSortB[b]*mesh.outdim + bOut] += 2 * factors * psix[a] * psiy[b];
+                                      + argSortB[b]*mesh.outdim + bOut] += factors * psix[a] * psiy[b];
+                            termNonlocPrime[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
+                                       + argSortB[b]*mesh.outdim + bOut] += factors * psix[a] * psiy[b];
+                            //TODO Isn't it mesh.outdim * mesh.dVertex * (argSortA[b]*mesh.outdim + aOut)
+                            //              + argSortB[a- shift]*mesh.outdim + bOut
                             //termNonloc[mesh.dVertex * a + b] += 2*factors * psix[a] * psiy[b];
                             //cout << termLocal[mesh.outdim*mesh.dVertex * a + b] << endl;
                         }
@@ -206,118 +192,12 @@ void integrate_linearPrototypeMicroelastic_tensorgauss(const ElementType &aT, co
         }
         traffoCounter++;
     }
-
+    return 1;
 }
 
-void integrate_tensorgauss(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+int integrate_fractional(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                            const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                            double * termLocal, double * termNonloc, double *termLocalPrime, double *termNonlocPrime){
-    if (is_firstbfslayer) {
-        //printf("Ok, fine!");
-        //abort();
-        const std::list<double(*)(double *)> traffoCommonVertex = {traffoCommonVertex0,
-                                                                   traffoCommonVertex1};
-        const std::list<double(*)(double *)> traffoCommonEdge = {traffoCommonEdge0,
-                                                                 traffoCommonEdge1,
-                                                                 traffoCommonEdge2,
-                                                                 traffoCommonEdge3,
-                                                                 traffoCommonEdge4};
-        const std::list<double(*)(double *)> traffoIdentical = {traffoIdentical0,
-                                                                traffoIdentical1,
-                                                                traffoIdentical2,
-                                                                traffoIdentical3,
-                                                                traffoIdentical4,
-                                                                traffoIdentical5};
-        ElementStruct aTsorted, bTsorted;
-        int argSortA[3], argSortB[3];
-        int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
-        std::list<double (*)(double *)> traffoList;
-
-        double factors;
-        //const int dim = mesh.dim;
-        double alpha[4], traffodet, x[2], y[2];//, kernel_val=0.;
-
-        double kernel_val[mesh.outdim*mesh.outdim];
-        double psix[3], psiy[3];
-        //cout << "Tensor Gauss" << endl;
-        if (nEqual == 1){
-            traffoList = traffoCommonVertex;
-        } else if (nEqual == 2){
-            traffoList = traffoCommonEdge;
-        } else if (nEqual == 3) {
-            traffoList = traffoIdentical;
-        } else {
-            cout << "Error in integrate_tensorgauss: This should not have happened." << endl;
-            abort();
-        }
-
-        int traffoCounter = 0;
-        for(auto & traffo : traffoList) {
-            for (int k = 0; k < quadRule.nPg; k++) {
-                for (int j = 0; j < 4; j++) {
-                    alpha[j] = quadRule.Pg[4 * k + j];
-                    //alphaCanceled[j] = quadRule.Pg[4 * k + j];
-                }
-                //traffodetCanceled = (nEqual==1 && traffoCounter==0) ? alphaCanceled[0] : pow(alphaCanceled[0], 2);
-                //alphaCanceled[0] = 1.0;
-
-                scale(alpha);
-                //scale(alphaCanceled);
-                traffodet = traffo(alpha);
-                //traffodetCanceled *= traffo(alphaCanceled);
-
-                mirror(alpha);
-                //mirror(alphaCanceled);
-
-                toPhys(aTsorted.E, &alpha[0], 2, x);
-                toPhys(bTsorted.E, &alpha[2], 2, y);
-                //toPhys(aTsorted.E, &alphaCanceled[0], 2, x_canceled);
-                //toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
-
-                // Eval Kernel(x-y)
-                model_kernel(x, aTsorted.label, y, bTsorted.label, mesh, kernel_val);
-
-                //cout << "x " << endl;
-                //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
-                //cout << "y " << endl;
-                //cout << y_canceled[0] << ", " << y_canceled[1] << endl;
-
-                // Eval C(x-y)
-                model_basisFunction(&alpha[0], 2, psix);
-                model_basisFunction(&alpha[2], 2, psiy);
-                //double outTest[mesh.outdim*mesh.outdim*mesh.dVertex*mesh.dVertex];
-                // double psitest[3] = {20., 30., 50.};
-                // [7] for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
-                for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
-                    for (int b = 0; b < mesh.dVertex*mesh.outdim; b++) {
-                        //outTest[mesh.outdim*mesh.dVertex * a + b] = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim]
-                        //        + psitest[a/mesh.outdim]*psitest[b/mesh.outdim];
-                        //cout << outTest[mesh.outdim*mesh.dVertex * a + b] << ",   ";
-
-                        factors = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim] * traffodet * SCALEDET *
-                                  quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                        // In case of the local term both entries belong to the outer integral. Hence...argSortA[a] + argSortA[b]
-                        termLocal[mesh.outdim*mesh.dVertex * argSortA[a] + argSortA[b]] += 2*factors* psix[a/mesh.outdim] * psix[b/mesh.outdim];
-                        // In this case we write ...argSortA[a] + argSortB[b].
-                        termNonloc[mesh.outdim*mesh.dVertex * argSortA[a] + argSortB[b]] += 2*factors* psix[a/mesh.outdim] * psiy[b/mesh.outdim];
-                    }
-                    //cout << endl;
-                }
-                //cout << "Thank you!" << endl;
-                //abort();
-            }
-            traffoCounter++;
-        }
-    } else {
-        integrate_retriangulate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
-                                termLocalPrime, termNonlocPrime);
-    }
-}
-
-void integrate_fractional(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
-                           const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
-                           double * termLocal, double * termNonloc, double *termLocalPrime, double *termNonlocPrime){
-    if (is_firstbfslayer) {
         //printf("Ok, is_firstbfslayer!");
         //abort();
         const std::list<double(*)(double *)> traffoCommonVertex = {traffoCommonVertex0,
@@ -413,24 +293,35 @@ void integrate_fractional(const ElementType &aT, const ElementType &bT, const Qu
                 }
                 //cout << "### Write termLocal, termNolcal..." << endl;
                 for (int a = 0; a < nLocalVerts; a++){
-                    //cout << "----------------------\n" << a << endl;
-                    //cout << "a" << a << endl;
-                    for (int b=0; b < nLocalVerts; b++){
-                        //cout <<  "b" <<b << endl;
-                        factors = kernel_val[0] * traffodetCanceled *
-                                SCALEDET * psixy[a]*psixy[b] *
-                                quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                        if (a < mesh.dVertex){
-                            if (b < mesh.dVertex) {
-                                termLocal[mesh.dVertex * argSortA[a] + argSortA[b]] += factors;
-                            } else {
-                                termNonloc[mesh.dVertex * argSortA[a] + argSortB[b-shift]] -= factors;
-                            }
-                        } else {
-                            if (b < mesh.dVertex) {
-                                termNonlocPrime[mesh.dVertex * argSortA[b]  + argSortB[a-shift]] -= factors;
-                            } else {
-                                termLocalPrime[mesh.dVertex * argSortB[a-shift] + argSortB[b-shift]] += factors;
+                    for (int aOut = 0; aOut < mesh.outdim; aOut++) {
+                        //cout << "----------------------\n" << a << endl;
+                        //cout << "a" << a << endl;
+                        for (int b = 0; b < nLocalVerts; b++) {
+                            for (int bOut = 0; bOut < mesh.outdim; bOut++) {
+                                //cout <<  "b" <<b << endl;
+                                factors = kernel_val[mesh.outdim * aOut + bOut] * traffodetCanceled *
+                                          SCALEDET * psixy[a] * psixy[b] *
+                                          quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+                                if (a < mesh.dVertex) {
+                                    if (b < mesh.dVertex) {
+                                        termLocal[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut) +
+                                                  argSortA[b]*mesh.outdim + bOut] += factors;
+
+                                    } else {
+                                        termNonloc[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
+                                                   + argSortB[b- shift]*mesh.outdim + bOut] -= factors;
+                                    }
+                                } else {
+                                    if (b < mesh.dVertex) {
+                                        termNonlocPrime[mesh.outdim * mesh.dVertex * (argSortA[b]*mesh.outdim + aOut)
+                                                        + argSortB[a- shift]*mesh.outdim + bOut] -= factors;
+
+                                    } else {
+                                        termLocalPrime[mesh.outdim * mesh.dVertex * (argSortB[a- shift]*mesh.outdim + aOut) +
+                                                       argSortB[b- shift]*mesh.outdim + bOut] += factors;
+
+                                    }
+                                }
                             }
                         }
                     }
@@ -439,13 +330,10 @@ void integrate_fractional(const ElementType &aT, const ElementType &bT, const Qu
             //cout << " > Done" << endl;
             traffoCounter++;
         }
-    } else {
-        integrate_retriangulate(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
-                              termLocalPrime, termNonlocPrime);
-    }
+        return 1;
 }
 
-void integrate_fullyContained(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+int integrate_fullyContained(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                               const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                               double *termLocal, double *termNonloc, double *termLocalPrime, double *termNonlocPrime){
 
@@ -481,13 +369,14 @@ void integrate_fullyContained(const ElementType &aT, const ElementType &bT, cons
             //abort()
         }
     }
+    return 1;
 }
 
-void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+int integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc, double *termLocalPrime, double *termNonlocPrime) {
 
-
+    // Code can be more efficient, if we use very simple rules for elements which fully lie in the interaction set.
     //if ((mesh.maxDiameter > EPSILON) && (mesh.delta - 2*mesh.maxDiameter > 0) && isFullyContained(aT, bT, mesh)){
     //    integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
     //                             termLocalPrime, termNonlocPrime);
@@ -518,6 +407,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
     //double psi_value_test[3] = {20., 30., 50.};
     double reTriangle_list[36 * mesh.dVertex * dim];
     doubleVec_tozero(reTriangle_list, 36 * mesh.dVertex * dim);
+    int doesInteract=0;
 
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
@@ -530,6 +420,7 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
 
         //is_placePointOnCap = true;
         Rdx = method(x, bT, mesh, reTriangle_list, conf.is_placePointOnCap); // innerInt_retriangulate
+        doesInteract += Rdx;
         //Rdx = baryCenterMethod(x, bT, mesh, reTriangle_list, is_placePointOnCap);
         //Rdx = quadRule.interactionMethod(x, bT, mesh, reTriangle_list);
 
@@ -674,18 +565,18 @@ void integrate_retriangulate(const ElementType &aT, const ElementType &bT, const
             }
         }
     }
+    return doesInteract;
 }
 
-void integrate_exact(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+int integrate_exact(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                      const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                      double *termNonloc, double *termLocalPrime, double *termNonlocPrime) {
 
-
-    if ((mesh.maxDiameter > EPSILON) && (mesh.delta - 2*mesh.maxDiameter > 0) && isFullyContained(aT, bT, mesh)){
-        integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
-                                 termLocalPrime, termNonlocPrime);
-        return;
-    }
+    // Code can be more efficient, if we use very simple rules for elements which fully lie in the interaction set.
+    //if ((mesh.maxDiameter > EPSILON) && (mesh.delta - 2*mesh.maxDiameter > 0) && isFullyContained(aT, bT, mesh)){
+    //    return integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
+    //                             termLocalPrime, termNonlocPrime);
+    // }
 
     const int dim = mesh.dim;
     int k = 0, a = 0, b = 0;
@@ -714,6 +605,7 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
     double capsWeights[3];
     doubleVec_tozero(capsWeights, 3);
     int nCaps = 0;
+    int doesInteract=0;
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
     for (k = 0; k < quadRule.nPx; k++) {
@@ -725,6 +617,7 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
 
         //is_placePointOnCap = true;
         Rdx = method_exact(x, bT, mesh, reTriangle_list, capsList, capsWeights, &nCaps); // innerInt_retriangulate
+        doesInteract += Rdx;
         //[DEBUG]
         //printf("Retriangulation Rdx %i\n", Rdx);
         //for (i=0;i<Rdx;i++){
@@ -875,10 +768,11 @@ void integrate_exact(const ElementType &aT, const ElementType &bT, const Quadrat
             }
         }
     }
+    return doesInteract;
 }
 
 
-void
+int
 integrate_baryCenter(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                      const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
                      double *termLocalPrime, double *termNonlocPrime) {
@@ -897,6 +791,7 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
     double physical_quad[dim];
     double reTriangle_list[36 * mesh.dVertex * dim];
     doubleVec_tozero(reTriangle_list, 36 * mesh.dVertex * dim);
+    int doesInteract=0, Rdx=0;
 
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
@@ -906,7 +801,9 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
         doubleVec_tozero(innerLocal, mesh.outdim*mesh.outdim);
         // [x 28]
         doubleVec_tozero(innerNonloc, mesh.outdim*mesh.outdim*mesh.dVertex);
-        if (method_baryCenter(x, bT, mesh, reTriangle_list, false)) {
+        Rdx = method_baryCenter(x, bT, mesh, reTriangle_list, false);
+        doesInteract+=Rdx;
+        if (Rdx) {
             for (i = 0; i < quadRule.nPy; i++) {
                 // Push quadrature point P[i] to physical triangle reTriangle_list[rTdx] (of the retriangulation!)
                 toPhys(bT.E, &(quadRule.Py[dim * i]), mesh.dim, physical_quad);
@@ -982,10 +879,11 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
             }
         }
     }
+    return doesInteract;
 }
 
 
-void
+int
 integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                      const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
                      double *termLocalPrime, double *termNonlocPrime) {
@@ -994,22 +892,22 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
     doubleVec_tozero(averageWeights, mesh.dVertex);
     //int doesInteract;
 
-    if (conf.integration_method == "superSetBall"){
+    if (conf.integration_method_remote == "superSetBall"){
         //doesInteract = 1;
         for (auto ptr = averageWeights; ptr < averageWeights + mesh.dVertex; ptr++){
             *ptr = 1.0;
         }
-    } else if (conf.integration_method == "subSetBall"){
+    } else if (conf.integration_method_remote == "subSetBall"){
         //doesInteract = 3;
         averageWeights[2]=1.0;
-    } else if (conf.integration_method == "averageBall") {
+    } else if (conf.integration_method_remote == "averageBall") {
         for (auto ptr = averageWeights; ptr < averageWeights + mesh.dVertex; ptr++){
             *ptr = 0.5;
         }
         averageWeights[2]=1.0;
     } else {
             cout << "Error in integrate_subSuperSetBalls: No such integration_method: " <<
-            conf.integration_method << endl;
+                 conf.integration_method_remote << endl;
             abort();
     }
 
@@ -1026,7 +924,7 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
     double kernel_val[mesh.outdim*mesh.outdim];
     double rTdet = 0.0;
     double physical_quad[dim];
-
+    int doesInteract=0;
 
     //[DEBUG]
     //printf("\nouterInt_full----------------------------------------\n");
@@ -1037,6 +935,7 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
         // [x 28]
         doubleVec_tozero(innerNonloc, mesh.outdim*mesh.outdim*mesh.dVertex);
         int nContained = method_subSuperSetBalls(x, bT, mesh);
+        doesInteract+=nContained;
         if (nContained >= 1) {
             //averageWeight = isAverage ? 0.5 * static_cast<double>(interaction) : 1.0;
 
@@ -1115,9 +1014,10 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
             }
         }
     }
+    return doesInteract;
 }
 
-void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+int integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                             const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                             double *termNonloc, double *termLocalPrime, double *termNonlocPrime) {
     const int dim = mesh.dim;
@@ -1143,7 +1043,7 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
     Rdx = method_retriangulate(bTbaryC, aT, mesh, reTriangle_list, conf.is_placePointOnCap);
 
     if (!Rdx) {
-        return;
+        return 0;
     } else {
         // Determinant of Triangle of retriangulation
         bTdet = absDet(bT.E);
@@ -1209,6 +1109,7 @@ void integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const 
                 }
             }
         }
+        return Rdx;
     }
 }
 // Helpers -------------------------------------------------------------------------------------------------------------
@@ -1474,7 +1375,14 @@ int method_retriangulate(const double * xCenter, const ElementType & T,
         return Rdx - 2; // So that, it acutally contains the number of triangles in the retriangulation
     }
 }
-
+int method_retriangulateInfty(const double * xCenter, const double * TE,
+                              double sqdelta, double * reTriangleList,
+                              int isPlacePointOnCap) {
+    cout << "ERROR: method_retriangulateInfty not implemented. Uncomment code in integration.cpp" << endl;
+    abort();
+    return 0;
+}
+/*
 int method_retriangulateInfty(const double * xCenter, const double * TE,
                           double sqdelta, double * reTriangleList,
                           int isPlacePointOnCap){
@@ -1579,7 +1487,7 @@ int method_retriangulateInfty(const double * xCenter, const double * TE,
     //cout << "Success!" << endl;
     return Rdx;
 }
-
+*/
 int method_retriangulateInfty(const double * xCenter, const ElementType & T,
                               const MeshType & mesh, double * reTriangleList,
                               int isPlacePointOnCap){

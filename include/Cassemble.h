@@ -55,6 +55,7 @@
 using namespace std;
 
 ////// Retriangulation Routine ---------------------------------------------------------------------------------------------
+
 int method_retriangulate(const double * xCenter, const double * TE,
                          double sqdelta, double * reTriangleList,
                          int isPlacePointOnCap);
@@ -106,7 +107,7 @@ void solve2x2(const double * A, const double * b, double * x);
  * @param is_NeumannBoundary Switch of Neumann Boundary Conditions
  * @param str_model_kernel  Name of kernel
  * @param str_model_f   Name of right hand side
- * @param str_integration_method Name of integration method
+ * @param str_integration_method_remote Name of integration method
  * @param is_PlacePointOnCap Switch for withcaps parameter in retriangulation
  * @param dim       Dimension of the domain
  * @param outdim    Dimension of the solution space (e.g. 1 for scalar problems, dim for linear elasticity)
@@ -127,7 +128,9 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
                   const double *Py, int nPy, const double *dy, double sqdelta, const long *ptrNeighbours,
                   int nNeighbours,
                   int is_DiscontinuousGalerkin, int is_NeumannBoundary, string str_model_kernel,
-                  string str_model_f, string str_integration_method, int is_PlacePointOnCap,
+                  string str_model_f, string str_integration_method_remote,
+                  string str_integration_method_close,
+                  int is_PlacePointOnCap,
                   int dim, int outdim, const long * ptrZeta = nullptr, long nZeta = 0,
                   const double * Pg = nullptr, int degree = 0, const double * dg = nullptr, double maxDiameter = 0.0,
                   double fractional_s=-1.0, int verbose=0);
@@ -161,7 +164,8 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
  * @param quadRule Quadrature rules for inner, and outer elements as well as for the singular kernels.
  * @param conf General configuration, namely kernel, and forcing functions, as well as integration method.
  */
-void par_system(map<unsigned long, double> &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
+template <typename T_Matrix>
+void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf);
 
 /**
  * @brief Parallel assembly of forcing term. Forcing functions can be defined in *model* see model_f() for
@@ -192,8 +196,8 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
  * @param dx        <B>(nPx,)</B> Pointer to quadrature weights.
  * @param dim       Dimension of the domain Omega (2 or 3).
  */
-void par_evaluateMass(double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, long *VertexLabels,
-                      int K_Omega, int J, int nP,
-                 double *P, double *dx, int dim, int outdim=1, bool is_DiscontinuousGalerkin=false);
+void par_evaluateMass(double *vd, const double *ud, long *Elements,
+                      const long *ElementLabels, const double *Verts, const long * VertexLabels, int K_Omega, int J, int nP,
+                      double *P, const double *dx, int dim, int outdim, int is_DiscontinuousGalerkin);
 //[DEBUG]
 #endif /* Cassemble.h */
