@@ -138,7 +138,7 @@ def stiffnessMatrix(
 
     :param mesh: Dictionary containing the mesh information ("elements", "elementLabels",
     "vertices", "vertexLabels", "neighbours"). The list "neighbours" can be obtained from
-    constructAdjaciencyGraph(lements).
+    constructAdjaciencyGraph(elements).
 
     The arrays "elementLabels" and "vertexLabels" are expected to be of datatype int (Python). Labels in the domain
     have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this
@@ -181,6 +181,7 @@ def stiffnessMatrix(
     cdef string integration_method_close = configuration.get("closeElements", configuration["approxBalls"]["method"]).encode('UTF-8')
     cdef int is_PlacePointOnCap_ = configuration["approxBalls"].get("is_PlacePointOnCap", 1)
     cdef int verbose = configuration.get("verbose", 0)
+    if (verbose): print("stiffnessMatrix(): verbose mode.")
 
     cdef double [:] ptrPx = configuration["quadrature"]["outer"]["points"].flatten()
     cdef double [:] ptrPy = configuration["quadrature"]["inner"]["points"].flatten()
@@ -201,6 +202,8 @@ def stiffnessMatrix(
         ptrPg = &Pg[0]
         dg = quadgauss.weights.flatten()
         ptrdg = &dg[0]
+    else:
+        if (verbose): print("stiffnessMatrix(): tensorGaussDegree not found or 0 (default).")
 
     cdef long [:] ZetaIndicator
     cdef long * ptrZetaIndicator = NULL
@@ -212,17 +215,24 @@ def stiffnessMatrix(
         if nZeta > 0:
             ptrZetaIndicator = &ZetaIndicator[0]
     except KeyError:
-        if (verbose): print("Cython: Zeta not found.")
         nZeta = 0
+        if (verbose): print("stiffnessMatrix(): Zeta not found. nZeta set to 0.")
+
+    cdef int is_fullConnectedComponentSearch = configuration.get("is_fullConnectedComponentSearch", 0)
+    if (verbose and not is_fullConnectedComponentSearch): print("stiffnessMatrix(): is_fullConnectedComponentSearch not found or 0 (default).")
 
     cdef int outdim_ = kernel["outputdim"]
     if mesh["outdim"] != kernel["outputdim"]:
         raise ValueError("The output dimension of the mesh has to be equal to the output dimension of the kernel.")
 
     cdef double fractional_s  = kernel.get("fractional_s", -1.0)
+    if (verbose and (fractional_s==-1.0)): print("stiffnessMatrix(): fractional_s not found or -1.0 (default).")
 
     maxDiameter = mesh.get("diam", 0.0)
+    if (verbose and (not maxDiameter)): print("stiffnessMatrix(): diam not found or 0.0 (default).")
+
     is_DG = configuration.get("ansatz", "CG") == "DG"
+    if (verbose and (not maxDiameter)): print("stiffnessMatrix(): ansatz not found or CG (default).")
 
     cdef long K_Omega, K
     if is_DG:
@@ -256,7 +266,9 @@ def stiffnessMatrix(
                             ptrZetaIndicator, nZeta,
                             ptrPg, tensorGaussDegree, ptrdg,
                             maxDiameter,
-                            fractional_s, verbose)
+                            fractional_s,
+                             is_fullConnectedComponentSearch,
+                             verbose)
 
     total_time = time.time() - start
     if (verbose): print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -373,7 +385,7 @@ def loadVector(
                             "".encode('UTF-8'), "".encode('UTF-8'), False,
                             dim, outdim_,
                             ptrZetaIndicator, nZeta,
-                            NULL, 0, NULL, 0.0, -1.0, verbose)
+                            NULL, 0, NULL, 0.0, -1.0, 0, verbose)
 
     total_time = time.time() - start
     if (verbose): print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -466,14 +478,14 @@ def assemble(
         if nZeta > 0:
             ptrZetaIndicator = &ZetaIndicator[0]
     except AttributeError:
-        if (verbose): print("Zeta not found.")
         nZeta = 0
+        if (verbose): print("Zeta not found. nZeta set to 0.")
 
     try:
         outdim = mesh.outdim
     except AttributeError:
-        if (verbose): print("Mesh out dim not found.")
         outdim = 1
+        if (verbose): print("Mesh out dim not found. outdim set to 1.")
 
     cdef double [:] Pg
     cdef const double * ptrPg = NULL
@@ -484,7 +496,7 @@ def assemble(
     try:
         maxDiameter = mesh.diam
     except AttributeError:
-        if (verbose): print("Element diameter not found.")
+        if (verbose): print("Element diameter not found. maxDiameter set to 0.0.")
 
     if tensorGaussDegree != 0:
         quadgauss = tensorgauss(tensorGaussDegree)
@@ -492,6 +504,12 @@ def assemble(
         ptrPg = &Pg[0]
         dg = quadgauss.weights.flatten()
         ptrdg = &dg[0]
+
+    cdef int is_fullConnectedComponentSearch = 0
+    try:
+        is_fullConnectedComponentSearch = mesh.is_fullConnectedComponentSearch
+    except AttributeError:
+        if (verbose): print("is_fullConnectedComponentSearch not found. Set to 0.")
 
     # Compute Assembly --------------------------------
     if (compute=="system" or compute=="systemforcing"):
@@ -512,7 +530,7 @@ def assemble(
                             &integration_method_close[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, verbose)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, is_fullConnectedComponentSearch, verbose)
 
         total_time = time.time() - start
         if (verbose): print("Assembly Time\t", "{:1.2e}".format(total_time), " Sec")
@@ -539,7 +557,7 @@ def assemble(
                             &integration_method_close[0],
                             is_PlacePointOnCap_,
                             mesh.dim, outdim, ptrZetaIndicator, nZeta,
-                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, verbose)
+                            ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, is_fullConnectedComponentSearch, verbose)
 
         fd = read_arma_mat(path_fd)[:mesh.K_Omega,0]
         if is_tmpfd:

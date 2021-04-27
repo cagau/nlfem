@@ -15,6 +15,24 @@ const double EPSILON_CHKS=1e-8;
 void solve2x2(const double *, const double *, double *);                 // Solve 2x2 System with LU
 void rightNormal(const double * y0, const double * y1, double orientation, double * normal);
 int faculty(int n);
+/**
+ * @brief Rescales a cube \f$ [-1, 1]^4 \f$ to a cube
+ * \f$ [0, 1]^4 \f$. The determinant of this
+ * transformation is given by the constant SCALEDET.
+ *
+ * @param alpha, a single input point of dimension 4.
+ */
+void scale(double * alpha);
+/**
+ * @brief Maps a tuple of two triangles \f$\left\lbrace z | z_2 \in
+ * [0,1], z_1 \ in [0,z_2] \right\rbrace\f$
+ * to a tuple of two standard simplices
+ * \f$\left\lbrace z | z_1 \in [0,1], z_2 \ in [0,1-z_1] \right\rbrace\f$.
+ * The determinant of this transformation is 1.
+ *
+ * @param alpha, a single input point of dimension 4.
+ */
+void mirror(double * alpha);
 
 // Matrix operations ###################################################################################################
 // Double
@@ -42,7 +60,6 @@ void doubleVec_midpoint(const double * vec1, const double * vec2, double * midpo
 void doubleVec_scale(double lambda, const double * vec, double * out, int len);
 void doubleVec_add(const double * vec1, const double * vec2, double * out, int len);
 void doubleVec_copyTo(const double * input, double * output, int len);
-
 // Long
 int longVec_all(const long *, int);                // All
 int longVec_any(const long *, int);                // Any

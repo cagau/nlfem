@@ -5,6 +5,7 @@
 #define NONLOCAL_ASSEMBLY_MESHTYPES_H
 #include "armadillo"
 #include "cstring"
+#include <list>
 using namespace std;
 
 struct ElementStruct
@@ -72,6 +73,7 @@ struct ConfigurationStruct {
     const string integration_method_close;
     const bool is_placePointOnCap;
     bool is_singularKernel;
+    const bool is_fullConnectedComponentSearch;
     const int verbose;
 };
 typedef ConfigurationStruct ConfigurationType;
@@ -129,6 +131,7 @@ typedef MeshStruct MeshType;
 
 
 struct QuadratureStruct{
+    // Quadrature rule for the non-singular case
     const double * Px;
     const double * Py;
     const double * dx;
@@ -138,14 +141,36 @@ struct QuadratureStruct{
     const int nPy;
     const int dim;
 
+    // Tensor Gauss-quadrature rule for regularizing integral transforms
     const double * Pg;
     const double * dg;
     const int tensorGaussDegree;
     const int nPg = pow(tensorGaussDegree, dim * 2);
 
-    //const interactionMethodType interactionMethod;
+    //Precomputed values of ansatz functions (non-singular case)
     arma::Mat<double> psix{arma::Mat<double>(this->dim +1, this->nPx)};
     arma::Mat<double> psiy{arma::Mat<double>(this->dim +1, this->nPy)};
+
+    // Precomputed values for regularizing integral transforms
+
+    arma::Mat<double> traffodetFractionalCanceled_CommonVertex{arma::Mat<double>( this->nPg, 2)};
+    arma::Mat<double> traffodetFractionalCanceled_CommonEdge{arma::Mat<double>( this->nPg, 5)};
+    arma::Mat<double> traffodetFractionalCanceled_Identical{arma::Mat<double>( this->nPg, 6)};
+
+    arma::Mat<double> traffodetWeakCanceled_CommonVertex{arma::Mat<double>( this->nPg, 2)};
+    arma::Mat<double> traffodetWeakCanceled_CommonEdge{arma::Mat<double>( this->nPg, 5)};
+    arma::Mat<double> traffodetWeakCanceled_Identical{arma::Mat<double>( this->nPg, 6)};
+
+    arma::Cube<double> alpha_CommonVertex{arma::Cube<double>(4, this->nPg, 2)};
+    arma::Cube<double> alpha_CommonEdge{arma::Cube<double>(4, this->nPg, 5)};
+    arma::Cube<double> alpha_Identical{arma::Cube<double>(4, this->nPg, 6)};
+
+    arma::Cube<double> alphaCanceled_CommonVertex{arma::Cube<double>(4, this->nPg, 2)};
+    arma::Cube<double> alphaCanceled_CommonEdge{arma::Cube<double>(4, this->nPg, 5)};
+    arma::Cube<double> alphaCanceled_Identical{arma::Cube<double>(4, this->nPg, 6)};
+
+    //arma::Cube<double> psialpha{arma::Cube<double>(this->dim , this->nPg, 3)};
+    //arma::Cube<double> psialphaCenceled{arma::Cube<double>(this->dim , this->nPg, 3)};
 };
 typedef QuadratureStruct QuadratureType;
 
@@ -165,23 +190,59 @@ struct entryStruct{
 };
 typedef entryStruct entryType;
 
-class MatrixSparstiyPattern {
-    public:
-    const MeshType mesh;
-    const long K;
-    double stump=0;
-    arma::Col<long> nnzRows {arma::Col<long>(K, arma::fill::zeros)};
+/**
+ * @brief Definition of basis function (deprecated).
+ * @param p Quadrature point
+ * @param psi_vals Value of 3 basis functions.
+ */
+void model_basisFunction(const double * p, double *psi_vals);
 
-    MatrixSparstiyPattern(MeshType & mesh_):mesh(mesh_), K(mesh.K){};
-    double & operator[](const long aTdx){
-        nnzRows(aTdx / K) += 1;
-        return stump;
-    }
-    long getEstimate(){
-        long estimate = arma::max(nnzRows)/mesh.dVertex/mesh.dVertex/mesh.outdim/mesh.outdim/4;
-        if (mesh.is_DiscontinuousGalerkin)
-            return estimate*mesh.dVertex*mesh.dVertex*1.5;
-        return lround(estimate/mesh.dVertex*1.1);
-    }
-};
+/**
+ * @brief  Definition of basis function.
+ * @param p Quadrature point
+ * @param dim Dimension of domain (2,3).
+ * @param psi_vals  Value of 3 or 4 basis functions, depending on the dimension.
+ */
+void model_basisFunction(const double * p, int dim, double *psi_vals);
+/**
+ * @brief  Definition of basis function terms as they appear in the representation necessary for
+ * the fractional laplacian.
+ *
+ * @param alpha Quadrature point of dim 4.
+ * @param dim Dimension of domain (2).
+ * @param psi_vals  Value of 3 basis functions.
+ */
+void model_basisFunction_substracted(const double * alpha, const int dim, double *psi_vals);
+
+double traffoCommonVertex0(double * alpha);
+double traffoCommonVertex1(double * alpha);
+
+double traffoCommonEdge0( double * alpha);
+double traffoCommonEdge1(double * alpha);
+double traffoCommonEdge2( double * alpha);
+double traffoCommonEdge3( double * alpha);
+double traffoCommonEdge4( double * alpha);
+
+double traffoIdentical0( double * alpha);
+double traffoIdentical1( double * alpha);
+double traffoIdentical2( double * alpha);
+double traffoIdentical3( double * alpha);
+double traffoIdentical4( double * alpha);
+double traffoIdentical5( double * alpha);
+
+const std::list<double(*)(double *)> traffoCommonVertex = {traffoCommonVertex0,
+                                                           traffoCommonVertex1};
+const std::list<double(*)(double *)> traffoCommonEdge = {traffoCommonEdge0,
+                                                         traffoCommonEdge1,
+                                                         traffoCommonEdge2,
+                                                         traffoCommonEdge3,
+                                                         traffoCommonEdge4};
+const std::list<double(*)(double *)> traffoIdentical = {traffoIdentical0,
+                                                        traffoIdentical1,
+                                                        traffoIdentical2,
+                                                        traffoIdentical3,
+                                                        traffoIdentical4,
+                                                        traffoIdentical5};
+void initializeElement(int Tdx, const MeshType & mesh, ElementType & T);
+void initializeQuadrule(QuadratureType & quadRule, const MeshType & mesh);
 #endif //NONLOCAL_ASSEMBLY_MESHTYPES_H

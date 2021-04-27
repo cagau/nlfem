@@ -233,27 +233,5 @@ void f_linear(const double * x, double * forcing_out);
  */
 void f_linear3D(const double * x, double * forcing_out);
 
- /**
-  * @brief Definition of basis function (deprecated).
-  * @param p Quadrature point
-  * @param psi_vals Value of 3 basis functions.
-  */
-void model_basisFunction(const double * p, double *psi_vals);
 
- /**
-  * @brief  Definition of basis function.
-  * @param p Quadrature point
-  * @param dim Dimension of domain (2,3).
-  * @param psi_vals  Value of 3 or 4 basis functions, depending on the dimension.
-  */
-void model_basisFunction(const double * p, int dim, double *psi_vals);
-/**
- * @brief  Definition of basis function terms as they appear in the representation necessary for
- * the fractional laplacian.
- *
- * @param alpha Quadrature point of dim 4.
- * @param dim Dimension of domain (2).
- * @param psi_vals  Value of 3 basis functions.
- */
-void model_basisFunction_substracted(const double * alpha, const int dim, double *psi_vals);
 #endif //NONLOCAL_ASSEMBLY_MODEL_H

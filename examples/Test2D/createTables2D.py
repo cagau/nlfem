@@ -114,7 +114,7 @@ if __name__ == "__main__":
     print("\n### TESTING "+testFilename+"\n")
     if testFilename[-3:] != ".py":
         testFilename += ".py"
-    os.system("cp " + testFilename + " testConfiguration.py")
+    subprocess.check_call("cp " + testFilename + " testConfiguration.py", shell=True)
     from testConfiguration import CONFIGURATIONS, KERNELS, LOADS
 
     os.makedirs("results", exist_ok=True)

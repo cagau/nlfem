@@ -63,6 +63,17 @@ int faculty(int n){
     return fac;
 }
 
+void scale(double * alpha){
+    for(int k=0; k<4; k++){
+        alpha[k] = alpha[k]*0.5 + 0.5;
+    }
+}
+
+void mirror(double * alpha){
+    alpha[0] = alpha[0] - alpha[1];
+    alpha[2] = alpha[2] - alpha[3];
+}
+
 // ### MATRIX OPERATIONS ###############################################################################################
 
 double absDet(const double * E){

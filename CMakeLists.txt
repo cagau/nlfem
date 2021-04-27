@@ -2,6 +2,9 @@
 cmake_minimum_required(VERSION 3.10)
 # project name
 project(nonlocal_assembly)
+# Look at
+# https://martinopilia.com/posts/2018/09/15/building-python-extension.html
+# for Python with CMake...
 
 # flags ----------------------------------------------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 14)

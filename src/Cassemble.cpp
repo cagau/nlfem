@@ -24,7 +24,8 @@ using namespace std;
  * This function looks up the configuration. It has to be updated whenever a new kernel,
  * forcing function or integration routine is added in order to make the option available.
  *
- * @param conf
+ * @param conf ConfigurationType
+ * @param verbose
  */
 void lookup_configuration(ConfigurationType & conf, int verbose=0){
     // Lookup right hand side ------------------------------------------------------------------------------------------
@@ -50,7 +51,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
     }
 
     map<string, void (*)(const double * x, long labelx, const double * y, long labely,
-            const MeshType &mesh, double * kernel_val)> lookup_kernel = {
+                         const MeshType &mesh, double * kernel_val)> lookup_kernel = {
             {"constantTruncated", kernel_constantTruncated},
             {"constant", kernel_constant},
             {"constantLinf2D", kernel_constantLinf2D},
@@ -64,7 +65,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"fractional", kernel_fractional}
     };
     map<string, void (*)(const double * x, long labelx, const double * y, long labely,
-    const MeshType &mesh, double * kernel_val)>::iterator it_kernel;
+                         const MeshType &mesh, double * kernel_val)>::iterator it_kernel;
 
     it_kernel = lookup_kernel.find(conf.model_kernel);
     if (it_kernel != lookup_kernel.end()){
@@ -85,22 +86,24 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
 
     // Lookup integration method  --------------------------------------------------------------------------------------
     map<string, int (*)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                         const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
-                         double *termLocalPrime, double *termNonlocPrime)> lookup_integrate {
-                    {"baryCenter", integrate_baryCenter},
-                    {"subSetBall", integrate_subSuperSetBalls},
-                    {"averageBall", integrate_subSuperSetBalls},
-                    {"baryCenterRT", integrate_baryCenterRT},
-                    {"retriangulate", integrate_retriangulate},
-                    {"retriangulateLinfty", integrate_retriangulate},
-                    {"exactBall", integrate_exact},
-                    {"noTruncation", integrate_fullyContained},
-                    {"fractional", integrate_fractional},
-                    {"weakSingular", integrate_weakSingular}
-             };
+                        const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                        double *termLocalPrime, double *termNonlocPrime)> lookup_integrate {
+            {"baryCenter", integrate_baryCenter},
+            {"subSetBall", integrate_subSuperSetBalls},
+            {"averageBall", integrate_subSuperSetBalls},
+            {"baryCenterRT", integrate_baryCenterRT},
+            {"retriangulate", integrate_retriangulate},
+            {"retriangulateLinfty", integrate_retriangulate},
+            {"exactBall", integrate_exact},
+            {"noTruncation", integrate_fullyContained},
+            {"fractional", integrate_fractional},
+            {"fractional_orig", integrate_fractional_orig},
+            {"weakSingular", integrate_weakSingular},
+            {"weakSingular_orig", integrate_weakSingular_orig}
+    };
     map<string, int (*)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
-                         const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
-                         double *termLocalPrime, double *termNonlocPrime)>::iterator it_integrator;
+                        const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                        double *termLocalPrime, double *termNonlocPrime)>::iterator it_integrator;
     it_integrator = lookup_integrate.find(conf.integration_method_remote);
     if (it_integrator != lookup_integrate.end()){
         if (verbose) cout << "Integration Method Remote: " << conf.integration_method_remote << endl;
@@ -128,43 +131,6 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
 
 
 }
-
-void initializeTriangle( const int Tdx, const MeshType & mesh, ElementType & T){
-    /*
-    Copy coordinates of Triange b to bTE.
-
-     Tempalte of Triangle Point data.
-     2D Case, a, b, c are the vertices of a triangle
-     T.E -> | a1 | a2 | b1 | b2 | c1 | c2 |
-     Hence, if one wants to put T.E into col major order matrix it would be of shape\
-                                 | a1 | b1 | c1 |
-     M(mesh.dim, mesh.dVerts) =  | a2 | b2 | c2 |
-    */
-
-    int j, k, Vdx;
-    //T.matE = arma::vec(dim*(dim+1));
-    for (k=0; k<mesh.dVertex; k++) {
-        //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
-        Vdx = mesh.Triangles(k, Tdx);
-        for (j=0; j<mesh.dim; j++){
-            T.matE[mesh.dim * k + j] = mesh.Verts(j, Vdx);
-            //printf ("%3.2f ", T.matE[mesh.dim * k + j]);
-            //T.matE[mesh.dim * k + j] = mesh.ptrVerts[ mesh.dim*Vdx + j];
-        }
-        //printf("\n");
-    }
-    // Initialize Struct
-    T.E = T.matE.memptr();
-    T.absDet = absDet(T.E, mesh.dim);
-    T.signDet = static_cast<int>(signDet(T.E, mesh));
-    T.label = mesh.LabelTriangles(Tdx);
-
-    //T.label = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx];
-    //T.dim = dim;
-    T.dim = mesh.dim;
-    T.Tdx = Tdx;
-}
-
 // Compute A and f -----------------------------------------------------------------------------------------------------
 void compute_f(     const ElementType & aT,
                     const QuadratureType &quadRule,
@@ -291,7 +257,7 @@ void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
     const long *NTdx;
     //for (int aTdx=0; aTdx<mesh.nE; aTdx++)
     for (int & aTdx : indexList){
-        initializeTriangle(aTdx, mesh, aT);
+        initializeElement(aTdx, mesh, aT);
         // Intialize search queue with current outer triangle
         queue.push(aTdx);
         // Initialize vector of visited triangles with 0
@@ -316,7 +282,7 @@ void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
                 if (bTdx < mesh.nE) {
                     // Check whether bTdx is already visited.
                     if (!visited(bTdx)){
-                        initializeTriangle(bTdx, mesh, bT);
+                        initializeElement(bTdx, mesh, bT);
 
                         double abary[mesh.dim], bbary[mesh.dim];
                         baryCenter(mesh.dim, aT.E, abary);
@@ -371,16 +337,22 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const string str_integration_method_close,
                   const int is_PlacePointOnCap,
                   const int dim, const int outdim, const long * ptrZeta, const long nZeta,
-                  const double * Pg, const int degree, const double * dg, double maxDiameter, double fractional_s, int verbose) {
+                  const double * Pg, const int degree, const double * dg, double maxDiameter, double fractional_s,
+                  int is_fullConnectedComponentSearch, int verbose) {
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, ptrLabelVerts, nE, nE_Omega,
                      nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter, fractional_s};
 
-    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f, str_integration_method_remote, str_integration_method_close,
-                              static_cast<bool>(is_PlacePointOnCap), false, verbose};
+    ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f,
+                              str_integration_method_remote, str_integration_method_close,
+                              static_cast<bool>(is_PlacePointOnCap),
+                              false,
+                              static_cast<bool>(is_fullConnectedComponentSearch),
+                              verbose};
 
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
+    initializeQuadrule(quadRule, mesh);
 
     if (compute=="system") {
         map<unsigned long, double> Ad;
@@ -418,6 +390,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
         par_forcing(mesh, quadRule, conf);
     }
 }
+
 template <typename T_Matrix>
 void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
@@ -431,6 +404,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     lookup_configuration(conf, verbose);
     if (verbose) printf("Quadrule outer: %i\n", quadRule.nPx);
     if (verbose) printf("Quadrule inner: %i\n", quadRule.nPy);
+    if (verbose) printf("Full Graph Search: %i\n", conf.is_fullConnectedComponentSearch);
 
     for(int h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
@@ -507,7 +481,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
                 aAdx = &mesh.Triangles(0, aTdx);
             }
             // Prepare Triangle information aTE and aTdet ------------------
-            initializeTriangle(aTdx, mesh, aT);
+            initializeElement(aTdx, mesh, aT);
 
             // BFS -------------------------------------------------------------
             // Intialize search queue with current outer triangle
@@ -536,132 +510,147 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
                     if (bTdx < mesh.nE) {
                         // Check whether bTdx is already visited.
                         if (visited[bTdx] == 0) {
-                            // Prepare Triangle information bTE and bTdet ------------------
-                            initializeTriangle(bTdx, mesh, bT);
-                            // Retriangulation and integration -----------------------------
-                            if (mesh.is_DiscontinuousGalerkin) {
-                                // Discontinuous Galerkin
-                                for (int jj = 0; jj < mesh.dVertex; jj++) {
-                                    bDGdx[jj] = mesh.dVertex * bTdx + jj;
+                            // Check whether bTdx is part of the discretization
+                            // otherwise it is just appended to the queue
+                            if (mesh.LabelTriangles[bTdx]) {
+                                // Prepare Triangle information bTE and bTdet ------------------
+                                initializeElement(bTdx, mesh, bT);
+                                // Retriangulation and integration -----------------------------
+                                if (mesh.is_DiscontinuousGalerkin) {
+                                    // Discontinuous Galerkin
+                                    for (int jj = 0; jj < mesh.dVertex; jj++) {
+                                        bDGdx[jj] = mesh.dVertex * bTdx + jj;
+                                    }
+                                    bAdx = bDGdx;
+                                } else {
+                                    // Get (pointer to) index of basis function (in Continuous Galerkin)
+                                    bAdx = &mesh.Triangles(0, bTdx);
                                 }
-                                bAdx = bDGdx;
-                            } else {
-                                // Get (pointer to) index of basis function (in Continuous Galerkin)
-                                bAdx = &mesh.Triangles(0, bTdx);
-                            }
 
-                            // Domain decomposition. If Zeta is empty, the weight is set to 1.
-                            double weight = 1.;
-                            if (mesh.ptrZeta){
-                                double zeta = arma::dot(mesh.ZetaIndicator.col(aTdx), mesh.ZetaIndicator.col(bTdx));
-                                weight = 1./zeta;
-                            }
-
-                            // Assembly of matrix ---------------------------------------
-                            doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-                            doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-                            doubleVec_tozero(termLocalPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-                            doubleVec_tozero(termNonlocPrime, mesh.dVertex * mesh.dVertex*mesh.outdim*mesh.outdim); // Initialize Buffer
-
-                            // Compute integrals and write to buffer
-                            if (integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer,
-                                          termLocal, termNonloc, termLocalPrime, termNonlocPrime)) {
-
-                                // If bT interacts it will be a candidate for our BFS, so it is added to the queue
-
-                                //[DEBUG]
-                                /*
-                                if (is_firstbfslayer){//aTdx == 0 && bTdx == 0){
-
-                                printf("aTdx %i\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
-                                printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aT.E[0],aT.E[1],aT.E[2],aT.E[3],aT.E[4],aT.E[5]);
-                                printf("bTdx %i\ndet %17.16e, label %li \n", bTdx, bT.absDet, bT.label);
-                                printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bT.E[0],bT.E[1],bT.E[2],bT.E[3],bT.E[4],bT.E[5]);
-
-                                cout << endl << "Local Term" << endl ;
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[0], termLocal[1], termLocal[2]);
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[3], termLocal[4], termLocal[5]);
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[6], termLocal[7], termLocal[8]);
-
-                                cout << endl << "Nonlocal Term" << endl ;
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[0], termNonloc[1], termNonloc[2]);
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[3], termNonloc[4], termNonloc[5]);
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[6], termNonloc[7], termNonloc[8]);
-
-                                cout << endl << "Local Term Prime" << endl ;
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[0], termLocalPrime[1], termLocalPrime[2]);
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[3], termLocalPrime[4], termLocalPrime[5]);
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[6], termLocalPrime[7], termLocalPrime[8]);
-
-                                cout << endl << "Nonlocal Term Prime" << endl ;
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[0], termNonlocPrime[1], termNonlocPrime[2]);
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[3], termNonlocPrime[4], termNonlocPrime[5]);
-                                printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[6], termNonlocPrime[7], termNonlocPrime[8]);
-                                //if (aTdx == 10){
-                                //    abort();
-                                //}
-
+                                // Domain decomposition. If Zeta is empty, the weight is set to 1.
+                                double weight = 1.;
+                                if (mesh.ptrZeta) {
+                                    double zeta = arma::dot(mesh.ZetaIndicator.col(aTdx), mesh.ZetaIndicator.col(bTdx));
+                                    weight = 1. / zeta;
                                 }
-                                if ((aTdx == 1) && !is_firstbfslayer) abort();
-                                */
-                                //[End DEBUG]
 
-                                queue.push(bTdx);
-                                // We only check whether the integral
-                                // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
-                                // However, this works only if we can guarantee that interacting triangles do actually
-                                // also contribute a non-zero entry, i.e. the Kernel as to be > 0 everywhere on its support for example.
-                                // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
+                                // Assembly of matrix ---------------------------------------
+                                doubleVec_tozero(termLocal, mesh.dVertex * mesh.dVertex * mesh.outdim *
+                                                            mesh.outdim); // Initialize Buffer
+                                doubleVec_tozero(termNonloc, mesh.dVertex * mesh.dVertex * mesh.outdim *
+                                                             mesh.outdim); // Initialize Buffer
+                                doubleVec_tozero(termLocalPrime, mesh.dVertex * mesh.dVertex * mesh.outdim *
+                                                                 mesh.outdim); // Initialize Buffer
+                                doubleVec_tozero(termNonlocPrime, mesh.dVertex * mesh.dVertex * mesh.outdim *
+                                                                  mesh.outdim); // Initialize Buffer
 
-                                // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
-                                for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
-                                    for (int b = 0; b < mesh.dVertex*mesh.outdim; b++) {
-                                        //printf("Local: a %i, b %i, ker (%i, %i) \nAdx %lu \n", a/mesh.outdim, b/mesh.outdim, a%mesh.outdim, b%mesh.outdim, Adx);
-                                        // TERM LOCAL & TERM NON-LOCAL ORDER
-                                        // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
-                                        // However it mimics the matrix which results from the multiplication.
-                                        //                                      Kernel switches back here. v
-                                        // [(a 0, b 0, ker (0,0)), (a 0, b 0, ker (0,1)), (a 0, b 1, ker (0,0)), (a 0, b 1, ker (0,1)), (a 0, b 2, ker (0,0)), (a 0, b 2, ker (0,1)),
-                                        //  (a 0, b 0, ker (1,0)), (a 0, b 0, ker (1,1)), (a 0, b 0, ker (1,0)), (a 0, b 1, ker (1,1)), (a 0, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
-                                        //  (a 1, b 0, ker (0,0)), (a 1, b 0, ker (0,1)), (a 1, b 1, ker (0,0)), (a 1, b 1, ker (0,1)), (a 1, b 2, ker (0,0)), (a 1, b 2, ker (0,1)),
-                                        //  (a 1, b 0, ker (1,0)), (a 1, b 0, ker (1,1)), (a 1, b 0, ker (1,0)), (a 1, b 1, ker (1,1)), (a 1, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
-                                        //  (a 2, b 0, ker (0,0)), (a 2, b 0, ker (0,1)), (a 2, b 1, ker (0,0)), (a 2, b 1, ker (0,1)), (a 2, b 2, ker (0,0)), (a 2, b 2, ker (0,1)),
-                                        //  (a 2, b 0, ker (1,0)), (a 2, b 0, ker (1,1)), (a 2, b 0, ker (1,0)), (a 2, b 1, ker (1,1)), (a 2, b 2, ker (1,0)), (a 2, b 2, ker (1,1))]
+                                // Compute integrals and write to buffer
+                                int doesInteract = integrate(aT, bT, quadRule, mesh, conf, is_firstbfslayer,
+                                                             termLocal, termNonloc, termLocalPrime, termNonlocPrime);
+                                if (doesInteract) {
 
-                                        if (mesh.is_DiscontinuousGalerkin || (mesh.LabelVerts[aAdx[a/mesh.outdim]] > 0)) {
-                                            Adx = (mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim) * mesh.K +
-                                                  mesh.outdim * aAdx[b / mesh.outdim] + b % mesh.outdim;
-                                            #pragma omp critical
-                                            {
-                                                Ad[Adx] += termLocal[mesh.dVertex * mesh.outdim * a + b] * weight;
+                                    // If bT interacts it will be a candidate for our BFS, so it is added to the queue
+
+                                    //[DEBUG]
+                                    /*
+                                    if (is_firstbfslayer){//aTdx == 0 && bTdx == 0){
+
+                                    printf("aTdx %i\ndet %17.16e, label %li \n", aTdx, aT.absDet, aT.label);
+                                    printf ("aTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", aT.E[0],aT.E[1],aT.E[2],aT.E[3],aT.E[4],aT.E[5]);
+                                    printf("bTdx %i\ndet %17.16e, label %li \n", bTdx, bT.absDet, bT.label);
+                                    printf ("bTE\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n[%17.16e, %17.16e]\n", bT.E[0],bT.E[1],bT.E[2],bT.E[3],bT.E[4],bT.E[5]);
+
+                                    cout << endl << "Local Term" << endl ;
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[0], termLocal[1], termLocal[2]);
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[3], termLocal[4], termLocal[5]);
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termLocal[6], termLocal[7], termLocal[8]);
+
+                                    cout << endl << "Nonlocal Term" << endl ;
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[0], termNonloc[1], termNonloc[2]);
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[3], termNonloc[4], termNonloc[5]);
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termNonloc[6], termNonloc[7], termNonloc[8]);
+
+                                    cout << endl << "Local Term Prime" << endl ;
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[0], termLocalPrime[1], termLocalPrime[2]);
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[3], termLocalPrime[4], termLocalPrime[5]);
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termLocalPrime[6], termLocalPrime[7], termLocalPrime[8]);
+
+                                    cout << endl << "Nonlocal Term Prime" << endl ;
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[0], termNonlocPrime[1], termNonlocPrime[2]);
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[3], termNonlocPrime[4], termNonlocPrime[5]);
+                                    printf ("[%17.16e, %17.16e, %17.16e] \n", termNonlocPrime[6], termNonlocPrime[7], termNonlocPrime[8]);
+                                    //if (aTdx == 10){
+                                    //    abort();
+                                    //}
+
+                                    }
+                                    if ((aTdx == 1) && !is_firstbfslayer) abort();
+                                    */
+                                    //[End DEBUG]
+
+                                    queue.push(bTdx);
+                                    // We only check whether the integral
+                                    // (termLocal, termNonloc) are 0, in which case we dont add bTdx to the queue.
+                                    // However, this works only if we can guarantee that interacting triangles do actually
+                                    // also contribute a non-zero entry, i.e. the Kernel as to be > 0 everywhere on its support for example.
+                                    // The effect (in speedup) of this more precise criterea depends on delta and meshsize.
+
+                                    // Copy buffer into matrix. Again solutions which lie on the boundary are ignored (in Continuous Galerkin)
+                                    for (int a = 0; a < mesh.dVertex * mesh.outdim; a++) {
+                                        for (int b = 0; b < mesh.dVertex * mesh.outdim; b++) {
+                                            //printf("Local: a %i, b %i, ker (%i, %i) \nAdx %lu \n", a/mesh.outdim, b/mesh.outdim, a%mesh.outdim, b%mesh.outdim, Adx);
+                                            // TERM LOCAL & TERM NON-LOCAL ORDER
+                                            // Note: This order is not trivially obtained from innerNonloc, as b switches in between.
+                                            // However it mimics the matrix which results from the multiplication.
+                                            //                                      Kernel switches back here. v
+                                            // [(a 0, b 0, ker (0,0)), (a 0, b 0, ker (0,1)), (a 0, b 1, ker (0,0)), (a 0, b 1, ker (0,1)), (a 0, b 2, ker (0,0)), (a 0, b 2, ker (0,1)),
+                                            //  (a 0, b 0, ker (1,0)), (a 0, b 0, ker (1,1)), (a 0, b 0, ker (1,0)), (a 0, b 1, ker (1,1)), (a 0, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+                                            //  (a 1, b 0, ker (0,0)), (a 1, b 0, ker (0,1)), (a 1, b 1, ker (0,0)), (a 1, b 1, ker (0,1)), (a 1, b 2, ker (0,0)), (a 1, b 2, ker (0,1)),
+                                            //  (a 1, b 0, ker (1,0)), (a 1, b 0, ker (1,1)), (a 1, b 0, ker (1,0)), (a 1, b 1, ker (1,1)), (a 1, b 2, ker (1,0)), (a 0, b 2, ker (1,1)),
+                                            //  (a 2, b 0, ker (0,0)), (a 2, b 0, ker (0,1)), (a 2, b 1, ker (0,0)), (a 2, b 1, ker (0,1)), (a 2, b 2, ker (0,0)), (a 2, b 2, ker (0,1)),
+                                            //  (a 2, b 0, ker (1,0)), (a 2, b 0, ker (1,1)), (a 2, b 0, ker (1,0)), (a 2, b 1, ker (1,1)), (a 2, b 2, ker (1,0)), (a 2, b 2, ker (1,1))]
+
+                                            if (mesh.is_DiscontinuousGalerkin ||
+                                                (mesh.LabelVerts[aAdx[a / mesh.outdim]] > 0)) {
+                                                Adx = (mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim) * mesh.K +
+                                                      mesh.outdim * aAdx[b / mesh.outdim] + b % mesh.outdim;
+#pragma omp critical
+                                                {
+                                                    Ad[Adx] += termLocal[mesh.dVertex * mesh.outdim * a + b] * weight;
+                                                }
+
+                                                Adx = (mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim) * mesh.K +
+                                                      mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim;
+#pragma omp critical
+                                                {
+                                                    Ad[Adx] += -termNonloc[mesh.dVertex * mesh.outdim * a + b] * weight;
+                                                }
                                             }
+                                            if (mesh.is_DiscontinuousGalerkin ||
+                                                (mesh.LabelVerts[bAdx[b / mesh.outdim]] > 0)) {
+                                                Adx = (mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim) * mesh.K +
+                                                      mesh.outdim * bAdx[a / mesh.outdim] + a % mesh.outdim;
+#pragma omp critical
+                                                {
+                                                    Ad[Adx] +=
+                                                            termLocalPrime[mesh.dVertex * mesh.outdim * a + b] * weight;
+                                                }
 
-                                            Adx =   (mesh.outdim*aAdx[a/mesh.outdim] + a%mesh.outdim) * mesh.K +
-                                                    mesh.outdim*bAdx[b/mesh.outdim] + b%mesh.outdim;
-                                            #pragma omp critical
-                                            {
-                                               Ad[Adx] += -termNonloc[mesh.dVertex * mesh.outdim * a + b] * weight;
-                                            }
-                                        }
-                                        if (mesh.is_DiscontinuousGalerkin || (mesh.LabelVerts[bAdx[b / mesh.outdim]] > 0)) {
-                                            Adx = (mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim ) * mesh.K +
-                                                  mesh.outdim * bAdx[a / mesh.outdim] + a % mesh.outdim;
-                                            #pragma omp critical
-                                            {
-                                                Ad[Adx] += termLocalPrime[mesh.dVertex * mesh.outdim * a + b] * weight;
-                                            }
-
-                                            Adx = (mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim) * mesh.K +
-                                                  mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim;
-                                            #pragma omp critical
-                                            {
-                                                Ad[Adx] += -termNonlocPrime[mesh.dVertex * mesh.outdim * a + b] * weight;
+                                                Adx = (mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim) * mesh.K +
+                                                      mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim;
+#pragma omp critical
+                                                {
+                                                    Ad[Adx] += -termNonlocPrime[mesh.dVertex * mesh.outdim * a + b] *
+                                                               weight;
+                                                }
                                             }
                                         }
                                     }
                                 }
+                            }// End if(mesh.LabelTriangles[bTdx])
+                            else {
+                                queue.push(bTdx);
                             }
-
                         }// End if BFS (visited[bTdx] == 0)
                         // Mark bTdx as visited
                         visited[bTdx] = 1;
@@ -717,7 +706,7 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
                     aAdx = &mesh.Triangles(0, aTdx);
                 }
                 // Prepare Triangle information aTE and aTdet ------------------
-                initializeTriangle(aTdx, mesh, aT);
+                initializeElement(aTdx, mesh, aT);
                 // Assembly of right side ---------------------------------------
                 // We unnecessarily integrate over vertices which might lie on the boundary of Omega for convenience here.
                 doubleVec_tozero(termf, mesh.dVertex*mesh.outdim); // Initialize Buffer

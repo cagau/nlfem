@@ -85,7 +85,7 @@ CONFIGURATIONS = [
                 "points": Px,
                 "weights": dx,
             },
-            "tensorGaussDegree": 6  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 5  # Degree of tensor Gauss quadrature for weakly singular kernels.
         },
         "verbose": True
     }

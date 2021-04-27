@@ -71,25 +71,114 @@ int integrate(const ElementType &aT, const ElementType &bT,
 
 // Integration Methods #################################################################################################
 int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
+                           const QuadratureType &quadRule,
+                           const MeshType &mesh, const ConfigurationType &conf,
+                           bool is_firstbfslayer,
+                           double * termLocal, double * termNonloc,
+                           double *termLocalPrime, double *termNonlocPrime){
+
+    ElementStruct aTsorted, bTsorted;
+    int argSortA[3], argSortB[3];
+    int nTraffos;
+
+    int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
+    std::list<double (*)(double *)> traffoList;
+
+    double factors;
+    //const int dim = mesh.dim;
+    //double alpha[4], alphaCanceled[4]; // traffodet
+    const arma::Mat<double> * traffodetCanceled;
+    const arma::Cube<double> * alpha;
+    const arma::Cube<double> * alphaCanceled;
+
+    //double traffodetCanceled;//, x[2], y[2],
+    double x_canceled[2], y_canceled[2];//, kernel_val=0.;
+
+    double kernel_val[mesh.outdim*mesh.outdim];
+    double psix[3], psiy[3];
+    //cout << "Tensor Gauss" << endl;
+    if (nEqual == 1){
+        traffoList = traffoCommonVertex;
+        alpha = &quadRule.alpha_CommonVertex;
+        alphaCanceled = &quadRule.alphaCanceled_CommonVertex;
+        traffodetCanceled = &quadRule.traffodetWeakCanceled_CommonVertex;
+        nTraffos = 2;
+    } else if (nEqual == 2){
+        traffoList = traffoCommonEdge;
+        alpha = &quadRule.alpha_CommonEdge;
+        alphaCanceled = &quadRule.alphaCanceled_CommonEdge;
+        traffodetCanceled = &quadRule.traffodetWeakCanceled_CommonEdge;
+        nTraffos = 5;
+    } else if (nEqual == 3) {
+        traffoList = traffoIdentical;
+        alpha = &quadRule.alpha_Identical;
+        alphaCanceled = &quadRule.alphaCanceled_Identical;
+        traffodetCanceled = &quadRule.traffodetWeakCanceled_Identical;
+        nTraffos = 6;
+    } else {
+        cout << "Error in integrate_weakSingular: This should not have happened." << endl;
+        abort();
+    }
+
+    for(int traffoCounter=0; traffoCounter < nTraffos; traffoCounter++) {
+        //if (aT.Tdx == 0) cout << "traffo " << traffoCounter << endl;
+        for (int k = 0; k < quadRule.nPg; k++) {
+            double traffoWeakCanceled =   (*traffodetCanceled)(k, traffoCounter);
+
+            toPhys(aTsorted.E, &(*alphaCanceled)(0, k, traffoCounter), 2, x_canceled);
+            toPhys(bTsorted.E, &(*alphaCanceled)(2, k, traffoCounter), 2, y_canceled);
+
+            // Eval Kernel(x-y)
+            model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh, kernel_val);
+
+
+            model_basisFunction(&(*alpha)(0, k, traffoCounter), 2, psix);
+            model_basisFunction(&(*alpha)(2, k, traffoCounter), 2, psiy);
+
+            for (int a = 0; a < mesh.dVertex; a++) {
+                for (int aOut = 0; aOut < mesh.outdim; aOut++) {
+                    for (int b = 0; b < mesh.dVertex; b++) {
+                        for (int bOut = 0; bOut < mesh.outdim; bOut++) {
+
+                            factors =
+                                    kernel_val[mesh.outdim * aOut + bOut] * traffoWeakCanceled *
+                                    quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+
+                            termLocal[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut) +
+                                      argSortA[b]*mesh.outdim + bOut] += factors * psix[a] * psix[b];
+
+                            termLocalPrime[mesh.outdim * mesh.dVertex * (argSortB[a]*mesh.outdim + aOut) +
+                                           argSortB[b]*mesh.outdim + bOut] += factors * psiy[a] * psiy[b];
+
+                            termNonloc[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
+                                       + argSortB[b]*mesh.outdim + bOut] += factors * psix[a] * psiy[b];
+
+                            termNonlocPrime[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
+                                            + argSortB[b]*mesh.outdim + bOut] += factors * psix[a] * psiy[b];
+                            //TODO Isn't it mesh.outdim * mesh.dVertex * (argSortA[b]*mesh.outdim + aOut)
+                            //              + argSortB[a- shift]*mesh.outdim + bOut
+                            //termNonloc[mesh.dVertex * a + b] += 2*factors * psix[a] * psiy[b];
+                            //cout << termLocal[mesh.outdim*mesh.dVertex * a + b] << endl;
+                        }
+                    }
+                }
+                //cout << endl;
+            }
+            //cout << "Thank you!" << endl;
+            //abort();
+        }
+        //traffoCounter++;
+    }
+    return 1;
+}
+
+int integrate_weakSingular_orig(const ElementType &aT, const ElementType &bT,
                             const QuadratureType &quadRule,
                             const MeshType &mesh, const ConfigurationType &conf,
                             bool is_firstbfslayer,
                             double * termLocal, double * termNonloc,
                             double *termLocalPrime, double *termNonlocPrime){
 
-    const std::list<double(*)(double *)> traffoCommonVertex = {traffoCommonVertex0,
-                                                               traffoCommonVertex1};
-    const std::list<double(*)(double *)> traffoCommonEdge = {traffoCommonEdge0,
-                                                             traffoCommonEdge1,
-                                                             traffoCommonEdge2,
-                                                             traffoCommonEdge3,
-                                                             traffoCommonEdge4};
-    const std::list<double(*)(double *)> traffoIdentical = {traffoIdentical0,
-                                                            traffoIdentical1,
-                                                            traffoIdentical2,
-                                                            traffoIdentical3,
-                                                            traffoIdentical4,
-                                                            traffoIdentical5};
     ElementStruct aTsorted, bTsorted;
     int argSortA[3], argSortB[3];
 
@@ -99,8 +188,8 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
     double factors;
     //const int dim = mesh.dim;
     double alpha[4], alphaCanceled[4]; // traffodet
-    double traffodetCanceled, x[2], y[2],
-    x_canceled[2], y_canceled[2];//, kernel_val=0.;
+    double traffodetCanceled;//, x[2], y[2],
+    double x_canceled[2], y_canceled[2];//, kernel_val=0.;
 
     double kernel_val[mesh.outdim*mesh.outdim];
     double psix[3], psiy[3];
@@ -118,6 +207,7 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
 
     int traffoCounter = 0;
     for(auto & traffo : traffoList) {
+        //if (aT.Tdx == 0) cout << "traffo " << traffoCounter << endl;
         for (int k = 0; k < quadRule.nPg; k++) {
             for (int j = 0; j < 4; j++) {
                 alpha[j] = quadRule.Pg[4 * k + j];
@@ -135,9 +225,13 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
             mirror(alpha);
             mirror(alphaCanceled);
 
-            toPhys(aTsorted.E, &alpha[0], 2, x);
-            toPhys(bTsorted.E, &alpha[2], 2, y);
-
+            //toPhys(aTsorted.E, &alpha[0], 2, x);
+            //toPhys(bTsorted.E, &alpha[2], 2, y);
+            /*if (aT.Tdx == 0) cout << "k " << k << endl;
+            if (aT.Tdx == 0) cout << "      alphaCanceled : " <<  ",\t" << alphaCanceled[0] << ", " << alphaCanceled[1] << ", " << alphaCanceled[2] << ", " << alphaCanceled[3]  << endl;
+            if (aT.Tdx == 0) cout << "      alpha : " <<  ",\t" << alpha[0]  << ", " << alpha[1] << ", "  << alpha[2]  << ", " << alpha[3] << endl;
+            if (aT.Tdx == 0) cout << "      traffodetCanceled : " <<  ",\t" << traffodetCanceled << endl;
+            */
             toPhys(aTsorted.E, &alphaCanceled[0], 2, x_canceled);
             toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
 
@@ -195,103 +289,200 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
     return 1;
 }
 
+
+int integrate_fractional_orig(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                         const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
+                         double * termLocal, double * termNonloc, double *termLocalPrime, double *termNonlocPrime){
+    //printf("Ok, is_firstbfslayer!");
+    //abort();
+    ElementStruct aTsorted, bTsorted;
+    int argSortA[3], argSortB[3];
+    const int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
+    std::list<double (*)(double *)> traffoList;
+
+    double factors;
+    //const int dim = mesh.dim;
+    double alpha[4];//, x[2], y[2]
+    double alphaCanceled[4];//, kernel_val=0.;
+    double x_canceled[2], y_canceled[2], traffodetCanceled;
+
+    double kernel_val[mesh.outdim*mesh.outdim];
+    const int nLocalVerts=2*mesh.dVertex-nEqual;
+    double psix[3], psiy[3], psixy[nLocalVerts];//, psisubtracted[3];
+    //cout << "Tensor Gauss" << endl;
+    if (nEqual == 1){
+        traffoList = traffoCommonVertex;
+    } else if (nEqual == 2){
+        traffoList = traffoCommonEdge;
+    } else if (nEqual == 3) {
+        traffoList = traffoIdentical;
+    } else {
+        cout << "Error in integrate_tensorgauss: This should not have happened." << endl;
+        abort();
+    }
+    //cout << "#################################### Case " << nEqual << endl;
+    int traffoCounter = 0;
+    for(auto & traffo : traffoList) {
+        //if (aT.Tdx == 0) cout << "Traffo Number " << traffoCounter << ": \n";
+        for (int k = 0; k < quadRule.nPg; k++) {
+            for (int j = 0; j < 4; j++) {
+                alpha[j] = quadRule.Pg[4 * k + j];
+                alphaCanceled[j] = quadRule.Pg[4 * k + j];
+            }
+            scale(alpha);
+            scale(alphaCanceled);
+
+            traffodetCanceled = pow(alphaCanceled[0], 3-2*mesh.fractional_s);
+            // Pulled out from model_basisFunction, i.e. psixy..
+            alphaCanceled[0] = 1.0;
+
+            traffo(alpha);
+            traffodetCanceled *= traffo(alphaCanceled);
+
+            mirror(alpha);
+            mirror(alphaCanceled);
+
+            //toPhys(aTsorted.E, &alpha[0], 2, x);
+            //toPhys(bTsorted.E, &alpha[2], 2, y);
+
+            //if (aT.Tdx == 0) cout << "k " << k << endl;
+            //if (aT.Tdx == 0) cout << "      alphaCanceled : " <<  ",\t" << alphaCanceled[0] << ", " << alphaCanceled[1] << ", " << alphaCanceled[2] << ", " << alphaCanceled[3]  << endl;
+            //if (aT.Tdx == 0) cout << "      alpha : " <<  ",\t" << alpha[0]  << ", " << alpha[1] << ", "  << alpha[2]  << ", " << alpha[3] << endl;
+            //if (aT.Tdx == 0) cout << "      traffodetCanceled : " <<  ",\t" << traffodetCanceled*SCALEDET << endl;
+
+            toPhys(aTsorted.E, &alphaCanceled[0], 2, x_canceled);
+            toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
+
+            // Eval Kernel(x-y)
+            model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh, kernel_val);
+
+            //cout << "x " << endl;
+            //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
+            //cout << "y " << endl;
+            //cout << y_canceled[0] << ", " << y_canceled[1] << endl;
+
+            model_basisFunction(&alphaCanceled[0], 2, psix);
+            model_basisFunction(&alphaCanceled[2], 2, psiy);
+            // model_basisFunction_subtracted(alpha, 2, psisubtracted);
+            // model_basisFunction_subtracted(const double * alpha, const int dim, double *psi_vals)
+            int shift = mesh.dVertex-nEqual;
+
+            //cout << "### Write psixy" << endl;
+            for(int a = 0; a < nEqual; a++){
+                //cout << "a" << a << endl;
+                // 1 - alpha[0] - alpha[1] - (1 - alpha[2] - alpha[3]);
+                psixy[a] = psix[a] - psiy[a];
+            }
+            //cout << "### Write psixy" << endl;
+            for(int a = nEqual; a < mesh.dVertex; a++){
+                //cout << "a" << a << endl;
+                psixy[a] = psix[a];
+                psixy[a + shift] = - psiy[a];
+            }
+            //cout << "### Write termLocal, termNolcal..." << endl;
+            for (int a = 0; a < nLocalVerts; a++){
+                for (int aOut = 0; aOut < mesh.outdim; aOut++) {
+                    //cout << "----------------------\n" << a << endl;
+                    //cout << "a" << a << endl;
+                    for (int b = 0; b < nLocalVerts; b++) {
+                        for (int bOut = 0; bOut < mesh.outdim; bOut++) {
+                            //cout <<  "b" <<b << endl;
+                            factors = kernel_val[mesh.outdim * aOut + bOut] * traffodetCanceled *
+                                      SCALEDET * psixy[a] * psixy[b] *
+                                      quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+                            if (a < mesh.dVertex) {
+                                if (b < mesh.dVertex) {
+                                    termLocal[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut) +
+                                              argSortA[b]*mesh.outdim + bOut] += factors;
+
+                                } else {
+                                    termNonloc[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
+                                               + argSortB[b- shift]*mesh.outdim + bOut] -= factors;
+                                }
+                            } else {
+                                if (b < mesh.dVertex) {
+                                    termNonlocPrime[mesh.outdim * mesh.dVertex * (argSortA[b]*mesh.outdim + aOut)
+                                                    + argSortB[a- shift]*mesh.outdim + bOut] -= factors;
+
+                                } else {
+                                    termLocalPrime[mesh.outdim * mesh.dVertex * (argSortB[a- shift]*mesh.outdim + aOut) +
+                                                   argSortB[b- shift]*mesh.outdim + bOut] += factors;
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        //cout << " > Done" << endl;
+        traffoCounter++;
+    }
+    return 1;
+}
+
 int integrate_fractional(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                            const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                            double * termLocal, double * termNonloc, double *termLocalPrime, double *termNonlocPrime){
         //printf("Ok, is_firstbfslayer!");
         //abort();
-        const std::list<double(*)(double *)> traffoCommonVertex = {traffoCommonVertex0,
-                                                                   traffoCommonVertex1};
-        const std::list<double(*)(double *)> traffoCommonEdge = {traffoCommonEdge0,
-                                                                 traffoCommonEdge1,
-                                                                 traffoCommonEdge2,
-                                                                 traffoCommonEdge3,
-                                                                 traffoCommonEdge4};
-        const std::list<double(*)(double *)> traffoIdentical = {traffoIdentical0,
-                                                                traffoIdentical1,
-                                                                traffoIdentical2,
-                                                                traffoIdentical3,
-                                                                traffoIdentical4,
-                                                                traffoIdentical5};
         ElementStruct aTsorted, bTsorted;
         int argSortA[3], argSortB[3];
         const int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
-        std::list<double (*)(double *)> traffoList;
-
         double factors;
-        //const int dim = mesh.dim;
-        double alpha[4], x[2], y[2], alphaCanceled[4];//, kernel_val=0.;
-        double x_canceled[2], y_canceled[2], traffodetCanceled;
-
+        double x_canceled[2], y_canceled[2];
+        const arma::Mat<double> * traffodetCanceled;
+        const arma::Cube<double> * alphaCanceled;
+        int nTraffos;
         double kernel_val[mesh.outdim*mesh.outdim];
         const int nLocalVerts=2*mesh.dVertex-nEqual;
-        double psix[3], psiy[3], psixy[nLocalVerts];//, psisubtracted[3];
+        double psix[3], psiy[3], psixy[nLocalVerts];
+
         //cout << "Tensor Gauss" << endl;
         if (nEqual == 1){
-            traffoList = traffoCommonVertex;
+            alphaCanceled = &quadRule.alphaCanceled_CommonVertex;
+            traffodetCanceled = &quadRule.traffodetFractionalCanceled_CommonVertex;
+            nTraffos = 2;
         } else if (nEqual == 2){
-            traffoList = traffoCommonEdge;
+            alphaCanceled = &quadRule.alphaCanceled_CommonEdge;
+            traffodetCanceled = &quadRule.traffodetFractionalCanceled_CommonEdge;
+            nTraffos = 5;
         } else if (nEqual == 3) {
-            traffoList = traffoIdentical;
+            alphaCanceled = &quadRule.alphaCanceled_Identical;
+            traffodetCanceled = &quadRule.traffodetFractionalCanceled_Identical;
+            nTraffos = 6;
         } else {
-            cout << "Error in integrate_tensorgauss: This should not have happened." << endl;
+            cout << "Error in integrate_weakSingular: This should not have happened." << endl;
             abort();
         }
-        //cout << "#################################### Case " << nEqual << endl;
-        int traffoCounter = 0;
-        for(auto & traffo : traffoList) {
-            //cout << "Traffo Number " << traffoCounter << ": ";
+
+        for(int traffoCounter=0; traffoCounter < nTraffos; traffoCounter++) {
+            //if (aT.Tdx == 0) cout << "Traffo Number " << traffoCounter << ": \n";
             for (int k = 0; k < quadRule.nPg; k++) {
-                for (int j = 0; j < 4; j++) {
-                    alpha[j] = quadRule.Pg[4 * k + j];
-                    alphaCanceled[j] = quadRule.Pg[4 * k + j];
-                }
-                scale(alpha);
-                scale(alphaCanceled);
+                // Depending on the defree of the singularity we have to cancel out some parts of the
+                // determinant. This happens here, based on the correct power of the variable xi = alpha[0]
+                double traffoFractionalCanceled =  (*traffodetCanceled)(k, traffoCounter);
+                //if (aT.Tdx == 0) cout << "      traffodetCanceled : " <<  ",\t" << traffoFractionalCanceled << endl;
 
-                traffodetCanceled = pow(alphaCanceled[0], 3-2*mesh.fractional_s);
-                // Pulled out from model_basisFunction, i.e. psixy..
-                alphaCanceled[0] = 1.0;
-
-                traffo(alpha);
-                traffodetCanceled *= traffo(alphaCanceled);
-
-                mirror(alpha);
-                mirror(alphaCanceled);
-
-                toPhys(aTsorted.E, &alpha[0], 2, x);
-                toPhys(bTsorted.E, &alpha[2], 2, y);
-
-                toPhys(aTsorted.E, &alphaCanceled[0], 2, x_canceled);
-                toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
+                toPhys(aTsorted.E, &(*alphaCanceled)(0, k, traffoCounter), 2, x_canceled);
+                toPhys(bTsorted.E, &(*alphaCanceled)(2, k, traffoCounter), 2, y_canceled);
 
                 // Eval Kernel(x-y)
                 model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh, kernel_val);
 
-                //cout << "x " << endl;
-                //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
-                //cout << "y " << endl;
-                //cout << y_canceled[0] << ", " << y_canceled[1] << endl;
+                model_basisFunction(&(*alphaCanceled)(0, k, traffoCounter), 2, psix);
+                model_basisFunction(&(*alphaCanceled)(2, k, traffoCounter), 2, psiy);
 
-                model_basisFunction(&alphaCanceled[0], 2, psix);
-                model_basisFunction(&alphaCanceled[2], 2, psiy);
-                // model_basisFunction_subtracted(alpha, 2, psisubtracted);
-                // model_basisFunction_subtracted(const double * alpha, const int dim, double *psi_vals)
                 int shift = mesh.dVertex-nEqual;
 
-                //cout << "### Write psixy" << endl;
                 for(int a = 0; a < nEqual; a++){
-                    //cout << "a" << a << endl;
-                    // 1 - alpha[0] - alpha[1] - (1 - alpha[2] - alpha[3]);
                     psixy[a] = psix[a] - psiy[a];
                 }
-                //cout << "### Write psixy" << endl;
                 for(int a = nEqual; a < mesh.dVertex; a++){
-                    //cout << "a" << a << endl;
                     psixy[a] = psix[a];
                     psixy[a + shift] = - psiy[a];
                 }
-                //cout << "### Write termLocal, termNolcal..." << endl;
+
                 for (int a = 0; a < nLocalVerts; a++){
                     for (int aOut = 0; aOut < mesh.outdim; aOut++) {
                         //cout << "----------------------\n" << a << endl;
@@ -299,8 +490,8 @@ int integrate_fractional(const ElementType &aT, const ElementType &bT, const Qua
                         for (int b = 0; b < nLocalVerts; b++) {
                             for (int bOut = 0; bOut < mesh.outdim; bOut++) {
                                 //cout <<  "b" <<b << endl;
-                                factors = kernel_val[mesh.outdim * aOut + bOut] * traffodetCanceled *
-                                          SCALEDET * psixy[a] * psixy[b] *
+                                factors = kernel_val[mesh.outdim * aOut + bOut] * traffoFractionalCanceled *
+                                          psixy[a] * psixy[b] *
                                           quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
                                 if (a < mesh.dVertex) {
                                     if (b < mesh.dVertex) {
@@ -327,8 +518,6 @@ int integrate_fractional(const ElementType &aT, const ElementType &bT, const Qua
                     }
                 }
             }
-            //cout << " > Done" << endl;
-            traffoCounter++;
         }
         return 1;
 }
@@ -340,7 +529,7 @@ int integrate_fullyContained(const ElementType &aT, const ElementType &bT, const
     const int dim = mesh.dim;
     double x[2], y[2];//, kernel_val=0.;
     double kernel_val[mesh.outdim*mesh.outdim];
-    double kernelT_val[mesh.outdim*mesh.outdim];
+    double kernelPrime_val[mesh.outdim*mesh.outdim];
 
     for (int k = 0; k < quadRule.nPx; k++) {
         toPhys(aT.E, &(quadRule.Px[dim * k]), dim, x);
@@ -349,19 +538,35 @@ int integrate_fullyContained(const ElementType &aT, const ElementType &bT, const
 
             // Eval Kernel(x-y)
             model_kernel(x, aT.label, y, bT.label, mesh, kernel_val);
-            model_kernel(y, bT.label, x, aT.label, mesh, kernelT_val);
+            model_kernel(y, bT.label, x, aT.label, mesh, kernelPrime_val);
 
-            for (int a = 0; a < mesh.dVertex * mesh.outdim; a++) {
-                for (int b = 0; b < mesh.dVertex * mesh.outdim; b++) {
 
-                    termLocal[mesh.outdim * mesh.dVertex * a + b] += quadRule.dx[k] * quadRule.dy[i] *
-                            kernel_val[mesh.outdim * (a % mesh.outdim) + b % mesh.outdim] * aT.absDet * bT.absDet *
-                            2 * quadRule.psix(a/mesh.outdim, k) * quadRule.psix(b/mesh.outdim, k);
-
-                    termNonloc[mesh.outdim * mesh.dVertex * a + b] += quadRule.dx[k] * quadRule.dy[i] *
-                            kernel_val[mesh.outdim * (a % mesh.outdim) + b % mesh.outdim] * aT.absDet * bT.absDet *
-                            2 * quadRule.psix(a/mesh.outdim, k) * quadRule.psiy(b/mesh.outdim, i);
-
+            for (int a = 0; a < mesh.dVertex; a++) {
+                for (int aOut = 0; aOut < mesh.outdim; aOut++) {
+                    for (int b = 0; b < mesh.dVertex; b++) {
+                        for (int bOut = 0; bOut < mesh.outdim; bOut++) {
+                            //outTest[mesh.outdim*mesh.dVertex * a + b] = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim]
+                            //        + psitest[a/mesh.outdim]*psitest[b/mesh.outdim];
+                            //cout << outTest[mesh.outdim*mesh.dVertex * a + b] << ",   ";
+                            double factors = quadRule.dx[k] * quadRule.dy[i] * aT.absDet * bT.absDet;
+                            //factors = kernel_val * traffodet * scaledet * quadule.dg[k] * aTsorted.absDet * bTsorted.absDet;
+                            termLocal[mesh.outdim * mesh.dVertex * (a*mesh.outdim + aOut) + b*mesh.outdim + bOut]
+                                += factors * quadRule.psix(a, k) * quadRule.psix(b, k)
+                                        * kernel_val[mesh.outdim * aOut + bOut];
+                            termLocalPrime[mesh.outdim * mesh.dVertex * (a*mesh.outdim + aOut) + b*mesh.outdim + bOut]
+                                += factors * quadRule.psiy(a, i) * quadRule.psiy(b, i)
+                                        * kernelPrime_val[mesh.outdim * aOut + bOut];
+                            //termLocal[mesh.dVertex * a + b] += 2*factors* quadRule.psix[a] * quadRule.psix[b];
+                            // [10] siehe [9]
+                            termNonloc[mesh.outdim * mesh.dVertex * (a*mesh.outdim + aOut) + b*mesh.outdim + bOut]
+                                += factors * quadRule.psix(a, k) * quadRule.psiy(b, i)
+                                        * kernelPrime_val[mesh.outdim * aOut + bOut];
+                            termNonlocPrime[mesh.outdim * mesh.dVertex * (a*mesh.outdim + aOut) + b*mesh.outdim + bOut]
+                                += factors * quadRule.psix(a, k) * quadRule.psiy(b, i)
+                                        * kernel_val[mesh.outdim * aOut + bOut];
+                            //TODO Check corresponding Todo in weak-singular integration.
+                        }
+                    }
                 }
                 //cout << endl;
             }
@@ -375,12 +580,11 @@ int integrate_fullyContained(const ElementType &aT, const ElementType &bT, const
 int integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc, double *termLocalPrime, double *termNonlocPrime) {
-
+    // One would assume, the code became faster by the check below - but until delta = .3 it still didn't
     // Code can be more efficient, if we use very simple rules for elements which fully lie in the interaction set.
     //if ((mesh.maxDiameter > EPSILON) && (mesh.delta - 2*mesh.maxDiameter > 0) && isFullyContained(aT, bT, mesh)){
-    //    integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
+    //    return integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
     //                             termLocalPrime, termNonlocPrime);
-    //    return;
     //}
 
     const int dim = mesh.dim;
@@ -565,18 +769,18 @@ int integrate_retriangulate(const ElementType &aT, const ElementType &bT, const 
             }
         }
     }
-    return doesInteract;
+    return (doesInteract || conf.is_fullConnectedComponentSearch);
 }
 
 int integrate_exact(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                      const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                      double *termNonloc, double *termLocalPrime, double *termNonlocPrime) {
-
+    // One would assume, the code became faster by the check below - but until delta = .3 it still didn't
     // Code can be more efficient, if we use very simple rules for elements which fully lie in the interaction set.
     //if ((mesh.maxDiameter > EPSILON) && (mesh.delta - 2*mesh.maxDiameter > 0) && isFullyContained(aT, bT, mesh)){
     //    return integrate_fullyContained(aT, bT, quadRule, mesh, conf, is_firstbfslayer, termLocal, termNonloc,
     //                             termLocalPrime, termNonlocPrime);
-    // }
+    //}
 
     const int dim = mesh.dim;
     int k = 0, a = 0, b = 0;
@@ -768,7 +972,7 @@ int integrate_exact(const ElementType &aT, const ElementType &bT, const Quadratu
             }
         }
     }
-    return doesInteract;
+    return (doesInteract  || conf.is_fullConnectedComponentSearch);
 }
 
 
@@ -879,7 +1083,7 @@ integrate_baryCenter(const ElementType &aT, const ElementType &bT, const Quadrat
             }
         }
     }
-    return doesInteract;
+    return (doesInteract  ||  conf.is_fullConnectedComponentSearch);
 }
 
 
@@ -1014,7 +1218,7 @@ integrate_subSuperSetBalls(const ElementType &aT, const ElementType &bT, const Q
             }
         }
     }
-    return doesInteract;
+    return (doesInteract  || conf.is_fullConnectedComponentSearch);
 }
 
 int integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
@@ -1043,7 +1247,7 @@ int integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const Q
     Rdx = method_retriangulate(bTbaryC, aT, mesh, reTriangle_list, conf.is_placePointOnCap);
 
     if (!Rdx) {
-        return 0;
+        return conf.is_fullConnectedComponentSearch;
     } else {
         // Determinant of Triangle of retriangulation
         bTdet = absDet(bT.E);
@@ -1109,7 +1313,7 @@ int integrate_baryCenterRT(const ElementType &aT, const ElementType &bT, const Q
                 }
             }
         }
-        return Rdx;
+        return (Rdx  || conf.is_fullConnectedComponentSearch);
     }
 }
 // Helpers -------------------------------------------------------------------------------------------------------------
@@ -1822,208 +2026,7 @@ int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
     return nEqual;
 }
 
-double traffoCommonVertex0(double * alpha){
-    //xi, eta1, eta2, eta3 = alpha;
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
 
-    alpha[0] = xi;
-    alpha[1] = eta1 * xi;
-    alpha[2] = eta2 * xi;
-    alpha[3] = eta2 * eta3 * xi;
-    return pow(xi,3)*eta2;
-}
-double traffoCommonVertex1(double * alpha){
-    //xi, eta1, eta2, eta3 = alpha;
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-    alpha[0] = xi*eta2;
-    alpha[1] = xi*eta2*eta3;
-    alpha[2] = xi;
-    alpha[3] = xi*eta1;
 
-    return pow(xi,3)*eta2;
-}
-
-double traffoCommonEdge0( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi;
-    alpha[1] = xi*eta1*eta3;
-    alpha[2] = xi*(1. - eta1*eta2);
-    alpha[3] = xi*eta1*(1.-eta2);
-    return pow(xi,3)*pow(eta1,2);
-}
-
-double traffoCommonEdge1( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi;
-    alpha[1] = xi*eta1;
-    alpha[2] = xi*(1. - eta1*eta2*eta3);
-    alpha[3] = xi*eta1*eta2*(1.-eta3);
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-
-double traffoCommonEdge2( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi*(1. - eta1*eta2);
-    alpha[1] = xi*eta1*(1. - eta2);
-    alpha[2] = xi;
-    alpha[3] = xi*eta1*eta2*eta3;
-
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-
-double traffoCommonEdge3( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi*(1. - eta1*eta2*eta3);
-    alpha[1] = xi*eta1*eta2*(1. - eta3);
-    alpha[2] = xi;
-    alpha[3] = xi*eta1;
-
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-
-double traffoCommonEdge4( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi*(1. - eta1*eta2*eta3);
-    alpha[1] = xi*eta1*(1. - eta2*eta3);
-    alpha[2] = xi;
-    alpha[3] = xi*eta1*eta2;
-
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-
-double traffoIdentical0( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi;
-    alpha[1] = xi*(1. - eta1 + eta1*eta2);
-    alpha[2] = xi*(1. - eta1*eta2*eta3);
-    alpha[3] = xi*(1. - eta1);
-
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-
-double traffoIdentical1( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi*(1. - eta1*eta2*eta3);
-    alpha[1] = xi*(1. - eta1);
-    alpha[2] = xi;
-    alpha[3] = xi*(1. - eta1 + eta1* eta2);
-
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-
-double traffoIdentical2( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi;
-    alpha[1] = xi*eta1*(1. - eta2 + eta2*eta3);
-    alpha[2] = xi*(1. - eta1*eta2);
-    alpha[3] = xi*eta1*(1. - eta2);
-
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-
-double traffoIdentical3( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi*(1. - eta1*eta2);
-    alpha[1] = xi*eta1*(1. - eta2);
-    alpha[2] = xi;
-    alpha[3] = xi*eta1*(1. - eta2 + eta2*eta3);
-
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-
-double traffoIdentical4( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi*(1. - eta1*eta2*eta3);
-    alpha[1] = xi*eta1*(1. - eta2*eta3);
-    alpha[2] = xi;
-    alpha[3] = xi*eta1*(1. - eta2);
-
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-
-double traffoIdentical5( double * alpha){
-    double  xi = alpha[0],
-            eta1 = alpha[1],
-            eta2 = alpha[2],
-            eta3 = alpha[3];
-
-    alpha[0] = xi;
-    alpha[1] = xi*eta1*(1. - eta2);
-    alpha[2] = xi*(1. - eta1*eta2*eta3);
-    alpha[3] = xi*eta1*(1. - eta2*eta3);
-
-    return pow(xi,3)*pow(eta1,2)*eta2;
-}
-/**
- * @brief Rescales a cube \f$ [-1, 1]^4 \f$ to a cube
- * \f$ [0, 1]^4 \f$. The determinant of this
- * transformation is given by the constant SCALEDET.
- *
- * @param alpha, a single input point of dimension 4.
- */
-void scale(double * alpha){
-    for(int k=0; k<4; k++){
-        alpha[k] = alpha[k]*0.5 + 0.5;
-    }
-}
-/**
- * @brief Maps a tuple of two triangles \f$\left\lbrace z | z_2 \in
- * [0,1], z_1 \ in [0,z_2] \right\rbrace\f$
- * to a tuple of two standard simplices
- * \f$\left\lbrace z | z_1 \in [0,1], z_2 \ in [0,1-z_1] \right\rbrace\f$.
- * The determinant of this transformation is 1.
- *
- * @param alpha, a single input point of dimension 4.
- */
-void mirror(double * alpha){
-    alpha[0] = alpha[0] - alpha[1];
-    alpha[2] = alpha[2] - alpha[3];
-}
 // [End] Helpers Peridynamics ---------------------------------------------------------------------------------------
 #endif //NONLOCAL_ASSEMBLY_INTEGRATION_CPP

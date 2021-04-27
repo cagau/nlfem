@@ -133,7 +133,7 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
                   int is_PlacePointOnCap,
                   int dim, int outdim, const long * ptrZeta = nullptr, long nZeta = 0,
                   const double * Pg = nullptr, int degree = 0, const double * dg = nullptr, double maxDiameter = 0.0,
-                  double fractional_s=-1.0, int verbose=0);
+                  double fractional_s=-1.0, int is_fullConnectedComponentSearch=0, int verbose=0);
 
 /**
  * @brief Parallel assembly of nonlocal operator using a finite element approach.

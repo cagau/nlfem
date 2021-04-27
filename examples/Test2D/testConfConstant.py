@@ -38,7 +38,8 @@ dy = 0.5 * np.array([1.0])
 CONFIGURATIONS = [
     {
         # "savePath": "pathA",
-        "ansatz": "CG", #DG
+        "ansatz": "DG", #DG
+        "is_fullConnectedComponentSearch": 0,
         "approxBalls": {
             "method": "retriangulate",
             "isPlacePointOnCap": True,  # required for "retriangulate" only
@@ -53,7 +54,29 @@ CONFIGURATIONS = [
                 "points": Px,
                 "weights": dx
             },
-            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 2,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+        },
+        "verbose": True
+    },
+    {
+        # "savePath": "pathA",
+        "ansatz": "CG", #DG
+        "is_fullConnectedComponentSearch": 0,
+        "approxBalls": {
+            "method": "retriangulate",
+            "isPlacePointOnCap": True,  # required for "retriangulate" only
+            #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
+        },
+        "quadrature": {
+            "outer": {
+                "points": Px,
+                "weights": dx
+            },
+            "inner": {
+                "points": Px,
+                "weights": dx
+            },
+            "tensorGaussDegree": 2,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         },
         "verbose": True
     }

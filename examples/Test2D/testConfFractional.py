@@ -9,21 +9,14 @@ def u_exact_FieldConstantBothRhs(x):
 KERNELS = [
     {
         "function": "fractional",
-        "horizon": 0.3,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
+        "horizon": 0.2,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
         "outputdim": 1,
         "fractional_s": 0.5 # kernel has singularity of degree 1, and 1 = 2+2s for s = -0.5.
-    },
-    {
-        "function": "linearPrototypeMicroelasticField",
-        "horizon": 0.3,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
-        "outputdim": 2,
-        "fractional_s": -0.5 # kernel has singularity of degree 1, and 1 = 2+2s for s = -0.5.
     }
 ]
 
 LOADS = [
     {"function": "linear", "solution": u_exact_linearRhs},
-    {"function": "linearField", "solution": u_exact_FieldConstantBothRhs}
 ]
 
 quadrules = {
@@ -74,7 +67,29 @@ CONFIGURATIONS = [
                 "points": quadrules["7point"][0],
                 "weights": quadrules["7point"][1]
             },
-            "tensorGaussDegree": 6# Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 5# Degree of tensor Gauss quadrature for weakly singular kernels.
+        },
+        "verbose": True
+    },
+    {
+        # "savePath": "pathA",
+        "ansatz": "DG", #DG
+        "approxBalls": {
+            "method": "retriangulate",
+            "isPlacePointOnCap": True  # required for "retriangulate" only
+            #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
+        },
+        "closeElements": "weakSingular",
+        "quadrature": {
+            "outer": {
+                "points": quadrules["7point"][0],
+                "weights": quadrules["7point"][1]
+            },
+            "inner": {
+                "points": quadrules["7point"][0],
+                "weights": quadrules["7point"][1]
+            },
+            "tensorGaussDegree": 5# Degree of tensor Gauss quadrature for weakly singular kernels.
         },
         "verbose": True
     }

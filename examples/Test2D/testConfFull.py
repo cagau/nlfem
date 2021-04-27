@@ -59,6 +59,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": True,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
+        # TODO Does this affect retriangulation for non-singular kernels?
         "closeElements": "weakSingular", #weakSingular
         "quadrature": {
             "outer": {
@@ -71,7 +72,7 @@ CONFIGURATIONS = [
             },
             "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         },
-        "verbose": False
+        "verbose": True
     },
     {
         # "savePath": "pathA",
