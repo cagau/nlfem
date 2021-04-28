@@ -605,7 +605,7 @@ def evaluateMass(
             Px.shape[0], &ptrPx[0], &ptrdx[0], mesh.dim, outdim, isDG)
     return vd
 
-def constructAdjaciencyGraph(long[:,:] elements):
+def constructAdjaciencyGraph(long[:,:] elements, ncommon = 1):
     #print("Constructing adjaciency graph...")
     nE = elements.shape[0]
     nV = np.max(elements)+1
@@ -619,7 +619,7 @@ def constructAdjaciencyGraph(long[:,:] elements):
         for d in range(dVerts):
             grph_elements[Vdx[d], Tdx] = 1
     #grph_neigs = ((grph_elements.transpose() @ grph_elements) == dim)
-    grph_neigs = ((grph_elements.transpose() @ grph_elements) > 0)
+    grph_neigs = ((grph_elements.transpose() @ grph_elements) > (ncommon-1))
 
     rowsum = np.sum(grph_neigs, axis= 0)
     nCols = np.max(rowsum)
