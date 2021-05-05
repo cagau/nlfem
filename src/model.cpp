@@ -15,7 +15,11 @@ using namespace std;
 
 // ### KERNEL ##########################################################################################################
 void (*model_kernel)(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val);
-
+void ERROR_wrongAccess(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val){
+    cout << "ERROR in model.cpp/ERROR_wrongAccess(): You chose no kernel, but the assembly routine tried to call it." << endl;
+    cout << "The names of possible choices are given in lookup_configuration() in Cassemble.cpp." << endl;
+    abort();
+};
 // Implementations -----------------------------------------------------------------------------------------------------
 void kernel_constant(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                      double *kernel_val) {
@@ -131,6 +135,11 @@ void kernelField_constant(const double * x, const long labelx, const double * y,
 
 // ### RIGHT HAND SIDE #################################################################################################
 void (*model_f)(const double * x, double * forcing_out);
+void ERROR_wrongAccess(const double * x, double * forcing_out){
+    cout << "ERROR in model.cpp/ERROR_wrongAccess(): You chose no forcing term, but the assembly routine tried to call it." << endl;
+    cout << "The names of possible choices are given in lookup_configuration() in Cassemble.cpp." << endl;
+    abort();
+};
 // Implementations -----------------------------------------------------------------------------------------------------
 void f_constant(const double * x, double * forcing_out){
     forcing_out[0] = 1.0;

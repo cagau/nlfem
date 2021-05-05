@@ -165,12 +165,13 @@ int read_configuration(const string &path, idx_t nparts){
     // Read Mesh Data
     printf( " \nReading Mesh Data ----------------------------------------------------------------------------\n");
     arma::Mat<long> elements;
-    arma::Mat<long> elementLabels;
+    arma::Mat<long> elementLabels, vertexLabels;
     arma::mat vertices;
     arma::Mat<long> neighbours;
     elements.load(path_elemt, arma::raw_binary);
     elementLabels.load(path_elelb, arma::raw_binary);
     vertices.load(path_verts, arma::raw_binary);
+    vertexLabels.ones(L);
     neighbours.load(path_neigh, arma::raw_binary);
 
     arma::mat Px;
@@ -182,16 +183,25 @@ int read_configuration(const string &path, idx_t nparts){
     dx.load(path_dx, arma::raw_binary);
     dy.load(path_dy, arma::raw_binary);
 
-    MeshType mesh = {K_Omega, K, elements.memptr(), elementLabels.memptr(), vertices.memptr(), J, J_Omega,
-                     L, L_Omega, sqrt(sqdelta), sqdelta, neighbours.memptr(), nNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, 1,dim + 1, nullptr, 0, 0.01};
+    //MeshType mesh = {K_Omega, K, elements.memptr(), elementLabels.memptr(), vertices.memptr(), J, J_Omega,
+    //                 L, L_Omega, sqrt(sqdelta), sqdelta, neighbours.memptr(), nNeighbours, is_DiscontinuousGalerkin,
+    //                 is_NeumannBoundary, dim, 1,dim + 1, nullptr, 0, 0.01};
 
+    MeshType mesh = {K_Omega, K, elements.memptr(), elementLabels.memptr(), vertices.memptr(), vertexLabels.memptr(), J, J_Omega,
+                     L, L_Omega, sqrt(sqdelta), sqdelta, neighbours.memptr(), nNeighbours, is_DiscontinuousGalerkin,
+                     is_NeumannBoundary, dim, 1, dim+1, nullptr, 0, 0, -1.};
     QuadratureType quadRule = {Px.memptr(), Py.memptr(), dx.memptr(), dy.memptr(),
                                static_cast<int>(dx.n_elem), static_cast<int>(dy.n_elem), dim};
 
-    ConfigurationType conf = {"sp_Ad", "fd", str_model_kernel, str_model_f,
-                              str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
+    //ConfigurationType conf = {"sp_Ad", "fd", str_model_kernel, str_model_f,
+    //                          str_integration_method, static_cast<bool>(is_PlacePointOnCap)};
 
+    ConfigurationType conf = {"sp_Ad", "fd", str_model_kernel, str_model_f,
+                              "retriangulate", "retriangulate",
+                              static_cast<bool>(is_PlacePointOnCap),
+                              false,
+                              static_cast<bool>(0),
+                              true};
     arma::vec fd(K_Omega);
     //idx_t options[METIS_NOPTIONS];
     //METIS_SetDefaultOptions(options);
@@ -204,7 +214,8 @@ int read_configuration(const string &path, idx_t nparts){
     //However, I assume in the nonlocal case this is not favored.
     idx_t epart[nE], npart[nV];
     idx_t objval = 0;
-    idx_t eind[nE * mesh.dVertex];
+    idx_t eind[nE * 3];
+    //idx_t * eind = (idx_t *)(elements.memptr());
     idx_t eptr[nE + 1];
 
     for (int k=0; k<nE; k++){
@@ -219,6 +230,7 @@ int read_configuration(const string &path, idx_t nparts){
     options[METIS_OBJTYPE_VOL] = 1;
 
     // Partition mit METIS berechnen.
+    printf( " \nCompute partition with metis -----------------------------------------------------------------\n");
     int ret = METIS_PartMeshDual(&nE, &nV, eptr, eind,
                        nullptr, nullptr, &ncommon, &nparts, nullptr,
                        options, &objval, epart, npart);
@@ -241,12 +253,13 @@ int read_configuration(const string &path, idx_t nparts){
 
     // Compute Adjacency Graph with METIS
     METIS_MeshToDual(&nE, &nV, eptr, eind, &ncommon, &numflag, &xadj, &adjncy); // ???
-    arma::mat dualGraph(13, nE);
+    arma::mat dualGraph(50, nE);
 
     // Breadth First Search to determine interaction graph
 
     // Breadth First Search --------------------------------------
     //long maxSize=0;
+/*
     map<unsigned long, unsigned long> interaction;
     arma::Col<int> visited(mesh.nE, arma::fill::zeros);
     arma::Col<int> colored(mesh.nE, arma::fill::zeros);
@@ -293,6 +306,7 @@ int read_configuration(const string &path, idx_t nparts){
         }
     }
 
+    printf( " \nCompute dual graph with metis -----------------------------------------------------------------\n");
 
     arma::Mat<arma::uword> indices(2, interaction.size());
     arma::Col<double> values(interaction.size(), arma::fill::ones);
@@ -305,14 +319,18 @@ int read_configuration(const string &path, idx_t nparts){
     }
     arma::SpMat<double> interactionMatrix(indices, values, mesh.nE, mesh.nE);
     interactionMatrix.save("data/result.interaction");
+    */
 
     // Save Graph for Python
-    dualGraph.fill(nE);
+    dualGraph.fill(0);
 
     for (idx_t i = 0; i < nE; i++){
         idx_t s = xadj[i];
         idx_t j = 0;
+        printf("i %i \n", i);
+        printf("bound: %i \n", xadj[i+1]);
         while(s + j < xadj[i+1]){
+            printf("j %i, ", j);
             dualGraph(j, i) = adjncy[s + j];
             j++;
         }

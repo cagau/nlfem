@@ -10,7 +10,7 @@
 #include <queue>
 #include <armadillo>
 #include <map>
-
+#include "metis.h"
 #include <Cassemble.h>
 
 #include "integration.h"
@@ -47,7 +47,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
         model_f = lookup_f[conf.model_f];
     } else {
         if (verbose) cout << "No forcing function chosen." << endl;
-        model_f = nullptr;
+        model_f = ERROR_wrongAccess;
     }
 
     map<string, void (*)(const double * x, long labelx, const double * y, long labely,
@@ -73,7 +73,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
         model_kernel = lookup_kernel[conf.model_kernel];
     } else {
         if (verbose) cout << "No kernel chosen." << endl;
-        model_kernel = nullptr;
+        model_kernel = ERROR_wrongAccess;
     }
 
     map<string, bool> lookup_singularKernels = {
@@ -97,9 +97,8 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"exactBall", integrate_exact},
             {"noTruncation", integrate_fullyContained},
             {"fractional", integrate_fractional},
-            {"fractional_orig", integrate_fractional_orig},
             {"weakSingular", integrate_weakSingular},
-            {"weakSingular_orig", integrate_weakSingular_orig}
+            {"ERROR_wrongAccess", ERROR_wrongAccess}
     };
     map<string, int (*)(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
                         const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
@@ -110,7 +109,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
         integrate_remote = lookup_integrate[conf.integration_method_remote];
     } else {
         if (verbose) cout << "No integration routine for remote elements chosen." << endl;
-        integrate_remote = nullptr;
+        integrate_remote = ERROR_wrongAccess;
     }
 
     it_integrator = lookup_integrate.find(conf.integration_method_close);
@@ -119,7 +118,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
         integrate_close = lookup_integrate[conf.integration_method_close];
     } else {
         if (verbose) cout << "No integration routine for close elements chosen." << endl;
-        integrate_close = nullptr;
+        integrate_close = ERROR_wrongAccess;
     }
 
     if (conf.integration_method_remote == "retriangulateLinfty" || conf.integration_method_close == "retriangulateLinfty") {
@@ -389,6 +388,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     if (compute=="forcing") {
         par_forcing(mesh, quadRule, conf);
     }
+
 }
 
 template <typename T_Matrix>
@@ -416,7 +416,30 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     }
     chk_BasisFunction(quadRule);
 
-    #pragma omp parallel shared(mesh, quadRule, conf,  Ad)
+    printf("Construnct adjacency Graph... ");
+    int dVertex = mesh.dim+1;
+    idx_t nE_metis=mesh.nE;
+    idx_t nV_metis=mesh.nV;
+    idx_t ncommon=1;
+    idx_t eind[mesh.nE * dVertex];
+    idx_t eptr[mesh.nE + 1];
+    idx_t numflag=0;
+    idx_t *xadj;
+    idx_t *adjncy;
+
+    for (int k=0; k<mesh.nE; k++){
+        for (int l=0; l<mesh.dVertex; l++){
+            eind[mesh.dVertex*k + l] = mesh.Triangles[mesh.dVertex*k + l];
+        }
+        eptr[k] = k*mesh.dVertex;
+    }
+    eptr[mesh.nE] = mesh.nE*dVertex;
+
+    // Compute Adjacency Graph with METIS
+    METIS_MeshToDual(&nE_metis, &nV_metis, eptr, eind, &ncommon, &numflag, &xadj, &adjncy); // ???
+    printf("Done. \n");
+
+    #pragma omp parallel shared(mesh, quadRule, conf,  Ad, xadj, adjncy)
     {
     //map<unsigned long, double> Ad;
     unsigned long Adx;
@@ -425,6 +448,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     arma::Col<int> visited(mesh.nE, arma::fill::zeros);
 
     // Queue for Breadth first search
+    //queue<idx_t> queue;
     queue<int> queue;
     // List of visited triangles
     const long *NTdx;
@@ -495,13 +519,25 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
             while (!queue.empty()) {
                 // Get and delete the next Triangle index of the queue. The first one will be the triangle aTdx itself.
                 int sTdx = queue.front();
+                //cout << "sTdx " << sTdx << endl;
                 queue.pop();
                 // Get all the neighbours of sTdx.
                 NTdx = &mesh.Neighbours(0, sTdx);
+
+                //idx_t startNdx = xadj[sTdx];
+                //cout << "startNdx " << startNdx << endl;
+                //idx_t endNdx = xadj[sTdx+1];
+                //cout << "endNdx "<< endNdx << endl;
+                //idx_t nTdx = -1;
+
                 // Run through the list of neighbours.
+                //while (startNdx + nTdx < endNdx) {
                 for (int j = 0; j < mesh.nNeighbours; j++) {
                     // The next valid neighbour is our candidate for the inner Triangle b.
                     int bTdx = NTdx[j];
+                    //int bTdx;
+                    //if (nTdx == -1) {bTdx = aTdx;}
+                    //else {bTdx = adjncy[startNdx + nTdx];}
 
                     // Check how many neighbours sTdx has.
                     // In order to be able to store the list as contiguous array we fill
@@ -509,7 +545,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
                     // i.e. the total number of Triangles (which cannot be an index).
                     if (bTdx < mesh.nE) {
                         // Check whether bTdx is already visited.
-                        if (visited[bTdx] == 0) {
+                        if (!visited[bTdx]) {
                             // Check whether bTdx is part of the discretization
                             // otherwise it is just appended to the queue
                             if (mesh.LabelTriangles[bTdx]) {
@@ -655,6 +691,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
                         // Mark bTdx as visited
                         visited[bTdx] = 1;
                     }// End if BFS (bTdx < mesh.nE)
+                    //nTdx++;
                 }//End for loop BFS (j = 0; j < mesh.nNeighbours; j++)
                 is_firstbfslayer = false;
             }//End while loop BFS (!queue.empty())
@@ -662,7 +699,25 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     }// End parallel for
 
     }// End pragma omp parallel
+    /*
+    arma::mat dualGraph(15, mesh.nE);
+    dualGraph.fill(0);
 
+    for (idx_t i = 0; i < mesh.nE; i++){
+        idx_t s = xadj[i];
+        idx_t j = 0;
+        printf("i %i \n", i);
+        printf("bound: %i \n", xadj[i+1]);
+        while(s + j < xadj[i+1]){
+            printf("j %i, ", j);
+            dualGraph(j, i) = adjncy[s + j];
+            j++;
+        }
+    }
+    dualGraph.save("data/result.dual_par_system", arma::arma_binary);
+    */
+    METIS_Free(xadj);
+    METIS_Free(adjncy);
 }// End function par_system
 
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {

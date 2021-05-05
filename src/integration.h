@@ -28,6 +28,10 @@ extern int (*integrate_close)(const ElementType &aT, const ElementType &bT, cons
                         double *termLocalPrime, double *termNonlocPrime);
 extern int (*method)(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList,
               int isPlacePointOnCap);
+
+int ERROR_wrongAccess(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+              const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+              double *termLocalPrime, double *termNonlocPrime);
 // Integration Methods #################################################################################################
 // Methods -------------------------------------------------------------------------------------------------------------
 /**
@@ -199,20 +203,10 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT, const Q
                             double * termLocal, double * termNonloc,
                             double *termLocalPrime, double *termNonlocPrime);
 
-int integrate_weakSingular_orig(const ElementType &aT, const ElementType &bT,
-                                const QuadratureType &quadRule,
-                                const MeshType &mesh, const ConfigurationType &conf,
-                                bool is_firstbfslayer,
-                                double * termLocal, double * termNonloc,
-                                double *termLocalPrime, double *termNonlocPrime);
-
 int integrate_fractional(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                            const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
                            double * termLocal, double * termNonloc,
                            double *termLocalPrime, double *termNonlocPrime);
-int integrate_fractional_orig(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
-                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
-                              double * termLocal, double * termNonloc, double *termLocalPrime, double *termNonlocPrime);
 // Helpers -------------------------------------------------------------------------------------------------------------
 /**
  * @brief This truncation method checks whether the distance of the point point x_center (of aT) to

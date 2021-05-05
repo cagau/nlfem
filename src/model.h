@@ -11,6 +11,8 @@
 // Pointer -------------------------------------------------------------------------------------------------------------
 //// Kernel pointer and implementations
 extern void (*model_kernel)(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val);
+void ERROR_wrongAccess(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val);
+
 /**
  * @brief Constant kernel in 2D case. The constant is chosen such that the operator is equivalent to the laplacian for
  * polynomials of degree less or equal to 2.
@@ -185,6 +187,7 @@ void kernelField_constant(const double * x, long labelx, const double * y, long 
 
 
 extern void (*model_f)(const double * x, double * forcing_out);
+void ERROR_wrongAccess(const double * x, double * forcing_out);
 /**
  * @brief Constant forcing function f = 1.
  * @param x

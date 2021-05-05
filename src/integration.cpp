@@ -53,6 +53,14 @@ int (*integrate_close)(const ElementType &aT, const ElementType &bT, const Quadr
                   double *termLocalPrime, double *termNonlocPrime);
 int (*method)(const double * xCenter, const ElementType & T, const MeshType & mesh, double * reTriangleList,
                 int isPlacePointOnCap);
+int ERROR_wrongAccess(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
+                      const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal, double *termNonloc,
+                      double *termLocalPrime, double *termNonlocPrime){
+    cout << "ERROR in integration.cpp/ERROR_wrongAccess(): You chose no integration method, but the assembly routine tried to call it." << endl;
+    cout << "The names of possible choices are given in lookup_configuration() in Cassemble.cpp." << endl;
+    abort();
+    return -1;
+};
 // ___ INTEGRATION IMPLEMENTATION ______________________________________________________________________________________
 // TODO Return int = 1, if interaction, 0 otherwise. This helps to set other values here if required
 int integrate(const ElementType &aT, const ElementType &bT,
@@ -116,7 +124,8 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
         traffodetCanceled = &quadRule.traffodetWeakCanceled_Identical;
         nTraffos = 6;
     } else {
-        cout << "Error in integrate_weakSingular: This should not have happened." << endl;
+        printf("Error in integrate_weakSingular: nEqual == %i", nEqual );
+        printf( "Error in integrate_weakSingular: This should not have happened." );
         abort();
     }
 
@@ -156,7 +165,7 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
                             termNonlocPrime[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
                                             + argSortB[b]*mesh.outdim + bOut] += factors * psix[a] * psiy[b];
                             //TODO Isn't it mesh.outdim * mesh.dVertex * (argSortA[b]*mesh.outdim + aOut)
-                            //              + argSortB[a- shift]*mesh.outdim + bOut
+                            //              + argSortB[a- shift]*mesh.outdim + bOut ??
                             //termNonloc[mesh.dVertex * a + b] += 2*factors * psix[a] * psiy[b];
                             //cout << termLocal[mesh.outdim*mesh.dVertex * a + b] << endl;
                         }
@@ -168,255 +177,6 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
             //abort();
         }
         //traffoCounter++;
-    }
-    return 1;
-}
-
-int integrate_weakSingular_orig(const ElementType &aT, const ElementType &bT,
-                            const QuadratureType &quadRule,
-                            const MeshType &mesh, const ConfigurationType &conf,
-                            bool is_firstbfslayer,
-                            double * termLocal, double * termNonloc,
-                            double *termLocalPrime, double *termNonlocPrime){
-
-    ElementStruct aTsorted, bTsorted;
-    int argSortA[3], argSortB[3];
-
-    int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
-    std::list<double (*)(double *)> traffoList;
-
-    double factors;
-    //const int dim = mesh.dim;
-    double alpha[4], alphaCanceled[4]; // traffodet
-    double traffodetCanceled;//, x[2], y[2],
-    double x_canceled[2], y_canceled[2];//, kernel_val=0.;
-
-    double kernel_val[mesh.outdim*mesh.outdim];
-    double psix[3], psiy[3];
-    //cout << "Tensor Gauss" << endl;
-    if (nEqual == 1){
-        traffoList = traffoCommonVertex;
-    } else if (nEqual == 2){
-        traffoList = traffoCommonEdge;
-    } else if (nEqual == 3) {
-        traffoList = traffoIdentical;
-    } else {
-        cout << "Error in integrate_weakSingular: This should not have happened." << endl;
-        abort();
-    }
-
-    int traffoCounter = 0;
-    for(auto & traffo : traffoList) {
-        //if (aT.Tdx == 0) cout << "traffo " << traffoCounter << endl;
-        for (int k = 0; k < quadRule.nPg; k++) {
-            for (int j = 0; j < 4; j++) {
-                alpha[j] = quadRule.Pg[4 * k + j];
-                alphaCanceled[j] = quadRule.Pg[4 * k + j];
-            }
-            scale(alpha);
-            scale(alphaCanceled);
-
-            traffodetCanceled = pow(alphaCanceled[0], 3-2-2*mesh.fractional_s);
-            alphaCanceled[0] = 1.0;
-
-            traffo(alpha);
-            traffodetCanceled *= traffo(alphaCanceled);
-
-            mirror(alpha);
-            mirror(alphaCanceled);
-
-            //toPhys(aTsorted.E, &alpha[0], 2, x);
-            //toPhys(bTsorted.E, &alpha[2], 2, y);
-            /*if (aT.Tdx == 0) cout << "k " << k << endl;
-            if (aT.Tdx == 0) cout << "      alphaCanceled : " <<  ",\t" << alphaCanceled[0] << ", " << alphaCanceled[1] << ", " << alphaCanceled[2] << ", " << alphaCanceled[3]  << endl;
-            if (aT.Tdx == 0) cout << "      alpha : " <<  ",\t" << alpha[0]  << ", " << alpha[1] << ", "  << alpha[2]  << ", " << alpha[3] << endl;
-            if (aT.Tdx == 0) cout << "      traffodetCanceled : " <<  ",\t" << traffodetCanceled << endl;
-            */
-            toPhys(aTsorted.E, &alphaCanceled[0], 2, x_canceled);
-            toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
-
-            // Eval Kernel(x-y)
-            model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh, kernel_val);
-
-            //cout << "x " << endl;
-            //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
-            //cout << "y " << endl;
-            //cout << y_canceled[0] << ", " << y_canceled[1] << endl;
-
-            model_basisFunction(&alpha[0], 2, psix);
-            model_basisFunction(&alpha[2], 2, psiy);
-
-            //double outTest[mesh.outdim*mesh.outdim*mesh.dVertex*mesh.dVertex];
-            // double psitest[3] = {20., 30., 50.};
-            // [7] for (int a = 0; a < mesh.dVertex*mesh.outdim; a++) {
-
-            for (int a = 0; a < mesh.dVertex; a++) {
-                for (int aOut = 0; aOut < mesh.outdim; aOut++) {
-                    for (int b = 0; b < mesh.dVertex; b++) {
-                        for (int bOut = 0; bOut < mesh.outdim; bOut++) {
-                            //outTest[mesh.outdim*mesh.dVertex * a + b] = kernel_val[mesh.outdim * (a%mesh.outdim) + b%mesh.outdim]
-                            //        + psitest[a/mesh.outdim]*psitest[b/mesh.outdim];
-                            //cout << outTest[mesh.outdim*mesh.dVertex * a + b] << ",   ";
-                            factors =
-                                    kernel_val[mesh.outdim * aOut + bOut] * traffodetCanceled *
-                                    SCALEDET *
-                                    quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                            //factors = kernel_val * traffodet * scaledet * quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                            termLocal[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut) +
-                                      argSortA[b]*mesh.outdim + bOut] += factors * psix[a] * psix[b];
-                            termLocalPrime[mesh.outdim * mesh.dVertex * (argSortB[a]*mesh.outdim + aOut) +
-                                      argSortB[b]*mesh.outdim + bOut] += factors * psiy[a] * psiy[b];
-                            //termLocal[mesh.dVertex * a + b] += 2*factors* psix[a] * psix[b];
-                            // [10] siehe [9]
-                            termNonloc[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
-                                      + argSortB[b]*mesh.outdim + bOut] += factors * psix[a] * psiy[b];
-                            termNonlocPrime[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
-                                       + argSortB[b]*mesh.outdim + bOut] += factors * psix[a] * psiy[b];
-                            //TODO Isn't it mesh.outdim * mesh.dVertex * (argSortA[b]*mesh.outdim + aOut)
-                            //              + argSortB[a- shift]*mesh.outdim + bOut
-                            //termNonloc[mesh.dVertex * a + b] += 2*factors * psix[a] * psiy[b];
-                            //cout << termLocal[mesh.outdim*mesh.dVertex * a + b] << endl;
-                        }
-                    }
-                }
-                //cout << endl;
-            }
-            //cout << "Thank you!" << endl;
-            //abort();
-        }
-        traffoCounter++;
-    }
-    return 1;
-}
-
-
-int integrate_fractional_orig(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
-                         const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer,
-                         double * termLocal, double * termNonloc, double *termLocalPrime, double *termNonlocPrime){
-    //printf("Ok, is_firstbfslayer!");
-    //abort();
-    ElementStruct aTsorted, bTsorted;
-    int argSortA[3], argSortB[3];
-    const int nEqual = join(aT, bT, mesh, aTsorted, bTsorted, argSortA, argSortB);
-    std::list<double (*)(double *)> traffoList;
-
-    double factors;
-    //const int dim = mesh.dim;
-    double alpha[4];//, x[2], y[2]
-    double alphaCanceled[4];//, kernel_val=0.;
-    double x_canceled[2], y_canceled[2], traffodetCanceled;
-
-    double kernel_val[mesh.outdim*mesh.outdim];
-    const int nLocalVerts=2*mesh.dVertex-nEqual;
-    double psix[3], psiy[3], psixy[nLocalVerts];//, psisubtracted[3];
-    //cout << "Tensor Gauss" << endl;
-    if (nEqual == 1){
-        traffoList = traffoCommonVertex;
-    } else if (nEqual == 2){
-        traffoList = traffoCommonEdge;
-    } else if (nEqual == 3) {
-        traffoList = traffoIdentical;
-    } else {
-        cout << "Error in integrate_tensorgauss: This should not have happened." << endl;
-        abort();
-    }
-    //cout << "#################################### Case " << nEqual << endl;
-    int traffoCounter = 0;
-    for(auto & traffo : traffoList) {
-        //if (aT.Tdx == 0) cout << "Traffo Number " << traffoCounter << ": \n";
-        for (int k = 0; k < quadRule.nPg; k++) {
-            for (int j = 0; j < 4; j++) {
-                alpha[j] = quadRule.Pg[4 * k + j];
-                alphaCanceled[j] = quadRule.Pg[4 * k + j];
-            }
-            scale(alpha);
-            scale(alphaCanceled);
-
-            traffodetCanceled = pow(alphaCanceled[0], 3-2*mesh.fractional_s);
-            // Pulled out from model_basisFunction, i.e. psixy..
-            alphaCanceled[0] = 1.0;
-
-            traffo(alpha);
-            traffodetCanceled *= traffo(alphaCanceled);
-
-            mirror(alpha);
-            mirror(alphaCanceled);
-
-            //toPhys(aTsorted.E, &alpha[0], 2, x);
-            //toPhys(bTsorted.E, &alpha[2], 2, y);
-
-            //if (aT.Tdx == 0) cout << "k " << k << endl;
-            //if (aT.Tdx == 0) cout << "      alphaCanceled : " <<  ",\t" << alphaCanceled[0] << ", " << alphaCanceled[1] << ", " << alphaCanceled[2] << ", " << alphaCanceled[3]  << endl;
-            //if (aT.Tdx == 0) cout << "      alpha : " <<  ",\t" << alpha[0]  << ", " << alpha[1] << ", "  << alpha[2]  << ", " << alpha[3] << endl;
-            //if (aT.Tdx == 0) cout << "      traffodetCanceled : " <<  ",\t" << traffodetCanceled*SCALEDET << endl;
-
-            toPhys(aTsorted.E, &alphaCanceled[0], 2, x_canceled);
-            toPhys(bTsorted.E, &alphaCanceled[2], 2, y_canceled);
-
-            // Eval Kernel(x-y)
-            model_kernel(x_canceled, aTsorted.label, y_canceled, bTsorted.label, mesh, kernel_val);
-
-            //cout << "x " << endl;
-            //cout << x_canceled[0] << ", " << x_canceled[1] << endl;
-            //cout << "y " << endl;
-            //cout << y_canceled[0] << ", " << y_canceled[1] << endl;
-
-            model_basisFunction(&alphaCanceled[0], 2, psix);
-            model_basisFunction(&alphaCanceled[2], 2, psiy);
-            // model_basisFunction_subtracted(alpha, 2, psisubtracted);
-            // model_basisFunction_subtracted(const double * alpha, const int dim, double *psi_vals)
-            int shift = mesh.dVertex-nEqual;
-
-            //cout << "### Write psixy" << endl;
-            for(int a = 0; a < nEqual; a++){
-                //cout << "a" << a << endl;
-                // 1 - alpha[0] - alpha[1] - (1 - alpha[2] - alpha[3]);
-                psixy[a] = psix[a] - psiy[a];
-            }
-            //cout << "### Write psixy" << endl;
-            for(int a = nEqual; a < mesh.dVertex; a++){
-                //cout << "a" << a << endl;
-                psixy[a] = psix[a];
-                psixy[a + shift] = - psiy[a];
-            }
-            //cout << "### Write termLocal, termNolcal..." << endl;
-            for (int a = 0; a < nLocalVerts; a++){
-                for (int aOut = 0; aOut < mesh.outdim; aOut++) {
-                    //cout << "----------------------\n" << a << endl;
-                    //cout << "a" << a << endl;
-                    for (int b = 0; b < nLocalVerts; b++) {
-                        for (int bOut = 0; bOut < mesh.outdim; bOut++) {
-                            //cout <<  "b" <<b << endl;
-                            factors = kernel_val[mesh.outdim * aOut + bOut] * traffodetCanceled *
-                                      SCALEDET * psixy[a] * psixy[b] *
-                                      quadRule.dg[k] * aTsorted.absDet * bTsorted.absDet;
-                            if (a < mesh.dVertex) {
-                                if (b < mesh.dVertex) {
-                                    termLocal[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut) +
-                                              argSortA[b]*mesh.outdim + bOut] += factors;
-
-                                } else {
-                                    termNonloc[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
-                                               + argSortB[b- shift]*mesh.outdim + bOut] -= factors;
-                                }
-                            } else {
-                                if (b < mesh.dVertex) {
-                                    termNonlocPrime[mesh.outdim * mesh.dVertex * (argSortA[b]*mesh.outdim + aOut)
-                                                    + argSortB[a- shift]*mesh.outdim + bOut] -= factors;
-
-                                } else {
-                                    termLocalPrime[mesh.outdim * mesh.dVertex * (argSortB[a- shift]*mesh.outdim + aOut) +
-                                                   argSortB[b- shift]*mesh.outdim + bOut] += factors;
-
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        //cout << " > Done" << endl;
-        traffoCounter++;
     }
     return 1;
 }
@@ -452,7 +212,8 @@ int integrate_fractional(const ElementType &aT, const ElementType &bT, const Qua
             traffodetCanceled = &quadRule.traffodetFractionalCanceled_Identical;
             nTraffos = 6;
         } else {
-            cout << "Error in integrate_weakSingular: This should not have happened." << endl;
+            printf("Error in integrate_fractional: nEqual == %i", nEqual );
+            printf( "Error in integrate_fractional: This should not have happened." );
             abort();
         }
 

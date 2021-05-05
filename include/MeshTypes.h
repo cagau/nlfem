@@ -5,6 +5,7 @@
 #define NONLOCAL_ASSEMBLY_MESHTYPES_H
 #include "armadillo"
 #include "cstring"
+#include "metis.h"
 #include <list>
 using namespace std;
 
@@ -114,6 +115,9 @@ struct MeshStruct{
     // This corresponds to a kernel with no singularity.
     // Therefore the integration for fractional kernels can be used for non-singular kernels as well
     // Makes sense for tests e.g.
+
+    idx_t *xadj;
+    idx_t *adjncy;
 
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
     const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};

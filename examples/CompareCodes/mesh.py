@@ -29,7 +29,7 @@ class RegMesh2D:
                 xmin=-self.delta, xmax=1.0+self.delta,
                 ymin=-self.delta, ymax=1.0+self.delta,
                 nx=n+1, ny=n+1,
-                zigzag=False
+                variant="zigzag"
             )
             self.vertices = np.array(points[:,:2])
 

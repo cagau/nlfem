@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import nlfem
 import nlfem as assemble
 import numpy as np
 import os
@@ -31,10 +32,11 @@ if __name__ == "__main__":
 
     # Read
     filter = np.array(assemble.read_arma_mat("data/result.partition").flatten(), dtype=np.int)
-    adjacency = np.array(assemble.read_arma_mat("data/result.dual").flatten(), dtype=np.int).reshape((13, mesh.nE)).T
+    adjacency = np.array(assemble.read_arma_mat("data/result.dual").flatten(), dtype=np.int).reshape((15, mesh.nE)).T
     interaction = assemble.read_arma_spMat("data/result.interaction")
     baryCenters = bC(mesh)
-
+    adjacency = np.sort(adjacency, axis=1)
+    adjacency_test = np.sort(nlfem.constructAdjaciencyGraph(mesh.elements, ncommon=1), axis=1)
     domains = np.zeros((filter.shape[0], np.max(filter)+1), dtype=np.int)
     for k, f in enumerate(filter):
         domains[k, f] = 1
