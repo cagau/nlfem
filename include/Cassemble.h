@@ -101,8 +101,6 @@ void solve2x2(const double * A, const double * b, double * x);
  * @param nPy       <B>(nPy, d)</B> Pointer to quadrature points for the inner integral
  * @param dy        <B>(nPx,)</B> Pointer to quadrature weights of the inner integral
  * @param sqdelta   Squared delta
- * @param ptrNeighbours <B>(L, d+1)</B> Adjaciency graph of triangulation.
- * @param nNeighbours   number of columns in Neighbours List.
  * @param is_DiscontinuousGalerkin Switch for discontinuous Galerkin
  * @param is_NeumannBoundary Switch of Neumann Boundary Conditions
  * @param str_model_kernel  Name of kernel
@@ -125,8 +123,9 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const long * ptrLabelVerts,
                   int nE,
                   int nE_Omega, int nV, int nV_Omega, const double *Px, int nPx, const double *dx,
-                  const double *Py, int nPy, const double *dy, double sqdelta, const long *ptrNeighbours,
-                  int nNeighbours,
+                  const double *Py, int nPy, const double *dy, double sqdelta,
+                  //const long *ptrNeighbours,
+                  //int nNeighbours,
                   int is_DiscontinuousGalerkin, int is_NeumannBoundary, string str_model_kernel,
                   string str_model_f, string str_integration_method_remote,
                   string str_integration_method_close,

@@ -145,7 +145,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": False,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
-        "closeElements": "fractional", #weakSingular
+        #"closeElements": "fractional", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,
@@ -166,7 +166,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": False,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
-        "closeElements": "fractional", #weakSingular
+        #"closeElements": "fractional", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,

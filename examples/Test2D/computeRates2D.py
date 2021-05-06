@@ -76,7 +76,6 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         # Refine to N_fine ----------------------------------------------------------------
         mesh = RegMesh2D(kernel["horizon"], N_fine,
                          ufunc=u_exact, coarseMesh=mesh,
-                         is_constructAdjaciencyGraph=False,
                          ansatz=conf["ansatz"], outdim=kernel["outputdim"])
         #mesh.plot_ud(pp)
         #mesh.plot_u_exact(pp)

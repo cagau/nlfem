@@ -94,8 +94,8 @@ struct MeshStruct{
     const int nV_Omega;
     const double delta;
     const double sqdelta;
-    const long * ptrNeighbours;
-    const int nNeighbours;
+    //const long * ptrNeighbours;
+    //const int nNeighbours;
 
     const int is_DiscontinuousGalerkin;
     const int is_NeumannBoundary;
@@ -120,7 +120,7 @@ struct MeshStruct{
     idx_t *adjncy;
 
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
-    const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
+    //const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->nE)};
     // Label of Triangles inside Omega = 1
     // Label of Triangles in OmegaI = 2

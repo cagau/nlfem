@@ -253,7 +253,7 @@ void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
     // Queue for Breadth first search
     queue<int> queue;
     // List of visited neighbours
-    const long *NTdx;
+    //const long *NTdx;
     //for (int aTdx=0; aTdx<mesh.nE; aTdx++)
     for (int & aTdx : indexList){
         initializeElement(aTdx, mesh, aT);
@@ -267,18 +267,27 @@ void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
             int sTdx = queue.front();
             queue.pop();
             // Get all the neighbours of sTdx.
-            NTdx = &mesh.Neighbours(0, sTdx);
+            //NTdx = &mesh.Neighbours(0, sTdx);
+            idx_t startNdx = mesh.xadj[sTdx];
+            //cout << "startNdx " << startNdx << endl;
+            idx_t endNdx = mesh.xadj[sTdx+1];
+            //cout << "endNdx "<< endNdx << endl;
+            idx_t nTdx = -1;
 
             // Run through the list of neighbours.
-            for (int j = 0; j < mesh.nNeighbours; j++) {
+            while (startNdx + nTdx < endNdx) {
+            //for (int j = 0; j < mesh.nNeighbours; j++) {
 
                 // The next valid neighbour is our candidate for the inner Triangle b.
-                int bTdx = NTdx[j];
+                // int bTdx = NTdx[j];
+                int bTdx;
+                if (nTdx == -1) {bTdx = aTdx;} // Make sure, that the first 'neighbour' is the element itself
+                else {bTdx = mesh.adjncy[startNdx + nTdx];}
                 // Check how many neighbours sTdx has.
                 // In order to be able to store the list as contiguous array we fill
                 // up the empty spots with the number nE
                 // i.e. the total number of Triangles (which cannot be an indexList).
-                if (bTdx < mesh.nE) {
+                //if (bTdx < mesh.nE) {
                     // Check whether bTdx is already visited.
                     if (!visited(bTdx)){
                         initializeElement(bTdx, mesh, bT);
@@ -313,7 +322,8 @@ void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
                         } // End  if (dist < mesh.delta + mesh.maxDiameter)
                     } // End visited[bTdx] = 1;
                     visited[bTdx] = 1;
-                } // if (bTdx < mesh.nE)
+                //} // if (bTdx < mesh.nE)
+                nTdx++;
             } // End for (int j = 0; j < mesh.nNeighbours; j++)
         } // End while (!queue.empty())
         for (int k = 0; k < mesh.dVertex; k++) {
@@ -329,8 +339,9 @@ void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
 void par_assemble(const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K,
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const long * ptrLabelVerts, const int nE,
                   const int nE_Omega, const int nV, const int nV_Omega, const double *Px, const int nPx, const double *dx,
-                  const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours,
-                  const int nNeighbours,
+                  const double *Py, const int nPy, const double *dy, const double sqdelta,
+                  //const long *ptrNeighbours,
+                  //const int nNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method_remote,
                   const string str_integration_method_close,
@@ -340,7 +351,9 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   int is_fullConnectedComponentSearch, int verbose) {
 
     MeshType mesh = {K_Omega, K, ptrTriangles, ptrLabelTriangles, ptrVerts, ptrLabelVerts, nE, nE_Omega,
-                     nV, nV_Omega, sqrt(sqdelta), sqdelta, ptrNeighbours, nNeighbours, is_DiscontinuousGalerkin,
+                     nV, nV_Omega, sqrt(sqdelta), sqdelta,
+                     //ptrNeighbours, nNeighbours,
+                     is_DiscontinuousGalerkin,
                      is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter, fractional_s};
 
     ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f,
@@ -349,6 +362,32 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                               false,
                               static_cast<bool>(is_fullConnectedComponentSearch),
                               verbose};
+
+    if (verbose) printf("Constructing adjacency graph...");
+    int dVertex = mesh.dim+1;
+    idx_t nE_metis=mesh.nE;
+    idx_t nV_metis=mesh.nV;
+    idx_t ncommon=1;
+    idx_t eind[mesh.nE * dVertex];
+    idx_t eptr[mesh.nE + 1];
+    idx_t numflag=0;
+    idx_t *xadj;
+    idx_t *adjncy;
+
+    for (int k=0; k<mesh.nE; k++){
+        for (int l=0; l<mesh.dVertex; l++){
+            eind[mesh.dVertex*k + l] = mesh.Triangles[mesh.dVertex*k + l];
+        }
+        eptr[k] = k*mesh.dVertex;
+    }
+    eptr[mesh.nE] = mesh.nE*dVertex;
+
+    // Compute Adjacency Graph with METIS
+    METIS_MeshToDual(&nE_metis, &nV_metis, eptr, eind, &ncommon, &numflag, &xadj, &adjncy); // ???
+    if (verbose) printf("Done. \n");
+
+    mesh.xadj = xadj;
+    mesh.adjncy = adjncy;
 
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
     initializeQuadrule(quadRule, mesh);
@@ -389,10 +428,18 @@ void par_assemble(const string compute, const string path_spAd, const string pat
         par_forcing(mesh, quadRule, conf);
     }
 
+    METIS_Free(xadj);
+    METIS_Free(adjncy);
+
 }
 
 template <typename T_Matrix>
 void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
+    //TODO CHECK RATES
+    // March 2. 'Full Test due to lack of memory', git hash a547b08b0805b7a02e81a1cb9f9dbcfe1ff0789e
+    // against
+    // February 22. 'Full Test', git hash c6085f185eef42efb1b565edd43284509907cb48
+    // There was a change in rates. It might be related to the new assembly routine - has to be revisited.
 
     const int verbose = conf.verbose;
 
@@ -416,30 +463,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     }
     chk_BasisFunction(quadRule);
 
-    printf("Construnct adjacency Graph... ");
-    int dVertex = mesh.dim+1;
-    idx_t nE_metis=mesh.nE;
-    idx_t nV_metis=mesh.nV;
-    idx_t ncommon=1;
-    idx_t eind[mesh.nE * dVertex];
-    idx_t eptr[mesh.nE + 1];
-    idx_t numflag=0;
-    idx_t *xadj;
-    idx_t *adjncy;
-
-    for (int k=0; k<mesh.nE; k++){
-        for (int l=0; l<mesh.dVertex; l++){
-            eind[mesh.dVertex*k + l] = mesh.Triangles[mesh.dVertex*k + l];
-        }
-        eptr[k] = k*mesh.dVertex;
-    }
-    eptr[mesh.nE] = mesh.nE*dVertex;
-
-    // Compute Adjacency Graph with METIS
-    METIS_MeshToDual(&nE_metis, &nV_metis, eptr, eind, &ncommon, &numflag, &xadj, &adjncy); // ???
-    printf("Done. \n");
-
-    #pragma omp parallel shared(mesh, quadRule, conf,  Ad, xadj, adjncy)
+    #pragma omp parallel shared(mesh, quadRule, conf,  Ad)
     {
     //map<unsigned long, double> Ad;
     unsigned long Adx;
@@ -451,7 +475,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     //queue<idx_t> queue;
     queue<int> queue;
     // List of visited triangles
-    const long *NTdx;
+    //const long *NTdx;
 
     // Vector containing the coordinates of the vertices of a Triangle
     ElementType aT, bT;
@@ -522,28 +546,27 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
                 //cout << "sTdx " << sTdx << endl;
                 queue.pop();
                 // Get all the neighbours of sTdx.
-                NTdx = &mesh.Neighbours(0, sTdx);
-
-                //idx_t startNdx = xadj[sTdx];
+                //NTdx = &mesh.Neighbours(0, sTdx);
+                idx_t startNdx = mesh.xadj[sTdx];
                 //cout << "startNdx " << startNdx << endl;
-                //idx_t endNdx = xadj[sTdx+1];
+                idx_t endNdx = mesh.xadj[sTdx+1];
                 //cout << "endNdx "<< endNdx << endl;
-                //idx_t nTdx = -1;
+                idx_t nTdx = -1;
 
                 // Run through the list of neighbours.
-                //while (startNdx + nTdx < endNdx) {
-                for (int j = 0; j < mesh.nNeighbours; j++) {
+                while (startNdx + nTdx < endNdx) {
+                //for (int j = 0; j < mesh.nNeighbours; j++) {
                     // The next valid neighbour is our candidate for the inner Triangle b.
-                    int bTdx = NTdx[j];
-                    //int bTdx;
-                    //if (nTdx == -1) {bTdx = aTdx;}
-                    //else {bTdx = adjncy[startNdx + nTdx];}
+                    //int bTdx = NTdx[j];
+                    int bTdx;
+                    if (nTdx == -1) {bTdx = aTdx;} // Make sure, that the first 'neighbour' is the element itself
+                    else {bTdx = mesh.adjncy[startNdx + nTdx];}
 
                     // Check how many neighbours sTdx has.
                     // In order to be able to store the list as contiguous array we fill
                     // up the empty spots with the number nE
                     // i.e. the total number of Triangles (which cannot be an index).
-                    if (bTdx < mesh.nE) {
+                    //if (bTdx < mesh.nE) {
                         // Check whether bTdx is already visited.
                         if (!visited[bTdx]) {
                             // Check whether bTdx is part of the discretization
@@ -690,8 +713,8 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
                         }// End if BFS (visited[bTdx] == 0)
                         // Mark bTdx as visited
                         visited[bTdx] = 1;
-                    }// End if BFS (bTdx < mesh.nE)
-                    //nTdx++;
+                    //}// End if BFS (bTdx < mesh.nE)
+                    nTdx++;
                 }//End for loop BFS (j = 0; j < mesh.nNeighbours; j++)
                 is_firstbfslayer = false;
             }//End while loop BFS (!queue.empty())
@@ -716,8 +739,6 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     }
     dualGraph.save("data/result.dual_par_system", arma::arma_binary);
     */
-    METIS_Free(xadj);
-    METIS_Free(adjncy);
 }// End function par_system
 
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {

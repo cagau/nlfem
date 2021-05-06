@@ -1,0 +1,193 @@
+C++ Estimated Row NNZ 46
+Function: par_system
+Ansatz Space: CG
+Mesh dimension: 2
+Output dimension: 1
+Recieved Zeta for DD: false
+Right hand side: 
+No forcing function chosen.
+Kernel: fractional
+Integration Method Remote: retriangulate
+Integration Method Close: fractional
+Quadrule outer: 7
+Quadrule inner: 7
+Full Graph Search: 0
+K_Omega 81
+K 225
+Total NNZ 3483
+Function: par_forcing
+C++ Estimated Row NNZ 102
+Function: par_system
+Ansatz Space: CG
+Mesh dimension: 2
+Output dimension: 1
+Recieved Zeta for DD: false
+Right hand side: 
+No forcing function chosen.
+Kernel: fractional
+Integration Method Remote: retriangulate
+Integration Method Close: fractional
+Quadrule outer: 7
+Quadrule inner: 7
+Full Graph Search: 0
+K_Omega 361
+K 841
+Total NNZ 38627
+Function: par_forcing
+C++ Estimated Row NNZ 318
+Function: par_system
+Ansatz Space: CG
+Mesh dimension: 2
+Output dimension: 1
+Recieved Zeta for DD: false
+Right hand side: 
+No forcing function chosen.
+Kernel: fractional
+Integration Method Remote: retriangulate
+Integration Method Close: fractional
+Quadrule outer: 7
+Quadrule inner: 7
+Full Graph Search: 0
+K_Omega 1521
+K 3249
+Total NNZ 466947
+Function: par_forcing
+C++ Estimated Row NNZ 1017
+Function: par_system
+Ansatz Space: CG
+Mesh dimension: 2
+Output dimension: 1
+Recieved Zeta for DD: false
+Right hand side: 
+No forcing function chosen.
+Kernel: fractional
+Integration Method Remote: retriangulate
+Integration Method Close: fractional
+Quadrule outer: 7
+Quadrule inner: 7
+Full Graph Search: 0
+K_Omega 6241
+K 12769
+Total NNZ 6334615
+Function: par_forcing
+C++ Estimated Row NNZ 3640
+Function: par_system
+Ansatz Space: CG
+Mesh dimension: 2
+Output dimension: 1
+Recieved Zeta for DD: false
+Right hand side: 
+No forcing function chosen.
+Kernel: fractional
+Integration Method Remote: retriangulate
+Integration Method Close: fractional
+Quadrule outer: 7
+Quadrule inner: 7
+Full Graph Search: 0
+K_Omega 25281
+K 50625
+Total NNZ 91694187
+/bin/sh: 1: pandoc: not found
+/bin/sh: 1: pandoc: not found
+13c13
+< | Delta | 0.2 |
+---
+> | Delta | 0.3 |
+16,22c16,43
+< | h| dof| L2 Error| Rates| Time [s]| 
+< |---|---|---|---|---|
+< | 1.00e-01 | 8.10e+01 | 2.83e-03 | 0.00e+00 | 4.88e-01 |
+< | 5.00e-02 | 3.61e+02 | 4.81e-04 | 2.56e+00 | 2.29e+00 |
+< | 2.50e-02 | 1.52e+03 | 1.22e-04 | 1.98e+00 | 1.58e+01 |
+< | 1.25e-02 | 6.24e+03 | 2.99e-05 | 2.03e+00 | 3.09e+02 |
+< | 6.25e-03 | 2.53e+04 | 8.00e-06 | 1.90e+00 | 7.96e+03 |
+---
+> | h| dof| L2 Error| Rates| 
+> |---|---|---|---|
+> | 1.00e-01 | 1.00e+02 | 1.89e-03 | 0.00e+00 |
+> | 5.00e-02 | 4.00e+02 | 4.78e-04 | 1.98e+00 |
+> | 2.50e-02 | 1.60e+03 | 1.19e-04 | 2.00e+00 |
+> | 1.25e-02 | 6.40e+03 | 2.88e-05 | 2.05e+00 |
+> \newpage 
+> # Kernel: linearPrototypeMicroelasticField
+> ### Setting
+> | | |
+> | --- | --- |
+> | Right hand side | linearField |
+> | **Kernel** | **linearPrototypeMicroelasticField** |
+> | s | -0.5 |
+> | **Integration Method** | **retriangulate** |
+> | With caps | True |
+> | Quadrule outer | 7 |
+> | Quadrule inner | 7 |
+> | Singular quad degree | 6 |
+> | Delta | 0.3 |
+> | Ansatz | CG |
+> ### Rates
+> | h| dof| L2 Error| Rates| 
+> |---|---|---|---|
+> | 1.00e-01 | 1.00e+02 | 8.40e-04 | 0.00e+00 |
+> | 5.00e-02 | 4.00e+02 | 2.04e-04 | 2.04e+00 |
+> | 2.50e-02 | 1.60e+03 | 4.94e-05 | 2.05e+00 |
+> | 1.25e-02 | 6.40e+03 | 1.17e-05 | 2.08e+00 |
+
+### TESTING testConfFractional.py
+
+
+ h:  0.1
+stiffnessMatrix(): verbose mode.
+stiffnessMatrix(): Zeta not found. nZeta set to 0.
+stiffnessMatrix(): is_fullConnectedComponentSearch not found or 0 (default).
+Assembly Time	 4.81e-01  Sec
+nnzRows are  43
+Assembly Time	 1.59e-04  Sec
+Solve...
+L2 Error:  0.0028295829963308518
+
+ h:  0.05
+stiffnessMatrix(): verbose mode.
+stiffnessMatrix(): Zeta not found. nZeta set to 0.
+stiffnessMatrix(): is_fullConnectedComponentSearch not found or 0 (default).
+Assembly Time	 2.28e+00  Sec
+nnzRows are  107
+Assembly Time	 4.17e-04  Sec
+Solve...
+L2 Error:  0.00048097793051691726
+Rate: 	 2.5565468515312406
+
+ h:  0.025
+stiffnessMatrix(): verbose mode.
+stiffnessMatrix(): Zeta not found. nZeta set to 0.
+stiffnessMatrix(): is_fullConnectedComponentSearch not found or 0 (default).
+Assembly Time	 1.58e+01  Sec
+nnzRows are  307
+Assembly Time	 6.23e-04  Sec
+Solve...
+L2 Error:  0.00012198622618624816
+Rate: 	 1.9792524398596028
+
+ h:  0.0125
+stiffnessMatrix(): verbose mode.
+stiffnessMatrix(): Zeta not found. nZeta set to 0.
+stiffnessMatrix(): is_fullConnectedComponentSearch not found or 0 (default).
+Assembly Time	 3.09e+02  Sec
+nnzRows are  1015
+Assembly Time	 2.31e-03  Sec
+Solve...
+L2 Error:  2.9948875035637016e-05
+Rate: 	 2.0261445407175356
+
+ h:  0.00625
+stiffnessMatrix(): verbose mode.
+stiffnessMatrix(): Zeta not found. nZeta set to 0.
+stiffnessMatrix(): is_fullConnectedComponentSearch not found or 0 (default).
+Assembly Time	 7.96e+03  Sec
+nnzRows are  3627
+Assembly Time	 5.67e-03  Sec
+Solve...
+L2 Error:  8.000893412091e-06
+Rate: 	 1.9042688010638866
+
+* Diff of results ********************************************************
+**************************************************************************
+Function: par_forcing

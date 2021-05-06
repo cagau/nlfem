@@ -3,11 +3,12 @@
 In order to use this code you have to meet the following requirements
 ## Requirements
 
-- The **basic requirements** for are the programs `gcc`, `g++, python3-dev, python3-venv, libgmp-dev, libcgal-dev`. You further need
-the libraries `libarmadillo-dev`, and the Python 3 packages `numpy` and `scipy`. If you want to change
+- The **basic requirements** for are the programs 
+  `gcc, g++, python3-dev, python3-venv, libgmp-dev, libcgal-dev, metis, libmetis-dev, libarmadillo-dev`. 
+  You further need the Python 3 packages `numpy` and `scipy`. If you want to change
   the Cython code, you require the package `Cython`.
 - For **running the examples** you additionally need to install the Python packages 
-`matplotlib, meshzoo`.
+`matplotlib, meshzoo`. Make sure to install the correct versions by using the `requirements.txt` as given below.
 
 ## Build and Install
 
@@ -30,9 +31,7 @@ To prepare the basic requirements on Ubuntu do.
 
 `source nlfemvenv/bin/activate`
 
-`(nlfemvenv) python3 -m pip install numpy scipy Cython`
-
-`(nlfemvenv) python3 -m pip install matplotlib meshzoo`
+`(nlfemvenv) python3 -m pip install -r requirements.txt`
 
 To clone the default branch (master) do
 

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from nlfem import constructAdjaciencyGraph
+#from nlfem import constructAdjaciencyGraph
 import meshzoo
 
 class RegMesh2D:
@@ -14,7 +14,7 @@ class RegMesh2D:
                  dim=2, outdim=1,
                  n_start=12,
                  ansatz="CG",
-                 is_constructAdjaciencyGraph=True,
+                 #is_constructAdjaciencyGraph=True,
                  variant="up"):
         ### TEST 27.07.2020
         #self.Zeta = np.arange(12, dtype=np.int).reshape(4, 3)
@@ -60,11 +60,11 @@ class RegMesh2D:
         self.nE_Omega = np.sum(self.elementLabels > 0)
 
         # Read adjaciency list -----------------------------------------------------------
-        if is_constructAdjaciencyGraph:
-            self.neighbours = constructAdjaciencyGraph(self.elements)
-            self.nNeighbours = self.neighbours.shape[1]
-        else:
-            self.neighbours = None
+        #if is_constructAdjaciencyGraph:
+        #    self.neighbours = constructAdjaciencyGraph(self.elements)
+        #    self.nNeighbours = self.neighbours.shape[1]
+        #else:
+        #    self.neighbours = None
 
         # Set Matrix Dimensions ----------------------------------------------------------
         self.is_NeumannBoundary = False

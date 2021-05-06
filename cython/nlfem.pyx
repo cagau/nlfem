@@ -161,8 +161,8 @@ def stiffnessMatrix(
     path_spAd = configuration.get("savePath", f"tmp_spAd_{tmstmp}")
     cdef string path_spAd_ = path_spAd.encode('UTF-8')
 
-    cdef long[:] neighbours = mesh["neighbours"].flatten()#nE*np.ones((nE*dVertex), dtype=int)
-    cdef int nNeighbours = mesh["neighbours"].shape[1]
+    #cdef long[:] neighbours = mesh["neighbours"].flatten()#nE*np.ones((nE*dVertex), dtype=int)
+    #cdef int nNeighbours = mesh["neighbours"].shape[1]
 
     cdef long dim = mesh["elements"].shape[1] - 1
 
@@ -253,8 +253,8 @@ def stiffnessMatrix(
                             &ptrPx[0], nPx, &ptrdx[0],
                             &ptrPy[0], nPy, &ptrdy[0],
                             kernel["horizon"]**2,
-                            &neighbours[0],
-                            nNeighbours,
+                            #&neighbours[0],
+                            #nNeighbours,
                             is_DG,
                             0,
                             &model_kernel_[0],
@@ -311,8 +311,8 @@ def loadVector(
     path_fd = configuration.get("savePath", f"tmp_fd_{tmstmp}")
     cdef string path_fd_ = path_fd.encode('UTF-8')
 
-    cdef long[:] neighbours = mesh["neighbours"].flatten()#nE*np.ones((nE*dVertex), dtype=int)
-    cdef int nNeighbours = mesh["neighbours"].shape[1]
+    #cdef long[:] neighbours = mesh["neighbours"].flatten()#nE*np.ones((nE*dVertex), dtype=int)
+    #cdef int nNeighbours = mesh["neighbours"].shape[1]
 
     cdef long dim = mesh["elements"].shape[1] - 1
     cdef long nE = mesh["elements"].shape[0]
@@ -380,7 +380,8 @@ def loadVector(
                             nV, nV_Omega,
                             &ptrPx[0], nPx, &ptrdx[0],
                             &ptrPx[0], nPx, &ptrdx[0],
-                            0.0, NULL, 0, is_DG, 0, "".encode('UTF-8'),
+                            # 0.0, NULL, # Former neighbour lists
+                            0, is_DG, 0, "".encode('UTF-8'),
                             model_load_,
                             "".encode('UTF-8'), "".encode('UTF-8'), False,
                             dim, outdim_,
@@ -445,8 +446,8 @@ def assemble(
     cdef string path_fd_ = path_fd.encode('UTF-8')
     fd = None
 
-    cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
-    cdef int nNeighbours = mesh.neighbours.shape[1]
+    #cdef long[:] neighbours = mesh.neighbours.flatten()#nE*np.ones((nE*dVertex), dtype=int)
+    #cdef int nNeighbours = mesh.neighbours.shape[1]
     cdef long[:] elements = mesh.elements.flatten()
     cdef long[:] elementLabels = mesh.elementLabels.flatten()
     cdef double[:] vertices = mesh.vertices.flatten()
@@ -520,8 +521,8 @@ def assemble(
                             &ptrPx[0], Px.shape[0], &ptrdx[0],
                             &ptrPy[0], Py.shape[0], &ptrdy[0],
                             delta**2,
-                            &neighbours[0],
-                            nNeighbours,
+                            #&neighbours[0],
+                            #nNeighbours,
                             mesh.is_DiscontinuousGalerkin,
                             mesh.is_NeumannBoundary,
                             &model_kernel_[0],
@@ -547,8 +548,8 @@ def assemble(
                             &ptrPx[0], Px.shape[0], &ptrdx[0],
                             &ptrPy[0], Py.shape[0], &ptrdy[0],
                             delta**2,
-                            &neighbours[0],
-                            nNeighbours,
+                            #&neighbours[0],
+                            #nNeighbours,
                             mesh.is_DiscontinuousGalerkin,
                             mesh.is_NeumannBoundary,
                             &model_kernel_[0],
@@ -606,7 +607,8 @@ def evaluateMass(
     return vd
 
 def constructAdjaciencyGraph(long[:,:] elements, ncommon = 1):
-    #print("Constructing adjaciency graph...")
+    print("Constructing adjaciency graph...")
+    print("This function is deprecated, and its use is not required anymore.")
     nE = elements.shape[0]
     nV = np.max(elements)+1
     cdef int dVerts = elements.shape[1]
