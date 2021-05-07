@@ -137,7 +137,7 @@ def stiffnessMatrix(
 
       \mathcal{L}(\mathbf{u})(\mathbf{x}) = p.v. \int_{B_{\delta}(\mathbf{x}) \cap \widetilde{\Omega}}(\mathbf{C}_\delta(\mathbf{x}, \mathbf{y})  \mathbf{u}(\mathbf{x}) - \mathbf{C}_\delta(\mathbf{y}, \mathbf{x})\mathbf{u}(\mathbf{y}))  d\mathbf{y},
 
-    on a given mesh. The input parameters are expected to be dictionaries. Find more information on the expected content in the `example/Test2D/testConfFull.py`. This function is a wrapper for the function `par_assemble <../html/index.html>`_.
+    on a given mesh. The input parameters are expected to be dictionaries. Find more information on the expected content in the `example/Test2D/testConfFull.py`. This function is a wrapper for the function `par_assemble <http://klar.gitlab-pages.uni-trier.de/nonlocal-assembly/>`_.
 
     :param mesh: Dictionary containing the mesh information ("elements", "elementLabels", "vertices", "vertexLabels", "neighbours"). The list "neighbours" can be obtained from constructAdjaciencyGraph(elements). The arrays "elementLabels" and "vertexLabels" are expected to be of datatype int (Python). Labels in the domain have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this purpose it does not matter which positive or negative number is used, but the kernels can depend on the element labels. The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin this means that the signs of the element labels and corresponding vertex labels coincide. In case of Continuous Galerkin this means that elements with negative label have only vertices with negative label.
 

@@ -5,7 +5,7 @@ pages:
   - apt update && apt-get -y install doxygen fonts-freefont-ttf texlive-science ghostscript graphviz
   - cd docs
   - doxygen Doxyfile
-  - cp html/ ../public/
+  - cp -r html/ ../public/
   artifacts:
     paths:
     - public
