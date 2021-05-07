@@ -5,9 +5,9 @@
  * This library provides a parallel assembly routine for a specific class of integral operators.
  * The focus lies on operators of the form
  * \f[
- *  A(u,v) = \int_{\Omega} v(x) \int_{\Omega \cup \Omega_I}(u(x)-u(y))\gamma(x,y)  dx dy,
+ *  \mathcal{L}(\mathbf{u})(\mathbf{x}) = p.v. \int_{B_{\delta}(\mathbf{x}) \cap \widetilde{\Omega}}(\mathbf{C}_\delta(\mathbf{x}, \mathbf{y})  \mathbf{u}(\mathbf{x}) - \mathbf{C}_\delta(\mathbf{y}, \mathbf{x})\mathbf{u}(\mathbf{y}))  d\mathbf{y}.
  *  \f]
- * where \f$ \gamma(x,y) \f$ is an integrable or weakly singular kernel with bounded interaction
+ * where \f$ \mathbf{C}(\mathbf{x},\mathbf{y}) \f$ is a, possibly strongly singular, matrix-valued integral kernel with bounded interaction
  * radius. The domain \f$\Omega\f$ and the interaction set \f$\Omega_I\f$
  * can be subsets of \f$ R^d \f$ for \f$ d = 2,3\f$. The solution can be scalar or
  * vector valued, i.e. \f$ u(x) \in R^c\f$ for \f$c \geq 1\f$.
@@ -139,13 +139,13 @@ void par_assemble(string compute, string path_spAd, string path_fd, int K_Omega,
  * Kernel functions can be defined in *model* see model_kernel() for more information.
  *
  * This function assembles the stiffness
- * matrix. It traverses all elements aT with element Label == 1 and adds the values
+ * matrix corresponding to the operator
  *
  *  * \f[
- *  A(\phi_j,\phi_k) = \int_{aT} phi_j(x) \int_{bT \cup \Omega_I}(\phi_k(x)-\phi_ku(y))\gamma(x,y)  dx dy,
+ *  \mathcal{L}(\mathbf{u})(\mathbf{x}) = p.v. \int_{B_{\delta}(\mathbf{x}) \cap \widetilde{\Omega}}(\mathbf{C}_\delta(\mathbf{x}, \mathbf{y})  \mathbf{u}(\mathbf{x}) - \mathbf{C}_\delta(\mathbf{y}, \mathbf{x})\mathbf{u}(\mathbf{y}))  d\mathbf{y}.
  *  \f]
  *
- *  to the stiffness matrix. The integration starts with the domain aT x aT and then proceeds with the neighbouring
+ *  It traverses all elements aT with element Label != 0 and adds up their contribution to the global stiffness matrix. The integration starts with the domain aT x aT and then proceeds with the neighbouring
  *  elements of aT in the mesh until the interaction domain is exceeded. For each pair aT, bT an integration routine
  *  (options are e.g. integrate_retriangulate(), integrate_baryCenter(), integrate_baryCenterRT(), ...)
  *  is called. If it all computed integrals are 0 the elements are considered as non-interacting. The integrals,

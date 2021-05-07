@@ -131,31 +131,21 @@ def stiffnessMatrix(
         kernel,
         configuration
     ):
-    """
-    Computes stiffness matrix of nonlocal operator on a given mesh.
-    The input parameters are expected to be dictionaries. Find more information
-    on the expected content in the example/Test2D/testConfFull.py
+    """ Computes the stiffness matrix corresponding to the nonlocal operator
 
-    :param mesh: Dictionary containing the mesh information ("elements", "elementLabels",
-    "vertices", "vertexLabels", "neighbours"). The list "neighbours" can be obtained from
-    constructAdjaciencyGraph(elements).
+    .. math::
 
-    The arrays "elementLabels" and "vertexLabels" are expected to be of datatype int (Python). Labels in the domain
-    have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this
-    purpose it does not matter
-    which positive or negative number is used, but the kernels can depend on the element labels.
-    The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin
-     this means that the signs of the element labels and corresponding vertex labels coincide. In case of
-     Continuous Galerkin this means that elements with negative label have only vertices with negative label.
+      \mathcal{L}(\mathbf{u})(\mathbf{x}) = p.v. \int_{B_{\delta}(\mathbf{x}) \cap \widetilde{\Omega}}(\mathbf{C}_\delta(\mathbf{x}, \mathbf{y})  \mathbf{u}(\mathbf{x}) - \mathbf{C}_\delta(\mathbf{y}, \mathbf{x})\mathbf{u}(\mathbf{y}))  d\mathbf{y},
 
-    :param kernel: The kernel is assumed to be a dictionary containing the keys "function", and "outputdim", where "outputdim"
-    is the output-dimension of the kernel function. In case of a scalar valued kernel this would be 1. In case
-    of the kernel "linearPrototypeMicroelasticField" this would be 2 (find an example in testConfFull.py).
+    on a given mesh. The input parameters are expected to be dictionaries. Find more information on the expected content in the `example/Test2D/testConfFull.py`. This function is a wrapper for the function `par_assemble <../html/index.html>`_.
+
+    :param mesh: Dictionary containing the mesh information ("elements", "elementLabels", "vertices", "vertexLabels", "neighbours"). The list "neighbours" can be obtained from constructAdjaciencyGraph(elements). The arrays "elementLabels" and "vertexLabels" are expected to be of datatype int (Python). Labels in the domain have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this purpose it does not matter which positive or negative number is used, but the kernels can depend on the element labels. The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin this means that the signs of the element labels and corresponding vertex labels coincide. In case of Continuous Galerkin this means that elements with negative label have only vertices with negative label.
+
+    :param kernel: The kernel is assumed to be a dictionary containing the keys "function", and "outputdim", where "outputdim" is the output-dimension of the kernel function. In case of a scalar valued kernel this would be 1. In case of the kernel "linearPrototypeMicroelasticField" this would be 2 (find an example in testConfFull.py). You find all available options in the function `lookup_configuration() `
 
     :param configuration: Dictionary containing the configuration (find an example in testConfFull.py).
 
-    :return: Matrix A in scipy csr-sparse format of shape K x K where
-    K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim (Discontinuous Galerkin).
+    :return: Matrix A in scipy csr-sparse format of shape K x K where K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim (Discontinuous Galerkin).
     """
     tmstmp = timestamp()
     path_spAd = configuration.get("savePath", f"tmp_spAd_{tmstmp}")
@@ -289,23 +279,12 @@ def loadVector(
     The input parameters are expected to be dictionaries. Find more information
     on the expected content in the example/Test2D/testConfFull.py
 
-    :param mesh: Dictionary containing the mesh information ("elements", "elementLabels",
-    "vertices", "vertexLabels", "outdim"), where "outdim" is the output-dimension of the kernel.
-    In this function the output dimension is read from "outdim", as no kernel is expected.
-
-    The arrays "elementLabels" and "vertexLabels" are expected to be of datatype int (Python). Labels in the domain
-    have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this
-    purpose it does not matter
-    which positive or negative number is used, but the kernels can depend on the element labels.
-    The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin
-     this means that the signs of the element labels and corresponding vertex labels coincide. In case of
-     Continuous Galerkin this means that elements with negative label have only vertices with negative label.
+    :param mesh: Dictionary containing the mesh information ("elements", "elementLabels", "vertices", "vertexLabels", "outdim"), where "outdim" is the output-dimension of the kernel. In this function the output dimension is read from "outdim", as no kernel is expected. The arrays "elementLabels" and "vertexLabels" are expected to be of datatype int (Python). Labels in the domain have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this purpose it does not matter which positive or negative number is used, but the kernels can depend on the element labels. The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin this means that the signs of the element labels and corresponding vertex labels coincide. In case of Continuous Galerkin this means that elements with negative label have only vertices with negative label.
 
     :param load: Dictionary containing the load information (find an example in testConfFull.py).
     :param configuration: Dictionary containing the configuration (find an example in testConfFull.py).
 
-    :return: Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim
-    (Discontinuous Galerkin)
+    :return: Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim (Discontinuous Galerkin)
     """
     tmstmp = timestamp()
     path_fd = configuration.get("savePath", f"tmp_fd_{tmstmp}")
