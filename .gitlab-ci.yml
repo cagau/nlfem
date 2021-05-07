@@ -1,0 +1,12 @@
+image: ubuntu:bionic
+
+pages:
+  script:
+  - apt update && apt-get -y install doxygen fonts-freefont-ttf texlive-science ghostscript graphviz
+  - cd docs
+  - doxygen Doxyfile
+  - cp html/ ../public/
+  artifacts:
+    paths:
+    - public
+
