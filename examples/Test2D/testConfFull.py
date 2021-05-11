@@ -18,17 +18,18 @@ KERNELS = [
         "fractional_s": -0.5
     },
     {
-        "function": "linearPrototypeMicroelasticField",
+        "function": "fractional",
         "horizon": 1./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
-        "outputdim": 2,
-        "fractional_s": -0.5
-    }
+        "outputdim": 1,
+        "fractional_s": 0.5
+    },
 ]
 
 LOADS = [
     {"function": "linear", "solution": u_exact_linearRhs},
     {"function": "linear", "solution": u_exact_linearRhs},
-    {"function": "linearField", "solution": u_exact_FieldConstantBothRhs}
+    {"function": "linear", "solution": u_exact_linearRhs},
+    #{"function": "linearField", "solution": u_exact_FieldConstantBothRhs}
 ]
 
 
@@ -59,7 +60,8 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": True,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
-        # TODO Does this affect retriangulation for non-singular kernels?
+        # This does NOT affect retriangulation for non-singular kernels!
+        # The quadrature for close elements is used only if the kernel is singular.
         "closeElements": "weakSingular", #weakSingular
         "quadrature": {
             "outer": {
@@ -67,8 +69,8 @@ CONFIGURATIONS = [
                 "weights": dx
             },
             "inner": {
-                "points": Px,
-                "weights": dx
+                "points": Py,
+                "weights": dy
             },
             "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         },
@@ -89,8 +91,8 @@ CONFIGURATIONS = [
                 "weights": dx
             },
             "inner": {
-                "points": Px,
-                "weights": dx
+                "points": Py,
+                "weights": dy
             },
             "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
@@ -131,8 +133,8 @@ CONFIGURATIONS = [
                 "weights": dx
             },
             "inner": {
-                "points": Px,
-                "weights": dx
+                "points": Py,
+                "weights": dy
             },
             "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
@@ -145,15 +147,15 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": False,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
-        #"closeElements": "fractional", #weakSingular
+        "closeElements": "fractional", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,
                 "weights": dx
             },
             "inner": {
-                "points": Px,
-                "weights": dx
+                "points": Py,
+                "weights": dy
             },
             "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
@@ -166,7 +168,7 @@ CONFIGURATIONS = [
             "isPlacePointOnCap": False,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
-        #"closeElements": "fractional", #weakSingular
+        "closeElements": "fractional", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,

@@ -1,363 +1,432 @@
-# Kernel: constant
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | DG |
 | Right hand side | linear |
 | **Kernel** | **constant** |
-| **Integration Method** | **retriangulate** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -1 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | True |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | DG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 2.49e-03 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 6.18e-04 | 2.01e+00 |
-| 2.50e-02 | 1.52e+03 | 1.56e-04 | 1.99e+00 |
-| 1.25e-02 | 6.24e+03 | 3.67e-05 | 2.09e+00 |
+| 1.00e-01 | 8.10e+01 | 2.66e-03 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 6.47e-04 | 2.04e+00 |
+| 2.50e-02 | 1.52e+03 | 1.74e-04 | 1.89e+00 |
+| 1.25e-02 | 6.24e+03 | 4.14e-05 | 2.07e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | DG |
 | Right hand side | linear |
 | **Kernel** | **constant** |
-| **Integration Method** | **retriangulate** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -1 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | DG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 2.49e-03 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 6.18e-04 | 2.01e+00 |
-| 2.50e-02 | 1.52e+03 | 1.56e-04 | 1.99e+00 |
-| 1.25e-02 | 6.24e+03 | 3.67e-05 | 2.09e+00 |
+| 1.00e-01 | 8.10e+01 | 2.66e-03 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 6.48e-04 | 2.04e+00 |
+| 2.50e-02 | 1.52e+03 | 1.74e-04 | 1.89e+00 |
+| 1.25e-02 | 6.24e+03 | 4.15e-05 | 2.07e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | DG |
 | Right hand side | linear |
 | **Kernel** | **constant** |
-| **Integration Method** | **baryCenter** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -1 |
+| **Intgr. remote pairs** | **baryCenter** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **baryCenter** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | DG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 5.81e-02 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 2.22e-02 | 1.39e+00 |
-| 2.50e-02 | 1.52e+03 | 6.18e-03 | 1.85e+00 |
-| 1.25e-02 | 6.24e+03 | 1.02e-03 | 2.60e+00 |
+| 1.00e-01 | 8.10e+01 | 7.80e-02 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 2.76e-02 | 1.50e+00 |
+| 2.50e-02 | 1.52e+03 | 7.11e-03 | 1.96e+00 |
+| 1.25e-02 | 6.24e+03 | 1.09e-03 | 2.70e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | CG |
 | Right hand side | linear |
 | **Kernel** | **constant** |
-| **Integration Method** | **retriangulate** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -1 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | True |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | CG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 2.30e-03 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 5.19e-04 | 2.15e+00 |
-| 2.50e-02 | 1.52e+03 | 1.37e-04 | 1.92e+00 |
-| 1.25e-02 | 6.24e+03 | 3.37e-05 | 2.03e+00 |
+| 1.00e-01 | 8.10e+01 | 2.35e-03 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 5.92e-04 | 1.99e+00 |
+| 2.50e-02 | 1.52e+03 | 1.57e-04 | 1.91e+00 |
+| 1.25e-02 | 6.24e+03 | 3.83e-05 | 2.04e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | CG |
 | Right hand side | linear |
 | **Kernel** | **constant** |
-| **Integration Method** | **retriangulate** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -1 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | CG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 2.30e-03 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 5.19e-04 | 2.15e+00 |
-| 2.50e-02 | 1.52e+03 | 1.37e-04 | 1.92e+00 |
-| 1.25e-02 | 6.24e+03 | 3.37e-05 | 2.03e+00 |
+| 1.00e-01 | 8.10e+01 | 2.35e-03 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 5.92e-04 | 1.99e+00 |
+| 2.50e-02 | 1.52e+03 | 1.57e-04 | 1.91e+00 |
+| 1.25e-02 | 6.24e+03 | 3.83e-05 | 2.04e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | CG |
 | Right hand side | linear |
 | **Kernel** | **constant** |
-| **Integration Method** | **baryCenter** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -1 |
+| **Intgr. remote pairs** | **baryCenter** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **baryCenter** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | CG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 8.71e-02 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 2.76e-02 | 1.66e+00 |
-| 2.50e-02 | 1.52e+03 | 7.24e-03 | 1.93e+00 |
-| 1.25e-02 | 6.24e+03 | 1.07e-03 | 2.76e+00 |
+| 1.00e-01 | 8.10e+01 | 8.95e-02 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 2.87e-02 | 1.64e+00 |
+| 2.50e-02 | 1.52e+03 | 7.66e-03 | 1.90e+00 |
+| 1.25e-02 | 6.24e+03 | 1.14e-03 | 2.74e+00 |
 \newpage 
-# Kernel: linearPrototypeMicroelastic
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | DG |
 | Right hand side | linear |
 | **Kernel** | **linearPrototypeMicroelastic** |
-| **Integration Method** | **retriangulate** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -0.5 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | True |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | DG |
+### Rates
+| h| dof| L2 Error| Rates| 
+|---|---|---|---|
+| 1.00e-01 | 8.10e+01 | 1.15e-01 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 3.90e-03 | 4.88e+00 |
+| 2.50e-02 | 1.52e+03 | 1.32e-04 | 4.89e+00 |
+| 1.25e-02 | 6.24e+03 | 3.17e-05 | 2.05e+00 |
+\newpage 
+### Setting
+| | |
+| --- | --- |
+| Ansatz space | DG |
+| Right hand side | linear |
+| **Kernel** | **linearPrototypeMicroelastic** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -0.5 |
+| **Intgr. remote pairs** | **retriangulate** |
+| With caps | False |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
+| Singular quad degree | 6 |
+### Rates
+| h| dof| L2 Error| Rates| 
+|---|---|---|---|
+| 1.00e-01 | 8.10e+01 | 1.15e-01 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 3.90e-03 | 4.88e+00 |
+| 2.50e-02 | 1.52e+03 | 1.32e-04 | 4.88e+00 |
+| 1.25e-02 | 6.24e+03 | 3.15e-05 | 2.07e+00 |
+\newpage 
+### Setting
+| | |
+| --- | --- |
+| Ansatz space | DG |
+| Right hand side | linear |
+| **Kernel** | **linearPrototypeMicroelastic** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -0.5 |
+| **Intgr. remote pairs** | **baryCenter** |
+| With caps | False |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **baryCenter** |
+| Singular quad degree | 6 |
+### Rates
+| h| dof| L2 Error| Rates| 
+|---|---|---|---|
+| 1.00e-01 | 8.10e+01 | 1.15e-01 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 2.42e-02 | 2.25e+00 |
+| 2.50e-02 | 1.52e+03 | 6.12e-03 | 1.98e+00 |
+| 1.25e-02 | 6.24e+03 | 9.78e-04 | 2.64e+00 |
+\newpage 
+### Setting
+| | |
+| --- | --- |
+| Ansatz space | CG |
+| Right hand side | linear |
+| **Kernel** | **linearPrototypeMicroelastic** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -0.5 |
+| **Intgr. remote pairs** | **retriangulate** |
+| With caps | True |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
+| Singular quad degree | 6 |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
 | 1.00e-01 | 8.10e+01 | 1.10e-01 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 3.45e-03 | 5.00e+00 |
-| 2.50e-02 | 1.52e+03 | 1.05e-04 | 5.04e+00 |
-| 1.25e-02 | 6.24e+03 | 2.47e-05 | 2.09e+00 |
+| 5.00e-02 | 3.61e+02 | 4.07e-03 | 4.75e+00 |
+| 2.50e-02 | 1.52e+03 | 1.15e-04 | 5.15e+00 |
+| 1.25e-02 | 6.24e+03 | 2.77e-05 | 2.05e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | CG |
 | Right hand side | linear |
 | **Kernel** | **linearPrototypeMicroelastic** |
-| **Integration Method** | **retriangulate** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -0.5 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | DG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
 | 1.00e-01 | 8.10e+01 | 1.10e-01 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 3.45e-03 | 5.00e+00 |
-| 2.50e-02 | 1.52e+03 | 1.05e-04 | 5.04e+00 |
-| 1.25e-02 | 6.24e+03 | 2.47e-05 | 2.09e+00 |
+| 5.00e-02 | 3.61e+02 | 4.07e-03 | 4.75e+00 |
+| 2.50e-02 | 1.52e+03 | 1.15e-04 | 5.15e+00 |
+| 1.25e-02 | 6.24e+03 | 2.77e-05 | 2.05e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | CG |
 | Right hand side | linear |
 | **Kernel** | **linearPrototypeMicroelastic** |
-| **Integration Method** | **baryCenter** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | -0.5 |
+| **Intgr. remote pairs** | **baryCenter** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **baryCenter** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | DG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
 | 1.00e-01 | 8.10e+01 | 1.11e-01 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 2.02e-02 | 2.46e+00 |
-| 2.50e-02 | 1.52e+03 | 5.51e-03 | 1.88e+00 |
-| 1.25e-02 | 6.24e+03 | 9.34e-04 | 2.56e+00 |
+| 5.00e-02 | 3.61e+02 | 2.42e-02 | 2.19e+00 |
+| 2.50e-02 | 1.52e+03 | 6.32e-03 | 1.94e+00 |
+| 1.25e-02 | 6.24e+03 | 1.01e-03 | 2.64e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | DG |
 | Right hand side | linear |
-| **Kernel** | **linearPrototypeMicroelastic** |
-| **Integration Method** | **retriangulate** |
+| **Kernel** | **fractional** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | 0.5 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | True |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | CG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 1.02e-01 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 3.81e-03 | 4.74e+00 |
-| 2.50e-02 | 1.52e+03 | 9.63e-05 | 5.31e+00 |
-| 1.25e-02 | 6.24e+03 | 2.36e-05 | 2.03e+00 |
+| 1.00e-01 | 8.10e+01 | 4.11e-02 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 1.46e-03 | 4.82e+00 |
+| 2.50e-02 | 1.52e+03 | 1.12e-04 | 3.71e+00 |
+| 1.25e-02 | 6.24e+03 | 3.39e-05 | 1.72e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | DG |
 | Right hand side | linear |
-| **Kernel** | **linearPrototypeMicroelastic** |
-| **Integration Method** | **retriangulate** |
+| **Kernel** | **fractional** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | 0.5 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | CG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 1.02e-01 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 3.81e-03 | 4.74e+00 |
-| 2.50e-02 | 1.52e+03 | 9.63e-05 | 5.31e+00 |
-| 1.25e-02 | 6.24e+03 | 2.36e-05 | 2.03e+00 |
+| 1.00e-01 | 8.10e+01 | 4.12e-02 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 1.46e-03 | 4.81e+00 |
+| 2.50e-02 | 1.52e+03 | 1.11e-04 | 3.71e+00 |
+| 1.25e-02 | 6.24e+03 | 3.39e-05 | 1.72e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
+| Ansatz space | DG |
 | Right hand side | linear |
-| **Kernel** | **linearPrototypeMicroelastic** |
-| **Integration Method** | **baryCenter** |
+| **Kernel** | **fractional** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | 0.5 |
+| **Intgr. remote pairs** | **baryCenter** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **baryCenter** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | CG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 1.03e-01 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 2.32e-02 | 2.15e+00 |
-| 2.50e-02 | 1.52e+03 | 5.95e-03 | 1.96e+00 |
-| 1.25e-02 | 6.24e+03 | 9.43e-04 | 2.66e+00 |
+| 1.00e-01 | 8.10e+01 | 4.10e-02 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 9.81e-03 | 2.06e+00 |
+| 2.50e-02 | 1.52e+03 | 2.40e-03 | 2.03e+00 |
+| 1.25e-02 | 6.24e+03 | 4.70e-04 | 2.35e+00 |
 \newpage 
-# Kernel: linearPrototypeMicroelasticField
 ### Setting
 | | |
 | --- | --- |
-| Right hand side | linearField |
-| **Kernel** | **linearPrototypeMicroelasticField** |
-| **Integration Method** | **retriangulate** |
+| Ansatz space | CG |
+| Right hand side | linear |
+| **Kernel** | **fractional** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | 0.5 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | True |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | DG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 4.48e-02 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 2.70e-03 | 4.05e+00 |
-| 2.50e-02 | 1.52e+03 | 3.68e-05 | 6.20e+00 |
-| 1.25e-02 | 6.24e+03 | 9.67e-06 | 1.93e+00 |
+| 1.00e-01 | 8.10e+01 | 4.05e-02 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 1.47e-03 | 4.78e+00 |
+| 2.50e-02 | 1.52e+03 | 1.12e-04 | 3.72e+00 |
+| 1.25e-02 | 6.24e+03 | 2.72e-05 | 2.04e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
-| Right hand side | linearField |
-| **Kernel** | **linearPrototypeMicroelasticField** |
-| **Integration Method** | **retriangulate** |
+| Ansatz space | CG |
+| Right hand side | linear |
+| **Kernel** | **fractional** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | 0.5 |
+| **Intgr. remote pairs** | **retriangulate** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **retriangulate** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | DG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 4.48e-02 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 2.70e-03 | 4.05e+00 |
-| 2.50e-02 | 1.52e+03 | 3.68e-05 | 6.20e+00 |
-| 1.25e-02 | 6.24e+03 | 9.67e-06 | 1.93e+00 |
+| 1.00e-01 | 8.10e+01 | 4.05e-02 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 1.47e-03 | 4.78e+00 |
+| 2.50e-02 | 1.52e+03 | 1.12e-04 | 3.72e+00 |
+| 1.25e-02 | 6.24e+03 | 2.72e-05 | 2.04e+00 |
 \newpage 
 ### Setting
 | | |
 | --- | --- |
-| Right hand side | linearField |
-| **Kernel** | **linearPrototypeMicroelasticField** |
-| **Integration Method** | **baryCenter** |
+| Ansatz space | CG |
+| Right hand side | linear |
+| **Kernel** | **fractional** |
+| Horizon $\delta$ | 0.1 |
+| Fractional constant $s$
+(Default -1) | 0.5 |
+| **Intgr. remote pairs** | **baryCenter** |
 | With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
+| Quadrule outer element | 7 |
+| Quadrule inner element | 7 |
+| **Intgr. close pairs**
+(Relevant only if singular) | **baryCenter** |
 | Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | DG |
 ### Rates
 | h| dof| L2 Error| Rates| 
 |---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 4.50e-02 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 7.35e-04 | 5.94e+00 |
-| 2.50e-02 | 1.52e+03 | 5.46e-04 | 4.29e-01 |
-| 1.25e-02 | 6.24e+03 | 2.30e-04 | 1.25e+00 |
-\newpage 
-### Setting
-| | |
-| --- | --- |
-| Right hand side | linearField |
-| **Kernel** | **linearPrototypeMicroelasticField** |
-| **Integration Method** | **retriangulate** |
-| With caps | True |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
-| Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | CG |
-### Rates
-| h| dof| L2 Error| Rates| 
-|---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 4.37e-02 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 3.05e-03 | 3.84e+00 |
-| 2.50e-02 | 1.52e+03 | 3.34e-05 | 6.51e+00 |
-| 1.25e-02 | 6.24e+03 | 7.89e-06 | 2.08e+00 |
-\newpage 
-### Setting
-| | |
-| --- | --- |
-| Right hand side | linearField |
-| **Kernel** | **linearPrototypeMicroelasticField** |
-| **Integration Method** | **retriangulate** |
-| With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
-| Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | CG |
-### Rates
-| h| dof| L2 Error| Rates| 
-|---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 4.37e-02 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 3.05e-03 | 3.84e+00 |
-| 2.50e-02 | 1.52e+03 | 3.34e-05 | 6.51e+00 |
-| 1.25e-02 | 6.24e+03 | 7.89e-06 | 2.08e+00 |
-\newpage 
-### Setting
-| | |
-| --- | --- |
-| Right hand side | linearField |
-| **Kernel** | **linearPrototypeMicroelasticField** |
-| **Integration Method** | **baryCenter** |
-| With caps | False |
-| Quadrule outer | 7 |
-| Quadrule inner | 7 |
-| Singular quad degree | 6 |
-| Delta | 0.1 |
-| Ansatz | CG |
-### Rates
-| h| dof| L2 Error| Rates| 
-|---|---|---|---|
-| 1.00e-01 | 8.10e+01 | 4.38e-02 | 0.00e+00 |
-| 5.00e-02 | 3.61e+02 | 2.41e-03 | 4.19e+00 |
-| 2.50e-02 | 1.52e+03 | 5.92e-04 | 2.02e+00 |
-| 1.25e-02 | 6.24e+03 | 1.46e-04 | 2.02e+00 |
+| 1.00e-01 | 8.10e+01 | 4.04e-02 | 0.00e+00 |
+| 5.00e-02 | 3.61e+02 | 9.67e-03 | 2.06e+00 |
+| 2.50e-02 | 1.52e+03 | 2.36e-03 | 2.03e+00 |
+| 1.25e-02 | 6.24e+03 | 4.12e-04 | 2.52e+00 |
 \newpage 

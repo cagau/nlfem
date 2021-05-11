@@ -11,7 +11,7 @@ KERNELS = [
         "function": "fractional",
         "horizon": 0.2,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
         "outputdim": 1,
-        "fractional_s": 0.5 # kernel has singularity of degree 1, and 1 = 2+2s for s = -0.5.
+        "fractional_s": 0.5
     }
 ]
 

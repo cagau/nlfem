@@ -5,16 +5,19 @@
 #ifndef NONLOCAL_ASSEMBLY_INTEGRATION_H
 #define NONLOCAL_ASSEMBLY_INTEGRATION_H
 // ___ INTEGRATION DECLARATION _________________________________________________________________________________________
-//#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-//#include <CGAL/Triangulation_2.h>
+// This headers have been commented out due to compatibility issues with a system.
+// Install the required C++ library, uncomment this and the function method_retriangulateInfty in
+// integration.cpp to get access to the Linfinity-retriangulation
+
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Triangulation_2.h>
 
 // Library for integration of L-infty Ball
-/*
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Triangulation_2<K>         Triangulation;
 typedef Triangulation::Point             Point;
 typedef Triangulation::Finite_faces_iterator Finite_face_iterator;
-*/
+
 // Integration Routine #################################################################################################
 
 int integrate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule, const MeshType &mesh,
@@ -59,6 +62,31 @@ int ERROR_wrongAccess(const ElementType &aT, const ElementType &bT, const Quadra
 int integrate_retriangulate(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
                              const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
                              double *termNonloc, double *termLocalPrime, double *termNonlocPrime);
+/**
+ * @brief This integration routines uses method_retriangulate() to truncate the *inner domain* bT. See integrate()
+ * for general information about the integration routines. The approx balls are not symmetrified.
+ *
+ *  termLocal = int_aT phiA(x) phiB(x) int_bT ker(x,y) dy dx,\n
+ *  termNonloc = int_aT phiA(x) int_bT phiB(y) ker'(y,x) dy dx.
+ *  termLocalPrime = int_aT  int_bT phiA(y) phiB(y) ker'(x,y) dy dx,\n
+ *  termNonlocPrime = int_aT phiA(x) int_bT phiB(y) ker(y,x) dy dx.
+ *
+ * Please note that the nonlocal term has to be subtracted, while the local term has to be added to the stiffness
+ * matrix.
+ * @param aT    Triangle of the outer integral.
+ * @param bT    Triangle of the inner integral.
+ * @param quadRule Quadrature rule.
+ * @param mesh  Mesh.
+ * @param conf  Confuration.
+ * @param is_firstbfslayer (Unused)
+ * @param termLocal This term contains the local part of the integral
+ * @param termNonloc This term contains the nonlocal part of the integral
+ * @param termLocalPrime This term contains the local part of the integral
+ * @param termNonlocPrime This term contains the nonlocal part of the integral
+ */
+int integrate_retriangulate_unysmm(const ElementType &aT, const ElementType &bT, const QuadratureType &quadRule,
+                                   const MeshType &mesh, const ConfigurationType &conf, bool is_firstbfslayer, double *termLocal,
+                                   double *termNonloc, double *termLocalPrime, double *termNonlocPrime);
 /**
  * @brief This integration routines uses method_exact() to truncate the *inner domain* bT. See integrate()
  * for general information about the integration routines.

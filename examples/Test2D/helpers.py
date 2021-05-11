@@ -17,16 +17,17 @@ def append_output(data, conf, kernel, load, fileHandle):
     # Write Table
     fileHandle.write("### Setting\n")
     columns = {
+        "Ansatz space": conf["ansatz"],
         "Right hand side": load["function"],
         "**Kernel**": "**"+kernel["function"]+"**",
-        "s": kernel.get("fractional_s", -1),
-        "**Integration Method**": "**"+conf["approxBalls"]["method"]+"**",
+        "Horizon $\delta$": kernel["horizon"],
+        "Fractional constant $s$\n(Default -1)": kernel.get("fractional_s", -1),
+        "**Intgr. remote pairs**": "**"+conf["approxBalls"]["method"]+"**",
         "With caps": conf["approxBalls"]["isPlacePointOnCap"],
-        "Quadrule outer": len(conf["quadrature"]["outer"]["weights"]),
-        "Quadrule inner": len(conf["quadrature"]["inner"]["weights"]),
+        "Quadrule outer element": len(conf["quadrature"]["outer"]["weights"]),
+        "Quadrule inner element": len(conf["quadrature"]["inner"]["weights"]),
+        "**Intgr. close pairs**\n(Relevant only if singular)": "**"+conf.get("close", conf["approxBalls"]["method"])+"**",
         "Singular quad degree": conf["quadrature"]["tensorGaussDegree"],
-        "Delta": kernel["horizon"],
-        "Ansatz": conf["ansatz"]
     }
     write_dict(fileHandle, columns)
 
@@ -35,8 +36,8 @@ def append_output(data, conf, kernel, load, fileHandle):
         "h":  data.get("h", []),
         "dof": data.get("nV_Omega", []),
         "L2 Error": data.get("L2 Error", []),
-        "Rates": data.get("Rates", []),#,
-        "Time [s]": data.get("Assembly Time", [])#
+        "Rates": data.get("Rates", [])#,
+       # "Time [s]": data.get("Assembly Time", [])#
     }
 
     write_columns(fileHandle, columns)

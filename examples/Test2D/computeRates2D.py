@@ -80,10 +80,11 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         #mesh.plot_ud(pp)
         #mesh.plot_u_exact(pp)
         # Evaluate L2 Error ---------------------------------------------------------------
-        u_diff = (mesh.u_exact - mesh.ud)#[(mesh.nodeLabels > 0)[::mesh.outdim]]
+        u_diff = (mesh.u_exact - mesh.ud)
         Mu_udiff = nlfem.evaluateMass(mesh, u_diff,
                                          conf["quadrature"]["outer"]["points"],
                                          conf["quadrature"]["outer"]["weights"])
+
         err = np.sqrt(u_diff.ravel() @ Mu_udiff)
 
         # Print Rates ---------------------------------------------------------------------
@@ -125,7 +126,7 @@ if __name__ == "__main__":
 
     for k, kernel in enumerate(KERNELS):
         load = LOADS[k]
-        fileHandle.write("# Kernel: " + kernel["function"] + "\n")
+        #fileHandle.write("# Kernel: " + kernel["function"] + "\n")
         for conf in CONFIGURATIONS:
             data = runTest(conf, kernel, load, layerDepth, pp)
             helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle)

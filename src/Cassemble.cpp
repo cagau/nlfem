@@ -93,6 +93,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"averageBall", integrate_subSuperSetBalls},
             {"baryCenterRT", integrate_baryCenterRT},
             {"retriangulate", integrate_retriangulate},
+            {"retriangulate_unsymm", integrate_retriangulate_unysmm},
             {"retriangulateLinfty", integrate_retriangulate},
             {"exactBall", integrate_exact},
             {"noTruncation", integrate_fullyContained},
@@ -220,7 +221,7 @@ void par_evaluateMass(double *vd, const double *ud, long *Elements,
                                 }
                             }
                         }
-                    }
+                   }
                 }
             }
         }
@@ -383,7 +384,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     eptr[mesh.nE] = mesh.nE*dVertex;
 
     // Compute Adjacency Graph with METIS
-    METIS_MeshToDual(&nE_metis, &nV_metis, eptr, eind, &ncommon, &numflag, &xadj, &adjncy); // ???
+    METIS_MeshToDual(&nE_metis, &nV_metis, eptr, eind, &ncommon, &numflag, &xadj, &adjncy);
     if (verbose) printf("Done. \n");
 
     mesh.xadj = xadj;
@@ -435,11 +436,6 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 
 template <typename T_Matrix>
 void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
-    //TODO CHECK RATES
-    // March 2. 'Full Test due to lack of memory', git hash a547b08b0805b7a02e81a1cb9f9dbcfe1ff0789e
-    // against
-    // February 22. 'Full Test', git hash c6085f185eef42efb1b565edd43284509907cb48
-    // There was a change in rates. It might be related to the new assembly routine - has to be revisited.
 
     const int verbose = conf.verbose;
 

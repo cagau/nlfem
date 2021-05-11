@@ -42,7 +42,7 @@ class RegMesh2D:
 
 
         # Set up Delaunay Triangulation --------------------------------------------------
-        # Construct and Sort Vertices ----------------------------------------------------
+        # Construct Vertices ----------------------------------------------------
         self.vertexLabels = np.array([self.get_vertexLabel(v) for v in self.vertices])
 
         # Get Number of Vertices in Omega ------------------------------------------------
@@ -92,6 +92,7 @@ class RegMesh2D:
 
         if coarseMesh is not None:
             if coarseMesh.is_DiscontinuousGalerkin:
+                # TODO Check again, whether this is the right way to go for interpolation in DG space
                 coarseDGverts = np.zeros(((coarseMesh.K // coarseMesh.outdim), coarseMesh.dim))
                 for i, E in enumerate(coarseMesh.elements):
                     for ii, vdx in enumerate(E):
