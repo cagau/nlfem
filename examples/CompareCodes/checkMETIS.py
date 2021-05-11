@@ -32,11 +32,16 @@ if __name__ == "__main__":
 
     # Read
     filter = np.array(assemble.read_arma_mat("data/result.partition").flatten(), dtype=np.int)
-    adjacency = np.array(assemble.read_arma_mat("data/result.dual").flatten(), dtype=np.int).reshape((15, mesh.nE)).T
+    adjacency = np.array(assemble.read_arma_mat("data/result.dual").flatten(), dtype=np.int).reshape((50, mesh.nE)).T
     interaction = assemble.read_arma_spMat("data/result.interaction")
     baryCenters = bC(mesh)
     adjacency = np.sort(adjacency, axis=1)
-    adjacency_test = np.sort(nlfem.constructAdjaciencyGraph(mesh.elements, ncommon=1), axis=1)
+    adjacency_test = nlfem.constructAdjaciencyGraph(mesh.elements, ncommon=1)
+    for k in range(mesh.nE):
+        l = np.where(adjacency_test[k] == k)
+        adjacency_test[k, l] = mesh.nE
+    adjacency_test = np.sort(adjacency_test, axis=1)
+    diff = adjacency[:, :14] - adjacency_test[:, :14]
     domains = np.zeros((filter.shape[0], np.max(filter)+1), dtype=np.int)
     for k, f in enumerate(filter):
         domains[k, f] = 1

@@ -34,6 +34,8 @@ find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(Cassemble PRIVATE OpenMP::OpenMP_CXX)
 endif()
+find_package(CGAL)
+target_link_libraries(Cassemble PRIVATE CGAL::CGAL)
 
 # others ---------------------------------------------------------------------------------------------------------------
 add_subdirectory(./examples/CompareCodes)

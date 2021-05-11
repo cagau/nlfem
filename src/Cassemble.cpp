@@ -155,7 +155,6 @@ void par_evaluateMass(double *vd, const double *ud, long *Elements,
     const int dVerts = dim+1;
     double tmp_psi[dVerts];
     auto *psi = (double *) malloc((dVerts)*nP*sizeof(double));
-    long aDGdx[dVerts]; // Index for discontinuous Galerkin
 
     for(int k=0; k<nP; k++){
         //model_basisFunction(const double * p, const MeshType & mesh, double *psi_vals){
@@ -166,12 +165,15 @@ void par_evaluateMass(double *vd, const double *ud, long *Elements,
            //psi[nP * 2 + j] = tmp_psi[2];
        }
     }
-
-    #pragma omp parallel
+    // For some reason gcc does not allow to put const variables as shared. Const pointers however appear.
+    // The constant function parameters can still be accsess inside the environemnt - might be different
+    // in other compilers...
+    #pragma omp parallel default(none) shared(ud, ElementLabels, Verts, VertexLabels, dx, nP, J, vd, psi, Elements)
     {
     //private(aAdx, a, b, aTE, aTdet, j)
         double aTdet;
         long * aAdx;
+        long aDGdx[dVerts]; // Index for discontinuous Galerkin
 
         double aTE[dim*(dVerts)];
         #pragma omp for
@@ -376,12 +378,12 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     idx_t *adjncy;
 
     for (int k=0; k<mesh.nE; k++){
+        eptr[k] =  (idx_t)(k*mesh.dVertex);
         for (int l=0; l<mesh.dVertex; l++){
-            eind[mesh.dVertex*k + l] = mesh.Triangles[mesh.dVertex*k + l];
+            eind[mesh.dVertex*k + l] = (idx_t)(mesh.Triangles[mesh.dVertex*k + l]);
         }
-        eptr[k] = k*mesh.dVertex;
     }
-    eptr[mesh.nE] = mesh.nE*dVertex;
+    eptr[mesh.nE] =  (idx_t)(mesh.nE*mesh.dVertex);
 
     // Compute Adjacency Graph with METIS
     METIS_MeshToDual(&nE_metis, &nV_metis, eptr, eind, &ncommon, &numflag, &xadj, &adjncy);
@@ -459,7 +461,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     }
     chk_BasisFunction(quadRule);
 
-    #pragma omp parallel shared(mesh, quadRule, conf,  Ad)
+    #pragma omp parallel default(none) shared(mesh, quadRule, conf,  Ad)
     {
     //map<unsigned long, double> Ad;
     unsigned long Adx;
@@ -550,7 +552,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
                 idx_t nTdx = -1;
 
                 // Run through the list of neighbours.
-                while (startNdx + nTdx < endNdx) {
+                while (startNdx + nTdx != endNdx) {
                 //for (int j = 0; j < mesh.nNeighbours; j++) {
                     // The next valid neighbour is our candidate for the inner Triangle b.
                     //int bTdx = NTdx[j];

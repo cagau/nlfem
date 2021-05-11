@@ -188,8 +188,11 @@ int read_configuration(const string &path, idx_t nparts){
     //                 is_NeumannBoundary, dim, 1,dim + 1, nullptr, 0, 0.01};
 
     MeshType mesh = {K_Omega, K, elements.memptr(), elementLabels.memptr(), vertices.memptr(), vertexLabels.memptr(), J, J_Omega,
-                     L, L_Omega, sqrt(sqdelta), sqdelta, neighbours.memptr(), nNeighbours, is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, 1, dim+1, nullptr, 0, 0, -1.};
+                     L, L_Omega, sqrt(sqdelta), sqdelta,
+                     //neighbours.memptr(), nNeighbours,
+                     is_DiscontinuousGalerkin,
+                     is_NeumannBoundary, dim, 1, dim+1, nullptr, 0, 0, -1.,
+                      xadj, adjncy};
     QuadratureType quadRule = {Px.memptr(), Py.memptr(), dx.memptr(), dy.memptr(),
                                static_cast<int>(dx.n_elem), static_cast<int>(dy.n_elem), dim};
 
@@ -205,6 +208,33 @@ int read_configuration(const string &path, idx_t nparts){
     arma::vec fd(K_Omega);
     //idx_t options[METIS_NOPTIONS];
     //METIS_SetDefaultOptions(options);
+    // Dual Graph for Mesh
+    printf("Constructing adjacency graph...");
+    int dVertex = mesh.dim+1;
+    idx_t nE_metis=mesh.nE;
+    idx_t nV_metis=mesh.nV;
+    idx_t ncommon=1;
+    idx_t eind[mesh.nE * dVertex];
+    idx_t eptr[mesh.nE + 1];
+    idx_t numflag=0;
+    idx_t *xadj;
+    idx_t *adjncy;
+
+    for (int k=0; k<mesh.nE; k++){
+        eptr[k] =  (idx_t)(k*mesh.dVertex);
+        for (int l=0; l<mesh.dVertex; l++){
+            eind[mesh.dVertex*k + l] = (idx_t)(mesh.Triangles[mesh.dVertex*k + l]);
+        }
+    }
+    eptr[mesh.nE] =  (idx_t)(mesh.nE*mesh.dVertex);
+
+    // Compute Adjacency Graph with METIS
+    METIS_MeshToDual(&nE_metis, &nV_metis, eptr, eind, &ncommon, &numflag, &xadj, &adjncy);
+    printf("Done. \n");
+
+    mesh.xadj = xadj;
+    mesh.adjncy = adjncy;
+
 
     // METIS TEST ------------------------------------------------------------------------------------------------------
     idx_t nE = mesh.nE;
@@ -239,14 +269,14 @@ int read_configuration(const string &path, idx_t nparts){
     for (int k=0; k<mesh.nV; k++){
         partition[k] = static_cast<double>(npart[k]);
     }
-    map<unsigned long, double> Ad;
-    par_system(Ad, mesh, quadRule, conf);
+    //map<unsigned long, double> Ad;
+    //par_system(Ad, mesh, quadRule, conf);
 
     //Ad.save(path_Ad.c_str(), arma::raw_binary);
     // Vertex-zerlegung speichern
     partition.save(path_partition, arma::arma_binary);
     // [End] METIS TEST ------------------------------------------------------------------------------------------------
-
+    printf( " \nCompute dual graph with metis -----------------------------------------------------------------\n");
     idx_t numflag=0;
     idx_t *xadj;
     idx_t *adjncy;
@@ -322,7 +352,7 @@ int read_configuration(const string &path, idx_t nparts){
     */
 
     // Save Graph for Python
-    dualGraph.fill(0);
+    dualGraph.fill(nE);
 
     for (idx_t i = 0; i < nE; i++){
         idx_t s = xadj[i];
@@ -335,6 +365,7 @@ int read_configuration(const string &path, idx_t nparts){
             j++;
         }
     }
+    printf("Hello!!!");
     dualGraph.save("data/result.dual", arma::arma_binary);
 
     METIS_Free(xadj);

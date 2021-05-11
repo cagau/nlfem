@@ -1515,10 +1515,6 @@ int method_retriangulate(const double * xCenter, const ElementType & T,
 int method_retriangulateInfty(const double * xCenter, const double * TE,
                           double sqdelta, double * reTriangleList,
                           int isPlacePointOnCap){
-    // Apparently the triangulation inudces a small portion of randomness. (?)
-    // The errors and rates don't deviate much though. See
-    // https://doc.cgal.org/latest/Triangulation_2/index.html#title11
-
     vector<Point> points;
     double delta = sqrt(sqdelta);
     double nu_a[2], nu_b[2], nu_c[2]; // Normals
