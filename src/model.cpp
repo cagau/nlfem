@@ -69,27 +69,27 @@ void kernel_labeled(const double * x, const long labelx, const double * y, const
 //    }
     // g_11
     if (label == 11) {
-        *kernel_val = 0.001 * 3. / (4*pow(mesh.sqdelta, 2));
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
     }
     // g_12
     else if (label == 12){
-        *kernel_val = 0.001 * 3. / (4*pow(mesh.sqdelta, 2));
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
     }
     // g_21
     else if (label == 21){
-        *kernel_val = (1000 *  3. / (4*pow(mesh.sqdelta, 2))) * (1 - (dist/mesh.sqdelta) );
+        *kernel_val = (100 *  3. / (4*pow(mesh.sqdelta, 2))) * (1 - (dist/mesh.sqdelta) );
     }
     // g_22
     else if (label == 22){
-        *kernel_val = (1000 *  3. / (4*pow(mesh.sqdelta, 2))) * (1 - (dist/mesh.sqdelta) );
+        *kernel_val = (100 *  3. / (4*pow(mesh.sqdelta, 2))) * (1 - (dist/mesh.sqdelta) );
     }
     // g_D1
     else if (label == -99){
-        *kernel_val = 0.001 * 3. / (4*pow(mesh.sqdelta, 2));
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
     }
     // g_1D
     else if (label == 0){
-        *kernel_val = 0.001 * 3. / (4*pow(mesh.sqdelta, 2));
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
     }
     // g_D2
     else if (label == -98){
@@ -101,7 +101,28 @@ void kernel_labeled(const double * x, const long labelx, const double * y, const
     }
     // g_DD
     else if (label == -110){
-        *kernel_val = 0.001 * 3. / (4*pow(mesh.sqdelta, 2));
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // in the coupling cases on Omega_2, when Omega_1 is set to -11
+     // g_11, -11, -11
+    else if (label == -121) {
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_12, -11, 2
+    else if (label == -108){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_21, 2, -11
+    else if (label == 9){
+        *kernel_val = (100 *  3. / (4*pow(mesh.sqdelta, 2))) * (1 - (dist/mesh.sqdelta) );
+    }
+    // g_1D, -11, -10
+    else if (label == -120){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_D1, -10, -11
+    else if (label == -111){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
     }
     // all other cases
     else {
@@ -109,6 +130,85 @@ void kernel_labeled(const double * x, const long labelx, const double * y, const
         abort();
     }
 }
+
+void kernel_labeled2(const double * x, const long labelx, const double * y, const long labely, const MeshType &mesh,
+                      double * kernel_val){
+    double dist;
+    long label;
+
+    label = 10*labelx + labely;
+    dist = vec_sqL2dist(x, y, 2);
+//    if (dist >= mesh.sqdelta) {
+//        cout << "Error in model_kernel. Distance smaller delta not expected." << endl;
+//        cout << dist << endl;
+//        abort();
+//    }
+    // g_11
+    if (label == 11) {
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_12
+    else if (label == 12){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_21
+    else if (label == 21){
+        *kernel_val = (100 *  3. / (4*pow(mesh.sqdelta, 2))) * (1 - (dist/mesh.sqdelta) );
+    }
+    // g_22
+    else if (label == 22){
+        *kernel_val = 0.;
+    }
+    // g_D1
+    else if (label == -99){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_1D
+    else if (label == 0){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_D2
+    else if (label == -98){
+        *kernel_val = 0.0;//01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_2D
+    else if (label == 10){
+        *kernel_val = 0.0;//01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_DD
+    else if (label == -110){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // in the coupling cases on Omega_2, when Omega_1 is set to -11
+     // g_11, -11, -11
+    else if (label == -121) {
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_12, -11, 2
+    else if (label == -108){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_21, 2, -11
+    else if (label == 9){
+        *kernel_val = (100 *  3. / (4*pow(mesh.sqdelta, 2))) * (1 - (dist/mesh.sqdelta) );
+    }
+    // g_1D, -11, -10
+    else if (label == -120){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // g_D1, -10, -11
+    else if (label == -111){
+        *kernel_val = 0.01 * 3. / (4*pow(mesh.sqdelta, 2));
+    }
+    // all other cases
+    else {
+        cout << "No such case " << label;
+        abort();
+    }
+}
+
+
+
 void kernel_linearPrototypeMicroelastic(const double * x, const long labelx, const double * y, const long labely,
                                              const MeshType &mesh, double * kernel_val) {
     double z[2];

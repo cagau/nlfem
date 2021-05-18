@@ -111,6 +111,20 @@ void kernel_labeled(const double * x, long labelx, const double * y, long labely
                     double * kernel_val);
 
 /**
+ * @brief Another kernel depending on the triangle labels. Can be used to model nonlocal to nonlocal coupling.
+ *
+ * @param x Physical point of the outer integration region.
+ * @param labelx Label of the outer triangle.
+ * @param y Physical point of the inner integration region.
+ * @param labely Label of inner triangle.
+ * @param mesh Mesh
+ * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
+ * of shape d x d in case of peridynamics.
+ */
+void kernel_labeled2(const double * x, long labelx, const double * y, long labely, const MeshType &mesh,
+                    double * kernel_val);
+
+/**
  * @brief Kernel for peridynamics diffusion model. The scalar valued weakly singular kernel reads as
  *
  *  \f[

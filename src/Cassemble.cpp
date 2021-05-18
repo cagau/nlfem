@@ -56,6 +56,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"constant", kernel_constant},
             {"constantLinf2D", kernel_constantLinf2D},
             {"labeled", kernel_labeled},
+            {"labeled2", kernel_labeled2},
             {"constant3D", kernel_constant3D},
             {"constant1D", kernel_constant1D},
             {"parabola", kernel_parabola},
