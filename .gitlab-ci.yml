@@ -1,4 +1,3 @@
-artifacts:reports:license_scanning
 image: ubuntu:bionic
 pages:
   script:
@@ -9,4 +8,6 @@ pages:
   artifacts:
     paths:
     - public
+    reports:
+    - license_scanning
 
