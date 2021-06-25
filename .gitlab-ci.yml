@@ -8,6 +8,5 @@ pages:
   artifacts:
     paths:
     - public
-    reports:
-    - license_scanning
+    reports: license_scanning
 
