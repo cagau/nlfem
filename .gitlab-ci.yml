@@ -1,6 +1,5 @@
+artifacts:reports:license_scanning
 image: ubuntu:bionic
-
-license_scanning
 pages:
   script:
   - apt update && apt-get -y install doxygen fonts-freefont-ttf texlive-science ghostscript graphviz
