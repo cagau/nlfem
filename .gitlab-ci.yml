@@ -8,5 +8,5 @@ pages:
   artifacts:
     paths:
     - public
-    reports: license_scanning
-
+include:
+  - template: Security/License-Scanning.gitlab-ci.yml
