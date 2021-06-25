@@ -8,27 +8,36 @@ from mesh import RegMesh2D
 from scipy.sparse.linalg import cg
 from matplotlib.backends.backend_pdf import PdfPages
 
+class Callback:
+    def __init__(self):
+        self.n = 0
+    def __call__(self, *args, **kwargs):
+        self.n += 1
+
 def runTest(conf, kernel, load, layerDepth, pp = None):
     err_ = None
-    data = {"h": [], "L2 Error": [], "Rates": [], "Assembly Time": [], "nV_Omega": []}
+    data = {"$h$": [], "$K_\Omega$": [], "$\delta$": [], "L2 Error": [], "Rates": [], "Time [s]": []}
     u_exact = load["solution"]
 
     # Delta is assumed to be of the form deltaK/10 in the mesh, so we obtain deltaK by
     # This is a restriction due to the simplified mesh-generation and independent of the
     # assembly routine!
-    deltaK = int(np.round(kernel["horizon"] * 10))
-    if not deltaK:
-        raise ValueError("Delta has to be of the form delta = deltaK/10. for deltaK in N.")
-    n_start = 10 + 2*deltaK
-    N = [n_start * 2 ** l for l in list(range(layerDepth))]
-    N_fine = N[-1]*4
+    n_start = 5 + 4
+    N_fine = 2**(layerDepth+2)
+    N = [n_start * 2 ** (layerDepth-1)]*layerDepth
+    #N = [n_start * 2 ** n for n in range(0, layerDepth)]
+    Delta = [0.2, 0.1, 0.05, 0.025, 0.0125, 0.00625] #[0.1, 0.05, 0.025, 0.0125, 0.0125]
 
-    for n in N:
-        mesh = RegMesh2D(kernel["horizon"], n, ufunc=u_exact,
-                         ansatz=conf["ansatz"], outdim=kernel["outputdim"])
+
+    for k, delta in enumerate(Delta[:layerDepth]):
+        kernel["horizon"] = delta
+        data["$\delta$"].append(delta)
+        mesh = RegMesh2D(0.2, N[k], ufunc=u_exact,
+                         ansatz=conf["ansatz"], outdim=kernel["outputdim"], variant="down")
+        mesh.delta = delta
         print("\n h: ", mesh.h)
-        data["h"].append(mesh.h)
-        data["nV_Omega"].append(mesh.nV_Omega)
+        data["$h$"].append(mesh.h)
+        data["$K_\Omega$"].append(mesh.K_Omega)
 
         # Assembly ------------------------------------------------------------------------
         start = time()
@@ -36,7 +45,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         nnzRows = np.max(np.sum(A != 0, axis=0))
         print("nnzRows are ", nnzRows)
         f_OI = nlfem.loadVector(mesh.__dict__, load, conf)
-        data["Assembly Time"].append(time() - start)
+        data["Time [s]"].append(time() - start)
 
         A_O = A[mesh.nodeLabels > 0][:, mesh.nodeLabels > 0]
         #A_Odense = np.array(A_O.todense())
@@ -44,6 +53,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         #print("########### Sym Check: ", test)
 
         A_I = A[mesh.nodeLabels > 0][:, mesh.nodeLabels < 0]
+        #f_OI[mesh.nodeLabels > 1] *= -10
         f = f_OI[mesh.nodeLabels > 0]
 
         if conf["ansatz"] == "CG":
@@ -59,14 +69,17 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         # Solve ---------------------------------------------------------------------------
         print("Solve...")
         # mesh.write_ud(np.linalg.solve(A_O, f), conf.u_exact)
-        x = cg(A_O, f, f)[0].reshape((-1, mesh.outdim))
+        cb = Callback()
+        x = cg(A_O, f, f, tol=1e-9, callback=cb)[0].reshape((-1, mesh.outdim))
+        print("Number of cg iterations: ", cb.n)
         A = None
         A_O = None
         A_I = None
         # print("CG Solve:\nIterations: ", solution["its"], "\tError: ", solution["res"])
         mesh.write_ud(x, u_exact)
         if kernel["outputdim"] == 1 and mesh.dim == 2:
-            mesh.plot_ud(pp)
+            mesh.plot_ud(pp, is_quickDG=True)
+            #mesh.plot_vertexLabels(pp)
         # Some random quick Check....
         # filter = np.array(assemble.read_arma_mat("data/result.fd").flatten(), dtype=bool)
         # plt.scatter(mesh.vertices[filter][:,0], mesh.vertices[filter][:,1])
@@ -74,24 +87,23 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         # plt.show()
 
         # Refine to N_fine ----------------------------------------------------------------
-        mesh = RegMesh2D(kernel["horizon"], N_fine,
+        mesh = RegMesh2D(0.2, N_fine,
                          ufunc=u_exact, coarseMesh=mesh,
-                         is_constructAdjaciencyGraph=False,
-                         ansatz=conf["ansatz"], outdim=kernel["outputdim"])
-        #mesh.plot_ud(pp)
+                         ansatz=conf["ansatz"], outdim=kernel["outputdim"], variant="down")
         #mesh.plot_u_exact(pp)
         # Evaluate L2 Error ---------------------------------------------------------------
-        u_diff = (mesh.u_exact - mesh.ud)#[(mesh.nodeLabels > 0)[::mesh.outdim]]
+        u_diff = (mesh.u_exact - mesh.ud)
         Mu_udiff = nlfem.evaluateMass(mesh, u_diff,
                                          conf["quadrature"]["outer"]["points"],
                                          conf["quadrature"]["outer"]["weights"])
+
         err = np.sqrt(u_diff.ravel() @ Mu_udiff)
 
         # Print Rates ---------------------------------------------------------------------
         print("L2 Error: ", err)
         data["L2 Error"].append(err)
         if err_ is not None and err_ > 1e-16:
-            rate = np.log2(err_ / err)
+            rate = np.log(err_ / err)/np.log(2)
             print("Rate: \t", rate)
             data["Rates"].append(rate)
         else:
@@ -114,22 +126,22 @@ if __name__ == "__main__":
     print("\n### TESTING "+testFilename+"\n")
     if testFilename[-3:] != ".py":
         testFilename += ".py"
-    subprocess.check_call("cp " + testFilename + " testConfiguration.py", shell=True)
-    from testConfiguration import CONFIGURATIONS, KERNELS, LOADS
+    os.system("cp conf/" + testFilename + " conf/testConfiguration.py")
+    from conf.testConfiguration import CONFIGURATIONS, KERNELS, LOADS
 
     os.makedirs("results", exist_ok=True)
     host = os.uname()[1]
-    pp = PdfPages("results/plot_han_0527_19-15-45_fractional5p7_quaterSpace.pdf")
+    pp = PdfPages("results/plots.pdf")
     tmpstmp = helpers.timestamp()
     suffix = "_" + host + "_"  + tmpstmp
     fileHandle = open("results/rates" + suffix + ".md", "w+")
 
     for k, kernel in enumerate(KERNELS):
         load = LOADS[k]
-        fileHandle.write("# Kernel: " + kernel["function"] + "\n")
+        #fileHandle.write("# Kernel: " + kernel["function"] + "\n")
         for conf in CONFIGURATIONS:
             data = runTest(conf, kernel, load, layerDepth, pp)
-            helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle)
+            helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle, datacolumns=data)
     fileHandle.close()
     pp.close()
     subprocess.run(f"pandoc results/rates{suffix}.md -o results/rates{suffix}.tex", shell=True)

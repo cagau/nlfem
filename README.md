@@ -75,3 +75,4 @@ is also to be found in this file.
 # Documentation
 
 Find a documentation of the C++ code in `docs/html`.
+

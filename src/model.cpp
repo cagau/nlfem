@@ -145,7 +145,8 @@ void f_constant(const double * x, double * forcing_out){
     forcing_out[0] = 1.0;
 }
 void fField_linear(const double * x, double * forcing_out){
-    const double c = M_PI / 5.0;
+    //const double c = M_PI / 5.0;
+    const double c = M_PI / 2.0;
     forcing_out[0] = -c*(1.0 + 2*x[0]);
     forcing_out[1] = -c*x[1];
 
@@ -173,6 +174,19 @@ void fField_constantBoth(const double * x, double * forcing_out){
 }
 void f_linear(const double * x, double * forcing_out){
     *forcing_out = -2. * (x[1] + 1.);
+}
+void f_gaussian(const double * x, double * forcing_out){
+    double sqx0 = pow(x[0], 2), sqx1 = pow(x[1], 2);
+    *forcing_out = - 4. * (sqx0 + sqx1 - 1.) * exp(- sqx0 - sqx1);
+}
+void f_jump(const double * x, double * forcing_out){
+    //double sqx0 = pow(x[0], 2), sqx1 = pow(x[1], 2);
+    bool sign = (x[0] + x[1] - 0.5 > -EPSILON);
+    //(x[0] - x[1])**2 * sign
+    *forcing_out = sign ? - 4. : 4.;
+}
+void f_tensorsin(const double * x, double * forcing_out){
+    *forcing_out = 32.*pow(M_PI,2)*sin(x[0] * M_PI * 4)*sin(x[1] * M_PI * 4);
 }
 void f_linear1D(const double * x, double * forcing_out){
     *forcing_out = -2. * (x[0] + 1.);

@@ -33,17 +33,21 @@ dx = 0.5 * np.array([0.22500000000000,
                         0.12593918054483,
                         0.12593918054483])
 
-Py = Px # np.array([[0.33333333, 0.33333333]])
-dy = dx # 0.5 * np.array([1.0])
+Py = np.array([[0.47014206410511,    0.47014206410511],
+                [0.47014206410511,    0.05971587178977],
+                [0.05971587178977,    0.47014206410511]])
+dy = np.array([1./3., 1./3., 1./3.]) * .5
 
-tensorGaussDegree = 1
+#Py = np.array([[0.33333333, 0.33333333]])
+#dy = 0.5 * np.array([1.0])
+
 
 CONFIGURATIONS = [
 {
         # "savePath": "pathA",
         "ansatz": "CG", #DG
         "approxBalls": {
-            "method": "retriangulateLinfty",
+            "method": "retriangulate_unsymmLinfty",
             "isPlacePointOnCap": True,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
@@ -54,9 +58,9 @@ CONFIGURATIONS = [
             },
             "inner": {
                 "points": Py,
-                "weights": dy
+                "weights": dy,
             },
-            "tensorGaussDegree": tensorGaussDegree,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 0,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
     },
     {
@@ -73,10 +77,10 @@ CONFIGURATIONS = [
                 "weights": dx
             },
             "inner": {
-                "points": Py,
-                "weights": dy
+                "points": Px,
+                "weights": dx
             },
-            "tensorGaussDegree": tensorGaussDegree,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 0,  # Degree of tensor Gauss quadrature for weakly singular kernels.
         }
     }
 ]

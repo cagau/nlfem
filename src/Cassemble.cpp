@@ -33,8 +33,11 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
     //void (*model_f)(const double * x, double * forcing_out);
     map<string, void (*)(const double * x, double * forcing_out)> lookup_f = {
             {"linear", f_linear},
+            {"gaussian", f_gaussian},
+            {"jump", f_jump},
             {"linear3D", f_linear3D},
             {"constant", f_constant},
+            {"tensorsin", f_tensorsin},
             {"linearField", fField_linear},
             {"constantRightField", fField_constantRight},
             {"constantDownField", fField_constantDown},
@@ -94,6 +97,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"baryCenterRT", integrate_baryCenterRT},
             {"retriangulate", integrate_retriangulate},
             {"retriangulate_unsymm", integrate_retriangulate_unysmm},
+            {"retriangulate_unsymmLinfty", integrate_retriangulate_unysmm},
             {"retriangulateLinfty", integrate_retriangulate},
             {"exactBall", integrate_exact},
             {"noTruncation", integrate_fullyContained},
@@ -122,7 +126,10 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
         integrate_close = ERROR_wrongAccess;
     }
 
-    if (conf.integration_method_remote == "retriangulateLinfty" || conf.integration_method_close == "retriangulateLinfty") {
+    if (conf.integration_method_remote == "retriangulateLinfty"
+        || conf.integration_method_close == "retriangulateLinfty"
+        || conf.integration_method_remote == "retriangulate_unsymmLinfty"
+        || conf.integration_method_close == "retriangulate_unsymmLinfty") {
         method = method_retriangulateInfty;
     } else {
         // Becomes effective only if integrate_retriangulate is actually used. Has no meaning otherwise.

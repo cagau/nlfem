@@ -1,4 +1,7 @@
 import datetime
+import os # to create an interface with our operating system
+import sys # information on how our code is interacting with the host system
+
 def timestamp():
     """
     Returns current timestamp as string.
@@ -9,7 +12,7 @@ def timestamp():
     # http://strftime.org/
     return datetime.datetime.now().strftime("%m%d_%H-%M-%S")
 
-def append_output(data, conf, kernel, load, fileHandle):
+def append_output(data, conf, kernel, load, fileHandle, datacolumns=None):
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
     import numpy as np
@@ -26,21 +29,22 @@ def append_output(data, conf, kernel, load, fileHandle):
         "With caps": conf["approxBalls"]["isPlacePointOnCap"],
         "Quadrule outer element": len(conf["quadrature"]["outer"]["weights"]),
         "Quadrule inner element": len(conf["quadrature"]["inner"]["weights"]),
-        "**Intgr. close pairs**\n(Relevant only if singular)": "**"+conf.get("close", conf["approxBalls"]["method"])+"**",
+        "**Intgr. close pairs**\n(Relevant only if singular)": "**"+conf.get("closeElements", conf["approxBalls"]["method"])+"**",
         "Singular quad degree": conf["quadrature"]["tensorGaussDegree"],
     }
     write_dict(fileHandle, columns)
 
     fileHandle.write("### Rates\n")
-    columns = {
-        "h":  data.get("h", []),
-        "dof": data.get("nV_Omega", []),
-        "L2 Error": data.get("L2 Error", []),
-        "Rates": data.get("Rates", [])#,
-       # "Time [s]": data.get("Assembly Time", [])#
-    }
+    if datacolumns is None:
+        datacolumns = {
+            "$h$":  data.get("$h$", []),
+            "$K_\Omega$": data.get("$K_\Omega$", []),
+            "L2 Error": data.get("L2 Error", []),
+            "Rates": data.get("Rates", []),
+            "Time [s]": data.get("Assembly Time", [])#
+        }
 
-    write_columns(fileHandle, columns)
+    write_columns(fileHandle, datacolumns)
     fileHandle.write('\\newpage \n')
     #fileHandle.close()
 

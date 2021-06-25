@@ -3,25 +3,18 @@ import numpy as np
 def u_exact_linearRhs(x):
     return x[0] ** 2 * x[1] + x[1] ** 2
 def u_exact_FieldConstantBothRhs(x):
-    return np.array([x[1]**2, x[0]**2 * x[1]])*0.4
+    return np.array([x[1]**2, x[0]**2 * x[1]])#*0.4
 
 KERNELS = [
     {
-       "function": "linearPrototypeMicroelastic",
-       "horizon": 0.2,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
-       "outputdim": 1,
-        "fractional_s": -0.5 # kernel has singularity of degree 1, and 1 = 2+2s for s = -0.5.
-    },
-    {
         "function": "linearPrototypeMicroelasticField",
-        "horizon": 0.2,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
+        "horizon": 0.1,# Due to the very simplistic mesh generation we are limited to delta D/10., where D in N.
         "outputdim": 2,
         "fractional_s": -0.5 # kernel has singularity of degree 1, and 1 = 2+2s for s = -0.5.
     }
 ]
 
 LOADS = [
-    {"function": "linear", "solution": u_exact_linearRhs},
     {"function": "linearField", "solution": u_exact_FieldConstantBothRhs}
 ]
 
@@ -41,8 +34,39 @@ dx = 0.5 * np.array([0.22500000000000,
                         0.12593918054483,
                         0.12593918054483])
 
-Py = Px
-dy = dx
+Py = np.array([[0.33333333, 0.33333333],
+              [0.45929259, 0.45929259],
+              [0.45929259, 0.08141482],
+              [0.08141482, 0.45929259],
+              [0.17056931, 0.17056931],
+              [0.17056931, 0.65886138],
+              [0.65886138, 0.17056931],
+              [0.05054723, 0.05054723],
+              [0.05054723, 0.89890554],
+              [0.89890554, 0.05054723],
+              [0.26311283, 0.72849239],
+              [0.72849239, 0.00839478],
+              [0.00839478, 0.26311283],
+              [0.72849239, 0.26311283],
+              [0.26311283, 0.00839478],
+              [0.00839478, 0.72849239]])
+
+dy =    0.5 * np.array([0.14431560767779
+                       , 0.09509163426728
+                       , 0.09509163426728
+                       , 0.09509163426728
+                       , 0.10321737053472
+                       , 0.10321737053472
+                       , 0.10321737053472
+                       , 0.03245849762320
+                       , 0.03245849762320
+                       , 0.03245849762320
+                       , 0.02723031417443
+                       , 0.02723031417443
+                       , 0.02723031417443
+                       , 0.02723031417443
+                       , 0.02723031417443
+                       , 0.02723031417443])
 
 CONFIGURATIONS = [
     {
@@ -51,41 +75,39 @@ CONFIGURATIONS = [
         "approxBalls": {
             "method": "retriangulate",
             "isPlacePointOnCap": True,  # required for "retriangulate" only
-            #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
-        "closeElements": "weakSingular", #weakSingular
+        "closeElements": "retriangulate",
         "quadrature": {
             "outer": {
                 "points": Px,
                 "weights": dx
             },
             "inner": {
-                "points": Px,
-                "weights": dx,
+                "points": Py,
+                "weights": dy,
             },
-            "tensorGaussDegree": 6  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 0  # Degree of tensor Gauss quadrature for weakly singular kernels.
         },
         "verbose": True
     },
     {
         # "savePath": "pathA",
-        "ansatz": "CG", #DG
+        "ansatz": "CG",
         "approxBalls": {
             "method": "retriangulate",
             "isPlacePointOnCap": True,  # required for "retriangulate" only
-            #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
-        "closeElements": "weakSingular", #weakSingular
+        "closeElements": "retriangulate", #weakSingular
         "quadrature": {
             "outer": {
                 "points": Px,
                 "weights": dx
             },
             "inner": {
-                "points": Px,
-                "weights": dx,
+                "points": Py,
+                "weights": dy,
             },
-            "tensorGaussDegree": 5  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 0  # Degree of tensor Gauss quadrature for weakly singular kernels.
         },
         "verbose": True
     }

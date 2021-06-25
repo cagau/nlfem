@@ -2,6 +2,7 @@ from scipy.spatial.distance import euclidean as l2dist
 from scipy.interpolate import LinearNDInterpolator
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 from matplotlib.backends.backend_pdf import PdfPages
 
 #from nlfem import constructAdjaciencyGraph
@@ -15,15 +16,18 @@ class RegMesh2D:
                  n_start=12,
                  ansatz="CG",
                  #is_constructAdjaciencyGraph=True,
-                 variant="up"):
+                 variant="up",
+                 deltaK=None):
         ### TEST 27.07.2020
         #self.Zeta = np.arange(12, dtype=np.int).reshape(4, 3)
         #####
-
         deltaK = int(np.round(delta * 10))
         if not deltaK:
             raise ValueError("Delta has to be of the form delta = deltaK/10. for deltaK in N.")
-        n_start = 10 + 2*deltaK
+
+        n_start = 5 + 2*deltaK
+        self.lowerLeft = 0.0
+        self.upperRight = 0.5
 
         self.n = n
         self.dim = dim
@@ -33,9 +37,9 @@ class RegMesh2D:
         if self.dim == 2:
             self.h = n_start/n/10.
             points, cells = meshzoo.rectangle(
-                xmin=-self.delta, xmax=1.0+self.delta,
-                ymin=-self.delta, ymax=1.0+self.delta,
-                nx=n+1, ny=n+1,
+                xmin=self.lowerLeft-self.delta, xmax=self.upperRight+self.delta,
+                ymin=self.lowerLeft-self.delta, ymax=self.upperRight+self.delta,
+                nx=self.n+1, ny=self.n+1,
                 variant=variant
             )
             self.vertices = np.array(points[:, :2])
@@ -173,10 +177,14 @@ class RegMesh2D:
         self.ud[(self.nodeLabels > 0)[::self.outdim]] = udata
 
     def get_vertexLabel(self, v):
-        if np.max(np.abs(v - 0.5)) < 0.5:
-            return 1
+        label = 0
+        if np.max(np.abs(v - self.upperRight/2.)) < self.upperRight/2. - 1e-9:
+            label = 1
+            if np.max(np.abs(v - self.upperRight/2.)) <= self.upperRight/4.:
+                label = 2
         else:
-            return -1
+            label = -1
+        return label
 
     def get_elementLabel(self, E):
         # If any vertex of an element lies in Omega then the element does.
@@ -184,20 +192,39 @@ class RegMesh2D:
         # have label 1.
         for vdx in E:
             if self.vertexLabels[vdx] > 0:
-                return 1
+                return self.vertexLabels[vdx]
         return -1
 
-    def plot_ud(self, pp=None):
+    def plot_ud(self, pp=None, is_quickDG=True):
         if self.dim == 2:
             if self.is_DiscontinuousGalerkin:
-                ud_aux = np.zeros(self.nV)
-                for i, E in enumerate(self.elements):
-                    for ii, Vdx in enumerate(E):
-                        ud_aux[Vdx] = self.ud[(self.dim+1)*i + ii]
-
-                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, ud_aux)
                 plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements, lw=.1, color='white', alpha=.3)
+
+                if is_quickDG:
+                    ud_aux = np.zeros(self.nV)
+                    for i, E in enumerate(self.elements):
+                        for ii, Vdx in enumerate(E):
+                            ud_aux[Vdx] = self.ud[(self.dim+1)*i + ii]
+
+                    plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, ud_aux)
+
                 #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+                else:
+                    minval = np.min(self.ud)
+                    maxval = np.max(self.ud)
+
+                    for k in range(self.nE):
+                        if self.elementLabels[k] != 0:
+                            Vdx = self.elements[k]
+                            plt.tricontourf(self.vertices[Vdx, 0],
+                                            self.vertices[Vdx, 1],
+                                            self.ud[3*k:(3*k+3)].ravel(),  5,
+                                            cmap=plt.cm.get_cmap('rainbow'), vmin=minval, vmax=maxval)
+                    ax, _ = matplotlib.colorbar.make_axes(plt.gca(), shrink=.7)
+                    matplotlib.colorbar.ColorbarBase(ax, cmap=plt.cm.get_cmap('rainbow'),
+                                                     norm=matplotlib.colors.Normalize(vmin=minval, vmax=maxval))
+
+
                 if pp is None:
                     plt.show()
                 else:
@@ -206,6 +233,32 @@ class RegMesh2D:
             else:
                 plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.ud.ravel())
                 plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements,lw=.1, color='white', alpha=.3)
+                #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+                if pp is None:
+                    plt.show()
+                else:
+                    plt.savefig(pp, format='pdf')
+                    plt.close()
+
+    def plot_vertexLabels(self, pp=None):
+        if self.dim == 2:
+            if self.is_DiscontinuousGalerkin:
+                ud_aux = np.zeros(self.nV)
+                for i, E in enumerate(self.elements):
+                    for ii, Vdx in enumerate(E):
+                        ud_aux[Vdx] = self.ud[(self.dim+1)*i + ii]
+
+                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.vertexLabels)
+                plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements, lw=.1, color='white', alpha=.3)
+                #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
+                if pp is None:
+                    plt.show()
+                else:
+                    plt.savefig(pp, format='pdf')
+                    plt.close()
+            else:
+                plt.tricontourf(self.vertices[:, 0], self.vertices[:, 1], self.elements, self.vertexLabels)
+                plt.triplot(self.vertices[:, 0], self.vertices[:, 1], self.elements, lw=.1, color='white', alpha=.3)
                 #plt.scatter(self.vertices[self.omega, 0], self.vertices[self.omega, 1], c = "black", s=.2, alpha=.7)
                 if pp is None:
                     plt.show()

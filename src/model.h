@@ -234,6 +234,24 @@ void f_linear(const double * x, double * forcing_out);
  * @param x
  * @param forcing_out
  */
+void f_gaussian(const double * x, double * forcing_out);
+/**
+ * @brief Right hand side \f$f = - 4 (\| x\|^2 - 1)e^{\|x\|^2}\f$.
+ * @param x
+ * @param forcing_out
+ */
+void f_jump(const double * x, double * forcing_out);
+/**
+ * @brief Right hand side \f$f = - 2 \chi_{R^+}(x_1 - x_2)\f$.
+ * @param x
+ * @param forcing_out
+ */
+void f_tensorsin(const double * x, double * forcing_out);
+/**
+ * @brief Right hand side \f$f = 32 \pi^2 sin(4 \pi x)sin(4 \pi y )\f$.
+ * @param x
+ * @param forcing_out
+ */
 void f_linear3D(const double * x, double * forcing_out);
 
 
