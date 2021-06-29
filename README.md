@@ -74,7 +74,8 @@ is also to be found in this file.
 
 # Documentation
 
-Find a documentation of the C++ code in `docs/html`.
+Find a documentation of the C++ code in `docs/html` and a documentation of the Python interface in
+`docs/build` or on http://klar.gitlab-pages.uni-trier.de/nonlocal-assembly/.
 
 # Licence
 
