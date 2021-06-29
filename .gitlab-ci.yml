@@ -1,12 +1,8 @@
 image: ubuntu:bionic
 pages:
   script:
-  - apt update && apt-get -y install doxygen fonts-freefont-ttf texlive-science ghostscript graphviz
   - cd docs
-  - doxygen Doxyfile
-  - cp -r html/ ../public/
+  - cp -r build/ ../public/
   artifacts:
     paths:
     - public
-include:
-  - template: Security/License-Scanning.gitlab-ci.yml
