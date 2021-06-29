@@ -1,12 +1,17 @@
 image: ubuntu:bionic
+
 pages:
   script:
   - apt update && apt-get -y install doxygen fonts-freefont-ttf texlive-science ghostscript graphviz
+  - apt-get -y install python3-sphinx
   - cd docs
   - doxygen Doxyfile
-  - cp -r html/ ../public/
+  - mkdir build
+  - cd source
+  - sphinx-build -b html . ../build
+  - cd ..
+  - cp build/ ../public/
   artifacts:
     paths:
     - public
-include:
-  - template: Security/License-Scanning.gitlab-ci.yml
+
