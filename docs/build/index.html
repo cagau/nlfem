@@ -1,0 +1,256 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Welcome to nlfem’s documentation! &mdash; nlfem 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> nlfem
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Welcome to nlfem’s documentation!</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">nlfem</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Welcome to nlfem’s documentation!</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="welcome-to-nlfem-s-documentation">
+<h1>Welcome to nlfem’s documentation!<a class="headerlink" href="#welcome-to-nlfem-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="py function">
+<dt id="nlfem.stiffnessMatrix">
+<code class="sig-prename descclassname"><span class="pre">nlfem.</span></code><code class="sig-name descname"><span class="pre">stiffnessMatrix</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#nlfem.stiffnessMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the stiffness matrix corresponding to the nonlocal operator</p>
+<div class="math notranslate nohighlight">
+\[\mathcal{L}(\mathbf{u})(\mathbf{x}) = p.v. \int_{B_{\delta}(\mathbf{x}) \cap \widetilde{\Omega}}(\mathbf{C}_\delta(\mathbf{x}, \mathbf{y})  \mathbf{u}(\mathbf{x}) - \mathbf{C}_\delta(\mathbf{y}, \mathbf{x})\mathbf{u}(\mathbf{y}))  d\mathbf{y},\]</div>
+<p>on a given mesh. The input parameters are expected to be dictionaries. Find more information on the expected content in the <cite>example/Test2D/testConfFull.py</cite>. This function is a wrapper for the function <a class="reference external" href="http://klar.gitlab-pages.uni-trier.de/nonlocal-assembly/">par_assemble</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mesh</strong> – Dictionary containing the mesh information (“elements”, “elementLabels”, “vertices”, “vertexLabels”, “neighbours”). The list “neighbours” can be obtained from constructAdjaciencyGraph(elements). The arrays “elementLabels” and “vertexLabels” are expected to be of datatype int (Python). Labels in the domain have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this purpose it does not matter which positive or negative number is used, but the kernels can depend on the element labels. The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin this means that the signs of the element labels and corresponding vertex labels coincide. In case of Continuous Galerkin this means that elements with negative label have only vertices with negative label.</p></li>
+<li><p><strong>kernel</strong> – The kernel is assumed to be a dictionary containing the keys “function”, and “outputdim”, where “outputdim” is the output-dimension of the kernel function. In case of a scalar valued kernel this would be 1. In case of the kernel “linearPrototypeMicroelasticField” this would be 2 (find an example in testConfFull.py). You find all available options in the function <a href="#id1"><span class="problematic" id="id2">`</span></a>lookup_configuration() `</p></li>
+<li><p><strong>configuration</strong> – Dictionary containing the configuration (find an example in testConfFull.py).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Matrix A in scipy csr-sparse format of shape K x K where K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim (Discontinuous Galerkin).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="nlfem.loadVector">
+<code class="sig-prename descclassname"><span class="pre">nlfem.</span></code><code class="sig-name descname"><span class="pre">loadVector</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#nlfem.loadVector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes load vector.
+The input parameters are expected to be dictionaries. Find more information
+on the expected content in the example/Test2D/testConfFull.py</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mesh</strong> – Dictionary containing the mesh information (“elements”, “elementLabels”, “vertices”, “vertexLabels”, “outdim”), where “outdim” is the output-dimension of the kernel. In this function the output dimension is read from “outdim”, as no kernel is expected. The arrays “elementLabels” and “vertexLabels” are expected to be of datatype int (Python). Labels in the domain have positive labels. Labels in the nonlocal Dirichlet boundary have negative labels. For this purpose it does not matter which positive or negative number is used, but the kernels can depend on the element labels. The labels of the elements should be consistent with the vertex labels. In the case of Discontinuous Galerkin this means that the signs of the element labels and corresponding vertex labels coincide. In case of Continuous Galerkin this means that elements with negative label have only vertices with negative label.</p></li>
+<li><p><strong>load</strong> – Dictionary containing the load information (find an example in testConfFull.py).</p></li>
+<li><p><strong>configuration</strong> – Dictionary containing the configuration (find an example in testConfFull.py).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim (Discontinuous Galerkin)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Manuel Klar, Christian Vollmann.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
