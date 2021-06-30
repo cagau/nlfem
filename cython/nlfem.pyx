@@ -375,6 +375,85 @@ def loadVector(
         remove_arma_tmp(path_fd)
     return fd
 
+
+def get_vertexLabel(elements, elementLabels, vertices):
+    nV = vertices.shape[0]
+    vertexLabels = np.zeros(nV, dtype=np.int)
+    label_list = np.sort(np.unique(elementLabels))
+    print(label_list)
+    for label in label_list[::-1]:
+        if label:
+            label_idx = np.where(elementLabels == label)
+            vertex_idx = np.unique(elements[label_idx].ravel())
+            vertexLabels[vertex_idx] = label
+    return vertexLabels
+
+def get_diam(elements, vertices):
+    dim = vertices.shape[1]
+    nVerts = dim + 1
+    diam = 0.0
+    T = vertices[elements]
+    for t in T:
+        for k in range(nVerts):
+            diff = t[k] - t[(k+1)%nVerts]
+            dist = np.sqrt(diff**2)[0]
+            if dist > diam:
+                diam = dist
+    return diam
+
+def meshFromArrays(elements, elementLabels, vertices, outputdim=1):
+    vertexLabels = get_vertexLabel(elements, elementLabels, vertices)
+    diam = get_diam(elements, vertices)
+    outputdim = outputdim
+
+    mesh = {
+        "dim": elements.shape[1] - 1,
+        "nE": elements.shape[0],
+        "nV": vertices.shape[0],
+        "nE_Omega": np.sum(elementLabels > 0),
+        "nV_Omega": np.sum(vertexLabels > 0),
+        "elements": np.array(elements, dtype=np.int),
+        "elementLabels": elementLabels,
+        "vertices": np.array(vertices),
+        "vertexLabels": vertexLabels,
+        "diam": diam,
+        "outdim": outputdim
+    }
+    return mesh
+
+def stiffnessMatrix_fromArray(
+        elements, elementLabels, vertices,
+        kernel,
+        configuration
+    ):
+    """ Computes the stiffness matrix corresponding to the nonlocal operator
+
+    .. math::
+
+      \mathcal{L}(\mathbf{u})(\mathbf{x}) = p.v. \int_{B_{\delta}(\mathbf{x}) \cap \widetilde{\Omega}}(\mathbf{C}_\delta(\mathbf{x}, \mathbf{y})  \mathbf{u}(\mathbf{x}) - \mathbf{C}_\delta(\mathbf{y}, \mathbf{x})\mathbf{u}(\mathbf{y}))  d\mathbf{y},
+
+    on a given mesh. This function is a wrapper around ``stiffnessMatrix()``.
+
+    :param elements: Numpy array containing the information about the elements. The values in the array ``"elements"`` are expected to be of datatype ``numpy.int``.
+
+
+    :param elementLabels: The values in the array ``"elementLabels"`` are expected to be of datatype ``numpy.int``. Elements in the domain have positive labels. Elements in the nonlocal Dirichlet boundary have negative labels. For this purpose it does not matter which positive or negative number is used, and the kernels can depend on the element labels. The routine does not compute contributions of elements with label zero, i.e. they are ignored. The label zero can therefore be added to connect disconnected domains. The labels of the vertices are automatically derived from the element labels. In the case of Discontinuous Galerkin this means that the signs of the element labels and corresponding vertex labels coincide. In case of Continuous Galerkin this means that a vertex gets the smallest label of the non-zero labels of the adjacent elements.
+
+    :param vertices: The values in the array ``"vertices"`` are supposed to be of type ``numpy.float64``.
+
+    :param kernel: The kernel is assumed to be a dictionary containing the keys ``"function"``, and ``"outputdim"``. The value of ``"function"`` is a string which contains the name of the kernel (e.g. "constant"). You find all available options in the function *src/Cassemble.cpp/lookup_configuration()*. The key ``"outputdim"`` describes the output dimension of the kernel function. In case of a scalar valued kernel this would be 1. In case of the kernel "linearPrototypeMicroelasticField" this would be 2 (find an example in *examples/Test2D/testConfFull.py*). Note, that the value of ``"outputdim"`` does not define the output dimension of the kernel, but *describes* it. The value has to be consistent with the definition of the corresponding kernel in *src/model.cpp*.
+
+    :param configuration: Dictionary containing the configuration (find an example in *examples/Test2D/conf/testConfFull.py*).
+
+    :return mesh: Dictionary containing the mesh information. Can also be used for ``stiffnessMatrix()`` and ``loadVector()``.
+
+    :return A: Matrix in scipy csr-sparse format of shape K x K where K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim (Discontinuous Galerkin).
+    """
+
+    mesh = meshFromArrays(elements, elementLabels, vertices, kernel["outputdim"])
+    A = stiffnessMatrix(mesh, kernel, configuration)
+    return mesh, A
+
 def assemble(
         # Mesh information ------------------------------------
         mesh,
@@ -616,27 +695,6 @@ def constructAdjaciencyGraph(long[:,:] elements, ncommon = 1):
         colj += ((elemenIndices[k-1]-elemenIndices[k])==0)
         neigs[elemenIndices[k], colj] =  neighbourIndices[k]
     return neigs
-
-def solve_cg(Q, c_np.ndarray  b, c_np.ndarray x, double tol=1e-9, int max_it = 500):
-    cdef int n = b.size
-    cdef int k=0
-
-    cdef double beta = 0.0
-    cdef c_np.ndarray p = np.zeros(n)
-    cdef c_np.ndarray r = Q.dot(x) - b
-    cdef double res_new  = np.linalg.norm(r)
-
-    while res_new >= tol and k < max_it:
-        k+=1
-        p = -r + beta*p
-        alpha = res_new**2 / p.dot(Q.dot(p))
-        x = x + alpha*p
-        r = r + alpha*Q.dot(p)
-        res_old = res_new
-        res_new = np.linalg.norm(r)
-        beta = res_new**2/res_old**2
-
-    return {"x": x, "its": k, "res": res_new}
 
 # DEBUG Helpers - -----------------------------------------------------------------------------------------------------
 from Cassemble cimport method_retriangulate, method_retriangulateInfty
@@ -951,127 +1009,3 @@ cdef double [:] baryCenter(double [:] E):
 
 """
 # [END] DEBUG Helpers - ------------------------------------------------------------------------------------------------
-
-
-# ASSEMBLY OF MASS MATRICIES -------------------------------------------------------------------------------------------
-# def assembleMass(int K_Omega, int nE_Omega, long [:,:] Triangles, double [:,:] Verts, double [:,:] py_P, double [:] dx):
-#     py_Ad = np.zeros(K_Omega**2).flatten("C")
-#     cdef:
-#         int nP = py_P.shape[0] # Does not differ in inner and outer integral!
-#         long [:] c_Triangles = (np.array(Triangles, int)).flatten("C")
-#         double [:] c_Verts = (np.array(Verts, float)).flatten("C")
-#         double[:] P = (np.array(py_P, float)).flatten("C")
-#         double[:] Ad = py_Ad
-#
-#     par_assembleMass(&Ad[0], &c_Triangles[0], &c_Verts[0], K_Omega, nE_Omega, nP, &P[0], &dx[0])
-#     return np.reshape(py_Ad, (K_Omega, K_Omega))
-#
-# cdef class clsEvaluateMass:
-#     cdef:
-#         long K_Omega, nE_Omega, nP
-#         long[:] c_Triangles
-#         double[:] c_Verts
-#         double[:] P
-#         double [:] dx
-#
-#     def __init__(self, mesh, K_Omega, nE_Omega, Triangles, Verts, py_Px, dx, py_Py, dy):
-#         self.K_Omega = mesh.K_Omega
-#         self.nE_Omega = mesh.nE_Omega
-#         self.c_Triangles = (np.array(mesh.triangles, int)).flatten("C")
-#         self.c_Verts = (np.array(mesh.vertices, float)).flatten("C")
-#         self.nPx = py_Px.shape[0]
-#         self.Px = (np.array(py_Px, float)).flatten("C")
-#         self.dx = dx
-#         self.nPy = py_Py.shape[0]
-#         self.Py = (np.array(py_Py, float)).flatten("C")
-#         self.dy = dy
-#         pass
-#     def __call__(self, double [:] ud):
-#         py_vd = np.zeros(self.K_Omega).flatten("C")
-#         cdef:
-#             double[:] vd = py_vd
-#         par_evaluateMass(&vd[0], &ud[0], &self.c_Triangles[0], &self.c_Verts[0], self.K_Omega, self.nE_Omega, self.nP, &self.P[0], &self.dx[0], isDG)
-#         return py_vd
-# [END] ASSEMBLY OF MASS MATRICIES -------------------------------------------------------------------------------------------
-
-# CLASS FOR Evaluation -------------------------------------------------------------------------------------------
-# cdef class clsEvaluate:
-#     cdef:
-#         int K, K_Omega, nE, nE_Omega, nV, nV_Omega, nP
-#         double sqdelta
-#         double [:] P
-#         double [:] dx
-#         double [:] dy
-#         long [:] c_Triangles
-#         double [:] c_Verts
-#         long [:] Neighbours
-#
-#     def __init__(self,
-#                  # Mesh information ------------------------------------
-#                  int K, int K_Omega,# Number of Basis functions
-#                  int nE, int nE_Omega,# Number of Triangles and number of Triangles in Omega
-#                  int nV, int nV_Omega, # Number of vertices (in case of CG = K and K_Omega)
-#                  # Map Triangle index (Tdx) -> index of Vertices in Verts (Vdx = Triangle[Tdx] array of int, shape (3,))
-#                  long [:,:] Triangles,
-#                   # Map Vertex Index (Vdx) -> Coordinate of some Vertex i of some Triangle (E[i])
-#                  double [:,:] Verts,
-#                  double [:,:] py_P, # Quadrature Points
-#                  double [:] dx,
-#                  double [:] dy,
-#                  double delta
-#                  ):
-#         self.K = K
-#         self.K_Omega = K_Omega
-#         self.nE = nE
-#         self.nE_Omega = nE_Omega
-#         self.nV = nV
-#         self.nV_Omega = nV_Omega
-#         self.sqdelta = pow(delta,2) # Squared interaction horizon
-#
-#         self.c_Triangles = (np.array(Triangles, int)).flatten("C")
-#         self.c_Verts = (np.array(Verts, float)).flatten("C")
-#
-#         self.P = (np.array(py_P, float)).flatten("C")
-#         self.nP = py_P.shape[0] # Does not differ in inner and outer integral!
-#         self.dx = dx  # Weights for quadrature rule
-#         self.dy = dy
-#
-#         # nVist of neighbours of each triangle, Neighbours[Tdx] returns row with Neighbour indices
-#         self.Neighbours = self.nE*np.ones((self.nE*dVertex), dtype=int)
-#
-#         # Setup adjaciency graph of the mesh --------------------------
-#         neigs = []
-#         for aTdx in range(self.nE):
-#             neigs = get_neighbour(self.nE, dVertex, &self.c_Triangles[0], &self.c_Triangles[4*aTdx])
-#             n = len(neigs)
-#             for i in range(n):
-#                 self.Neighbours[4*aTdx + i] = neigs[i]
-#
-#     def __call__(self,
-#             # Input vector
-#             double [:] ud # Length K_Omega!
-#         ):
-#
-#         ## Data Matrix ----------------------------------------
-#         # Evaluates A_Omega only, because the input is truncated
-#         py_vd = np.zeros(self.K_Omega).flatten("C")
-#
-#         cdef:
-#             int aTdx=0, i=0
-#             # Cython interface of C-aligned arrays of solution and right side
-#             double[:] vd = py_vd
-#
-#         start = time.time()
-#         # Compute Assembly
-#         par_evaluateA(&ud[0], &vd[0], self.K, &self.c_Triangles[0], &self.c_Verts[0], self.nE , self.nE_Omega,
-#                      self.nV, self.nV_Omega, self.nP, &self.P[0], &self.dx[0], &self.dy[0], self.sqdelta, &self.Neighbours[0])
-#         total_time = time.time() - start
-#         py_vd *= 2
-#         return py_vd
-#
-#     def get_f(self):
-#         py_fd = np.zeros(self.K_Omega).flatten("C")
-#         cdef double[:] fd = py_fd
-#         par_assemblef(&fd[0], &self.c_Triangles[0], &self.c_Verts[0], self.nE_Omega, self.nV_Omega, self.nP, &self.P[0], &self.dx[0])
-#         return py_fd
-# [END] CLASS FOR Evaluation -------------------------------------------------------------------------------------------

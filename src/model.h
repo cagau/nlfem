@@ -131,6 +131,7 @@ void kernel_labeled(const double * x, long labelx, const double * y, long labely
  */
 void kernel_linearPrototypeMicroelastic(const double * x, long labelx, const double * y, long labely,
                                            const MeshType &mesh, double * kernel_val);
+
 /**
  * @brief Kernel for fractional Laplacian. The scalar valued weakly singular kernel reads as
  *
@@ -172,6 +173,27 @@ void kernel_fractional(const double * x, const long labelx, const double * y, co
 void kernelField_linearPrototypeMicroelastic(const double * x, long labelx, const double * y, long labely,
                                                 const MeshType &mesh, double * kernel_val);
 /**
+ * @brief Kernel for the peridynamics model. The matrix valued weakly singular kernel reads as
+ *
+ *  \f[
+ * \gamma(x,y) = (x-y) \otimes (x-y) \frac{1}{\| x - y \|^3}  \frac{12}{\pi \delta ^3}.
+ *  \f]
+ *
+ * The constant is chosen such that the operator is equivalent to linear elasticity for
+ * polynomials of degree less or equal to 2 and lame paramter
+ * \f$\mu = \lambda = \frac{\pi}{4}\f$.
+ *
+ * @param x Physical point of the outer integration region.
+ * @param labelx Label of the outer triangle.
+ * @param y Physical point of the inner integration region.
+ * @param labely Label of inner triangle.
+ * @param mesh Mesh
+ * @param kernel_val Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array
+ * of shape d x d in case of peridynamics.
+ */
+void kernelField_linearPrototypeMicroelastic3D(const double * x, long labelx, const double * y, long labely,
+                                               const MeshType &mesh, double * kernel_val);
+/**
  * @brief Constant matrix valued kernel. For testing. The constant is the same as in the scalar case.
  *
  * @param x Physical point of the outer integration region.
@@ -204,6 +226,12 @@ void f_constant(const double * x, double * forcing_out);
  * @param forcing_out
  */
 void fField_linear(const double * x, double * forcing_out);
+/**
+ * @brief Constant vector valued forcing function.
+ * @param x
+ * @param forcing_out
+ */
+void fField_linear3D(const double * x, double * forcing_out);
 /**
  * @brief Constant vector valued forcing function.
  * @param x

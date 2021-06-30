@@ -10,6 +10,7 @@ Welcome to nlfem's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. autofunction:: nlfem.stiffnessMatrix_fromArray
 .. autofunction:: nlfem.stiffnessMatrix
 .. autofunction:: nlfem.loadVector
 

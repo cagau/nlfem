@@ -39,6 +39,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"constant", f_constant},
             {"tensorsin", f_tensorsin},
             {"linearField", fField_linear},
+            {"linearField3D", fField_linear3D},
             {"constantRightField", fField_constantRight},
             {"constantDownField", fField_constantDown},
             {"constantBothField", fField_constantBoth}
@@ -64,6 +65,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"parabola", kernel_parabola},
             {"linearPrototypeMicroelastic", kernel_linearPrototypeMicroelastic},
             {"linearPrototypeMicroelasticField", kernelField_linearPrototypeMicroelastic},
+            {"linearPrototypeMicroelasticField3D", kernelField_linearPrototypeMicroelastic3D},
             {"constantField", kernelField_constant},
             {"fractional", kernel_fractional}
     };
@@ -407,7 +409,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
         chk_Mesh(mesh, verbose);
         chk_Conf(mesh, conf, quadRule);
 
-        estimateNNZperRow(mesh, conf);
+        //estimateNNZperRow(mesh, conf);
 
         par_system(Ad, mesh, quadRule, conf);
         if (verbose) cout << "K_Omega " << mesh.K_Omega << endl;

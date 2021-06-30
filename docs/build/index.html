@@ -159,6 +159,32 @@
 <div class="toctree-wrapper compound">
 </div>
 <dl class="py function">
+<dt id="nlfem.stiffnessMatrix_fromArray">
+<code class="sig-prename descclassname"><span class="pre">nlfem.</span></code><code class="sig-name descname"><span class="pre">stiffnessMatrix_fromArray</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#nlfem.stiffnessMatrix_fromArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the stiffness matrix corresponding to the nonlocal operator</p>
+<div class="math notranslate nohighlight">
+\[\mathcal{L}(\mathbf{u})(\mathbf{x}) = p.v. \int_{B_{\delta}(\mathbf{x}) \cap \widetilde{\Omega}}(\mathbf{C}_\delta(\mathbf{x}, \mathbf{y})  \mathbf{u}(\mathbf{x}) - \mathbf{C}_\delta(\mathbf{y}, \mathbf{x})\mathbf{u}(\mathbf{y}))  d\mathbf{y},\]</div>
+<p>on a given mesh. This function is a wrapper around <code class="docutils literal notranslate"><span class="pre">stiffnessMatrix()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>elements</strong> – Numpy array containing the information about the elements. The values in the array <code class="docutils literal notranslate"><span class="pre">&quot;elements&quot;</span></code> are expected to be of datatype <code class="docutils literal notranslate"><span class="pre">numpy.int</span></code>.</p></li>
+<li><p><strong>elementLabels</strong> – The values in the array <code class="docutils literal notranslate"><span class="pre">&quot;elementLabels&quot;</span></code> are expected to be of datatype <code class="docutils literal notranslate"><span class="pre">numpy.int</span></code>. Elements in the domain have positive labels. Elements in the nonlocal Dirichlet boundary have negative labels. For this purpose it does not matter which positive or negative number is used, and the kernels can depend on the element labels. The routine does not compute contributions of elements with label zero, i.e. they are ignored. The label zero can therefore be added to connect disconnected domains. The labels of the vertices are automatically derived from the element labels. In the case of Discontinuous Galerkin this means that the signs of the element labels and corresponding vertex labels coincide. In case of Continuous Galerkin this means that a vertex gets the smallest label of the non-zero labels of the adjacent elements.</p></li>
+<li><p><strong>vertices</strong> – The values in the array <code class="docutils literal notranslate"><span class="pre">&quot;vertices&quot;</span></code> are supposed to be of type <code class="docutils literal notranslate"><span class="pre">numpy.float64</span></code>.</p></li>
+<li><p><strong>kernel</strong> – The kernel is assumed to be a dictionary containing the keys <code class="docutils literal notranslate"><span class="pre">&quot;function&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;outputdim&quot;</span></code>. The value of <code class="docutils literal notranslate"><span class="pre">&quot;function&quot;</span></code> is a string which contains the name of the kernel (e.g. “constant”). You find all available options in the function <em>src/Cassemble.cpp/lookup_configuration()</em>. The key <code class="docutils literal notranslate"><span class="pre">&quot;outputdim&quot;</span></code> describes the output dimension of the kernel function. In case of a scalar valued kernel this would be 1. In case of the kernel “linearPrototypeMicroelasticField” this would be 2 (find an example in <em>examples/Test2D/testConfFull.py</em>). Note, that the value of <code class="docutils literal notranslate"><span class="pre">&quot;outputdim&quot;</span></code> does not define the output dimension of the kernel, but <em>describes</em> it. The value has to be consistent with the definition of the corresponding kernel in <em>src/model.cpp</em>.</p></li>
+<li><p><strong>configuration</strong> – Dictionary containing the configuration (find an example in <em>examples/Test2D/conf/testConfFull.py</em>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return mesh</dt>
+<dd class="field-even"><p>Dictionary containing the mesh information. Can also be used for <code class="docutils literal notranslate"><span class="pre">stiffnessMatrix()</span></code> and <code class="docutils literal notranslate"><span class="pre">loadVector()</span></code>.</p>
+</dd>
+<dt class="field-odd">Return A</dt>
+<dd class="field-odd"><p>Matrix in scipy csr-sparse format of shape K x K where K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim (Discontinuous Galerkin).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="nlfem.stiffnessMatrix">
 <code class="sig-prename descclassname"><span class="pre">nlfem.</span></code><code class="sig-name descname"><span class="pre">stiffnessMatrix</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#nlfem.stiffnessMatrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the stiffness matrix corresponding to the nonlocal operator</p>
