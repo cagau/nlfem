@@ -24,8 +24,8 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
     # assembly routine!
     n_start = 5 + 4
     N_fine = 2**(layerDepth+2)
-    N = [n_start * 2 ** (layerDepth-1)]*layerDepth
-    #N = [n_start * 2 ** n for n in range(0, layerDepth)]
+    #N = [n_start * 2 ** (layerDepth-1)]*layerDepth
+    N = [n_start * 2 ** n for n in range(0, layerDepth)]
     Delta = [0.2, 0.1, 0.05, 0.025, 0.0125, 0.00625] #[0.1, 0.05, 0.025, 0.0125, 0.0125]
 
 
