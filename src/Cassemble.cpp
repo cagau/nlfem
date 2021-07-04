@@ -405,13 +405,14 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     initializeQuadrule(quadRule, mesh);
 
     if (compute=="system") {
-        map<unsigned long, double> Ad;
+        //map<unsigned long, double> Ad;
         chk_Mesh(mesh, verbose);
         chk_Conf(mesh, conf, quadRule);
 
         //estimateNNZperRow(mesh, conf);
 
-        par_system(Ad, mesh, quadRule, conf);
+        par_system(mesh, quadRule, conf);
+        /*
         if (verbose) cout << "K_Omega " << mesh.K_Omega << endl;
         if (verbose) cout << "K " << mesh.K << endl;
 
@@ -434,6 +435,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
         arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K);
 
         sp_Ad.save(conf.path_spAd);
+        */
     }
 
     if (compute=="forcing") {
@@ -445,8 +447,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 
 }
 
-template <typename T_Matrix>
-void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
+void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
     const int verbose = conf.verbose;
 
@@ -460,6 +461,10 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     if (verbose) printf("Quadrule inner: %i\n", quadRule.nPy);
     if (verbose) printf("Full Graph Search: %i\n", conf.is_fullConnectedComponentSearch);
 
+    arma::vec values_all;
+    arma::umat indices_all(2,0);
+    int nnz_total = 0;
+
     for(int h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(& quadRule.Px[mesh.dim*h], mesh.dim, & quadRule.psix[mesh.dVertex * h]);
@@ -470,9 +475,9 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     }
     chk_BasisFunction(quadRule);
 
-    #pragma omp parallel default(none) shared(mesh, quadRule, conf,  Ad)
+    #pragma omp parallel default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total)
     {
-    //map<unsigned long, double> Ad;
+    map<unsigned long, double> Ad;
     unsigned long Adx;
 
     // Breadth First Search --------------------------------------
@@ -680,14 +685,14 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
                                                 (mesh.LabelVerts[aAdx[a / mesh.outdim]] > 0)) {
                                                 Adx = (mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim) * mesh.K +
                                                       mesh.outdim * aAdx[b / mesh.outdim] + b % mesh.outdim;
-#pragma omp critical
+//#pragma omp critical
                                                 {
                                                     Ad[Adx] += termLocal[mesh.dVertex * mesh.outdim * a + b] * weight;
                                                 }
 
                                                 Adx = (mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim) * mesh.K +
                                                       mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim;
-#pragma omp critical
+//#pragma omp critical
                                                 {
                                                     Ad[Adx] += -termNonloc[mesh.dVertex * mesh.outdim * a + b] * weight;
                                                 }
@@ -696,7 +701,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
                                                 (mesh.LabelVerts[bAdx[b / mesh.outdim]] > 0)) {
                                                 Adx = (mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim) * mesh.K +
                                                       mesh.outdim * bAdx[a / mesh.outdim] + a % mesh.outdim;
-#pragma omp critical
+//#pragma omp critical
                                                 {
                                                     Ad[Adx] +=
                                                             termLocalPrime[mesh.dVertex * mesh.outdim * a + b] * weight;
@@ -704,7 +709,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
 
                                                 Adx = (mesh.outdim * bAdx[b / mesh.outdim] + b % mesh.outdim) * mesh.K +
                                                       mesh.outdim * aAdx[a / mesh.outdim] + a % mesh.outdim;
-#pragma omp critical
+//#pragma omp critical
                                                 {
                                                     Ad[Adx] += -termNonlocPrime[mesh.dVertex * mesh.outdim * a + b] *
                                                                weight;
@@ -728,7 +733,7 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
        }// End if LabelTriangles != 0
     }// End parallel for
 
-    }// End pragma omp parallel
+
     /*
     arma::mat dualGraph(15, mesh.nE);
     dualGraph.fill(0);
@@ -746,6 +751,53 @@ void par_system(T_Matrix &Ad, MeshType &mesh, QuadratureType &quadRule, Configur
     }
     dualGraph.save("data/result.dual_par_system", arma::arma_binary);
     */
+    int nnz_start = 0;
+    #pragma omp critical
+        {
+            int nnz_current = static_cast<int>(Ad.size());
+            //printf("NNZ of Thread %i is %i\n", omp_get_thread_num(), nnz_current);
+            //int estimatedNNZ = chunkSize * pow(2*ceil(mesh.delta / mesh.maxDiameter + 1), mesh.dim);
+            //printf("Estimated NNZ is %i\n", estimatedNNZ);
+            nnz_start = nnz_total;
+            nnz_total += nnz_current;
+            //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
+        }
+    #pragma omp barrier
+    #pragma omp single
+        {
+            //cout << "Nonzero Total "<< nnz_total << endl;
+            values_all.set_size(nnz_total);
+            indices_all.reshape(2, nnz_total);
+        }
+    #pragma omp barrier
+    #pragma omp critical
+        {
+            //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
+            int k = 0;
+            for (auto & it : Ad) {
+                unsigned long adx = it.first;
+                double value = it.second;
+                values_all(nnz_start + k) = value;
+                // column major format of transposed matrix Ad
+                indices_all(0, nnz_start + k) = adx % mesh.K;
+                indices_all(1, nnz_start + k) = adx / mesh.K;
+                //printf("Index a %llu, b %llu\n", indices_all(0, nnz_start + k), indices_all(1, nnz_start + k));
+                k++;
+            }
+        }
+
+    }// End pragma omp parallel
+    //indices_all.save("indices_all");
+    //values_all.save("values_all");
+    cout << "K_Omega " << mesh.K_Omega << endl;
+    cout << "K " << mesh.K << endl;
+    cout << "NNZ " << nnz_total << endl;
+    //cout << arma::max(indices_all.row(1)) << endl;
+    arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K);
+    sp_Ad.save(conf.path_spAd);
+    //cout << "Data saved." << endl;
+
+
 }// End function par_system
 
 void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {

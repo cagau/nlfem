@@ -380,7 +380,7 @@ def get_vertexLabel(elements, elementLabels, vertices):
     nV = vertices.shape[0]
     vertexLabels = np.zeros(nV, dtype=np.int)
     label_list = np.sort(np.unique(elementLabels))
-    print(label_list)
+    #print(label_list)
     for label in label_list[::-1]:
         if label:
             label_idx = np.where(elementLabels == label)
