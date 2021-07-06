@@ -10,6 +10,13 @@ except ModuleNotFoundError:
 
 # Project Name
 name = "nlfem"
+is_sequential = False
+
+extra_link_args = ['-larmadillo', '-lgmp', '-lmpfr', '-lmetis']
+extra_compile_args = ['-O3', '-DARMA_NO_DEBUG']
+if not is_sequential:
+    extra_link_args += ['-fopenmp']
+    extra_compile_args += ['-fopenmp']
 
 ext_modules = [
     Extension(
@@ -20,8 +27,8 @@ ext_modules = [
                  "./src/mathhelpers.cpp",
                  "./src/model.cpp",
                  "./src/integration.cpp"],
-        extra_link_args=['-larmadillo', '-lgmp', '-lmpfr', '-lmetis', '-fopenmp'],
-        extra_compile_args=['-O3', '-DARMA_NO_DEBUG', '-fopenmp'],
+        extra_link_args=extra_link_args,
+        extra_compile_args=extra_compile_args,
         language="c++",
         include_dirs=["include", "src", numpy.get_include()]
     )

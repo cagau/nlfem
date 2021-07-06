@@ -757,7 +757,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
             int nnz_current = static_cast<int>(Ad.size());
             //printf("NNZ of Thread %i is %i\n", omp_get_thread_num(), nnz_current);
             //int estimatedNNZ = chunkSize * pow(2*ceil(mesh.delta / mesh.maxDiameter + 1), mesh.dim);
-            //printf("Estimated NNZ is %i\n", estimatedNNZ);
+            //if (conf.verbose) printf("Estimated NNZ is %i\n", estimatedNNZ);
             nnz_start = nnz_total;
             nnz_total += nnz_current;
             //cout << "Thread "<< omp_get_thread_num() << ", start  " << nnz_start << endl;
@@ -765,9 +765,11 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     #pragma omp barrier
     #pragma omp single
         {
-            //cout << "Nonzero Total "<< nnz_total << endl;
+            //if (conf.verbose) cout << "NNZ (total of all threads) "<< nnz_total << endl;
+            //if (conf.verbose) cout << "Try to allocate ";
             values_all.set_size(nnz_total);
             indices_all.reshape(2, nnz_total);
+            //if (conf.verbose) cout << " - Done - " << endl;
         }
     #pragma omp barrier
     #pragma omp critical
@@ -789,9 +791,9 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     }// End pragma omp parallel
     //indices_all.save("indices_all");
     //values_all.save("values_all");
-    cout << "K_Omega " << mesh.K_Omega << endl;
-    cout << "K " << mesh.K << endl;
-    cout << "NNZ " << nnz_total << endl;
+    if (conf.verbose) cout << "K_Omega " << mesh.K_Omega << endl;
+    if (conf.verbose) cout << "K " << mesh.K << endl;
+    if (conf.verbose) cout << "NNZ (total of all threads)" << nnz_total << endl;
     //cout << arma::max(indices_all.row(1)) << endl;
     arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K);
     sp_Ad.save(conf.path_spAd);

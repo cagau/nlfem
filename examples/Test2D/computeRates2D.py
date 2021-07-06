@@ -33,7 +33,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         mesh = RegMesh2D(kernel["horizon"], n, ufunc=u_exact,
                          ansatz=conf["ansatz"], outdim=kernel["outputdim"], variant="up")
         print("\n h: ", mesh.h)
-        data["$h$"].append(mesh.h)
+        data["$h$"].append(mesh.h*np.sqrt(2))
         data["$K_\Omega$"].append(mesh.K_Omega)
 
         # Assembly ------------------------------------------------------------------------
@@ -116,9 +116,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run convergence test for the given configuration file.')
     parser.add_argument('-f', default="testConfFull", type=str, help='Enter here the filename of test configuration python file.')
     parser.add_argument('-s', default=1, type=int, help='Number of steps of the convergence test.')
+
     args = parser.parse_args()
     testFilename = str(args.f)
     layerDepth = int(args.s)
+    buildInstall = str(args.i)
 
     print("\n### TESTING "+testFilename+"\n")
     if testFilename[-3:] != ".py":
