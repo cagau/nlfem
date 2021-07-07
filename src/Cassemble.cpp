@@ -12,13 +12,11 @@
 #include <map>
 #include "metis.h"
 #include <Cassemble.h>
-
+#include <omp.h>
 #include "integration.h"
 #include "mathhelpers.h"
 #include "model.h"
 #include "checks.cpp"
-
-
 using namespace std;
 /**
  * This function looks up the configuration. It has to be updated whenever a new kernel,
@@ -400,6 +398,8 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 
     mesh.xadj = xadj;
     mesh.adjncy = adjncy;
+    mesh.eptr = eptr;
+    mesh.eind = eind;
 
     QuadratureType quadRule = {Px, Py, dx, dy, nPx, nPy, dim, Pg, dg, degree};
     initializeQuadrule(quadRule, mesh);
@@ -464,7 +464,33 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     arma::vec values_all;
     arma::umat indices_all(2,0);
     int nnz_total = 0;
+    //cout << "Hallo" << endl;
+    idx_t nn_idxt = mesh.nV;
+    idx_t ne_idxt = mesh.nE;
+    idx_t nparts = 1;
+    //cout << nparts << endl;
+    idx_t ncommon = 2;
+    idx_t objval=0;
+    idx_t epart[ne_idxt];
+    idx_t npart[nn_idxt];
+    //printf("npart %ld\n", nparts);
+    #pragma omp parallel
+    {
 
+        #pragma omp single
+        {
+            nparts = omp_get_num_threads();
+        }
+    }
+    //printf("npart %ld -> METIS \n", nparts);
+    if (nparts > 1) {
+        METIS_PartMeshDual(&ne_idxt, &nn_idxt, mesh.eptr, mesh.eind,
+                           NULL, NULL, &ncommon,
+                           &nparts, NULL, NULL,
+                           &objval, epart, npart);
+    }
+    //cout << epart << endl;
+    //cout << npart << endl;
     for(int h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(& quadRule.Px[mesh.dim*h], mesh.dim, & quadRule.psix[mesh.dVertex * h]);
@@ -475,11 +501,15 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     }
     chk_BasisFunction(quadRule);
 
-    #pragma omp parallel default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total)
+    #pragma omp parallel default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total, epart, nparts)
     {
     map<unsigned long, double> Ad;
     unsigned long Adx;
-
+    idx_t tid = 0;
+    if (nparts > 1){
+        tid = omp_get_thread_num();
+    }
+    if (verbose && !tid) printf("Thread %ld of %ld  (num partitions)\n", tid, nparts);
     // Breadth First Search --------------------------------------
     arma::Col<int> visited(mesh.nE, arma::fill::zeros);
 
@@ -507,9 +537,11 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     double termLocalPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
     double termNonlocPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
 
-    #pragma omp for
+    //#pragma omp for
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
-        if (mesh.LabelTriangles[aTdx]) {
+        //printf("epart[aTdx] %i", epart[aTdx]);
+        const bool is_mypart = (nparts == 1) || (tid == epart[aTdx]);
+        if (is_mypart && (mesh.LabelTriangles[aTdx])) {
 
             //[DEBUG]
             /*
@@ -793,7 +825,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //values_all.save("values_all");
     if (conf.verbose) cout << "K_Omega " << mesh.K_Omega << endl;
     if (conf.verbose) cout << "K " << mesh.K << endl;
-    if (conf.verbose) cout << "NNZ (total of all threads)" << nnz_total << endl;
+    if (conf.verbose) cout << "NNZ (total of all threads) " << nnz_total << endl;
     //cout << arma::max(indices_all.row(1)) << endl;
     arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K);
     sp_Ad.save(conf.path_spAd);

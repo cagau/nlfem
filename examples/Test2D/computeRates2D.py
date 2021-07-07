@@ -120,7 +120,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     testFilename = str(args.f)
     layerDepth = int(args.s)
-    buildInstall = str(args.i)
 
     print("\n### TESTING "+testFilename+"\n")
     if testFilename[-3:] != ".py":

@@ -118,6 +118,8 @@ struct MeshStruct{
 
     idx_t *xadj;
     idx_t *adjncy;
+    idx_t *eptr;
+    idx_t *eind;
 
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
     //const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
