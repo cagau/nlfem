@@ -14,7 +14,9 @@ In order to use this code you have to meet the following requirements.
 
 -   You can clone the project and build and install the package via
 
-      ``python3 setup.py build --force install``
+    ::
+
+      python3 setup.py build --force install
 
     The ``--force`` option is required if you change code outside of
     ``nlcfem.pyx``. It might happen that recompilation or translation is
@@ -22,40 +24,41 @@ In order to use this code you have to meet the following requirements.
 
 
 Step by Step Installation
-------------------------
+-------------------------------
 
 To prepare the basic requirements on Ubuntu do.
 
-  ``sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev``
+::
 
-  ``sudo apt-get install python3-venv python3-dev libgmp-dev libcgal-dev``
-
-  ``mkdir nlfemvenv``
-
-  ``python3 -m venv nlfemvenv/``
-
-  ``source nlfemvenv/bin/activate``
-
-  ``(nlfemvenv) python3 -m pip install -r requirements.txt``
+  sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev
+  sudo apt-get install python3-venv python3-dev libgmp-dev libcgal-dev
+  mkdir nlfemvenv
+  python3 -m venv nlfemvenv/
+  source nlfemvenv/bin/activate
+  (nlfemvenv) python3 -m pip install -r requirements.txt
 
 To clone the default branch (master) do
 
-  ``git clone https://gitlab.uni-trier.de/klar/nonlocal-assembly.git path/to/nlfem``
+::
+
+  git clone https://gitlab.uni-trier.de/klar/nonlocal-assembly.git path/to/nlfem
 
 To build and install the ``nlfem`` package do.
 
-  ``(nlfemvenv) cd path/to/nlfem``
+::
 
-  ``(nlfemvenv) python3 setup.py build --force install``
+  (nlfemvenv) cd path/to/nlfem
+  (nlfemvenv) python3 setup.py build --force install
 
 Quick Start
 ===========
 
 To test the rates for the constant kernel run
 
-``(nlfemvenv) cd path/to/nlfem/examples/Test2D``
+::
 
-``(nlfemvenv) python3 computeRates2D.py -f testConfConstant -s 4``
+(nlfemvenv) cd path/to/nlfem/examples/Test2D
+(nlfemvenv) python3 computeRates2D.py -f testConfConstant -s 4
 
 Run a more extensive test via the option ``-f testConfFull -s 4``. Get
 help via the option ``-h``.

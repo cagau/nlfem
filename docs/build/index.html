@@ -187,9 +187,9 @@ you want to change the Cython code, you require the package
 Python packages <code class="docutils literal notranslate"><span class="pre">matplotlib,</span> <span class="pre">meshzoo</span></code>. Make sure to install the
 correct versions by using the <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> as given below.</p></li>
 <li><p>You can clone the project and build and install the package via</p>
-<blockquote>
-<div><p><code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">setup.py</span> <span class="pre">build</span> <span class="pre">--force</span> <span class="pre">install</span></code></p>
-</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">build</span> <span class="o">--</span><span class="n">force</span> <span class="n">install</span>
+</pre></div>
+</div>
 <p>The <code class="docutils literal notranslate"><span class="pre">--force</span></code> option is required if you change code outside of
 <code class="docutils literal notranslate"><span class="pre">nlcfem.pyx</span></code>. It might happen that recompilation or translation is
 skipped because Cython assumes that there have been no changes.</p>
@@ -198,30 +198,32 @@ skipped because Cython assumes that there have been no changes.</p>
 <div class="section" id="step-by-step-installation">
 <h2>Step by Step Installation<a class="headerlink" href="#step-by-step-installation" title="Permalink to this headline">¶</a></h2>
 <p>To prepare the basic requirements on Ubuntu do.</p>
-<blockquote>
-<div><p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">git</span> <span class="pre">gcc</span> <span class="pre">g++</span> <span class="pre">libarmadillo-dev</span> <span class="pre">liblapack-dev</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">python3-venv</span> <span class="pre">python3-dev</span> <span class="pre">libgmp-dev</span> <span class="pre">libcgal-dev</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">mkdir</span> <span class="pre">nlfemvenv</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">venv</span> <span class="pre">nlfemvenv/</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">nlfemvenv/bin/activate</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">(nlfemvenv)</span> <span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code></p>
-</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">git</span> <span class="n">gcc</span> <span class="n">g</span><span class="o">++</span> <span class="n">libarmadillo</span><span class="o">-</span><span class="n">dev</span> <span class="n">liblapack</span><span class="o">-</span><span class="n">dev</span>
+<span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python3</span><span class="o">-</span><span class="n">venv</span> <span class="n">python3</span><span class="o">-</span><span class="n">dev</span> <span class="n">libgmp</span><span class="o">-</span><span class="n">dev</span> <span class="n">libcgal</span><span class="o">-</span><span class="n">dev</span>
+<span class="n">mkdir</span> <span class="n">nlfemvenv</span>
+<span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="n">nlfemvenv</span><span class="o">/</span>
+<span class="n">source</span> <span class="n">nlfemvenv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+<span class="p">(</span><span class="n">nlfemvenv</span><span class="p">)</span> <span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
 <p>To clone the default branch (master) do</p>
-<blockquote>
-<div><p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://gitlab.uni-trier.de/klar/nonlocal-assembly.git</span> <span class="pre">path/to/nlfem</span></code></p>
-</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">klar</span><span class="o">/</span><span class="k">nonlocal</span><span class="o">-</span><span class="n">assembly</span><span class="o">.</span><span class="n">git</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">nlfem</span>
+</pre></div>
+</div>
 <p>To build and install the <code class="docutils literal notranslate"><span class="pre">nlfem</span></code> package do.</p>
-<blockquote>
-<div><p><code class="docutils literal notranslate"><span class="pre">(nlfemvenv)</span> <span class="pre">cd</span> <span class="pre">path/to/nlfem</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">(nlfemvenv)</span> <span class="pre">python3</span> <span class="pre">setup.py</span> <span class="pre">build</span> <span class="pre">--force</span> <span class="pre">install</span></code></p>
-</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">nlfemvenv</span><span class="p">)</span> <span class="n">cd</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">nlfem</span>
+<span class="p">(</span><span class="n">nlfemvenv</span><span class="p">)</span> <span class="n">python3</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">build</span> <span class="o">--</span><span class="n">force</span> <span class="n">install</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="quick-start">
 <h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
 <p>To test the rates for the constant kernel run</p>
-<p><code class="docutils literal notranslate"><span class="pre">(nlfemvenv)</span> <span class="pre">cd</span> <span class="pre">path/to/nlfem/examples/Test2D</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">(nlfemvenv)</span> <span class="pre">python3</span> <span class="pre">computeRates2D.py</span> <span class="pre">-f</span> <span class="pre">testConfConstant</span> <span class="pre">-s</span> <span class="pre">4</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">nlfemvenv</span><span class="p">)</span> <span class="n">cd</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">nlfem</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">Test2D</span>
+<span class="p">(</span><span class="n">nlfemvenv</span><span class="p">)</span> <span class="n">python3</span> <span class="n">computeRates2D</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">f</span> <span class="n">testConfConstant</span> <span class="o">-</span><span class="n">s</span> <span class="mi">4</span>
+</pre></div>
+</div>
 <p>Run a more extensive test via the option <code class="docutils literal notranslate"><span class="pre">-f</span> <span class="pre">testConfFull</span> <span class="pre">-s</span> <span class="pre">4</span></code>. Get
 help via the option <code class="docutils literal notranslate"><span class="pre">-h</span></code>.</p>
 </div>
@@ -317,7 +319,13 @@ functions there.</p>
 <h3>Step 1 Altering the model<a class="headerlink" href="#step-1-altering-the-model" title="Permalink to this headline">¶</a></h3>
 <p>If you want to change the kernel implement your version
 <code class="docutils literal notranslate"><span class="pre">kernel_myKernel()</span></code> while exactly meeting the interface of the
-function pointer <code class="docutils literal notranslate"><span class="pre">mode_kernel</span></code>. Do the same thing for the right hand
+function pointer</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="p">(</span><span class="o">*</span><span class="n">model_kernel</span><span class="p">)</span> <span class="p">(</span><span class="n">const</span> <span class="n">double</span> <span class="o">*</span> <span class="n">x</span><span class="p">,</span> <span class="n">long</span> <span class="n">labelx</span><span class="p">,</span>
+   <span class="n">const</span> <span class="n">double</span> <span class="o">*</span> <span class="n">y</span><span class="p">,</span><span class="n">long</span> <span class="n">labely</span><span class="p">,</span>
+   <span class="n">const</span> <span class="n">MeshType</span> <span class="o">&amp;</span><span class="n">mesh</span><span class="p">,</span> <span class="n">double</span> <span class="o">*</span> <span class="n">kernel_val</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Do the same thing for the right hand
 side.</p>
 </div>
 <div class="section" id="step-2-adding-the-option">

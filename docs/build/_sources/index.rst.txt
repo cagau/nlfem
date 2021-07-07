@@ -19,7 +19,7 @@ Python interface
 .. autofunction:: nlfem.loadVector
 
 Adding kernels or forcing functions
---------------------------------------------
+--------------------------------------
 
 If you want to change the model you have to alter the file
 ``src/model.cpp``. You find a several options for kernel and forcing
@@ -33,7 +33,15 @@ Step 1 Altering the model
 
 If you want to change the kernel implement your version
 ``kernel_myKernel()`` while exactly meeting the interface of the
-function pointer ``mode_kernel``. Do the same thing for the right hand
+function pointer
+
+::
+
+   void (*model_kernel) (const double * x, long labelx,
+      const double * y,long labely,
+      const MeshType &mesh, double * kernel_val);
+
+Do the same thing for the right hand
 side.
 
 Step 2 Adding the option
