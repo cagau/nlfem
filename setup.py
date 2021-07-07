@@ -12,11 +12,8 @@ except ModuleNotFoundError:
 name = "nlfem"
 is_sequential = False
 
-extra_link_args = ['-larmadillo', '-lgmp', '-lmpfr', '-lmetis']
-extra_compile_args = ['-O3', '-DARMA_NO_DEBUG']
-if not is_sequential:
-    extra_link_args += ['-fopenmp']
-    extra_compile_args += ['-fopenmp']
+extra_link_args = ['-larmadillo', '-lgmp', '-lmpfr', '-lmetis', '-fopenmp']
+extra_compile_args = ['-O3', '-DARMA_NO_DEBUG', '-fopenmp']
 
 ext_modules = [
     Extension(
