@@ -3,33 +3,39 @@ import numpy as np
 def u_exact_linearRhs(x):
     return x[0] ** 2 * x[1] + x[1] ** 2
 def u_exact_FieldConstantBothRhs(x):
-    return np.array([x[1]**2, x[0]**2 * x[1]])*0.4
+    return np.array([x[1]**2, x[0]**2 * x[1]])
 
 KERNELS = [
     {
         "function": "constant",
-        "horizon": 1./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
+        "horizon": 2./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
         "outputdim": 1
     },
     {
        "function": "linearPrototypeMicroelastic",
-       "horizon": 1./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
+       "horizon": 2./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
        "outputdim": 1,
         "fractional_s": -0.5
     },
     {
         "function": "fractional",
-        "horizon": 1./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
+        "horizon": 2./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
         "outputdim": 1,
         "fractional_s": 0.5
     },
+    {
+        "function": "linearPrototypeMicroelasticField",
+        "horizon": 2./10., # Due to the very simplistic mesh generation we are limited to delta D/10., where D\in N.
+        "outputdim": 2,
+        "fractional_s": -0.5
+    }
 ]
 
 LOADS = [
     {"function": "linear", "solution": u_exact_linearRhs},
     {"function": "linear", "solution": u_exact_linearRhs},
     {"function": "linear", "solution": u_exact_linearRhs},
-    #{"function": "linearField", "solution": u_exact_FieldConstantBothRhs}
+    {"function": "linearField", "solution": u_exact_FieldConstantBothRhs}
 ]
 
 
@@ -72,9 +78,9 @@ CONFIGURATIONS = [
                 "points": Py,
                 "weights": dy
             },
-            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for singular kernels.
         },
-        "verbose": True
+        "verbose": False
     },
     {
         # "savePath": "pathA",
@@ -94,8 +100,9 @@ CONFIGURATIONS = [
                 "points": Py,
                 "weights": dy
             },
-            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
-        }
+            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for singular kernels.
+        },
+        "verbose": False
     },
     {
         # "savePath": "pathA",
@@ -115,8 +122,9 @@ CONFIGURATIONS = [
                 "points": Py,
                 "weights": dy
             },
-            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
-        }
+            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for singular kernels.
+        },
+        "verbose": False
     },
     {
         # "savePath": "pathA",
@@ -136,8 +144,9 @@ CONFIGURATIONS = [
                 "points": Py,
                 "weights": dy
             },
-            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
-        }
+            "tensorGaussDegree": 5  # Degree of tensor Gauss quadrature for singular kernels.
+        },
+        "verbose": False
     },
     {
         # "savePath": "pathA",
@@ -157,8 +166,9 @@ CONFIGURATIONS = [
                 "points": Py,
                 "weights": dy
             },
-            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
-        }
+            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for singular kernels.
+        },
+        "verbose": False
     },
     {
         # "savePath": "pathA",
@@ -178,7 +188,8 @@ CONFIGURATIONS = [
                 "points": Py,
                 "weights": dy
             },
-            "tensorGaussDegree": 6,  # Degree of tensor Gauss quadrature for weakly singular kernels.
-        }
+            "tensorGaussDegree": 5,  # Degree of tensor Gauss quadrature for singular kernels.
+        },
+        "verbose": False
     }
 ]

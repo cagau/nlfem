@@ -14,7 +14,11 @@
 
 void abortIfFalse(const bool assertion, const char * message){
     if (!assertion){
-        cout << "ERROR in checks.cpp: " << message << endl;
+        //TODO use std rausschmeißen
+        //TODO std::err statt cout bei fehlern
+        // otder throw (?)
+        //TODO throw...(?) -> Programm sollte aber abstürzen
+        cerr << "ERROR in checks.cpp: " << message << endl;
         abort();
     }
 }

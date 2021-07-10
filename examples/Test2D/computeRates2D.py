@@ -16,7 +16,7 @@ class Callback:
 
 def runTest(conf, kernel, load, layerDepth, pp = None):
     err_ = None
-    data = {"$h$": [], "$K_\Omega$": [], "L2 Error": [], "Rates": [], "Time [s]": []}
+    data = {"$h$": [], "$K_\Omega$": [], "L2 Error": [], "Rates": []}#, "Time [s]": []}
     u_exact = load["solution"]
 
     # Delta is assumed to be of the form deltaK/10 in the mesh, so we obtain deltaK by
@@ -42,7 +42,7 @@ def runTest(conf, kernel, load, layerDepth, pp = None):
         nnzRows = np.max(np.sum(A != 0, axis=0))
         print("nnzRows are ", nnzRows)
         f_OI = nlfem.loadVector(mesh.__dict__, load, conf)
-        data["Time [s]"].append(time() - start)
+        #data["Time [s]"].append(time() - start)
 
         A_O = A[mesh.nodeLabels > 0][:, mesh.nodeLabels > 0]
         #A_Odense = np.array(A_O.todense())
@@ -137,7 +137,9 @@ if __name__ == "__main__":
     for k, kernel in enumerate(KERNELS):
         load = LOADS[k]
         #fileHandle.write("# Kernel: " + kernel["function"] + "\n")
+        #print("\n\n########## Kernel: ", kernel["function"])
         for conf in CONFIGURATIONS:
+            #print("\n\n", conf)
             data = runTest(conf, kernel, load, layerDepth, pp)
             helpers.append_output(data, conf, kernel, load, fileHandle=fileHandle, datacolumns=data)
     fileHandle.close()

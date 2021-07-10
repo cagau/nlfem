@@ -63,6 +63,7 @@ int ERROR_wrongAccess(const ElementType &aT, const ElementType &bT, const Quadra
 };
 // ___ INTEGRATION IMPLEMENTATION ______________________________________________________________________________________
 // TODO Return int = 1, if interaction, 0 otherwise. This helps to set other values here if required
+// TODO integrate should take elements, two-points-functions, and quadrule and return
 int integrate(const ElementType &aT, const ElementType &bT,
                                                          const QuadratureType &quadRule,
                                                          const MeshType &mesh, const ConfigurationType &conf,
@@ -129,6 +130,8 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
         abort();
     }
 
+    //TODO Consider untying retriangulation and integral evaluation..(?)
+    //The code below is much simpler that the retriangulation code..
     for(int traffoCounter=0; traffoCounter < nTraffos; traffoCounter++) {
         //if (aT.Tdx == 0) cout << "traffo " << traffoCounter << endl;
         for (int k = 0; k < quadRule.nPg; k++) {
@@ -164,8 +167,8 @@ int integrate_weakSingular(const ElementType &aT, const ElementType &bT,
 
                             termNonlocPrime[mesh.outdim * mesh.dVertex * (argSortA[a]*mesh.outdim + aOut)
                                             + argSortB[b]*mesh.outdim + bOut] += factors * psix[a] * psiy[b];
-                            //TODO Isn't it mesh.outdim * mesh.dVertex * (argSortA[b]*mesh.outdim + aOut)
-                            //              + argSortB[a- shift]*mesh.outdim + bOut ??
+                            //TODO Check whether this is mesh.outdim * mesh.dVertex * (argSortA[b]*mesh.outdim + aOut)
+                            //              + argSortB[a- shift]*mesh.outdim + bOut
                             //termNonloc[mesh.dVertex * a + b] += 2*factors * psix[a] * psiy[b];
                             //cout << termLocal[mesh.outdim*mesh.dVertex * a + b] << endl;
                         }
@@ -438,7 +441,9 @@ int integrate_retriangulate(const ElementType &aT, const ElementType &bT, const 
                     //  (b 1, ker (0,0)), (b 1, ker (0,1)), (b 1, ker (1,0)), (b 1, ker (1,1)),
                     //  (b 2, ker (0,0)), (b 2, ker (0,1)), (b 2, ker (1,0)), (b 2, ker (1,1))]
                     //  = (PSI ORDER) * (KERNEL ORDER)
-
+                    //TODO
+                    // Function is much too complex
+                    // A different expression than kernel * u * v in the integration requires a new integration routine!
                     for (b = 0; b < mesh.dVertex*mesh.outdim*mesh.outdim; b++) {
                     // for (b = 0; b < mesh.dVertex; b++) {
                         // [x 18]
@@ -1907,6 +1912,7 @@ void setupElement(const MeshType &mesh, const long * Vdx_new, ElementType &T){
 int join(const ElementType &aT, const ElementType &bT, const MeshType &mesh,
          ElementType &aTsorted, ElementType &bTsorted, int * argSortA, int * argSortB){
     //cout << "Welcome to join()" << endl;
+    //TODO Try usage if STL Algorithms
     int nEqual = 0;
     int AinB[3], BinA[3];
     const long * aVdx = &(mesh.Triangles(0, aT.Tdx));

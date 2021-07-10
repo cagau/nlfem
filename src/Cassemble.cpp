@@ -26,6 +26,8 @@ using namespace std;
  * @param verbose
  */
 void lookup_configuration(ConfigurationType & conf, int verbose=0){
+    //TODO Should be in model kernel and model forcing
+
     // Lookup right hand side ------------------------------------------------------------------------------------------
     if (verbose) cout << "Right hand side: " << conf.model_f << endl;
     //void (*model_f)(const double * x, double * forcing_out);
@@ -237,7 +239,8 @@ void par_evaluateMass(double *vd, const double *ud, long *Elements,
     } // Pragma Omp Parallel
     free(psi);
 }
-
+//TODO This algorithm is very, very similar to the main algorithm...!
+// Can BFS Algorithms should somehow be separated..?
 void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
     const int sampleSize = 3;
     int indexList[sampleSize];
@@ -292,6 +295,7 @@ void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
                 // int bTdx = NTdx[j];
                 int bTdx;
                 if (nTdx == -1) {bTdx = aTdx;} // Make sure, that the first 'neighbour' is the element itself
+                //TODO Narrowing conversion!
                 else {bTdx = mesh.adjncy[startNdx + nTdx];}
                 // Check how many neighbours sTdx has.
                 // In order to be able to store the list as contiguous array we fill
@@ -315,9 +319,11 @@ void estimateNNZperRow(const MeshType & mesh, const ConfigurationType & conf){
                                 rowCount(3*aTdx+2) += 3;
                             } else {
                                 for (int i = 0; i < mesh.dVertex; i++) {
+                                    //TODO Narrowing conversion!
                                     int bVdx = mesh.Triangles(i, bTdx);
                                     if (!bvertexVisited(bVdx)) {
                                         for (int k = 0; k < mesh.dVertex; k++) {
+                                            //TODO Narrowing conversion!
                                             int aVdx = mesh.Triangles(k, aTdx);
                                             if (!avertexVisited(aVdx)) {
                                                 //Vdx = mesh.ptrTriangles[(mesh.dVertex+1)*Tdx + k+1];
@@ -385,6 +391,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     idx_t *adjncy;
 
     for (int k=0; k<mesh.nE; k++){
+        //TODO Be careful with the casts etc..
         eptr[k] =  (idx_t)(k*mesh.dVertex);
         for (int l=0; l<mesh.dVertex; l++){
             eind[mesh.dVertex*k + l] = (idx_t)(mesh.Triangles[mesh.dVertex*k + l]);
@@ -393,6 +400,7 @@ void par_assemble(const string compute, const string path_spAd, const string pat
     eptr[mesh.nE] =  (idx_t)(mesh.nE*mesh.dVertex);
 
     // Compute Adjacency Graph with METIS
+    //TODO Write a wrapper for metis somehow...
     METIS_MeshToDual(&nE_metis, &nV_metis, eptr, eind, &ncommon, &numflag, &xadj, &adjncy);
     if (verbose) printf("Done. \n");
 
@@ -485,12 +493,15 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     //printf("npart %ld -> METIS \n", nparts);
     if (nparts > 1) {
         METIS_PartMeshDual(&ne_idxt, &nn_idxt, mesh.eptr, mesh.eind,
-                           NULL, NULL, &ncommon,
-                           &nparts, NULL, NULL,
+                           nullptr, nullptr, &ncommon,
+                           &nparts, nullptr, nullptr,
                            &objval, epart, npart);
     }
     //cout << epart << endl;
     //cout << npart << endl;
+    //TODO psix should be a OnePointData (like OnePointFunction but for precomputed data)
+    // Basically OnePointData is a performance tweak for ReferencePoints (in opposition ti PhysicalPoints)
+    //can they also depend on points only ?
     for(int h=0; h<quadRule.nPx; h++){
         // This works due to Column Major ordering of Armadillo Matricies!
         model_basisFunction(& quadRule.Px[mesh.dim*h], mesh.dim, & quadRule.psix[mesh.dVertex * h]);
@@ -633,6 +644,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
                                 // Domain decomposition. If Zeta is empty, the weight is set to 1.
                                 double weight = 1.;
                                 if (mesh.ptrZeta) {
+                                    //TODO ARMADILLO_DEP
                                     double zeta = arma::dot(mesh.ZetaIndicator.col(aTdx), mesh.ZetaIndicator.col(bTdx));
                                     weight = 1. / zeta;
                                 }
@@ -827,6 +839,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     if (conf.verbose) cout << "K " << mesh.K << endl;
     if (conf.verbose) cout << "NNZ (total of all threads) " << nnz_total << endl;
     //cout << arma::max(indices_all.row(1)) << endl;
+    //TODO ARMADILLO_DEP
     arma::sp_mat sp_Ad(true, indices_all, values_all, mesh.K, mesh.K);
     sp_Ad.save(conf.path_spAd);
     //cout << "Data saved." << endl;

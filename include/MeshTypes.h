@@ -78,7 +78,7 @@ struct ConfigurationStruct {
     const int verbose;
 };
 typedef ConfigurationStruct ConfigurationType;
-
+//TODO This class is too complex and initialization is extremly error prone
 struct MeshStruct{
     const int K_Omega;
     const int K;
@@ -115,7 +115,7 @@ struct MeshStruct{
     // This corresponds to a kernel with no singularity.
     // Therefore the integration for fractional kernels can be used for non-singular kernels as well
     // Makes sense for tests e.g.
-
+    // TODO Write a wrapper for METIS
     idx_t *xadj;
     idx_t *adjncy;
     idx_t *eptr;
@@ -123,10 +123,13 @@ struct MeshStruct{
 
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
     //const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
+    //TODO Refactor to Elements
+    //TODO static vectors ...
     const arma::Mat<long> Triangles{arma::Mat<long>(this->ptrTriangles, this->dVertex, this->nE)};
     // Label of Triangles inside Omega = 1
     // Label of Triangles in OmegaI = 2
     const arma::Col<long> LabelTriangles{arma::Col<long>(this->ptrLabelTriangles, this->nE)};
+    // TODO Struct of Points mit static vectors Verts, LabelVerts
     const arma::Col<long> LabelVerts{arma::Col<long>(this->ptrLabelVerts, this->nV)};
     // Zeta is an optional parameter. In case we get a Zeta matrix,
     // the memory is already allocated we only need a wrapper.
@@ -138,6 +141,7 @@ typedef MeshStruct MeshType;
 
 struct QuadratureStruct{
     // Quadrature rule for the non-singular case
+    //TODO Should contain Points, Weights
     const double * Px;
     const double * Py;
     const double * dx;
@@ -250,5 +254,6 @@ const std::list<double(*)(double *)> traffoIdentical = {traffoIdentical0,
                                                         traffoIdentical4,
                                                         traffoIdentical5};
 void initializeElement(int Tdx, const MeshType & mesh, ElementType & T);
+//TODO It is good, that this is a free function, but the initialization should be inside of Quadrule somewhere
 void initializeQuadrule(QuadratureType & quadRule, const MeshType & mesh);
 #endif //NONLOCAL_ASSEMBLY_MESHTYPES_H

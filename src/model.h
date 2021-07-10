@@ -10,7 +10,12 @@
 
 // Pointer -------------------------------------------------------------------------------------------------------------
 //// Kernel pointer and implementations
+//TODO Use lambdas instead (check how to obtain inlining! Function pointer can never be inlined...)
+//TODO change to template interface such that Kernel class with operator() which is a TwoPointFunction depending on Points
+//TODO kernel is a class containing kernelFunction (TwoPointFunction) and truncation (TwoPointFunction, delta (TwoPointFunction)).
+// The kernel knows its own delta, and this might be a function!
 extern void (*model_kernel)(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val);
+//TODO Default initialization of operator()...
 void ERROR_wrongAccess(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val);
 
 /**

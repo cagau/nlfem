@@ -52,7 +52,10 @@
 #include <MeshTypes.h>
 #include "cstring"
 #include "model.h"
+
+//TODO stop it!!
 using namespace std;
+//Put your stuff into a namespace
 
 ////// Retriangulation Routine ---------------------------------------------------------------------------------------------
 

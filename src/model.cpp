@@ -16,6 +16,7 @@ using namespace std;
 // ### KERNEL ##########################################################################################################
 void (*model_kernel)(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val);
 void ERROR_wrongAccess(const double * x, long labelx, const double * y, long labely, const MeshType &mesh, double * kernel_val){
+    //TODO cerr oder throw...
     cout << "ERROR in model.cpp/ERROR_wrongAccess(): You chose no kernel, but the assembly routine tried to call it." << endl;
     cout << "The names of possible choices are given in lookup_configuration() in Cassemble.cpp." << endl;
     abort();

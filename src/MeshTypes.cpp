@@ -11,7 +11,8 @@ void model_basisFunction(const double * p, double *psi_vals){
     psi_vals[1] = p[0];
     psi_vals[2] = p[1];
 }
-
+//TODO Is basically a OnePointFunction
+// Should take Point and return an output
 void model_basisFunction(const double * p, const int dim, double *psi_vals){
     int i=0;
 
