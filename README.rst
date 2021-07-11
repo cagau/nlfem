@@ -63,7 +63,7 @@ To test the rates for the constant kernel run
 Run a more extensive test via the option ``-f testConfFull -s 4``. Get
 help via the option ``-h``.
 
-Licence
+License
 =======
 
 nlfem is published under MIT license. Copyright (c) 2021 Manuel Klar, Christian Vollmann
