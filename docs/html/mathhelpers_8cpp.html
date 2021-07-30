@@ -85,6 +85,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>rightNormal</b> (cons
 <tr class="memitem:afb74215a48644cc301c87a891a1ee7f1"><td class="memItemLeft" align="right" valign="top"><a id="afb74215a48644cc301c87a891a1ee7f1"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>faculty</b> (int n)</td></tr>
 <tr class="separator:afb74215a48644cc301c87a891a1ee7f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a833ed62a6cb498000517a74dd340fab2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="mathhelpers_8cpp.html#a833ed62a6cb498000517a74dd340fab2">scale</a> (double *alpha)</td></tr>
+<tr class="memdesc:a833ed62a6cb498000517a74dd340fab2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Rescales a cube <img class="formulaInl" alt="$ [-1, 1]^4 $" src="form_9.png"/> to a cube <img class="formulaInl" alt="$ [0, 1]^4 $" src="form_10.png"/>. The determinant of this transformation is given by the constant SCALEDET.  <a href="#a833ed62a6cb498000517a74dd340fab2">More...</a><br /></td></tr>
+<tr class="separator:a833ed62a6cb498000517a74dd340fab2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8a9fa33341874214425257a3f696521"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="mathhelpers_8cpp.html#ab8a9fa33341874214425257a3f696521">mirror</a> (double *alpha)</td></tr>
+<tr class="memdesc:ab8a9fa33341874214425257a3f696521"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maps a tuple of two triangles <img class="formulaInl" alt="$\left\lbrace z | z_2 \in [0,1], z_1 \ in [0,z_2] \right\rbrace$" src="form_11.png"/> to a tuple of two standard simplices <img class="formulaInl" alt="$\left\lbrace z | z_1 \in [0,1], z_2 \ in [0,1-z_1] \right\rbrace$" src="form_12.png"/>. The determinant of this transformation is 1.  <a href="#ab8a9fa33341874214425257a3f696521">More...</a><br /></td></tr>
+<tr class="separator:ab8a9fa33341874214425257a3f696521"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a819fc9fd61a3a55de344cbe333898f47"><td class="memItemLeft" align="right" valign="top"><a id="a819fc9fd61a3a55de344cbe333898f47"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>absDet</b> (const double *E)</td></tr>
 <tr class="separator:a819fc9fd61a3a55de344cbe333898f47"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -127,6 +133,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>vec_sum</b> (const 
 <tr class="memitem:a96f410c6c663c0a5629d920d5f2e2ae4"><td class="memItemLeft" align="right" valign="top"><a id="a96f410c6c663c0a5629d920d5f2e2ae4"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>vec_sqL2dist</b> (const double *x, const double *y, const int len)</td></tr>
 <tr class="separator:a96f410c6c663c0a5629d920d5f2e2ae4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa445386726b7a579cd3807ae5e8623cb"><td class="memItemLeft" align="right" valign="top"><a id="aa445386726b7a579cd3807ae5e8623cb"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>vec_LInfdist</b> (const double *x, const double *y, const int len)</td></tr>
+<tr class="separator:aa445386726b7a579cd3807ae5e8623cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad9656875dba5f314b07b1a6ba9fc68c8"><td class="memItemLeft" align="right" valign="top"><a id="ad9656875dba5f314b07b1a6ba9fc68c8"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>doubleVec_tozero</b> (double *vec, const int len)</td></tr>
 <tr class="separator:ad9656875dba5f314b07b1a6ba9fc68c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -170,7 +179,64 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>scal_sqL2dist</b> (
 <dl class="section version"><dt>Version</dt><dd>0.1 25/08/20 </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="mathhelpers_8cpp_source.html">mathhelpers.cpp</a>.</p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Function Documentation</h2>
+<a id="ab8a9fa33341874214425257a3f696521"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8a9fa33341874214425257a3f696521">&#9670;&nbsp;</a></span>mirror()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void mirror </td>
+          <td>(</td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>alpha</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maps a tuple of two triangles <img class="formulaInl" alt="$\left\lbrace z | z_2 \in [0,1], z_1 \ in [0,z_2] \right\rbrace$" src="form_11.png"/> to a tuple of two standard simplices <img class="formulaInl" alt="$\left\lbrace z | z_1 \in [0,1], z_2 \ in [0,1-z_1] \right\rbrace$" src="form_12.png"/>. The determinant of this transformation is 1. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">alpha,a</td><td>single input point of dimension 4. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="mathhelpers_8cpp_source.html#l00072">72</a> of file <a class="el" href="mathhelpers_8cpp_source.html">mathhelpers.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a833ed62a6cb498000517a74dd340fab2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a833ed62a6cb498000517a74dd340fab2">&#9670;&nbsp;</a></span>scale()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void scale </td>
+          <td>(</td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>alpha</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Rescales a cube <img class="formulaInl" alt="$ [-1, 1]^4 $" src="form_9.png"/> to a cube <img class="formulaInl" alt="$ [0, 1]^4 $" src="form_10.png"/>. The determinant of this transformation is given by the constant SCALEDET. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">alpha,a</td><td>single input point of dimension 4. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="mathhelpers_8cpp_source.html#l00066">66</a> of file <a class="el" href="mathhelpers_8cpp_source.html">mathhelpers.cpp</a>.</p>
+
+</div>
+</div>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

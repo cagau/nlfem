@@ -117,6 +117,10 @@ void kernel_constant3D(const double * x, long labelx, const double * y, long lab
 void kernel_labeled(const double * x, long labelx, const double * y, long labely, const MeshType &mesh,
                     double * kernel_val);
 
+void kernel_notch(const double * x, const long labelx, const double * y, const long labely, const MeshType &mesh,
+                  double * kernel_val);
+void kernel_labeledNotch(const double * x, const long labelx, const double * y, const long labely, const MeshType &mesh,
+                         double * kernel_val);
 /**
  * @brief Kernel for peridynamics diffusion model. The scalar valued weakly singular kernel reads as
  *

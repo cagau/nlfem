@@ -57,6 +57,8 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
     map<string, void (*)(const double * x, long labelx, const double * y, long labely,
                          const MeshType &mesh, double * kernel_val)> lookup_kernel = {
             {"constantTruncated", kernel_constantTruncated},
+            {"notch", kernel_notch},
+            {"labeledNotch", kernel_labeledNotch},
             {"constant", kernel_constant},
             {"constantLinf2D", kernel_constantLinf2D},
             {"labeled", kernel_labeled},

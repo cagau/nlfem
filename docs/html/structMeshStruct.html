@@ -83,6 +83,9 @@ const long *&#160;</td><td class="memItemRight" valign="bottom"><b>ptrLabelTrian
 <tr class="memitem:addae02525fc32a131c2e90431680717b"><td class="memItemLeft" align="right" valign="top"><a id="addae02525fc32a131c2e90431680717b"></a>
 const double *&#160;</td><td class="memItemRight" valign="bottom"><b>ptrVerts</b></td></tr>
 <tr class="separator:addae02525fc32a131c2e90431680717b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3002dc35b80682efbf770f531e1b9e7d"><td class="memItemLeft" align="right" valign="top"><a id="a3002dc35b80682efbf770f531e1b9e7d"></a>
+const long *&#160;</td><td class="memItemRight" valign="bottom"><b>ptrLabelVerts</b></td></tr>
+<tr class="separator:a3002dc35b80682efbf770f531e1b9e7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0ea54a7f5bbb1c27ebeb31360a8a7684"><td class="memItemLeft" align="right" valign="top"><a id="a0ea54a7f5bbb1c27ebeb31360a8a7684"></a>
 const int&#160;</td><td class="memItemRight" valign="bottom"><b>nE</b></td></tr>
 <tr class="separator:a0ea54a7f5bbb1c27ebeb31360a8a7684"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -101,12 +104,6 @@ const double&#160;</td><td class="memItemRight" valign="bottom"><b>delta</b></td
 <tr class="memitem:a2197ae3abc634f808fb931cabe9e2918"><td class="memItemLeft" align="right" valign="top"><a id="a2197ae3abc634f808fb931cabe9e2918"></a>
 const double&#160;</td><td class="memItemRight" valign="bottom"><b>sqdelta</b></td></tr>
 <tr class="separator:a2197ae3abc634f808fb931cabe9e2918"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace242ee8bac5d86f4381e49735a53dfe"><td class="memItemLeft" align="right" valign="top"><a id="ace242ee8bac5d86f4381e49735a53dfe"></a>
-const long *&#160;</td><td class="memItemRight" valign="bottom"><b>ptrNeighbours</b></td></tr>
-<tr class="separator:ace242ee8bac5d86f4381e49735a53dfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe1c0a3983e5ac2eed5d51263224c776"><td class="memItemLeft" align="right" valign="top"><a id="afe1c0a3983e5ac2eed5d51263224c776"></a>
-const int&#160;</td><td class="memItemRight" valign="bottom"><b>nNeighbours</b></td></tr>
-<tr class="separator:afe1c0a3983e5ac2eed5d51263224c776"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c7268bb48fa559795b0208d669dc109"><td class="memItemLeft" align="right" valign="top"><a id="a6c7268bb48fa559795b0208d669dc109"></a>
 const int&#160;</td><td class="memItemRight" valign="bottom"><b>is_DiscontinuousGalerkin</b></td></tr>
 <tr class="separator:a6c7268bb48fa559795b0208d669dc109"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,25 +128,40 @@ const long&#160;</td><td class="memItemRight" valign="bottom"><b>nZeta</b></td><
 <tr class="memitem:a5996b2a43c2c2fabfa9b4d41f66603f8"><td class="memItemLeft" align="right" valign="top"><a id="a5996b2a43c2c2fabfa9b4d41f66603f8"></a>
 const double&#160;</td><td class="memItemRight" valign="bottom"><b>maxDiameter</b></td></tr>
 <tr class="separator:a5996b2a43c2c2fabfa9b4d41f66603f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab499ca38c52d4148774c55bb7b3d8b51"><td class="memItemLeft" align="right" valign="top"><a id="ab499ca38c52d4148774c55bb7b3d8b51"></a>
+const double&#160;</td><td class="memItemRight" valign="bottom"><b>fractional_s</b></td></tr>
+<tr class="separator:ab499ca38c52d4148774c55bb7b3d8b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87dd2a81acb30aff1297b44597dbbab0"><td class="memItemLeft" align="right" valign="top"><a id="a87dd2a81acb30aff1297b44597dbbab0"></a>
+idx_t *&#160;</td><td class="memItemRight" valign="bottom"><b>xadj</b></td></tr>
+<tr class="separator:a87dd2a81acb30aff1297b44597dbbab0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ca67dcd3c9828677dd77d0fd23a8a9b"><td class="memItemLeft" align="right" valign="top"><a id="a8ca67dcd3c9828677dd77d0fd23a8a9b"></a>
+idx_t *&#160;</td><td class="memItemRight" valign="bottom"><b>adjncy</b></td></tr>
+<tr class="separator:a8ca67dcd3c9828677dd77d0fd23a8a9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24a46afe6ef3e3647061d2e9ab767d84"><td class="memItemLeft" align="right" valign="top"><a id="a24a46afe6ef3e3647061d2e9ab767d84"></a>
+idx_t *&#160;</td><td class="memItemRight" valign="bottom"><b>eptr</b></td></tr>
+<tr class="separator:a24a46afe6ef3e3647061d2e9ab767d84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39ffdaf17a6a9af4fbda4de31a2a6cb8"><td class="memItemLeft" align="right" valign="top"><a id="a39ffdaf17a6a9af4fbda4de31a2a6cb8"></a>
+idx_t *&#160;</td><td class="memItemRight" valign="bottom"><b>eind</b></td></tr>
+<tr class="separator:a39ffdaf17a6a9af4fbda4de31a2a6cb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae117e8b4d56a90578df0b0c91e76705"><td class="memItemLeft" align="right" valign="top"><a id="aae117e8b4d56a90578df0b0c91e76705"></a>
 const arma::Mat&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>Verts</b> {arma::Mat&lt;double&gt;(this-&gt;ptrVerts, this-&gt;dim, this-&gt;nV)}</td></tr>
 <tr class="separator:aae117e8b4d56a90578df0b0c91e76705"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a970c7e969086bd70dc2faf32329e41a6"><td class="memItemLeft" align="right" valign="top"><a id="a970c7e969086bd70dc2faf32329e41a6"></a>
-const arma::Mat&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>Neighbours</b> {arma::Mat&lt;long&gt;(this-&gt;ptrNeighbours, this-&gt;nNeighbours, this-&gt;nE)}</td></tr>
-<tr class="separator:a970c7e969086bd70dc2faf32329e41a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcaa878ec81d2e4f508fe92585d57244"><td class="memItemLeft" align="right" valign="top"><a id="afcaa878ec81d2e4f508fe92585d57244"></a>
 const arma::Mat&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>Triangles</b> {arma::Mat&lt;long&gt;(this-&gt;ptrTriangles, this-&gt;dVertex, this-&gt;nE)}</td></tr>
 <tr class="separator:afcaa878ec81d2e4f508fe92585d57244"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3603034fb1a0770ba05cb7fd4396f27"><td class="memItemLeft" align="right" valign="top"><a id="ae3603034fb1a0770ba05cb7fd4396f27"></a>
 const arma::Col&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>LabelTriangles</b> {arma::Col&lt;long&gt;(this-&gt;ptrLabelTriangles, this-&gt;nE)}</td></tr>
 <tr class="separator:ae3603034fb1a0770ba05cb7fd4396f27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4110235a164d79f0770b08653db667dc"><td class="memItemLeft" align="right" valign="top"><a id="a4110235a164d79f0770b08653db667dc"></a>
+const arma::Col&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>LabelVerts</b> {arma::Col&lt;long&gt;(this-&gt;ptrLabelVerts, this-&gt;nV)}</td></tr>
+<tr class="separator:a4110235a164d79f0770b08653db667dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a810959d1b3745813e084562bdba2084c"><td class="memItemLeft" align="right" valign="top"><a id="a810959d1b3745813e084562bdba2084c"></a>
 const arma::Mat&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ZetaIndicator</b> {arma::Mat&lt;long&gt;(this-&gt; ptrZeta, this-&gt; nZeta, this-&gt; nE)}</td></tr>
 <tr class="separator:a810959d1b3745813e084562bdba2084c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="MeshTypes_8h_source.html#l00077">77</a> of file <a class="el" href="MeshTypes_8h_source.html">MeshTypes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MeshTypes_8h_source.html#l00082">82</a> of file <a class="el" href="MeshTypes_8h_source.html">MeshTypes.h</a>.</p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/klar/Seafile/Promotion/projects/nlfem/include/<a class="el" href="MeshTypes_8h_source.html">MeshTypes.h</a></li>
 </ul>

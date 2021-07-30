@@ -77,33 +77,54 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a066dc1138361f907a289bec6af1cf67b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a066dc1138361f907a289bec6af1cf67b">kernel_constant</a> (const double *x, const long labelx, const double *y, const long labely, const double sqdelta, double *kernel_val)</td></tr>
-<tr class="memdesc:a066dc1138361f907a289bec6af1cf67b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant kernel in 2D case. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.  <a href="#a066dc1138361f907a289bec6af1cf67b">More...</a><br /></td></tr>
-<tr class="separator:a066dc1138361f907a289bec6af1cf67b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92ff1f5e6d8d1a4edcbf29267046f81b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a92ff1f5e6d8d1a4edcbf29267046f81b">kernel_constantTruncated</a> (const double *x, const long labelx, const double *y, const long labely, const double sqdelta, double *kernel_val)</td></tr>
-<tr class="memdesc:a92ff1f5e6d8d1a4edcbf29267046f81b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant kernel in 2D case which truncates itself. This means that the kernel returns 0, if <img class="formulaInl" alt="$ |x-y| &gt; \delta $" src="form_23.png"/>. It is used to simulate a specific ball approximation. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.  <a href="#a92ff1f5e6d8d1a4edcbf29267046f81b">More...</a><br /></td></tr>
-<tr class="separator:a92ff1f5e6d8d1a4edcbf29267046f81b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a248a983cf1917d574ff79b859b228ab1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a248a983cf1917d574ff79b859b228ab1">kernel_constant1D</a> (const double *x, const long labelx, const double *y, const long labely, const double sqdelta, double *kernel_val)</td></tr>
-<tr class="memdesc:a248a983cf1917d574ff79b859b228ab1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant kernel in 1D case. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.  <a href="#a248a983cf1917d574ff79b859b228ab1">More...</a><br /></td></tr>
-<tr class="separator:a248a983cf1917d574ff79b859b228ab1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b0ce634face2703b19e3cd9a876fb14"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a3b0ce634face2703b19e3cd9a876fb14">kernel_parabola</a> (const double *x, const long labelx, const double *y, const long labely, const double sqdelta, double *kernel_val)</td></tr>
-<tr class="memdesc:a3b0ce634face2703b19e3cd9a876fb14"><td class="mdescLeft">&#160;</td><td class="mdescRight">This kernel is defined by <img class="formulaInl" alt="$ \delta^2 - \|z\|^2 $" src="form_13.png"/>. It is radial but not singular or constant. The second moment is given by <img class="formulaInl" alt="$ \pi \delta ^6 / 12 $" src="form_14.png"/>.  <a href="#a3b0ce634face2703b19e3cd9a876fb14">More...</a><br /></td></tr>
-<tr class="separator:a3b0ce634face2703b19e3cd9a876fb14"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc4dd5c804f46fe5711af180dfab02dd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#adc4dd5c804f46fe5711af180dfab02dd">kernel_constant3D</a> (const double *x, const long labelx, const double *y, const long labely, const double sqdelta, double *kernel_val)</td></tr>
-<tr class="memdesc:adc4dd5c804f46fe5711af180dfab02dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant kernel in 3D case. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.  <a href="#adc4dd5c804f46fe5711af180dfab02dd">More...</a><br /></td></tr>
-<tr class="separator:adc4dd5c804f46fe5711af180dfab02dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adbaa45ce6ef8512216d6f683f4cb4836"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#adbaa45ce6ef8512216d6f683f4cb4836">kernel_labeled</a> (const double *x, const long labelx, const double *y, const long labely, const double sqdelta, double *kernel_val)</td></tr>
-<tr class="memdesc:adbaa45ce6ef8512216d6f683f4cb4836"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel depending on the triangle labels. Can be used to model nonlocal to nonlocal coupling.  <a href="#adbaa45ce6ef8512216d6f683f4cb4836">More...</a><br /></td></tr>
-<tr class="separator:adbaa45ce6ef8512216d6f683f4cb4836"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3dbe3924698ddd392399ac83b81829c9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a3dbe3924698ddd392399ac83b81829c9">kernel_linearPrototypeMicroelastic</a> (const double *x, const long labelx, const double *y, const long labely, const double sqdelta, double *kernel_val)</td></tr>
-<tr class="memdesc:a3dbe3924698ddd392399ac83b81829c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel for peridynamics diffusion model. The scalar valued weakly singular kernel reads as.  <a href="#a3dbe3924698ddd392399ac83b81829c9">More...</a><br /></td></tr>
-<tr class="separator:a3dbe3924698ddd392399ac83b81829c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0684f48d795e68fbba0a24c108b50740"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a0684f48d795e68fbba0a24c108b50740">kernelField_linearPrototypeMicroelastic</a> (const double *x, const long labelx, const double *y, const long labely, const double sqdelta, double *kernel_val)</td></tr>
-<tr class="memdesc:a0684f48d795e68fbba0a24c108b50740"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel for the peridynamics model. The matrix valued weakly singular kernel reads as.  <a href="#a0684f48d795e68fbba0a24c108b50740">More...</a><br /></td></tr>
-<tr class="separator:a0684f48d795e68fbba0a24c108b50740"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c75b8027d2caff63c6a7599b5ddd11b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a6c75b8027d2caff63c6a7599b5ddd11b">kernelField_constant</a> (const double *x, const long labelx, const double *y, const long labely, const double sqdelta, double *kernel_val)</td></tr>
-<tr class="memdesc:a6c75b8027d2caff63c6a7599b5ddd11b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant matrix valued kernel. For testing. The constant is the same as in the scalar case.  <a href="#a6c75b8027d2caff63c6a7599b5ddd11b">More...</a><br /></td></tr>
-<tr class="separator:a6c75b8027d2caff63c6a7599b5ddd11b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a13b1bb7edbbee4f244e0555f23fe90"><td class="memItemLeft" align="right" valign="top"><a id="a2a13b1bb7edbbee4f244e0555f23fe90"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>ERROR_wrongAccess</b> (const double *x, long labelx, const double *y, long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="separator:a2a13b1bb7edbbee4f244e0555f23fe90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada931fe46ddeb101be35c3989b1ff342"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#ada931fe46ddeb101be35c3989b1ff342">kernel_constant</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:ada931fe46ddeb101be35c3989b1ff342"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant kernel in 2D case. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.  <a href="#ada931fe46ddeb101be35c3989b1ff342">More...</a><br /></td></tr>
+<tr class="separator:ada931fe46ddeb101be35c3989b1ff342"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03bc7f35f4f1442d65f70d7675f9e8c2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a03bc7f35f4f1442d65f70d7675f9e8c2">kernel_constantLinf2D</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:a03bc7f35f4f1442d65f70d7675f9e8c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant kernel in 2D case with Linf truncation. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.  <a href="#a03bc7f35f4f1442d65f70d7675f9e8c2">More...</a><br /></td></tr>
+<tr class="separator:a03bc7f35f4f1442d65f70d7675f9e8c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6da4be75c9e69e197ffa1542bdb70af"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#af6da4be75c9e69e197ffa1542bdb70af">kernel_constantTruncated</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:af6da4be75c9e69e197ffa1542bdb70af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant kernel in 2D case which truncates itself. This means that the kernel returns 0, if <img class="formulaInl" alt="$ |x-y| &gt; \delta $" src="form_23.png"/>. It is used to simulate a specific ball approximation. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.  <a href="#af6da4be75c9e69e197ffa1542bdb70af">More...</a><br /></td></tr>
+<tr class="separator:af6da4be75c9e69e197ffa1542bdb70af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8afca6be48668cd3bb64e4c7838928bb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a8afca6be48668cd3bb64e4c7838928bb">kernel_constant1D</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:a8afca6be48668cd3bb64e4c7838928bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant kernel in 1D case. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.  <a href="#a8afca6be48668cd3bb64e4c7838928bb">More...</a><br /></td></tr>
+<tr class="separator:a8afca6be48668cd3bb64e4c7838928bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6319337764049c2ffc5bc62fa3f88623"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a6319337764049c2ffc5bc62fa3f88623">kernel_parabola</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:a6319337764049c2ffc5bc62fa3f88623"><td class="mdescLeft">&#160;</td><td class="mdescRight">This kernel is defined by <img class="formulaInl" alt="$ \delta^2 - \|z\|^2 $" src="form_13.png"/>. It is radial but not singular or constant. The second moment is given by <img class="formulaInl" alt="$ \pi \delta ^6 / 12 $" src="form_14.png"/>.  <a href="#a6319337764049c2ffc5bc62fa3f88623">More...</a><br /></td></tr>
+<tr class="separator:a6319337764049c2ffc5bc62fa3f88623"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3cb76a590beb93e87856e4fd6264c5c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#ab3cb76a590beb93e87856e4fd6264c5c">kernel_constant3D</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:ab3cb76a590beb93e87856e4fd6264c5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant kernel in 3D case. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.  <a href="#ab3cb76a590beb93e87856e4fd6264c5c">More...</a><br /></td></tr>
+<tr class="separator:ab3cb76a590beb93e87856e4fd6264c5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe48766be3d2fa45d5d70a32491511d6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#abe48766be3d2fa45d5d70a32491511d6">kernel_labeled</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:abe48766be3d2fa45d5d70a32491511d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel depending on the triangle labels. Can be used to model nonlocal to nonlocal coupling.  <a href="#abe48766be3d2fa45d5d70a32491511d6">More...</a><br /></td></tr>
+<tr class="separator:abe48766be3d2fa45d5d70a32491511d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b54e88cbfd050f6a7c735680c494552"><td class="memItemLeft" align="right" valign="top"><a id="a7b54e88cbfd050f6a7c735680c494552"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>kernel_notch</b> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="separator:a7b54e88cbfd050f6a7c735680c494552"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac58e7f77f444510f8b3426a1470eec58"><td class="memItemLeft" align="right" valign="top"><a id="ac58e7f77f444510f8b3426a1470eec58"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>kernel_labeledNotch</b> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="separator:ac58e7f77f444510f8b3426a1470eec58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8dd38f8459d34045ef42ac5e5f048066"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a8dd38f8459d34045ef42ac5e5f048066">kernel_linearPrototypeMicroelastic</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:a8dd38f8459d34045ef42ac5e5f048066"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel for peridynamics diffusion model. The scalar valued weakly singular kernel reads as.  <a href="#a8dd38f8459d34045ef42ac5e5f048066">More...</a><br /></td></tr>
+<tr class="separator:a8dd38f8459d34045ef42ac5e5f048066"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96b4e35feb91a6d0aabcd0f72c207345"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a96b4e35feb91a6d0aabcd0f72c207345">kernel_fractional</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:a96b4e35feb91a6d0aabcd0f72c207345"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel for fractional Laplacian. The scalar valued weakly singular kernel reads as.  <a href="#a96b4e35feb91a6d0aabcd0f72c207345">More...</a><br /></td></tr>
+<tr class="separator:a96b4e35feb91a6d0aabcd0f72c207345"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11d17fda73fb3af170bc925d6a36cd01"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a11d17fda73fb3af170bc925d6a36cd01">kernelField_linearPrototypeMicroelastic</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:a11d17fda73fb3af170bc925d6a36cd01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel for the peridynamics model. The matrix valued weakly singular kernel reads as.  <a href="#a11d17fda73fb3af170bc925d6a36cd01">More...</a><br /></td></tr>
+<tr class="separator:a11d17fda73fb3af170bc925d6a36cd01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ac1777062a25f979353b49d6df3c116"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a0ac1777062a25f979353b49d6df3c116">kernelField_linearPrototypeMicroelastic3D</a> (const double *x, long labelx, const double *y, long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:a0ac1777062a25f979353b49d6df3c116"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel for the peridynamics model. The matrix valued weakly singular kernel reads as.  <a href="#a0ac1777062a25f979353b49d6df3c116">More...</a><br /></td></tr>
+<tr class="separator:a0ac1777062a25f979353b49d6df3c116"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69a37cd2bbe37ddf7f3d4fa77f6022fb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a69a37cd2bbe37ddf7f3d4fa77f6022fb">kernelField_constant</a> (const double *x, const long labelx, const double *y, const long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="memdesc:a69a37cd2bbe37ddf7f3d4fa77f6022fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant matrix valued kernel. For testing. The constant is the same as in the scalar case.  <a href="#a69a37cd2bbe37ddf7f3d4fa77f6022fb">More...</a><br /></td></tr>
+<tr class="separator:a69a37cd2bbe37ddf7f3d4fa77f6022fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0fac79f2ca60f45eed941a0fc3ea625"><td class="memItemLeft" align="right" valign="top"><a id="ae0fac79f2ca60f45eed941a0fc3ea625"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>ERROR_wrongAccess</b> (const double *x, double *forcing_out)</td></tr>
+<tr class="separator:ae0fac79f2ca60f45eed941a0fc3ea625"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74d078a7a313571b8f2ed3cb03c1a270"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a74d078a7a313571b8f2ed3cb03c1a270">f_constant</a> (const double *x, double *forcing_out)</td></tr>
 <tr class="memdesc:a74d078a7a313571b8f2ed3cb03c1a270"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant forcing function f = 1.  <a href="#a74d078a7a313571b8f2ed3cb03c1a270">More...</a><br /></td></tr>
 <tr class="separator:a74d078a7a313571b8f2ed3cb03c1a270"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -113,6 +134,9 @@ Functions</h2></td></tr>
 </p>
 <p>.  <a href="#aa595b409984c41d5b3aa665a0a6a877c">More...</a><br /></td></tr>
 <tr class="separator:aa595b409984c41d5b3aa665a0a6a877c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab189888490f65c0193060deaf884bd01"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#ab189888490f65c0193060deaf884bd01">fField_linear3D</a> (const double *x, double *forcing_out)</td></tr>
+<tr class="memdesc:ab189888490f65c0193060deaf884bd01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant vector valued forcing function.  <a href="#ab189888490f65c0193060deaf884bd01">More...</a><br /></td></tr>
+<tr class="separator:ab189888490f65c0193060deaf884bd01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a77aae7eb57ae0ec1dfdb3424ec4aef49"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a77aae7eb57ae0ec1dfdb3424ec4aef49">fField_constantRight</a> (const double *x, double *forcing_out)</td></tr>
 <tr class="memdesc:a77aae7eb57ae0ec1dfdb3424ec4aef49"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant vector valued forcing function.  <a href="#a77aae7eb57ae0ec1dfdb3424ec4aef49">More...</a><br /></td></tr>
 <tr class="separator:a77aae7eb57ae0ec1dfdb3424ec4aef49"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -125,24 +149,27 @@ Functions</h2></td></tr>
 <tr class="memitem:a9acbba9bda50520f98f7b18b1266cbf3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a9acbba9bda50520f98f7b18b1266cbf3">f_linear</a> (const double *x, double *forcing_out)</td></tr>
 <tr class="memdesc:a9acbba9bda50520f98f7b18b1266cbf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear scalar valued forcing function <img class="formulaInl" alt="$f = -2 (x_1 + 1)$" src="form_19.png"/>. Used for computation of rates.  <a href="#a9acbba9bda50520f98f7b18b1266cbf3">More...</a><br /></td></tr>
 <tr class="separator:a9acbba9bda50520f98f7b18b1266cbf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ec0f75e4f88a5a45559f6430c562faa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a1ec0f75e4f88a5a45559f6430c562faa">f_gaussian</a> (const double *x, double *forcing_out)</td></tr>
+<tr class="memdesc:a1ec0f75e4f88a5a45559f6430c562faa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear scalar valued forcing function <img class="formulaInl" alt="$f = -2 (x_1+ 1)$" src="form_24.png"/>. Used for computation of rates.  <a href="#a1ec0f75e4f88a5a45559f6430c562faa">More...</a><br /></td></tr>
+<tr class="separator:a1ec0f75e4f88a5a45559f6430c562faa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a065c7df6eaedca720527a84a8a286cc8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a065c7df6eaedca720527a84a8a286cc8">f_jump</a> (const double *x, double *forcing_out)</td></tr>
+<tr class="memdesc:a065c7df6eaedca720527a84a8a286cc8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Right hand side <img class="formulaInl" alt="$f = - 4 (\| x\|^2 - 1)e^{\|x\|^2}$" src="form_27.png"/>.  <a href="#a065c7df6eaedca720527a84a8a286cc8">More...</a><br /></td></tr>
+<tr class="separator:a065c7df6eaedca720527a84a8a286cc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb2bcdfe72f13546ac1c713445c8c5e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#afb2bcdfe72f13546ac1c713445c8c5e6">f_tensorsin</a> (const double *x, double *forcing_out)</td></tr>
+<tr class="memdesc:afb2bcdfe72f13546ac1c713445c8c5e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Right hand side <img class="formulaInl" alt="$f = - 2 \chi_{R^+}(x_1 - x_2)$" src="form_28.png"/>.  <a href="#afb2bcdfe72f13546ac1c713445c8c5e6">More...</a><br /></td></tr>
+<tr class="separator:afb2bcdfe72f13546ac1c713445c8c5e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6099652507b81c6c27aa2fd4b1dfc3e"><td class="memItemLeft" align="right" valign="top"><a id="aa6099652507b81c6c27aa2fd4b1dfc3e"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>f_linear1D</b> (const double *x, double *forcing_out)</td></tr>
 <tr class="separator:aa6099652507b81c6c27aa2fd4b1dfc3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3740499b1d47509540fa56e3f53f004c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a3740499b1d47509540fa56e3f53f004c">f_linear3D</a> (const double *x, double *forcing_out)</td></tr>
-<tr class="memdesc:a3740499b1d47509540fa56e3f53f004c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear scalar valued forcing function <img class="formulaInl" alt="$f = -2 (x_1+ 1)$" src="form_24.png"/>. Used for computation of rates.  <a href="#a3740499b1d47509540fa56e3f53f004c">More...</a><br /></td></tr>
+<tr class="memdesc:a3740499b1d47509540fa56e3f53f004c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Right hand side <img class="formulaInl" alt="$f = 32 \pi^2 sin(4 \pi x)sin(4 \pi y )$" src="form_29.png"/>.  <a href="#a3740499b1d47509540fa56e3f53f004c">More...</a><br /></td></tr>
 <tr class="separator:a3740499b1d47509540fa56e3f53f004c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7edf49849a5eade7a96b4cf86a268e7e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a7edf49849a5eade7a96b4cf86a268e7e">model_basisFunction</a> (const double *p, double *psi_vals)</td></tr>
-<tr class="memdesc:a7edf49849a5eade7a96b4cf86a268e7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Definition of basis function (deprecated).  <a href="#a7edf49849a5eade7a96b4cf86a268e7e">More...</a><br /></td></tr>
-<tr class="separator:a7edf49849a5eade7a96b4cf86a268e7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a153964437e1c76d85b5fd3445e89fd4c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="model_8cpp.html#a153964437e1c76d85b5fd3445e89fd4c">model_basisFunction</a> (const double *p, const int dim, double *psi_vals)</td></tr>
-<tr class="memdesc:a153964437e1c76d85b5fd3445e89fd4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Definition of basis function.  <a href="#a153964437e1c76d85b5fd3445e89fd4c">More...</a><br /></td></tr>
-<tr class="separator:a153964437e1c76d85b5fd3445e89fd4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:ae332091106eaf7b986320900c0e9d46f"><td class="memItemLeft" align="right" valign="top"><a id="ae332091106eaf7b986320900c0e9d46f"></a>
-void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_kernel</b> )(const double *x, long labelx, const double *y, long labely, double sqdelta, double *kernel_val)</td></tr>
-<tr class="separator:ae332091106eaf7b986320900c0e9d46f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43f3ec2f4e1c99f514c855734f10bd39"><td class="memItemLeft" align="right" valign="top"><a id="a43f3ec2f4e1c99f514c855734f10bd39"></a>
+void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_kernel</b> )(const double *x, long labelx, const double *y, long labely, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *kernel_val)</td></tr>
+<tr class="separator:a43f3ec2f4e1c99f514c855734f10bd39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5364489a2338c626dab3c52ffbb5ddb7"><td class="memItemLeft" align="right" valign="top"><a id="a5364489a2338c626dab3c52ffbb5ddb7"></a>
 void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const double *x, double *forcing_out)</td></tr>
 <tr class="separator:a5364489a2338c626dab3c52ffbb5ddb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -189,7 +216,85 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00114">114</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00191">191</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a1ec0f75e4f88a5a45559f6430c562faa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ec0f75e4f88a5a45559f6430c562faa">&#9670;&nbsp;</a></span>f_gaussian()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void f_gaussian </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>forcing_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Linear scalar valued forcing function <img class="formulaInl" alt="$f = -2 (x_1+ 1)$" src="form_24.png"/>. Used for computation of rates. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td></td></tr>
+    <tr><td class="paramname">forcing_out</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00233">233</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a065c7df6eaedca720527a84a8a286cc8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a065c7df6eaedca720527a84a8a286cc8">&#9670;&nbsp;</a></span>f_jump()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void f_jump </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>forcing_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Right hand side <img class="formulaInl" alt="$f = - 4 (\| x\|^2 - 1)e^{\|x\|^2}$" src="form_27.png"/>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td></td></tr>
+    <tr><td class="paramname">forcing_out</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00237">237</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
@@ -228,7 +333,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00144">144</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00230">230</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
@@ -258,7 +363,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
       </table>
 </div><div class="memdoc">
 
-<p>Linear scalar valued forcing function <img class="formulaInl" alt="$f = -2 (x_1+ 1)$" src="form_24.png"/>. Used for computation of rates. </p>
+<p>Right hand side <img class="formulaInl" alt="$f = 32 \pi^2 sin(4 \pi x)sin(4 \pi y )$" src="form_29.png"/>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">x</td><td></td></tr>
@@ -267,7 +372,46 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00150">150</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00249">249</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+
+</div>
+</div>
+<a id="afb2bcdfe72f13546ac1c713445c8c5e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb2bcdfe72f13546ac1c713445c8c5e6">&#9670;&nbsp;</a></span>f_tensorsin()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void f_tensorsin </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>forcing_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Right hand side <img class="formulaInl" alt="$f = - 2 \chi_{R^+}(x_1 - x_2)$" src="form_28.png"/>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td></td></tr>
+    <tr><td class="paramname">forcing_out</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00243">243</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
@@ -306,7 +450,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00134">134</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00220">220</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
@@ -345,7 +489,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00127">127</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00213">213</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
@@ -384,7 +528,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00123">123</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00209">209</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
@@ -426,12 +570,51 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00117">117</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00194">194</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a066dc1138361f907a289bec6af1cf67b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a066dc1138361f907a289bec6af1cf67b">&#9670;&nbsp;</a></span>kernel_constant()</h2>
+<a id="ab189888490f65c0193060deaf884bd01"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab189888490f65c0193060deaf884bd01">&#9670;&nbsp;</a></span>fField_linear3D()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void fField_linear3D </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>forcing_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Constant vector valued forcing function. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td></td></tr>
+    <tr><td class="paramname">forcing_out</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00201">201</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ada931fe46ddeb101be35c3989b1ff342"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ada931fe46ddeb101be35c3989b1ff342">&#9670;&nbsp;</a></span>kernel_constant()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -463,8 +646,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>sqdelta</em>, </td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -487,18 +670,18 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
     <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
     <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
     <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
-    <tr><td class="paramname">sqdelta</td><td>Squared delta. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
     <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00019">19</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00025">25</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a248a983cf1917d574ff79b859b228ab1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a248a983cf1917d574ff79b859b228ab1">&#9670;&nbsp;</a></span>kernel_constant1D()</h2>
+<a id="a8afca6be48668cd3bb64e4c7838928bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8afca6be48668cd3bb64e4c7838928bb">&#9670;&nbsp;</a></span>kernel_constant1D()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -530,8 +713,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const double&#160;</td>
-          <td class="paramname"><em>sqdelta</em>, </td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -554,18 +737,18 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
     <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
     <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
     <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
-    <tr><td class="paramname">sqdelta</td><td>Squared delta. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
     <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00033">33</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00044">44</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="adc4dd5c804f46fe5711af180dfab02dd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc4dd5c804f46fe5711af180dfab02dd">&#9670;&nbsp;</a></span>kernel_constant3D()</h2>
+<a id="ab3cb76a590beb93e87856e4fd6264c5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3cb76a590beb93e87856e4fd6264c5c">&#9670;&nbsp;</a></span>kernel_constant3D()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -597,8 +780,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>sqdelta</em>, </td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -621,18 +804,85 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
     <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
     <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
     <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
-    <tr><td class="paramname">sqdelta</td><td>Squared delta. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
     <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00047">47</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00058">58</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a92ff1f5e6d8d1a4edcbf29267046f81b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92ff1f5e6d8d1a4edcbf29267046f81b">&#9670;&nbsp;</a></span>kernel_constantTruncated()</h2>
+<a id="a03bc7f35f4f1442d65f70d7675f9e8c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03bc7f35f4f1442d65f70d7675f9e8c2">&#9670;&nbsp;</a></span>kernel_constantLinf2D()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel_constantLinf2D </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const long&#160;</td>
+          <td class="paramname"><em>labelx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const long&#160;</td>
+          <td class="paramname"><em>labely</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>kernel_val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Constant kernel in 2D case with Linf truncation. The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>Physical point of the outer integration region. </td></tr>
+    <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
+    <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
+    <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
+    <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00030">30</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+
+</div>
+</div>
+<a id="af6da4be75c9e69e197ffa1542bdb70af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6da4be75c9e69e197ffa1542bdb70af">&#9670;&nbsp;</a></span>kernel_constantTruncated()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -664,8 +914,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const double&#160;</td>
-          <td class="paramname"><em>sqdelta</em>, </td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -688,18 +938,89 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
     <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
     <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
     <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
-    <tr><td class="paramname">sqdelta</td><td>Squared delta. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
     <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00024">24</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00035">35</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="adbaa45ce6ef8512216d6f683f4cb4836"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adbaa45ce6ef8512216d6f683f4cb4836">&#9670;&nbsp;</a></span>kernel_labeled()</h2>
+<a id="a96b4e35feb91a6d0aabcd0f72c207345"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96b4e35feb91a6d0aabcd0f72c207345">&#9670;&nbsp;</a></span>kernel_fractional()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel_fractional </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const long&#160;</td>
+          <td class="paramname"><em>labelx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const long&#160;</td>
+          <td class="paramname"><em>labely</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>kernel_val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Kernel for fractional Laplacian. The scalar valued weakly singular kernel reads as. </p>
+<p class="formulaDsp">
+<img class="formulaDsp" alt="\[ \gamma(x,y) = \frac{1}{\| x - y \|} \frac{3}{\pi \delta ^3}. \]" src="form_15.png"/>
+</p>
+<p> The constant is chosen such that the operator is equivalent to the laplacian for polynomials of degree less or equal to 2.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>Physical point of the outer integration region. </td></tr>
+    <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
+    <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
+    <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
+    <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00116">116</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+
+</div>
+</div>
+<a id="abe48766be3d2fa45d5d70a32491511d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe48766be3d2fa45d5d70a32491511d6">&#9670;&nbsp;</a></span>kernel_labeled()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -731,8 +1052,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>sqdelta</em>, </td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -755,18 +1076,18 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
     <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
     <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
     <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
-    <tr><td class="paramname">sqdelta</td><td>Squared delta. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
     <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00052">52</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00063">63</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a3dbe3924698ddd392399ac83b81829c9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3dbe3924698ddd392399ac83b81829c9">&#9670;&nbsp;</a></span>kernel_linearPrototypeMicroelastic()</h2>
+<a id="a8dd38f8459d34045ef42ac5e5f048066"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8dd38f8459d34045ef42ac5e5f048066">&#9670;&nbsp;</a></span>kernel_linearPrototypeMicroelastic()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -798,8 +1119,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>sqdelta</em>, </td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -826,18 +1147,18 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
     <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
     <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
     <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
-    <tr><td class="paramname">sqdelta</td><td>Squared delta. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
     <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00075">75</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00106">106</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a3b0ce634face2703b19e3cd9a876fb14"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b0ce634face2703b19e3cd9a876fb14">&#9670;&nbsp;</a></span>kernel_parabola()</h2>
+<a id="a6319337764049c2ffc5bc62fa3f88623"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6319337764049c2ffc5bc62fa3f88623">&#9670;&nbsp;</a></span>kernel_parabola()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -869,8 +1190,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const double&#160;</td>
-          <td class="paramname"><em>sqdelta</em>, </td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -899,12 +1220,12 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00037">37</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00048">48</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a6c75b8027d2caff63c6a7599b5ddd11b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c75b8027d2caff63c6a7599b5ddd11b">&#9670;&nbsp;</a></span>kernelField_constant()</h2>
+<a id="a69a37cd2bbe37ddf7f3d4fa77f6022fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69a37cd2bbe37ddf7f3d4fa77f6022fb">&#9670;&nbsp;</a></span>kernelField_constant()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -936,8 +1257,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>sqdelta</em>, </td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -960,18 +1281,18 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
     <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
     <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
     <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
-    <tr><td class="paramname">sqdelta</td><td>Squared delta. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
     <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00098">98</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00170">170</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a0684f48d795e68fbba0a24c108b50740"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0684f48d795e68fbba0a24c108b50740">&#9670;&nbsp;</a></span>kernelField_linearPrototypeMicroelastic()</h2>
+<a id="a11d17fda73fb3af170bc925d6a36cd01"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a11d17fda73fb3af170bc925d6a36cd01">&#9670;&nbsp;</a></span>kernelField_linearPrototypeMicroelastic()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1003,8 +1324,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>sqdelta</em>, </td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1031,33 +1352,57 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
     <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
     <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
     <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
-    <tr><td class="paramname">sqdelta</td><td>Squared delta. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
     <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00085">85</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00130">130</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a7edf49849a5eade7a96b4cf86a268e7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7edf49849a5eade7a96b4cf86a268e7e">&#9670;&nbsp;</a></span>model_basisFunction() <span class="overload">[1/2]</span></h2>
+<a id="a0ac1777062a25f979353b49d6df3c116"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ac1777062a25f979353b49d6df3c116">&#9670;&nbsp;</a></span>kernelField_linearPrototypeMicroelastic3D()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void model_basisFunction </td>
+          <td class="memname">void kernelField_linearPrototypeMicroelastic3D </td>
           <td>(</td>
           <td class="paramtype">const double *&#160;</td>
-          <td class="paramname"><em>p</em>, </td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>labelx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>labely</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">double *&#160;</td>
-          <td class="paramname"><em>psi_vals</em>&#160;</td>
+          <td class="paramname"><em>kernel_val</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1067,62 +1412,24 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><b>model_f</b> )(const
       </table>
 </div><div class="memdoc">
 
-<p>Definition of basis function (deprecated). </p>
+<p>Kernel for the peridynamics model. The matrix valued weakly singular kernel reads as. </p>
+<p class="formulaDsp">
+<img class="formulaDsp" alt="\[ \gamma(x,y) = (x-y) \otimes (x-y) \frac{1}{\| x - y \|^3} \frac{12}{\pi \delta ^3}. \]" src="form_16.png"/>
+</p>
+<p>The constant is chosen such that the operator is equivalent to linear elasticity for polynomials of degree less or equal to 2 and lame paramter <img class="formulaInl" alt="$\mu = \lambda = \frac{\pi}{4}$" src="form_17.png"/>.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">p</td><td>Quadrature point </td></tr>
-    <tr><td class="paramname">psi_vals</td><td>Value of 3 basis functions. </td></tr>
+    <tr><td class="paramname">x</td><td>Physical point of the outer integration region. </td></tr>
+    <tr><td class="paramname">labelx</td><td>Label of the outer triangle. </td></tr>
+    <tr><td class="paramname">y</td><td>Physical point of the inner integration region. </td></tr>
+    <tr><td class="paramname">labely</td><td>Label of inner triangle. </td></tr>
+    <tr><td class="paramname">mesh</td><td>Mesh </td></tr>
+    <tr><td class="paramname">kernel_val</td><td>Value of the the kernel. Pointer to double in case of diffusion. Pointer to a array of shape d x d in case of peridynamics. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00155">155</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a153964437e1c76d85b5fd3445e89fd4c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a153964437e1c76d85b5fd3445e89fd4c">&#9670;&nbsp;</a></span>model_basisFunction() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void model_basisFunction </td>
-          <td>(</td>
-          <td class="paramtype">const double *&#160;</td>
-          <td class="paramname"><em>p</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>dim</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double *&#160;</td>
-          <td class="paramname"><em>psi_vals</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Definition of basis function. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">p</td><td>Quadrature point </td></tr>
-    <tr><td class="paramname">dim</td><td>Dimension of domain (2,3). </td></tr>
-    <tr><td class="paramname">psi_vals</td><td>Value of 3 or 4 basis functions, depending on the dimension. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00161">161</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8cpp_source.html#l00145">145</a> of file <a class="el" href="model_8cpp_source.html">model.cpp</a>.</p>
 
 </div>
 </div>

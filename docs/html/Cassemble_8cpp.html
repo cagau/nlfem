@@ -73,7 +73,9 @@ $(function() {
 <code>#include &lt;queue&gt;</code><br />
 <code>#include &lt;armadillo&gt;</code><br />
 <code>#include &lt;map&gt;</code><br />
+<code>#include &quot;metis.h&quot;</code><br />
 <code>#include &lt;Cassemble.h&gt;</code><br />
+<code>#include &lt;omp.h&gt;</code><br />
 <code>#include &quot;integration.h&quot;</code><br />
 <code>#include &quot;mathhelpers.h&quot;</code><br />
 <code>#include &quot;model.h&quot;</code><br />
@@ -83,23 +85,23 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ab588dea595a5952c01be199e6199a4af"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Cassemble_8cpp.html#ab588dea595a5952c01be199e6199a4af">lookup_configuration</a> (<a class="el" href="structConfigurationStruct.html">ConfigurationType</a> &amp;conf)</td></tr>
-<tr class="separator:ab588dea595a5952c01be199e6199a4af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9155aa6abefc590dd784024067f1fe3"><td class="memItemLeft" align="right" valign="top"><a id="ab9155aa6abefc590dd784024067f1fe3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>initializeElement</b> (const int Tdx, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, <a class="el" href="structElementStruct.html">ElementType</a> &amp;T)</td></tr>
-<tr class="separator:ab9155aa6abefc590dd784024067f1fe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77a91f9cb5a7d3ec9b15b15805a7dc4d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Cassemble_8cpp.html#a77a91f9cb5a7d3ec9b15b15805a7dc4d">lookup_configuration</a> (<a class="el" href="structConfigurationStruct.html">ConfigurationType</a> &amp;conf, int verbose=0)</td></tr>
+<tr class="separator:a77a91f9cb5a7d3ec9b15b15805a7dc4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8a925f3dbe70f08cb39fad631ae206d"><td class="memItemLeft" align="right" valign="top"><a id="af8a925f3dbe70f08cb39fad631ae206d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const <a class="el" href="structElementStruct.html">ElementType</a> &amp;aT, const <a class="el" href="structQuadratureStruct.html">QuadratureType</a> &amp;quadRule, const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, double *termf)</td></tr>
 <tr class="separator:af8a925f3dbe70f08cb39fad631ae206d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a70ea29197a77e81437a7fd4071c8d179"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Cassemble_8cpp.html#a70ea29197a77e81437a7fd4071c8d179">par_evaluateMass</a> (double *vd, double *ud, long *Elements, long *ElementLabels, double *Verts, int K_Omega, int J, int nP, double *P, double *dx, const int dim, const int outdim, const bool is_DiscontinuousGalerkin)</td></tr>
-<tr class="memdesc:a70ea29197a77e81437a7fd4071c8d179"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate the mass matrix v = Mu.  <a href="#a70ea29197a77e81437a7fd4071c8d179">More...</a><br /></td></tr>
-<tr class="separator:a70ea29197a77e81437a7fd4071c8d179"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab83f9055a5357703354de301ba41ca7a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Cassemble_8cpp.html#ab83f9055a5357703354de301ba41ca7a">par_assemble</a> (const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K, const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const int nE, const int nE_Omega, const int nV, const int nV_Omega, const double *Px, const int nPx, const double *dx, const double *Py, const int nPy, const double *dy, const double sqdelta, const long *ptrNeighbours, const int nNeighbours, const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel, const string str_model_f, const string str_integration_method, const int is_PlacePointOnCap, const int dim, const int outdim, const long *ptrZeta, const long nZeta, const double *Pg, const int degree, const double *dg, double maxDiameter)</td></tr>
-<tr class="memdesc:ab83f9055a5357703354de301ba41ca7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parallel assembly of nonlocal operator using a finite element approach. This function is a wrapper for the functions <a class="el" href="Cassemble_8cpp.html#ab127e495e002e3d96f4d2fb67888c637" title="Parallel assembly of nonlocal operator using a finite element approach. Kernel functions can be defin...">par_system()</a> and <a class="el" href="Cassemble_8cpp.html#af5d9ec675a5530d98e7e11f9686bee6c" title="Parallel assembly of forcing term. Forcing functions can be defined in model see model_f() for more i...">par_forcing()</a>. It allows to call the C++ functions from Cython without writing wrapper classes or structs.  <a href="#ab83f9055a5357703354de301ba41ca7a">More...</a><br /></td></tr>
-<tr class="separator:ab83f9055a5357703354de301ba41ca7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab127e495e002e3d96f4d2fb67888c637"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Cassemble_8cpp.html#ab127e495e002e3d96f4d2fb67888c637">par_system</a> (map&lt; unsigned long, double &gt; &amp;Ad, <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, <a class="el" href="structQuadratureStruct.html">QuadratureType</a> &amp;quadRule, <a class="el" href="structConfigurationStruct.html">ConfigurationType</a> &amp;conf)</td></tr>
-<tr class="memdesc:ab127e495e002e3d96f4d2fb67888c637"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parallel assembly of nonlocal operator using a finite element approach. Kernel functions can be defined in <em>model</em> see model_kernel() for more information.  <a href="#ab127e495e002e3d96f4d2fb67888c637">More...</a><br /></td></tr>
-<tr class="separator:ab127e495e002e3d96f4d2fb67888c637"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6176f7eadd2861c28afc7ec3404d0044"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Cassemble_8cpp.html#a6176f7eadd2861c28afc7ec3404d0044">par_evaluateMass</a> (double *vd, const double *ud, long *Elements, const long *ElementLabels, const double *Verts, const long *VertexLabels, int K_Omega, int J, int nP, double *P, const double *dx, const int dim, const int outdim, const int is_DiscontinuousGalerkin)</td></tr>
+<tr class="memdesc:a6176f7eadd2861c28afc7ec3404d0044"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate the mass matrix v = Mu.  <a href="#a6176f7eadd2861c28afc7ec3404d0044">More...</a><br /></td></tr>
+<tr class="separator:a6176f7eadd2861c28afc7ec3404d0044"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeaf930d780ac0bd1dd72b210c170ec91"><td class="memItemLeft" align="right" valign="top"><a id="aeaf930d780ac0bd1dd72b210c170ec91"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>estimateNNZperRow</b> (const <a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, const <a class="el" href="structConfigurationStruct.html">ConfigurationType</a> &amp;conf)</td></tr>
+<tr class="separator:aeaf930d780ac0bd1dd72b210c170ec91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add9a6bd734e93c5ec0df6705f0dc07ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Cassemble_8cpp.html#add9a6bd734e93c5ec0df6705f0dc07ba">par_assemble</a> (const string compute, const string path_spAd, const string path_fd, const int K_Omega, const int K, const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const long *ptrLabelVerts, const int nE, const int nE_Omega, const int nV, const int nV_Omega, const double *Px, const int nPx, const double *dx, const double *Py, const int nPy, const double *dy, const double sqdelta, const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel, const string str_model_f, const string str_integration_method_remote, const string str_integration_method_close, const int is_PlacePointOnCap, const int dim, const int outdim, const long *ptrZeta, const long nZeta, const double *Pg, const int degree, const double *dg, double maxDiameter, double fractional_s, int is_fullConnectedComponentSearch, int verbose)</td></tr>
+<tr class="memdesc:add9a6bd734e93c5ec0df6705f0dc07ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parallel assembly of nonlocal operator using a finite element approach. This function is a wrapper for the functions <a class="el" href="Cassemble_8cpp.html#a3bbd07ec6c5b6e2266b97b79e52240b0" title="Parallel assembly of nonlocal operator using a finite element approach. Kernel functions can be defin...">par_system()</a> and <a class="el" href="Cassemble_8cpp.html#af5d9ec675a5530d98e7e11f9686bee6c" title="Parallel assembly of forcing term. Forcing functions can be defined in model see model_f() for more i...">par_forcing()</a>. It allows to call the C++ functions from Cython without writing wrapper classes or structs.  <a href="#add9a6bd734e93c5ec0df6705f0dc07ba">More...</a><br /></td></tr>
+<tr class="separator:add9a6bd734e93c5ec0df6705f0dc07ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3bbd07ec6c5b6e2266b97b79e52240b0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Cassemble_8cpp.html#a3bbd07ec6c5b6e2266b97b79e52240b0">par_system</a> (<a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, <a class="el" href="structQuadratureStruct.html">QuadratureType</a> &amp;quadRule, <a class="el" href="structConfigurationStruct.html">ConfigurationType</a> &amp;conf)</td></tr>
+<tr class="memdesc:a3bbd07ec6c5b6e2266b97b79e52240b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parallel assembly of nonlocal operator using a finite element approach. Kernel functions can be defined in <em>model</em> see model_kernel() for more information.  <a href="#a3bbd07ec6c5b6e2266b97b79e52240b0">More...</a><br /></td></tr>
+<tr class="separator:a3bbd07ec6c5b6e2266b97b79e52240b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5d9ec675a5530d98e7e11f9686bee6c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Cassemble_8cpp.html#af5d9ec675a5530d98e7e11f9686bee6c">par_forcing</a> (<a class="el" href="structMeshStruct.html">MeshType</a> &amp;mesh, <a class="el" href="structQuadratureStruct.html">QuadratureType</a> &amp;quadRule, <a class="el" href="structConfigurationStruct.html">ConfigurationType</a> &amp;conf)</td></tr>
 <tr class="memdesc:af5d9ec675a5530d98e7e11f9686bee6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parallel assembly of forcing term. Forcing functions can be defined in <em>model</em> see model_f() for more information.  <a href="#af5d9ec675a5530d98e7e11f9686bee6c">More...</a><br /></td></tr>
 <tr class="separator:af5d9ec675a5530d98e7e11f9686bee6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -111,8 +113,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
 
 <p class="definition">Definition in file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="ab588dea595a5952c01be199e6199a4af"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab588dea595a5952c01be199e6199a4af">&#9670;&nbsp;</a></span>lookup_configuration()</h2>
+<a id="a77a91f9cb5a7d3ec9b15b15805a7dc4d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77a91f9cb5a7d3ec9b15b15805a7dc4d">&#9670;&nbsp;</a></span>lookup_configuration()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -121,25 +123,36 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
           <td class="memname">void lookup_configuration </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structConfigurationStruct.html">ConfigurationType</a> &amp;&#160;</td>
-          <td class="paramname"><em>conf</em></td><td>)</td>
+          <td class="paramname"><em>conf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>verbose</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>This function looks up the configuration. It has to be updated whenever a new kernel, forcing function or integration routine is added in order to make the option available.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">conf</td><td></td></tr>
+    <tr><td class="paramname">conf</td><td>ConfigurationType </td></tr>
+    <tr><td class="paramname">verbose</td><td></td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00029">29</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00028">28</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ab83f9055a5357703354de301ba41ca7a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab83f9055a5357703354de301ba41ca7a">&#9670;&nbsp;</a></span>par_assemble()</h2>
+<a id="add9a6bd734e93c5ec0df6705f0dc07ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#add9a6bd734e93c5ec0df6705f0dc07ba">&#9670;&nbsp;</a></span>par_assemble()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -191,6 +204,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
           <td></td>
           <td class="paramtype">const double *&#160;</td>
           <td class="paramname"><em>ptrVerts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const long *&#160;</td>
+          <td class="paramname"><em>ptrLabelVerts</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -261,18 +280,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const long *&#160;</td>
-          <td class="paramname"><em>ptrNeighbours</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>nNeighbours</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>is_DiscontinuousGalerkin</em>, </td>
         </tr>
@@ -298,7 +305,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">string&#160;</td>
-          <td class="paramname"><em>str_integration_method</em>, </td>
+          <td class="paramname"><em>str_integration_method_remote</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">string&#160;</td>
+          <td class="paramname"><em>str_integration_method_close</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -352,7 +365,25 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>maxDiameter</em> = <code>0.0</code>&#160;</td>
+          <td class="paramname"><em>maxDiameter</em> = <code>0.0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>fractional_s</em> = <code>-1.0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>is_fullConnectedComponentSearch</em> = <code>0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>verbose</em> = <code>0</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -362,8 +393,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
       </table>
 </div><div class="memdoc">
 
-<p>Parallel assembly of nonlocal operator using a finite element approach. This function is a wrapper for the functions <a class="el" href="Cassemble_8cpp.html#ab127e495e002e3d96f4d2fb67888c637" title="Parallel assembly of nonlocal operator using a finite element approach. Kernel functions can be defin...">par_system()</a> and <a class="el" href="Cassemble_8cpp.html#af5d9ec675a5530d98e7e11f9686bee6c" title="Parallel assembly of forcing term. Forcing functions can be defined in model see model_f() for more i...">par_forcing()</a>. It allows to call the C++ functions from Cython without writing wrapper classes or structs. </p>
-<p>Any 2-dimensional array is handed over by a pointer only. The expected shape of the input arrays is given in the parameter list where the underlying data is expected to be in C-contiguous (i.e. row-major) order. We denote the dimension of the domain by d. See <a class="el" href="Cassemble_8cpp.html#ab127e495e002e3d96f4d2fb67888c637" title="Parallel assembly of nonlocal operator using a finite element approach. Kernel functions can be defin...">par_system()</a> and <a class="el" href="Cassemble_8cpp.html#af5d9ec675a5530d98e7e11f9686bee6c" title="Parallel assembly of forcing term. Forcing functions can be defined in model see model_f() for more i...">par_forcing()</a> for mor details on the assembly.</p>
+<p>Parallel assembly of nonlocal operator using a finite element approach. This function is a wrapper for the functions <a class="el" href="Cassemble_8cpp.html#a3bbd07ec6c5b6e2266b97b79e52240b0" title="Parallel assembly of nonlocal operator using a finite element approach. Kernel functions can be defin...">par_system()</a> and <a class="el" href="Cassemble_8cpp.html#af5d9ec675a5530d98e7e11f9686bee6c" title="Parallel assembly of forcing term. Forcing functions can be defined in model see model_f() for more i...">par_forcing()</a>. It allows to call the C++ functions from Cython without writing wrapper classes or structs. </p>
+<p>Any 2-dimensional array is handed over by a pointer only. The expected shape of the input arrays is given in the parameter list where the underlying data is expected to be in C-contiguous (i.e. row-major) order. We denote the dimension of the domain by d. See <a class="el" href="Cassemble_8cpp.html#a3bbd07ec6c5b6e2266b97b79e52240b0" title="Parallel assembly of nonlocal operator using a finite element approach. Kernel functions can be defin...">par_system()</a> and <a class="el" href="Cassemble_8cpp.html#af5d9ec675a5530d98e7e11f9686bee6c" title="Parallel assembly of forcing term. Forcing functions can be defined in model see model_f() for more i...">par_forcing()</a> for mor details on the assembly.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">compute</td><td>string "system", "forcing", "systemforcing". This string determines whether the stiffnes matrix, load or both should be computed. </td></tr>
@@ -374,6 +405,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
     <tr><td class="paramname">ptrTriangles</td><td><b>(nE, d+1)</b> Pointer to elements. Label 1 for elements in Omega, Label 2 for elements in OmegaI. </td></tr>
     <tr><td class="paramname">ptrLabelTriangles</td><td><b>(nE,)</b> Pointer to element labels </td></tr>
     <tr><td class="paramname">ptrVerts</td><td><b>(L, d)</b> Pointer to vertices </td></tr>
+    <tr><td class="paramname">ptrLabelVerts</td><td>Pointer to vertex labels </td></tr>
     <tr><td class="paramname">nE</td><td>Number of elements </td></tr>
     <tr><td class="paramname">nE_Omega</td><td>Number of elements in Omega </td></tr>
     <tr><td class="paramname">nV</td><td>Number of vertices </td></tr>
@@ -385,13 +417,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
     <tr><td class="paramname">nPy</td><td><b>(nPy, d)</b> Pointer to quadrature points for the inner integral </td></tr>
     <tr><td class="paramname">dy</td><td><b>(nPx,)</b> Pointer to quadrature weights of the inner integral </td></tr>
     <tr><td class="paramname">sqdelta</td><td>Squared delta </td></tr>
-    <tr><td class="paramname">ptrNeighbours</td><td><b>(L, d+1)</b> Adjaciency graph of triangulation. </td></tr>
-    <tr><td class="paramname">nNeighbours</td><td>number of columns in Neighbours List. </td></tr>
     <tr><td class="paramname">is_DiscontinuousGalerkin</td><td>Switch for discontinuous Galerkin </td></tr>
     <tr><td class="paramname">is_NeumannBoundary</td><td>Switch of Neumann Boundary Conditions </td></tr>
     <tr><td class="paramname">str_model_kernel</td><td>Name of kernel </td></tr>
     <tr><td class="paramname">str_model_f</td><td>Name of right hand side </td></tr>
-    <tr><td class="paramname">str_integration_method</td><td>Name of integration method </td></tr>
+    <tr><td class="paramname">str_integration_method_remote</td><td>Name of integration method </td></tr>
     <tr><td class="paramname">is_PlacePointOnCap</td><td>Switch for withcaps parameter in retriangulation </td></tr>
     <tr><td class="paramname">dim</td><td>Dimension of the domain </td></tr>
     <tr><td class="paramname">outdim</td><td>Dimension of the solution space (e.g. 1 for scalar problems, dim for linear elasticity) </td></tr>
@@ -401,16 +431,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
     <tr><td class="paramname">nPg</td><td><b>(tensorGaussDegree^dim,)</b> Number of quadrature points. </td></tr>
     <tr><td class="paramname">dg</td><td><b>(nPg,)</b> Weights for tensor Gauss quadrature. </td></tr>
     <tr><td class="paramname">maxDiameter</td><td>Maximal diameter of finite elements (optional). Might increase speed of retriangulation if provided. </td></tr>
+    <tr><td class="paramname">fractional_s</td><td>Degree of fractional kernel (d=2 only). Required for the correct choice of the integration routine. Default is s=-1.0, which corresponds to a kernel with no singularity. </td></tr>
+    <tr><td class="paramname">verbose</td><td>switch for verbose mode. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00288">288</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00357">357</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a70ea29197a77e81437a7fd4071c8d179"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a70ea29197a77e81437a7fd4071c8d179">&#9670;&nbsp;</a></span>par_evaluateMass()</h2>
+<a id="a6176f7eadd2861c28afc7ec3404d0044"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6176f7eadd2861c28afc7ec3404d0044">&#9670;&nbsp;</a></span>par_evaluateMass()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -424,7 +456,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double *&#160;</td>
+          <td class="paramtype">const double *&#160;</td>
           <td class="paramname"><em>ud</em>, </td>
         </tr>
         <tr>
@@ -436,14 +468,20 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">long *&#160;</td>
+          <td class="paramtype">const long *&#160;</td>
           <td class="paramname"><em>ElementLabels</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double *&#160;</td>
+          <td class="paramtype">const double *&#160;</td>
           <td class="paramname"><em>Verts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const long *&#160;</td>
+          <td class="paramname"><em>VertexLabels</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -472,7 +510,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double *&#160;</td>
+          <td class="paramtype">const double *&#160;</td>
           <td class="paramname"><em>dx</em>, </td>
         </tr>
         <tr>
@@ -485,13 +523,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>outdim</em> = <code>1</code>, </td>
+          <td class="paramname"><em>outdim</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>is_DiscontinuousGalerkin</em> = <code>false</code>&#160;</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>is_DiscontinuousGalerkin</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -509,6 +547,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
     <tr><td class="paramname">Elements</td><td>List of elements of a finite element triangulation (CSR-format, row major order). </td></tr>
     <tr><td class="paramname">ElementLabels</td><td>List of element Labels. </td></tr>
     <tr><td class="paramname">Verts</td><td>List of vertices (row major order). </td></tr>
+    <tr><td class="paramname">VertexLabels</td><td>List of vertex Labels. </td></tr>
     <tr><td class="paramname">K_Omega</td><td>Number of rows and columns in M. Example: If you use continuous Galerkin basis functions and want to solve a scalar problem K_Omega = J. </td></tr>
     <tr><td class="paramname">J</td><td>Number of elements in the triangulation. </td></tr>
     <tr><td class="paramname">nP</td><td>Number of quadrature points in the outer integral </td></tr>
@@ -519,7 +558,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00207">207</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00163">163</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
 
 </div>
 </div>
@@ -565,12 +604,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00684">684</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00852">852</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ab127e495e002e3d96f4d2fb67888c637"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab127e495e002e3d96f4d2fb67888c637">&#9670;&nbsp;</a></span>par_system()</h2>
+<a id="a3bbd07ec6c5b6e2266b97b79e52240b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3bbd07ec6c5b6e2266b97b79e52240b0">&#9670;&nbsp;</a></span>par_system()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -578,12 +617,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
         <tr>
           <td class="memname">void par_system </td>
           <td>(</td>
-          <td class="paramtype">map&lt; unsigned long, double &gt; &amp;&#160;</td>
-          <td class="paramname"><em>Ad</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype"><a class="el" href="structMeshStruct.html">MeshType</a> &amp;&#160;</td>
           <td class="paramname"><em>mesh</em>, </td>
         </tr>
@@ -608,14 +641,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
 </div><div class="memdoc">
 
 <p>Parallel assembly of nonlocal operator using a finite element approach. Kernel functions can be defined in <em>model</em> see model_kernel() for more information. </p>
-<p>This function assembles the stiffness matrix. It traverses all elements aT with element Label == 1 and adds the values</p>
+<p>This function assembles the stiffness matrix corresponding to the operator</p>
 <ul>
 <li><p class="formulaDsp">
-<img class="formulaDsp" alt="\[ A(\phi_j,\phi_k) = \int_{aT} phi_j(x) \int_{bT \cup \Omega_I}(\phi_k(x)-\phi_ku(y))\gamma(x,y) dx dy, \]" src="form_8.png"/>
+<img class="formulaDsp" alt="\[ \mathcal{L}(\mathbf{u})(\mathbf{x}) = p.v. \int_{B_{\delta}(\mathbf{x}) \cap \widetilde{\Omega}}(\mathbf{C}_\delta(\mathbf{x}, \mathbf{y}) \mathbf{u}(\mathbf{x}) - \mathbf{C}_\delta(\mathbf{y}, \mathbf{x})\mathbf{u}(\mathbf{y})) d\mathbf{y}. \]" src="form_25.png"/>
 </p>
 </li>
 </ul>
-<p>to the stiffness matrix. The integration starts with the domain aT x aT and then proceeds with the neighbouring elements of aT in the mesh until the interaction domain is exceeded. For each pair aT, bT an integration routine (options are e.g. <a class="el" href="integration_8cpp.html#a52a5e460161cd3280f79dbc987587e4a" title="This integration routines uses method_retriangulate() to truncate the inner domain bT...">integrate_retriangulate()</a>, <a class="el" href="integration_8cpp.html#a7a9f572036b5a718ef89b4dfb6cf7ed4" title=". This integration routines uses method_baryCenter() to truncate the inner domain bT...">integrate_baryCenter()</a>, <a class="el" href="integration_8cpp.html#a11f5690dab585b961a8d4413646265b3" title="This integration routines uses method_retriangulate() to truncate the outer domain bT...">integrate_baryCenterRT()</a>, ...) is called. If it all computed integrals are 0 the elements are considered as non-interacting. The integrals, and the interaction sets again depend on the truncation routines, which are called inside integrate(). This approach allows to define interaction sets directly in the truncation routines. The code then automatically finds the interacting elements bT without traversing all of them. This approach requires setting up the dual graph of the mesh which is to be found in mesh.neighbours.</p>
+<p>It traverses all elements aT with element Label != 0 and adds up their contribution to the global stiffness matrix. The integration starts with the domain aT x aT and then proceeds with the neighbouring elements of aT in the mesh until the interaction domain is exceeded. For each pair aT, bT an integration routine (options are e.g. <a class="el" href="integration_8cpp.html#a5c489e256e2ba50b842c2452b6589780" title="This integration routines uses method_retriangulate() to truncate the inner domain bT...">integrate_retriangulate()</a>, <a class="el" href="integration_8cpp.html#a1f3d43743b6fb32a3c702ae2923131a9" title=". This integration routines uses method_baryCenter() to truncate the inner domain bT...">integrate_baryCenter()</a>, <a class="el" href="integration_8cpp.html#ab80cfb23f67be48dbd5daebfc3822157" title="This integration routines uses method_retriangulate() to truncate the outer domain bT...">integrate_baryCenterRT()</a>, ...) is called. If it all computed integrals are 0 the elements are considered as non-interacting. The integrals, and the interaction sets again depend on the truncation routines, which are called inside integrate(). This approach allows to define interaction sets directly in the truncation routines. The code then automatically finds the interacting elements bT without traversing all of them. This approach requires setting up the dual graph of the mesh which is to be found in mesh.neighbours.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">Ad,Pointer</td><td>to map&lt;unsigned long, double&gt; which is used to store matrix values. This map is shared between all threads and the value updates happen in critical sections. This makes sense because in case of nonlocal operators Ad can turn out to be very large. Storing Ad separately in separate threads and finally merging the different maps results in a significant overhead. </td></tr>
@@ -626,7 +659,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>compute_f</b> (const 
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00354">354</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Cassemble_8cpp_source.html#l00460">460</a> of file <a class="el" href="Cassemble_8cpp_source.html">Cassemble.cpp</a>.</p>
 
 </div>
 </div>

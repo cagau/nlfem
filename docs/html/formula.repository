@@ -23,3 +23,8 @@
 \form#22:\[ u(x) = (x_2^2, x_1^2 x_2) \frac{2}{5}. \]
 \form#23:$ |x-y| > \delta $
 \form#24:$f = -2 (x_1+ 1)$
+\form#25:\[ \mathcal{L}(\mathbf{u})(\mathbf{x}) = p.v. \int_{B_{\delta}(\mathbf{x}) \cap \widetilde{\Omega}}(\mathbf{C}_\delta(\mathbf{x}, \mathbf{y}) \mathbf{u}(\mathbf{x}) - \mathbf{C}_\delta(\mathbf{y}, \mathbf{x})\mathbf{u}(\mathbf{y})) d\mathbf{y}. \]
+\form#26:$ \mathbf{C}(\mathbf{x},\mathbf{y}) $
+\form#27:$f = - 4 (\| x\|^2 - 1)e^{\|x\|^2}$
+\form#28:$f = - 2 \chi_{R^+}(x_1 - x_2)$
+\form#29:$f = 32 \pi^2 sin(4 \pi x)sin(4 \pi y )$

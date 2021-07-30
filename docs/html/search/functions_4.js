@@ -1,8 +1,9 @@
 var searchData=
 [
   ['method_5fbarycenter',['method_baryCenter',['../integration_8cpp.html#a0909e04d5cef5b66a8e502b15f48acd7',1,'integration.cpp']]],
+  ['method_5fexact',['method_exact',['../integration_8cpp.html#ae9741a0c94c4146297682a7c14700802',1,'integration.cpp']]],
   ['method_5fretriangulate',['method_retriangulate',['../integration_8cpp.html#a99fe9cd0ac2b828734d1932b4ffc9c49',1,'integration.cpp']]],
+  ['method_5fretriangulateinfty',['method_retriangulateInfty',['../integration_8cpp.html#a565d2764365b26dadd415d94badd6210',1,'integration.cpp']]],
   ['method_5fsubsupersetballs',['method_subSuperSetBalls',['../integration_8cpp.html#a55ee8c614318744e42f473ddc9d8c3c7',1,'integration.cpp']]],
-  ['mirror',['mirror',['../integration_8cpp.html#ab8a9fa33341874214425257a3f696521',1,'integration.cpp']]],
-  ['model_5fbasisfunction',['model_basisFunction',['../model_8cpp.html#a7edf49849a5eade7a96b4cf86a268e7e',1,'model_basisFunction(const double *p, double *psi_vals):&#160;model.cpp'],['../model_8cpp.html#a153964437e1c76d85b5fd3445e89fd4c',1,'model_basisFunction(const double *p, const int dim, double *psi_vals):&#160;model.cpp']]]
+  ['mirror',['mirror',['../mathhelpers_8cpp.html#ab8a9fa33341874214425257a3f696521',1,'mathhelpers.cpp']]]
 ];

@@ -83,6 +83,26 @@ void kernel_labeled(const double * x, const long labelx, const double * y, const
         abort();
     }
 }
+
+void kernel_notch(const double * x, const long labelx, const double * y, const long labely, const MeshType &mesh,
+                    double * kernel_val){
+
+    const bool xis_North = x[1] > 0;
+    const bool yis_North = y[1] > 0;
+    const bool cross_notch_north = xis_North != yis_North;
+    const bool xis_East = x[0] > 0;
+    const bool yis_East = y[0] > 0;
+    bool cross_notch = cross_notch_north && xis_East && yis_East;
+
+    *kernel_val = !cross_notch * (4 / (M_PI * pow(mesh.sqdelta, 2)));
+}
+
+void kernel_labeledNotch(const double * x, const long labelx, const double * y, const long labely, const MeshType &mesh,
+                  double * kernel_val){
+    const bool cross_notch = labelx + labely == 7;
+    *kernel_val = !cross_notch * (4 / (M_PI * pow(mesh.sqdelta, 2)));
+}
+
 void kernel_linearPrototypeMicroelastic(const double * x, const long labelx, const double * y, const long labely,
                                              const MeshType &mesh, double * kernel_val) {
     double z[2];
