@@ -179,7 +179,7 @@ void par_evaluateMass(double *vd, const double *ud, long *Elements,
     // For some reason gcc does not allow to put const variables as shared. Const pointers however appear.
     // The constant function parameters can still be accsess inside the environemnt - might be different
     // in other compilers...
-    #pragma omp parallel default(none) shared(ud, ElementLabels, Verts, VertexLabels, dx, nP, J, vd, psi, Elements)
+    #pragma omp parallel// default(none) shared(ud, ElementLabels, Verts, VertexLabels, dx, nP, J, vd, psi, Elements)
     {
     //private(aAdx, a, b, aTE, aTdet, j)
         double aTdet;
@@ -514,7 +514,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     }
     chk_BasisFunction(quadRule);
 
-    #pragma omp parallel default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total, epart, nparts)
+    #pragma omp parallel //default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total, epart, nparts)
     {
     map<unsigned long, double> Ad;
     unsigned long Adx;
