@@ -179,7 +179,7 @@ void par_evaluateMass(double *vd, const double *ud, long *Elements,
     // For some reason gcc does not allow to put const variables as shared. Const pointers however appear.
     // The constant function parameters can still be accsess inside the environemnt - might be different
     // in other compilers...
-    #pragma omp parallel// default(none) shared(ud, ElementLabels, Verts, VertexLabels, dx, nP, J, vd, psi, Elements)
+    #pragma omp parallel default(none) shared(ud, ElementLabels, Verts, VertexLabels, dx, nP, J, vd, psi, Elements, dVerts, dim, is_DiscontinuousGalerkin, outdim)
     {
     //private(aAdx, a, b, aTE, aTdet, j)
         double aTdet;
@@ -513,8 +513,8 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
         model_basisFunction(& quadRule.Py[mesh.dim*h], mesh.dim,& quadRule.psiy[mesh.dVertex * h]);
     }
     chk_BasisFunction(quadRule);
-
-    #pragma omp parallel //default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total, epart, nparts)
+    auto zeros = arma::fill::zeros;
+    #pragma omp parallel default(none) shared(mesh, quadRule, conf, values_all, indices_all, nnz_total, epart, nparts, verbose, zeros)
     {
     map<unsigned long, double> Ad;
     unsigned long Adx;
@@ -524,7 +524,7 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     }
     if (verbose && !tid) printf("Thread %ld of %ld  (num partitions)\n", tid, nparts);
     // Breadth First Search --------------------------------------
-    arma::Col<int> visited(mesh.nE, arma::fill::zeros);
+    arma::Col<int> visited(mesh.nE, zeros);
 
     // Queue for Breadth first search
     //queue<idx_t> queue;
