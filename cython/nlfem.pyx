@@ -203,7 +203,7 @@ def stiffnessMatrix(
     cdef long nZeta
 
     try:
-        nZeta = mesh.nZeta
+        nZeta = mesh["nZeta"]
         if nZeta > 0:
             ZetaIndicator_indices = np.array(mesh["ZetaIndicator"].indices, dtype=np.int)
             ZetaIndicator_indptr = np.array(mesh["ZetaIndicator"].indptr, dtype=np.int)
@@ -338,7 +338,7 @@ def loadVector(
     cdef long nZeta=0
 
     try:
-        nZeta = mesh.nZeta
+        nZeta = mesh["nZeta"]
         if nZeta > 0:
             ZetaIndicator_indices = np.array(mesh["ZetaIndicator"].indices, dtype=np.int)
             ZetaIndicator_indptr = np.array(mesh["ZetaIndicator"].indptr, dtype=np.int)
@@ -541,14 +541,6 @@ def assemble(
     cdef double [:] ptrdy = dy.flatten()
 
     cdef long nZeta
-
-    try:
-        nZeta = mesh.ZetaIndicator.shape[1]
-        if nZeta > 0:
-            raise ValueError("Zeta is not supported!")
-    except AttributeError:
-        nZeta = 0
-        if (verbose): print("Zeta not found. nZeta set to 0.")
 
     try:
         outdim = mesh.outdim

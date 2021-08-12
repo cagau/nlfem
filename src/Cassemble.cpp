@@ -358,8 +358,6 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const long *ptrTriangles, const long *ptrLabelTriangles, const double *ptrVerts, const long * ptrLabelVerts, const int nE,
                   const int nE_Omega, const int nV, const int nV_Omega, const double *Px, const int nPx, const double *dx,
                   const double *Py, const int nPy, const double *dy, const double sqdelta,
-                  //const long *ptrNeighbours,
-                  //const int nNeighbours,
                   const int is_DiscontinuousGalerkin, const int is_NeumannBoundary, const string str_model_kernel,
                   const string str_model_f, const string str_integration_method_remote,
                   const string str_integration_method_close,
@@ -472,15 +470,14 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     if (verbose) printf("Quadrule outer: %i\n", quadRule.nPx);
     if (verbose) printf("Quadrule inner: %i\n", quadRule.nPy);
     if (verbose) printf("Full Graph Search: %i\n", conf.is_fullConnectedComponentSearch);
-
     arma::vec values_all;
     arma::umat indices_all(2,0);
     int nnz_total = 0;
-    //cout << "Hallo" << endl;
     idx_t nn_idxt = mesh.nV;
     idx_t ne_idxt = mesh.nE;
+    //cout << "nV " << mesh.nV << " nE " << mesh.nE << endl;
+    //cout << "nV " << nn_idxt << " nE " << ne_idxt << endl;
     idx_t nparts = 1;
-    //cout << nparts << endl;
     idx_t ncommon = 2;
     idx_t objval=0;
     idx_t epart[ne_idxt];
@@ -551,10 +548,10 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
     double termNonloc[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
     double termLocalPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
     double termNonlocPrime[mesh.dVertex*mesh.dVertex*mesh.outdim*mesh.outdim];
-
     //#pragma omp for
     for (int aTdx=0; aTdx<mesh.nE; aTdx++) {
         //printf("epart[aTdx] %i", epart[aTdx]);
+
         const bool is_mypart = (nparts == 1) || (tid == epart[aTdx]);
         if (is_mypart && (mesh.LabelTriangles[aTdx])) {
 
