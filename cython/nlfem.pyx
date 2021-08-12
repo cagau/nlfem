@@ -203,10 +203,10 @@ def stiffnessMatrix(
     cdef long nZeta
 
     try:
-        nZeta = mesh["ZetaIndicator"].shape[1]
-        ZetaIndicator_indices = np.array(mesh["ZetaIndicator"].indices, dtype=np.int)
-        ZetaIndicator_indptr = np.array(mesh["ZetaIndicator"].indptr, dtype=np.int)
+        nZeta = mesh.nZeta
         if nZeta > 0:
+            ZetaIndicator_indices = np.array(mesh["ZetaIndicator"].indices, dtype=np.int)
+            ZetaIndicator_indptr = np.array(mesh["ZetaIndicator"].indptr, dtype=np.int)
             ptrZetaIndicator_indices = &ZetaIndicator_indices[0]
             ptrZetaIndicator_indptr = &ZetaIndicator_indptr[0]
     except KeyError:
@@ -338,12 +338,12 @@ def loadVector(
     cdef long nZeta=0
 
     try:
-       nZeta = mesh["ZetaIndicator"].shape[1]
-       ZetaIndicator_indices = np.array(mesh["ZetaIndicator"].indices, dtype=np.int)
-       ZetaIndicator_indptr = np.array(mesh["ZetaIndicator"].indptr, dtype=np.int)
-       if nZeta > 0:
-           ptrZetaIndicator_indices = &ZetaIndicator_indices[0]
-           ptrZetaIndicator_indptr = &ZetaIndicator_indptr[0]
+        nZeta = mesh.nZeta
+        if nZeta > 0:
+            ZetaIndicator_indices = np.array(mesh["ZetaIndicator"].indices, dtype=np.int)
+            ZetaIndicator_indptr = np.array(mesh["ZetaIndicator"].indptr, dtype=np.int)
+            ptrZetaIndicator_indices = &ZetaIndicator_indices[0]
+            ptrZetaIndicator_indptr = &ZetaIndicator_indptr[0]
     except KeyError:
        nZeta = 0
        if (verbose): print("stiffnessMatrix(): Zeta not found. nZeta set to 0.")
