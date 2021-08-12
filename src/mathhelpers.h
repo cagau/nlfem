@@ -12,6 +12,10 @@ const double EPSILON=1e-15;
 const double EPSILON_CHKS=1e-8;
 
 // Miscellaneous helpers ###############################################################################################
+double evaluateZeta(const long * ptr_indices,
+                    const long * ptr_indptr,
+                    long nColumns,
+                    long aTdx, long bTdx);
 void solve2x2(const double *, const double *, double *);                 // Solve 2x2 System with LU
 void rightNormal(const double * y0, const double * y1, double orientation, double * normal);
 int faculty(int n);

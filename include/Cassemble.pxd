@@ -18,7 +18,8 @@ cdef extern from "Cassemble.h":
                   const string str_model_f, const string str_integration_method_remote,
                   const string str_integration_method_close, const int is_PlacePointOnCap,
                   const int dim, const int outdim,
-                  const long * ptrZeta, const long nZeta,
+                  const long * ptrZetaIndicator_indices,
+                  const long * ptrZetaIndicator_indptr, long nZeta,
                   const double * Pg, const int nPg, const double * dg, double maxDiameter,
                   double fractional_s,
                   int is_fullConnectedComponentSearch, int verbose)

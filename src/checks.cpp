@@ -50,7 +50,6 @@ void chk_Mesh(MeshType & mesh, int verbose=0){
     const long nE = mesh.nE;
     long chk_nE_Omega=0;
     const unsigned long d = mesh.dim;
-    const long nZeta = mesh.nZeta;
 
     for(long k=0; k<nE; k++){
         if (mesh.LabelTriangles(k)<=0) {
@@ -61,6 +60,7 @@ void chk_Mesh(MeshType & mesh, int verbose=0){
         } else {
             chk_nE_Omega++;
         }
+
     }
     abortIfFalse(mesh.nE_Omega == chk_nE_Omega , "Number of elements with label>0 does not coincide with nE_Omega.");
     mesh.nE == chk_nE_Omega && verbose ? printf("WARNING: No Dirichlet boundary found! Check your element labels if that is not what you want."):0;
@@ -71,9 +71,16 @@ void chk_Mesh(MeshType & mesh, int verbose=0){
         abortIfFalse(mesh.outdim * mesh.nV == mesh.K , "Matrix dimension does not match #basis functions and output dimension.");
     }
 
-    for(long k=0; k < nZeta; k++){
-        abortIfFalse(mesh.ptrZeta[3*k] >= 0 && mesh.ptrZeta[3*k+1] >= 0 && mesh.ptrZeta[3*k+2] >= 0 , "Some entries in Zeta are negative.");
-        abortIfFalse(mesh.ptrZeta[3*k] < nE && mesh.ptrZeta[3*k+1] < nE && mesh.ptrZeta[3*k+2] < nE , "Some entries in Zeta exceed the number of triangles.");
+    if (mesh.nZeta){
+        for (long k=0; k<std::min(nE, 20L); k++){
+            for (long j=0; j<std::min(nE, 20L); j++){
+                double zeta = evaluateZeta(mesh.ptrZetaIndicator_indices,
+                                           mesh.ptrZetaIndicator_indptr,
+                                           mesh.nZeta,
+                                           k, j);
+                abortIfFalse(std::abs(zeta) > EPSILON , "Some rows Zeta(k).dot(Zeta(j)) evaluate to zero.");
+            }
+        }
     }
 }
 

@@ -195,15 +195,20 @@ def stiffnessMatrix(
     else:
         if (verbose): print("stiffnessMatrix(): tensorGaussDegree not found or 0 (default).")
 
-    cdef long [:] ZetaIndicator
-    cdef long * ptrZetaIndicator = NULL
+    cdef long [:] ZetaIndicator_indices
+    cdef long [:] ZetaIndicator_indptr
+
+    cdef long * ptrZetaIndicator_indices = NULL
+    cdef long * ptrZetaIndicator_indptr = NULL
     cdef long nZeta
 
     try:
         nZeta = mesh["ZetaIndicator"].shape[1]
-        ZetaIndicator = mesh["ZetaIndicator"].flatten()
+        ZetaIndicator_indices = np.array(mesh["ZetaIndicator"].indices, dtype=np.int)
+        ZetaIndicator_indptr = np.array(mesh["ZetaIndicator"].indptr, dtype=np.int)
         if nZeta > 0:
-            ptrZetaIndicator = &ZetaIndicator[0]
+            ptrZetaIndicator_indices = &ZetaIndicator_indices[0]
+            ptrZetaIndicator_indptr = &ZetaIndicator_indptr[0]
     except KeyError:
         nZeta = 0
         if (verbose): print("stiffnessMatrix(): Zeta not found. nZeta set to 0.")
@@ -243,8 +248,6 @@ def stiffnessMatrix(
                             &ptrPx[0], nPx, &ptrdx[0],
                             &ptrPy[0], nPy, &ptrdy[0],
                             kernel["horizon"]**2,
-                            #&neighbours[0],
-                            #nNeighbours,
                             is_DG,
                             0,
                             &model_kernel_[0],
@@ -253,7 +256,9 @@ def stiffnessMatrix(
                             &integration_method_close[0],
                             is_PlacePointOnCap_,
                             dim, outdim_,
-                            ptrZetaIndicator, nZeta,
+                            ptrZetaIndicator_indices,
+                            ptrZetaIndicator_indptr,
+                            nZeta,
                             ptrPg, tensorGaussDegree, ptrdg,
                             maxDiameter,
                             fractional_s,
@@ -323,18 +328,25 @@ def loadVector(
     cdef const double * ptrdg = NULL
     tensorGaussDegree = 0
 
-    cdef long [:] ZetaIndicator
-    cdef long * ptrZetaIndicator = NULL
-    cdef long nZeta
+    #cdef long [:] ZetaIndicator_data
+    cdef long [:] ZetaIndicator_indices
+    cdef long [:] ZetaIndicator_indptr
+
+    #cdef long * ptrZetaIndicator_data = NULL
+    cdef long * ptrZetaIndicator_indices = NULL
+    cdef long * ptrZetaIndicator_indptr = NULL
+    cdef long nZeta=0
 
     try:
-        nZeta = mesh["ZetaIndicator"].shape[1]
-        ZetaIndicator = mesh["ZetaIndicator"].flatten()
-        if nZeta > 0:
-            ptrZetaIndicator = &ZetaIndicator[0]
+       nZeta = mesh["ZetaIndicator"].shape[1]
+       ZetaIndicator_indices = np.array(mesh["ZetaIndicator"].indices, dtype=np.int)
+       ZetaIndicator_indptr = np.array(mesh["ZetaIndicator"].indptr, dtype=np.int)
+       if nZeta > 0:
+           ptrZetaIndicator_indices = &ZetaIndicator_indices[0]
+           ptrZetaIndicator_indptr = &ZetaIndicator_indptr[0]
     except KeyError:
-        #print("Zeta not found.")
-        nZeta = 0
+       nZeta = 0
+       if (verbose): print("stiffnessMatrix(): Zeta not found. nZeta set to 0.")
 
     cdef int outdim_ = mesh["outdim"]
 
@@ -359,12 +371,13 @@ def loadVector(
                             nV, nV_Omega,
                             &ptrPx[0], nPx, &ptrdx[0],
                             &ptrPx[0], nPx, &ptrdx[0],
-                            # 0.0, NULL, # Former neighbour lists
                             0, is_DG, 0, "".encode('UTF-8'),
                             model_load_,
                             "".encode('UTF-8'), "".encode('UTF-8'), False,
                             dim, outdim_,
-                            ptrZetaIndicator, nZeta,
+                            ptrZetaIndicator_indices,
+                            ptrZetaIndicator_indptr,
+                            nZeta,
                             NULL, 0, NULL, 0.0, -1.0, 0, verbose)
 
     total_time = time.time() - start
@@ -482,7 +495,7 @@ def assemble(
     :return: Vector f of shape K = nVerts * outdim (Continuous Galerkin) or K = nElems * (dim+1) * outdim
     (Discontinuous Galerkin)
     """
-    #print("This function is deprecated. Please use stiffnessMatrix()")
+    print("This function is deprecated. Please use stiffnessMatrix()")
     #raise KeyboardInterrupt
     cdef int verbose  = 1
     try:
@@ -527,15 +540,12 @@ def assemble(
     cdef double [:] ptrdx = dx.flatten()
     cdef double [:] ptrdy = dy.flatten()
 
-    cdef long [:] ZetaIndicator
-    cdef long * ptrZetaIndicator = NULL
     cdef long nZeta
 
     try:
         nZeta = mesh.ZetaIndicator.shape[1]
-        ZetaIndicator = mesh.ZetaIndicator.flatten()
         if nZeta > 0:
-            ptrZetaIndicator = &ZetaIndicator[0]
+            raise ValueError("Zeta is not supported!")
     except AttributeError:
         nZeta = 0
         if (verbose): print("Zeta not found. nZeta set to 0.")
@@ -579,8 +589,6 @@ def assemble(
                             &ptrPx[0], Px.shape[0], &ptrdx[0],
                             &ptrPy[0], Py.shape[0], &ptrdy[0],
                             delta**2,
-                            #&neighbours[0],
-                            #nNeighbours,
                             mesh.is_DiscontinuousGalerkin,
                             mesh.is_NeumannBoundary,
                             &model_kernel_[0],
@@ -588,7 +596,7 @@ def assemble(
                             &integration_method_remote[0],
                             &integration_method_close[0],
                             is_PlacePointOnCap_,
-                            mesh.dim, outdim, ptrZetaIndicator, nZeta,
+                            mesh.dim, outdim, NULL, NULL, 0,
                             ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, is_fullConnectedComponentSearch, verbose)
 
         total_time = time.time() - start
@@ -606,8 +614,6 @@ def assemble(
                             &ptrPx[0], Px.shape[0], &ptrdx[0],
                             &ptrPy[0], Py.shape[0], &ptrdy[0],
                             delta**2,
-                            #&neighbours[0],
-                            #nNeighbours,
                             mesh.is_DiscontinuousGalerkin,
                             mesh.is_NeumannBoundary,
                             &model_kernel_[0],
@@ -615,7 +621,7 @@ def assemble(
                             &integration_method_remote[0],
                             &integration_method_close[0],
                             is_PlacePointOnCap_,
-                            mesh.dim, outdim, ptrZetaIndicator, nZeta,
+                            mesh.dim, outdim,  NULL, NULL, 0,
                             ptrPg, tensorGaussDegree, ptrdg, maxDiameter, -1.0, is_fullConnectedComponentSearch, verbose)
 
         fd = read_arma_mat(path_fd)[:mesh.K_Omega,0]

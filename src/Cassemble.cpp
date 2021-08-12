@@ -364,7 +364,10 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                   const string str_model_f, const string str_integration_method_remote,
                   const string str_integration_method_close,
                   const int is_PlacePointOnCap,
-                  const int dim, const int outdim, const long * ptrZeta, const long nZeta,
+                  const int dim, const int outdim,
+                  const long * ptrZetaIndicator_indices,
+                  const long * ptrZetaIndicator_indptr,
+                  const long nZeta,
                   const double * Pg, const int degree, const double * dg, double maxDiameter, double fractional_s,
                   int is_fullConnectedComponentSearch, int verbose) {
 
@@ -372,7 +375,8 @@ void par_assemble(const string compute, const string path_spAd, const string pat
                      nV, nV_Omega, sqrt(sqdelta), sqdelta,
                      //ptrNeighbours, nNeighbours,
                      is_DiscontinuousGalerkin,
-                     is_NeumannBoundary, dim, outdim, dim+1, ptrZeta, nZeta, maxDiameter, fractional_s};
+                     is_NeumannBoundary, dim, outdim, dim+1,
+                     ptrZetaIndicator_indices, ptrZetaIndicator_indptr, nZeta, maxDiameter, fractional_s};
 
     ConfigurationType conf = {path_spAd, path_fd, str_model_kernel, str_model_f,
                               str_integration_method_remote, str_integration_method_close,
@@ -420,7 +424,6 @@ void par_assemble(const string compute, const string path_spAd, const string pat
         chk_Conf(mesh, conf, quadRule);
 
         //estimateNNZperRow(mesh, conf);
-
         par_system(mesh, quadRule, conf);
         /*
         if (verbose) cout << "K_Omega " << mesh.K_Omega << endl;
@@ -460,12 +463,11 @@ void par_assemble(const string compute, const string path_spAd, const string pat
 void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &conf) {
 
     const int verbose = conf.verbose;
-
     if (verbose) printf("Function: par_system\n");
     if (verbose) printf("Ansatz Space: %s\n", mesh.is_DiscontinuousGalerkin ? "DG" : "CG");
     if (verbose) printf("Mesh dimension: %i\n", mesh.dim);
     if (verbose) printf("Output dimension: %i\n", mesh.outdim);
-    if (verbose) printf("Recieved Zeta for DD: %s\n", (mesh.ptrZeta) ? "true" : "false");
+    if (verbose) printf("Recieved Zeta for DD: %s\n", (mesh.nZeta) ? "true" : "false");
     lookup_configuration(conf, verbose);
     if (verbose) printf("Quadrule outer: %i\n", quadRule.nPx);
     if (verbose) printf("Quadrule inner: %i\n", quadRule.nPy);
@@ -645,10 +647,13 @@ void par_system(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &con
 
                                 // Domain decomposition. If Zeta is empty, the weight is set to 1.
                                 double weight = 1.;
-                                if (mesh.ptrZeta) {
-                                    //TODO ARMADILLO_DEP
-                                    double zeta = arma::dot(mesh.ZetaIndicator.col(aTdx), mesh.ZetaIndicator.col(bTdx));
-                                    weight = 1. / zeta;
+                                //printf("aTdx %i, bTdx %i \n", aTdx, bTdx);
+                                if (mesh.nZeta) {
+                                    double zeta = evaluateZeta(mesh.ptrZetaIndicator_indices,
+                                                 mesh.ptrZetaIndicator_indptr,
+                                                 mesh.nZeta,
+                                                 aTdx, bTdx);
+                                    weight = 1./zeta;
                                 }
 
                                 // Assembly of matrix ---------------------------------------
@@ -900,8 +905,12 @@ void par_forcing(MeshType &mesh, QuadratureType &quadRule, ConfigurationType &co
 
                 // Domain decomposition. If Zeta is empty, the weight is set to 1.
                 double weight = 1.;
-                if(mesh.ptrZeta){
-                    double zeta = arma::dot(mesh.ZetaIndicator.col(aTdx), mesh.ZetaIndicator.col(aTdx));
+                //printf("aTdx %i, bTdx %i \n", aTdx, bTdx);
+                if (mesh.nZeta) {
+                    double zeta = evaluateZeta(mesh.ptrZetaIndicator_indices,
+                                               mesh.ptrZetaIndicator_indptr,
+                                               mesh.nZeta,
+                                               aTdx, aTdx);
                     weight = 1./zeta;
                 }
 

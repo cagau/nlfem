@@ -82,10 +82,10 @@ typedef ConfigurationStruct ConfigurationType;
 struct MeshStruct{
     const int K_Omega;
     const int K;
-    const long * ptrTriangles;
-    const long * ptrLabelTriangles;
-    const double * ptrVerts;
-    const long * ptrLabelVerts;
+    const long * ptrTriangles{};
+    const long * ptrLabelTriangles{};
+    const double * ptrVerts{};
+    const long * ptrLabelVerts{};
     // Number of Triangles and number of Triangles in Omega
     const int nE;
     const int nE_Omega;
@@ -105,9 +105,9 @@ struct MeshStruct{
     const int dVertex;
 
     // Weights for Domain decomposition (optional)
-    const long * ptrZeta = nullptr;
+    const long * ptrZetaIndicator_indices{};
+    const long * ptrZetaIndicator_indptr{};
     const long nZeta; // Should be set to 0
-
     // Optional Argument Mesh Diameter
     const double maxDiameter; // Should be set to 0 if unused.
 
@@ -116,10 +116,10 @@ struct MeshStruct{
     // Therefore the integration for fractional kernels can be used for non-singular kernels as well
     // Makes sense for tests e.g.
     // TODO Write a wrapper for METIS
-    idx_t *xadj;
-    idx_t *adjncy;
-    idx_t *eptr;
-    idx_t *eind;
+    idx_t *xadj{};
+    idx_t *adjncy{};
+    idx_t *eptr{};
+    idx_t *eind{};
 
     const arma::Mat<double> Verts{arma::Mat<double>(this->ptrVerts, this->dim, this->nV)};
     //const arma::Mat<long> Neighbours{arma::Mat<long>(this->ptrNeighbours, this->nNeighbours, this->nE)};
@@ -131,9 +131,6 @@ struct MeshStruct{
     const arma::Col<long> LabelTriangles{arma::Col<long>(this->ptrLabelTriangles, this->nE)};
     // TODO Struct of Points mit static vectors Verts, LabelVerts
     const arma::Col<long> LabelVerts{arma::Col<long>(this->ptrLabelVerts, this->nV)};
-    // Zeta is an optional parameter. In case we get a Zeta matrix,
-    // the memory is already allocated we only need a wrapper.
-    const arma::Mat<long> ZetaIndicator{arma::Mat<long>(this-> ptrZeta, this-> nZeta, this-> nE)};
 
 };
 typedef MeshStruct MeshType;

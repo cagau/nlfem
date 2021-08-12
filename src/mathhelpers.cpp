@@ -16,6 +16,28 @@ using namespace std;
 
 // Miscellaneous helpers ###############################################################################################
 
+double evaluateZeta(const long * ptr_indices,
+                    const long * ptr_indptr,
+                    const long nColumns,
+                    const long aTdx, const long bTdx){
+    auto aBegin = ptr_indptr[aTdx];
+    auto aStep = ptr_indptr[aTdx + 1] - aBegin;
+    auto bBegin = ptr_indptr[bTdx];
+    auto bStep = ptr_indptr[bTdx + 1] - bBegin;
+
+    auto row_a = std::vector<long> (&ptr_indices[aBegin],
+                                    &ptr_indices[aBegin] + aStep);
+    auto row_b = std::vector<long> (&ptr_indices[bBegin],
+                                    &ptr_indices[bBegin] + bStep);
+    std::vector<long> intersection(nColumns);
+    auto ls = std::set_intersection(row_a.begin(), row_a.end(),
+                                    row_b.begin(), row_b.end(),
+                                    intersection.begin());
+
+    return (double) (ls -  intersection.begin());
+}
+
+
 void solve2x2(const double * A, const double * b, double * x){
     int dx0 = 0, dx1 = 1;
     double l=0, u=0;
