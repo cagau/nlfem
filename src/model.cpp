@@ -45,6 +45,11 @@ void kernel_constant1D(const double *x, const long labelx, const double *y, cons
                      double *kernel_val) {
     *kernel_val = 3./(2. * pow(mesh.delta, 3));
 }
+void kernel_antisymmetric1D(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
+                       double *kernel_val) {
+    *kernel_val = (x - y); //3./(2. * pow(mesh.delta, 3));
+}
+
 void kernel_parabola(const double *x, const long labelx, const double *y, const long labely, const MeshType &mesh,
                      double *kernel_val) {
     double z[2];

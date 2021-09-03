@@ -64,6 +64,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"labeled", kernel_labeled},
             {"constant3D", kernel_constant3D},
             {"constant1D", kernel_constant1D},
+            {"antisymmetric1D", kernel_antisymmetric1D}
             {"parabola", kernel_parabola},
             {"linearPrototypeMicroelastic", kernel_linearPrototypeMicroelastic},
             {"linearPrototypeMicroelasticField", kernelField_linearPrototypeMicroelastic},
