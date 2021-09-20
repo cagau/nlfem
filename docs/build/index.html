@@ -88,10 +88,10 @@
 <li><a class="reference internal" href="#">Welcome to nlfem’s documentation!</a></li>
 <li><a class="reference internal" href="#build-and-install">Build and Install</a><ul>
 <li><a class="reference internal" href="#step-by-step-installation">Step by Step Installation</a></li>
+<li><a class="reference internal" href="#docker">Docker</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#quick-start">Quick Start</a></li>
-<li><a class="reference internal" href="#docker">Docker</a></li>
 <li><a class="reference internal" href="#license">License</a></li>
 <li><a class="reference internal" href="#documentation">Documentation</a><ul>
 <li><a class="reference internal" href="#python-interface">Python interface</a></li>
@@ -217,19 +217,8 @@ skipped because Cython assumes that there have been no changes.</p>
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="quick-start">
-<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
-<p>To test the rates for the constant kernel run</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">nlfemvenv</span><span class="p">)</span> <span class="n">cd</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">nlfem</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">Test2D</span>
-<span class="p">(</span><span class="n">nlfemvenv</span><span class="p">)</span> <span class="n">python3</span> <span class="n">computeRates2D</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">f</span> <span class="n">testConfConstant</span> <span class="o">-</span><span class="n">s</span> <span class="mi">4</span>
-</pre></div>
-</div>
-<p>Run a more extensive test via the option <code class="docutils literal notranslate"><span class="pre">-f</span> <span class="pre">testConfFull</span> <span class="pre">-s</span> <span class="pre">4</span></code>. Get
-help via the option <code class="docutils literal notranslate"><span class="pre">-h</span></code>.</p>
-</div>
 <div class="section" id="docker">
-<h1>Docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h1>
+<h2>Docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h2>
 <p>To open a jupyter notebook with <code class="docutils literal notranslate"><span class="pre">nlfem</span></code> on port &lt;port&gt; do</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">run</span> <span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">port</span><span class="o">&gt;</span><span class="p">:</span><span class="mi">80</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">klar</span><span class="o">/</span><span class="k">nonlocal</span><span class="o">-</span><span class="n">assembly</span> <span class="n">jupyter</span> <span class="n">notebook</span>
 </pre></div>
@@ -240,6 +229,17 @@ help via the option <code class="docutils literal notranslate"><span class="pre"
 <span class="n">docker</span> <span class="n">push</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">klar</span><span class="o">/</span><span class="k">nonlocal</span><span class="o">-</span><span class="n">assembly</span><span class="p">:</span><span class="n">latest</span>
 </pre></div>
 </div>
+</div>
+</div>
+<div class="section" id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
+<p>To test the rates for the constant kernel run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">nlfemvenv</span><span class="p">)</span> <span class="n">cd</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">nlfem</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">Test2D</span>
+<span class="p">(</span><span class="n">nlfemvenv</span><span class="p">)</span> <span class="n">python3</span> <span class="n">computeRates2D</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">f</span> <span class="n">testConfConstant</span> <span class="o">-</span><span class="n">s</span> <span class="mi">4</span>
+</pre></div>
+</div>
+<p>Run a more extensive test via the option <code class="docutils literal notranslate"><span class="pre">-f</span> <span class="pre">testConfFull</span> <span class="pre">-s</span> <span class="pre">4</span></code>. Get
+help via the option <code class="docutils literal notranslate"><span class="pre">-h</span></code>.</p>
 </div>
 <div class="section" id="license">
 <h1>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h1>

@@ -50,21 +50,8 @@ To build and install the ``nlfem`` package do.
   (nlfemvenv) cd path/to/nlfem
   (nlfemvenv) python3 setup.py build --force install
 
-Quick Start
-===========
-
-To test the rates for the constant kernel run
-
-::
-
-  (nlfemvenv) cd path/to/nlfem/examples/Test2D
-  (nlfemvenv) python3 computeRates2D.py -f testConfConstant -s 4
-
-Run a more extensive test via the option ``-f testConfFull -s 4``. Get
-help via the option ``-h``.
-
 Docker
-=======
+-------
 
 To open a jupyter notebook with ``nlfem`` on port <port> do
 
@@ -79,6 +66,19 @@ To create and push a new docker image run
   docker login registry.gitlab.uni-trier.de -u klar -p <access-token>
   docker build -t registry.gitlab.uni-trier.de/klar/nonlocal-assembly .
   docker push registry.gitlab.uni-trier.de/klar/nonlocal-assembly:latest
+
+Quick Start
+===========
+
+To test the rates for the constant kernel run
+
+::
+
+  (nlfemvenv) cd path/to/nlfem/examples/Test2D
+  (nlfemvenv) python3 computeRates2D.py -f testConfConstant -s 4
+
+Run a more extensive test via the option ``-f testConfFull -s 4``. Get
+help via the option ``-h``.
 
 License
 =======
