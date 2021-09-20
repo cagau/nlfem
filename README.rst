@@ -74,6 +74,13 @@ To create and push a docker image run
   docker build -t registry.gitlab.uni-trier.de/klar/nonlocal-assembly .
   docker push registry.gitlab.uni-trier.de/klar/nonlocal-assembly:latest
 
+To open a jupyter notebook on port <host-port> on the host do
+
+::
+
+  docker pull registry.gitlab.uni-trier.de/klar/nonlocal-assembly
+  docker run -p <host-port>:80 registry.gitlab.uni-trier.de/klar/nonlocal-assembly jupyter notebook
+
 License
 =======
 
