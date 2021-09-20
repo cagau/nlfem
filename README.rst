@@ -63,6 +63,18 @@ To test the rates for the constant kernel run
 Run a more extensive test via the option ``-f testConfFull -s 4``. Get
 help via the option ``-h``.
 
+Docker
+=======
+
+To create and push a docker image run
+
+::
+
+docker login registry.<example-server.com> -u <user> -p <access-token>
+docker build -t registry.<example-server.com>/<user>/<nonlocal-assembly> .
+docker push registry.<example-server.com>/<user>/nonlocal-assembly:<tag>
+
+
 License
 =======
 

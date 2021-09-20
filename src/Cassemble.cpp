@@ -35,6 +35,7 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"linear", f_linear},
             {"gaussian", f_gaussian},
             {"jump", f_jump},
+            {"linear1D", f_linear1D},
             {"linear3D", f_linear3D},
             {"constant", f_constant},
             {"tensorsin", f_tensorsin},

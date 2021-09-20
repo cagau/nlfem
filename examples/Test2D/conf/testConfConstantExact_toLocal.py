@@ -6,7 +6,7 @@ def u_exact(x):
     return x[0] ** 2 * x[1] + x[1] ** 2
 KERNELS = [
     {
-        "function": "constantLinf2D",
+        "function": "constant",
         "horizon": None,
         "outputdim": 1
     }
@@ -16,7 +16,6 @@ LOADS = [
     #{"function": "tensorsin", "solution": u_exact_tensorsin}
     {"function": "linear", "solution": u_exact}
 ]
-
 
 Px = np.array([[0.33333333333333,    0.33333333333333],
                   [0.47014206410511,    0.47014206410511],
@@ -33,17 +32,16 @@ dx = 0.5 * np.array([0.22500000000000,
                         0.12593918054483,
                         0.12593918054483])
 
-Py = Px # np.array([[0.33333333, 0.33333333]])
-dy = dx # 0.5 * np.array([1.0])
-
-tensorGaussDegree = 1
+Py = np.array([[0.33333333, 0.33333333]])
+dy = 0.5 * np.array([1.0])
 
 CONFIGURATIONS = [
-{
+    {
         # "savePath": "pathA",
         "ansatz": "CG", #DG
+        "is_fullConnectedComponentSearch": 0,
         "approxBalls": {
-            "method": "retriangulate_unsymmLinfty",
+            "method": "exactBall",
             "isPlacePointOnCap": True,  # required for "retriangulate" only
             #"averageBallWeights": [1., 1., 1.]  # required for "averageBall" only
         },
@@ -53,10 +51,11 @@ CONFIGURATIONS = [
                 "weights": dx
             },
             "inner": {
-                "points": Py,
-                "weights": dy
+                "points": Px,
+                "weights": dx
             },
-            "tensorGaussDegree": tensorGaussDegree,  # Degree of tensor Gauss quadrature for weakly singular kernels.
-        }
+            "tensorGaussDegree": 0,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+        },
+        "verbose": True
     }
 ]

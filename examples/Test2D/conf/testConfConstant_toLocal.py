@@ -2,7 +2,8 @@ import numpy as np
 
 def u_exact_tensorsin(x):
     return np.sin(x[0]*4*np.pi)*np.sin(x[1]*4*np.pi)
-
+def u_exact(x):
+    return x[0] ** 2 * x[1] + x[1] ** 2
 KERNELS = [
     {
         "function": "constant",
@@ -12,7 +13,8 @@ KERNELS = [
 ]
 
 LOADS = [
-    {"function": "tensorsin", "solution": u_exact_tensorsin}
+    #{"function": "tensorsin", "solution": u_exact_tensorsin}
+    {"function": "linear", "solution": u_exact}
 ]
 
 Px = np.array([[0.33333333333333,    0.33333333333333],

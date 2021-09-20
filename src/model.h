@@ -303,6 +303,6 @@ void f_tensorsin(const double * x, double * forcing_out);
  * @param forcing_out
  */
 void f_linear3D(const double * x, double * forcing_out);
-
+void f_linear1D(const double * x, double * forcing_out);
 
 #endif //NONLOCAL_ASSEMBLY_MODEL_H
