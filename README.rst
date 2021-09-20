@@ -66,19 +66,19 @@ help via the option ``-h``.
 Docker
 =======
 
-To create and push a docker image run
+To open a jupyter notebook with ``nlfem`` on port <port> do
+
+::
+
+  docker run -p <port>:80 registry.gitlab.uni-trier.de/klar/nonlocal-assembly jupyter notebook
+
+To create and push a new docker image run
 
 ::
 
   docker login registry.gitlab.uni-trier.de -u klar -p <access-token>
   docker build -t registry.gitlab.uni-trier.de/klar/nonlocal-assembly .
   docker push registry.gitlab.uni-trier.de/klar/nonlocal-assembly:latest
-
-To open a jupyter notebook on port <host-port> on the host do
-
-::
-
-  docker run -p <host-port>:80 registry.gitlab.uni-trier.de/klar/nonlocal-assembly jupyter notebook
 
 License
 =======

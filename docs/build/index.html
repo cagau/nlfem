@@ -230,14 +230,14 @@ help via the option <code class="docutils literal notranslate"><span class="pre"
 </div>
 <div class="section" id="docker">
 <h1>Docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h1>
-<p>To create and push a docker image run</p>
+<p>To open a jupyter notebook with <code class="docutils literal notranslate"><span class="pre">nlfem</span></code> on port &lt;port&gt; do</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">run</span> <span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">port</span><span class="o">&gt;</span><span class="p">:</span><span class="mi">80</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">klar</span><span class="o">/</span><span class="k">nonlocal</span><span class="o">-</span><span class="n">assembly</span> <span class="n">jupyter</span> <span class="n">notebook</span>
+</pre></div>
+</div>
+<p>To create and push a new docker image run</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">login</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">u</span> <span class="n">klar</span> <span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">access</span><span class="o">-</span><span class="n">token</span><span class="o">&gt;</span>
 <span class="n">docker</span> <span class="n">build</span> <span class="o">-</span><span class="n">t</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">klar</span><span class="o">/</span><span class="k">nonlocal</span><span class="o">-</span><span class="n">assembly</span> <span class="o">.</span>
 <span class="n">docker</span> <span class="n">push</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">klar</span><span class="o">/</span><span class="k">nonlocal</span><span class="o">-</span><span class="n">assembly</span><span class="p">:</span><span class="n">latest</span>
-</pre></div>
-</div>
-<p>To open a jupyter notebook on port &lt;host-port&gt; on the host do</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">run</span> <span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">host</span><span class="o">-</span><span class="n">port</span><span class="o">&gt;</span><span class="p">:</span><span class="mi">80</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">klar</span><span class="o">/</span><span class="k">nonlocal</span><span class="o">-</span><span class="n">assembly</span> <span class="n">jupyter</span> <span class="n">notebook</span>
 </pre></div>
 </div>
 </div>
