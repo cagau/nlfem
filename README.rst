@@ -57,8 +57,8 @@ To test the rates for the constant kernel run
 
 ::
 
-(nlfemvenv) cd path/to/nlfem/examples/Test2D
-(nlfemvenv) python3 computeRates2D.py -f testConfConstant -s 4
+  (nlfemvenv) cd path/to/nlfem/examples/Test2D
+  (nlfemvenv) python3 computeRates2D.py -f testConfConstant -s 4
 
 Run a more extensive test via the option ``-f testConfFull -s 4``. Get
 help via the option ``-h``.
@@ -70,10 +70,9 @@ To create and push a docker image run
 
 ::
 
-docker login registry.<example-server.com> -u <user> -p <access-token>
-docker build -t registry.<example-server.com>/<user>/<nonlocal-assembly> .
-docker push registry.<example-server.com>/<user>/nonlocal-assembly:<tag>
-
+  docker login registry.gitlab.uni-trier.de -u klar -p <access-token>
+  docker build -t registry.gitlab.uni-trier.de/klar/nonlocal-assembly .
+  docker push registry.gitlab.uni-trier.de/klar/nonlocal-assembly:latest
 
 License
 =======

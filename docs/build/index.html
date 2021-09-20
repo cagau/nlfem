@@ -91,6 +91,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#quick-start">Quick Start</a></li>
+<li><a class="reference internal" href="#docker">Docker</a></li>
 <li><a class="reference internal" href="#license">License</a></li>
 <li><a class="reference internal" href="#documentation">Documentation</a><ul>
 <li><a class="reference internal" href="#python-interface">Python interface</a></li>
@@ -226,6 +227,15 @@ skipped because Cython assumes that there have been no changes.</p>
 </div>
 <p>Run a more extensive test via the option <code class="docutils literal notranslate"><span class="pre">-f</span> <span class="pre">testConfFull</span> <span class="pre">-s</span> <span class="pre">4</span></code>. Get
 help via the option <code class="docutils literal notranslate"><span class="pre">-h</span></code>.</p>
+</div>
+<div class="section" id="docker">
+<h1>Docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h1>
+<p>To create and push a docker image run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">login</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">u</span> <span class="n">klar</span> <span class="o">-</span><span class="n">p</span> <span class="o">&lt;</span><span class="n">access</span><span class="o">-</span><span class="n">token</span><span class="o">&gt;</span>
+<span class="n">docker</span> <span class="n">build</span> <span class="o">-</span><span class="n">t</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">klar</span><span class="o">/</span><span class="k">nonlocal</span><span class="o">-</span><span class="n">assembly</span> <span class="o">.</span>
+<span class="n">docker</span> <span class="n">push</span> <span class="n">registry</span><span class="o">.</span><span class="n">gitlab</span><span class="o">.</span><span class="n">uni</span><span class="o">-</span><span class="n">trier</span><span class="o">.</span><span class="n">de</span><span class="o">/</span><span class="n">klar</span><span class="o">/</span><span class="k">nonlocal</span><span class="o">-</span><span class="n">assembly</span><span class="p">:</span><span class="n">latest</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="license">
 <h1>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h1>
