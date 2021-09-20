@@ -19,7 +19,7 @@ In order to use this code you have to meet the following requirements.
       python3 setup.py build --force install
 
     The ``--force`` option is required if you change code outside of
-    ``nlcfem.pyx``. It might happen that recompilation or translation is
+    ``nlfem.pyx``. It might happen that recompilation or translation is
     skipped because Cython assumes that there have been no changes.
 
 
