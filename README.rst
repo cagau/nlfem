@@ -30,7 +30,7 @@ To prepare the basic requirements on Ubuntu do.
 
 ::
 
-  sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev
+  sudo apt-get install git gcc g++ libarmadillo-dev liblapack-dev libmetis-dev
   sudo apt-get install python3-venv python3-dev libgmp-dev libcgal-dev
   mkdir nlfemvenv
   python3 -m venv nlfemvenv/
@@ -49,6 +49,18 @@ To build and install the ``nlfem`` package do.
 
   (nlfemvenv) cd path/to/nlfem
   (nlfemvenv) python3 setup.py build --force install
+
+Issues
+......
+
+If there are compilation errors like
+
+::
+
+   ‘outdim’ is predetermined ‘shared’ for ‘shared’ ...
+
+you might try to use another compiler like clang.
+
 
 Docker
 -------
