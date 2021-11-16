@@ -27,7 +27,7 @@ class RegMesh2D:
 
         n_start = 5 + 2*deltaK
         self.lowerLeft = 0.0
-        self.upperRight = 1.#0.5
+        self.upperRight = 0.5
 
         self.n = n
         self.dim = dim

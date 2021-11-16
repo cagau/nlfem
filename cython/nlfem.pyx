@@ -416,6 +416,7 @@ def get_diam(elements, vertices):
 
 def meshFromArrays(elements, elementLabels, vertices, outputdim=1):
     vertexLabels = get_vertexLabel(elements, elementLabels, vertices)
+    nodeLabels = np.repeat(vertexLabels, outputdim)
     diam = get_diam(elements, vertices)
     outputdim = outputdim
 
@@ -429,6 +430,7 @@ def meshFromArrays(elements, elementLabels, vertices, outputdim=1):
         "elementLabels": elementLabels,
         "vertices": np.array(vertices),
         "vertexLabels": vertexLabels,
+        "nodeLabels": nodeLabels,
         "diam": diam,
         "outdim": outputdim
     }
