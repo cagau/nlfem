@@ -71,7 +71,8 @@ void lookup_configuration(ConfigurationType & conf, int verbose=0){
             {"linearPrototypeMicroelasticField", kernelField_linearPrototypeMicroelastic},
             {"linearPrototypeMicroelasticField3D", kernelField_linearPrototypeMicroelastic3D},
             {"constantField", kernelField_constant},
-            {"fractional", kernel_fractional}
+            {"fractional", kernel_fractional},
+            {"labeledValve", kernel_labeledValve}
     };
     map<string, void (*)(const double * x, long labelx, const double * y, long labely,
                          const MeshType &mesh, double * kernel_val)>::iterator it_kernel;

@@ -107,6 +107,12 @@ void kernel_labeledNotch(const double * x, const long labelx, const double * y, 
     *kernel_val = !cross_notch * (4 / (M_PI * pow(mesh.sqdelta, 2)));
 }
 
+void kernel_labeledValve(const double * x, const long labelx, const double * y, const long labely, const MeshType &mesh,
+                         double * kernel_val) {
+    bool does_interact = labelx >= labely;
+    *kernel_val = does_interact ? 4.0 / (M_PI * pow(mesh.sqdelta, 2)) : 0.0;
+}
+
 void kernel_linearPrototypeMicroelastic(const double * x, const long labelx, const double * y, const long labely,
                                              const MeshType &mesh, double * kernel_val) {
     double z[2];
