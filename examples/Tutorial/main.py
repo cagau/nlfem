@@ -4,8 +4,12 @@ from nlfem import loadVector, stiffnessMatrix_fromArray
 from mesh import trim_artificial_vertex
 from plot import saveplot
 from conf import cfg_list
+import os
 
 if __name__ == "__main__":
+    if not os.path.isdir("plots"):
+        os.mkdir("plots")
+
     for cfg in cfg_list:
         vertices, elements, elementlabels = cfg["mesh"]
         kernel = cfg["kernel"]
