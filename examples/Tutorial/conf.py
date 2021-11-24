@@ -15,9 +15,8 @@ def field(x):
     return np.array([x[1]**2, x[0]**2 * x[1]])*0.4
 
 
-cfg_list = [
-    {
-        "name": "disjoint_av",
+cfg_dict = {
+    "disjoint_av": {
         "kernel":
             {
                 "function": "labeledValve",
@@ -49,8 +48,7 @@ cfg_list = [
             },
         "mesh":  read_gmsh("data/disjoint.msh")
     },
-    {
-        "name": "hole_noav",
+    "hole_noav": {
         "kernel":
             {
                 "function": "constant",
@@ -82,8 +80,7 @@ cfg_list = [
             },
         "mesh":  read_gmsh("data/hole.msh", set_art_vertex=False)
     },
-    {
-        "name": "hole_av",
+    "hole_av": {
         "kernel":
             {
                 "function": "constant",
@@ -115,8 +112,7 @@ cfg_list = [
             },
         "mesh":  read_gmsh("data/hole.msh")
     },
-    {
-        "name": "peridynamics",
+    "peridynamics": {
         "kernel":
             {
                 "function": "linearPrototypeMicroelasticField",
@@ -145,10 +141,10 @@ cfg_list = [
                         "points": quadrules["2d7p"]["points"],
                         "weights": quadrules["2d7p"]["weights"]
                     },
-                    "tensorGaussDegree": 1,  # Degree of tensor Gauss quadrature for weakly singular kernels.
+                    "tensorGaussDegree": 1,
                 },
                 "verbose": False
             },
         "mesh":  read_gmsh("data/circle.msh")
     },
-]
+}

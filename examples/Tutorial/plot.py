@@ -41,7 +41,7 @@ def plot_2d_diffusion_vertexlabels(mesh, u=None, f=None, pp=None, **kwargs):
 
     plt.figure(figsize=(kwargs.get("xsize", 7), kwargs.get("ysize", 7)))
     plt.triplot(vertices[:, 0], vertices[:, 1], elements, lw=0.4, color='black', alpha=.3)
-    plt.tricontourf(vertices[:, 0], vertices[:, 1], elements, vertexlabels, cmap=plt.cm.magma, alpha=.4)
+    plt.tricontourf(vertices[:, 0], vertices[:, 1], elements, vertexlabels, cmap=plt.cm.magma, alpha=.6)
     #plt.colorbar()
     saveshow(pp)
 
@@ -53,7 +53,7 @@ def plot_2d_diffusion_forcing_term(mesh, u, f, pp=None, **kwargs):
 
     plt.figure(figsize=(kwargs.get("xsize", 7), kwargs.get("ysize", 7)))
     plt.triplot(vertices[:, 0], vertices[:, 1], elements, lw=0.1, color='black', alpha=.3)
-    plt.tricontourf(vertices[:, 0], vertices[:, 1], elements, f, cmap=plt.cm.magma, alpha=.4)
+    plt.tricontourf(vertices[:, 0], vertices[:, 1], elements, f, cmap=plt.cm.magma, alpha=.6)
     #plt.colorbar()
     saveshow(pp)
 
@@ -66,7 +66,7 @@ def plot_2d_diffusion_solution(mesh, u, f=None, pp=None, **kwargs):
 
     plt.figure(figsize=(kwargs.get("xsize", 7), kwargs.get("ysize", 7)))
     plt.triplot(vertices[:, 0], vertices[:, 1], elements, lw=0.1, color='black', alpha=.3)
-    plt.tricontourf(vertices[:, 0], vertices[:, 1], elements, u, cmap=plt.cm.magma, )
+    plt.tricontourf(vertices[:, 0], vertices[:, 1], elements, u, cmap=plt.cm.magma, alpha=.6)
     #plt.colorbar()
     saveshow(pp)
 

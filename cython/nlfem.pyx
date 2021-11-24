@@ -416,9 +416,7 @@ def get_diam(elements, vertices):
 
 def meshFromArrays(elements, elementLabels, vertices, outputdim=1):
     vertexLabels = get_vertexLabel(elements, elementLabels, vertices)
-    nodeLabels = np.repeat(vertexLabels, outputdim)
     diam = get_diam(elements, vertices)
-    outputdim = outputdim
 
     mesh = {
         "dim": elements.shape[1] - 1,
@@ -430,11 +428,17 @@ def meshFromArrays(elements, elementLabels, vertices, outputdim=1):
         "elementLabels": elementLabels,
         "vertices": np.array(vertices),
         "vertexLabels": vertexLabels,
-        "nodeLabels": nodeLabels,
         "diam": diam,
         "outdim": outputdim
     }
     return mesh
+
+def setSolutionLabels(mesh, ansatz="CG", outputdim=1):
+    if ansatz == "CG":
+        mesh["solutionLabels"] = np.repeat(mesh["vertexLabels"], outputdim)
+    if ansatz == "DG":
+        mesh["solutionLabels"] = np.repeat(mesh["elementLabels"], 3*outputdim)
+
 
 def stiffnessMatrix_fromArray(
         elements, elementLabels, vertices,
@@ -466,6 +470,7 @@ def stiffnessMatrix_fromArray(
     """
 
     mesh = meshFromArrays(elements, elementLabels, vertices, kernel["outputdim"])
+    setSolutionLabels(mesh, configuration["ansatz"], kernel["outputdim"])
     A = stiffnessMatrix(mesh, kernel, configuration)
     return mesh, A
 
