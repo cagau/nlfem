@@ -32,13 +32,15 @@ def add_artificial_vertex(meshio_mesh, vertices, elements, elementlabels):
     return vertices, elements, elementlabels
 
 
-def trim_artificial_vertex(nlfem_mesh, u, f_base):
+def trim_artificial_vertex(nlfem_mesh, u=None, f_base=None):
     nlfem_mesh["elements"] = nlfem_mesh["elements"][nlfem_mesh["elementLabels"] != 0]
     nlfem_mesh["vertices"] = nlfem_mesh["vertices"][nlfem_mesh["vertexLabels"] != 0]
     nlfem_mesh["vertexLabels"] = nlfem_mesh["vertexLabels"][nlfem_mesh["vertexLabels"] != 0]
     nlfem_mesh["elementLabels"] = nlfem_mesh["elementLabels"][nlfem_mesh["elementLabels"] != 0]
-    u = u[nlfem_mesh["nodeLabels"] != 0]
-    f_base = f_base[nlfem_mesh["nodeLabels"] != 0]
+    if u is not None:
+        u = u[nlfem_mesh["nodeLabels"] != 0]
+    if f_base is not None:
+        f_base = f_base[nlfem_mesh["nodeLabels"] != 0]
     nlfem_mesh["nodeLabels"] = nlfem_mesh["nodeLabels"][nlfem_mesh["nodeLabels"] != 0]
 
     return nlfem_mesh, u, f_base

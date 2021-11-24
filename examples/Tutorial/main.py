@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse.linalg import spsolve
 from nlfem import loadVector, stiffnessMatrix_fromArray
 from mesh import trim_artificial_vertex
-from plot import saveplot
+from plot import saveplot, showplot
 from conf import cfg_list
 import os
 

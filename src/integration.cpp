@@ -252,6 +252,7 @@ int integrate_fractional(const ElementType &aT, const ElementType &bT, const Qua
                         //cout << "----------------------\n" << a << endl;
                         //cout << "a" << a << endl;
                         for (int b = 0; b < nLocalVerts; b++) {
+
                             for (int bOut = 0; bOut < mesh.outdim; bOut++) {
                                 //cout <<  "b" <<b << endl;
                                 factors = kernel_val[mesh.outdim * aOut + bOut] * traffoFractionalCanceled *
