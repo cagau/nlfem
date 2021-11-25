@@ -1,27 +1,6 @@
-import quadpy
 import numpy as np
 
 quadrules = {
-    "keast_1":
-        {
-            "points": np.array(quadpy.t3._keast.keast_1().points[:, :3]),
-            "weights": quadpy.t3._keast.keast_1().weights/6.,
-        },
-    "keast_4":
-        {
-            "points": np.array(quadpy.t3._keast.keast_4().points[:, :3]),
-            "weights": quadpy.t3._keast.keast_4().weights / 6.,
-        },
-    "keast_8":
-        {
-            "points": np.array(quadpy.t3._keast.keast_8().points[:, :3]),
-            "weights": quadpy.t3._keast.keast_8().weights / 6.,
-        },
-    "keast_9":
-        {
-            "points": np.array(quadpy.t3._keast.keast_9().points[:, :3]),
-            "weights": quadpy.t3._keast.keast_9().weights / 6.,
-        },
     "2d7p":
         {
             "points": np.array([[0.33333333333333,    0.33333333333333],

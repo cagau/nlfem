@@ -23,13 +23,17 @@ if __name__ == "__main__":
         A_O = A[slbl > 0][:, slbl > 0]
         A_D = A[slbl > 0][:, slbl < 0]
 
-        g = np.apply_along_axis(load["dirichlet"], 1, vertices[mesh["vertexLabels"] < 0]).ravel()
+        if conf["ansatz"] == "CG":
+            dirichlet_Vdx = mesh["vertexLabels"] < 0
+        if conf["ansatz"] == "DG":
+            dirichlet_Vdx = (mesh["elements"][mesh["elementLabels"] < 0]).ravel()
+        g = np.apply_along_axis(load["dirichlet"], 1, vertices[dirichlet_Vdx]).ravel()
 
         f = loadVector(mesh, load, conf)
         #f[slbl == 2] = 0.0
         f_tilde = f[slbl > 0] - A_D.dot(g)
 
-        u = np.zeros(mesh["nV"]*mesh["outdim"])
+        u = np.zeros(mesh["K"])
         u[slbl > 0] = spsolve(A_O, f_tilde)
         u[slbl < 0] = g
 

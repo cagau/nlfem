@@ -48,6 +48,38 @@ cfg_dict = {
             },
         "mesh":  read_gmsh("data/disjoint.msh")
     },
+    "disjoint_noav": {
+        "kernel":
+            {
+                "function": "labeledValve",
+                "horizon": 0.1,
+                "outputdim": 1
+            },
+        "load":
+            {
+                "function": "constant",
+                "dirichlet": zeros
+            },
+        "conf":
+            {
+                "ansatz": "CG",
+                "approxBalls": {
+                    "method": "retriangulate"
+                },
+                "quadrature": {
+                    "outer": {
+                        "points": quadrules["2d7p"]["points"],
+                        "weights": quadrules["2d7p"]["weights"]
+                    },
+                    "inner": {
+                        "points": quadrules["2d7p"]["points"],
+                        "weights": quadrules["2d7p"]["weights"]
+                    },
+                },
+                "verbose": False
+            },
+        "mesh":  read_gmsh("data/disjoint.msh", set_art_vertex=False)
+    },
     "hole_noav": {
         "kernel":
             {
@@ -146,5 +178,110 @@ cfg_dict = {
                 "verbose": False
             },
         "mesh":  read_gmsh("data/circle.msh")
+    },
+    "fractionalCG": {
+        "kernel":
+            {
+                "function": "fractional",
+                "horizon": 0.2,
+                "outputdim": 1,
+                "fractional_s": 0.5
+            },
+        "load":
+            {
+                "function": "constant",
+                "dirichlet": zeros
+            },
+        "conf":
+            {
+                "ansatz": "CG", #DG
+                "approxBalls": {
+                    "method": "retriangulate"
+                },
+                "closeElements": "weakSingular",
+                "quadrature": {
+                    "outer": {
+                        "points": quadrules["2d7p"]["points"],
+                        "weights": quadrules["2d7p"]["weights"]
+                    },
+                    "inner": {
+                        "points": quadrules["2d7p"]["points"],
+                        "weights": quadrules["2d7p"]["weights"]
+                    },
+                    "tensorGaussDegree": 4,
+                },
+                "verbose": False
+            },
+        "mesh": regular_square(n = 24, delta=0.2)
+    },
+    "fractionalDG": {
+        "kernel":
+            {
+                "function": "fractional",
+                "horizon": 0.2,
+                "outputdim": 1,
+                "fractional_s": 0.5
+            },
+        "load":
+            {
+                "function": "constant",
+                "dirichlet": zeros
+            },
+        "conf":
+            {
+                "ansatz": "DG", #DG
+                "approxBalls": {
+                    "method": "retriangulate"
+                },
+                "closeElements": "weakSingular",
+                "quadrature": {
+                    "outer": {
+                        "points": quadrules["2d7p"]["points"],
+                        "weights": quadrules["2d7p"]["weights"]
+                    },
+                    "inner": {
+                        "points": quadrules["2d7p"]["points"],
+                        "weights": quadrules["2d7p"]["weights"]
+                    },
+                    "tensorGaussDegree": 4,
+                },
+                "verbose": False
+            },
+        "mesh": regular_square(n = 24, delta=0.2)
+    },
+    "microelasticDG": {
+        "kernel":
+            {
+                "function": "linearPrototypeMicroelastic",
+                "horizon": 0.1,
+                "outputdim": 1,
+                "fractional_s": -0.5
+            },
+        "load":
+            {
+                "function": "constant",
+                "dirichlet": zeros
+            },
+        "conf":
+            {
+                "ansatz": "DG",
+                "approxBalls": {
+                    "method": "retriangulate"
+                },
+                "closeElements": "retriangulate",
+                "quadrature": {
+                    "outer": {
+                        "points": quadrules["2d16p"]["points"],
+                        "weights": quadrules["2d16p"]["weights"]
+                    },
+                    "inner": {
+                        "points": quadrules["2d7p"]["points"],
+                        "weights": quadrules["2d7p"]["weights"]
+                    },
+                    "tensorGaussDegree": 5,
+                },
+                "verbose": False
+            },
+        "mesh": regular_square(n = 24, delta=0.1)
     },
 }

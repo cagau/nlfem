@@ -4,15 +4,17 @@ import meshzoo
 
 
 def set_element_dirichlet_sign(elements, vertices, delta, elementlabels=None):
-    #upperRight = 0.5
     n_verts = elements.shape[1]
     if elementlabels is None:
         elementlabels = np.ones(elements.shape[0], dtype=np.int)
 
     for k, T in enumerate(elements):
-        #shiftedBC = np.sum(vertices[T], axis=0)/nVerts - upperRight/2.
-        #is_Omega = np.max(np.abs(shiftedBC)) < upperRight/2.
-        is_omega = np.sum(vertices[T], axis=0)[1]/n_verts > 0.0
+        barycenter = np.sum(vertices[T], axis=0)/n_verts
+        shifted_barycenter = barycenter - 0.5
+        distance = np.max(np.abs(shifted_barycenter))
+        is_omega = int(distance <= 0.5 + 1e-5)
+        is_omega += int(distance <= 0.25 + 1e-5)
+        elementlabels[k] += is_omega
         if not is_omega:
             elementlabels[k] *= -1
     return elementlabels
@@ -60,7 +62,7 @@ def read_gmsh(filename, set_art_vertex=True):
     return vertices, elements, elementlabels
 
 
-def regular_square(n = 24, delta = 0.1, variant = "zigzag"):
+def regular_square(n = 24, delta = 0.1, variant="zigzag"):
     points, elements = meshzoo.rectangle(
         xmin=- delta, xmax=1 + delta,
         ymin=- delta, ymax=1 + delta,

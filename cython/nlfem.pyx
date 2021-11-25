@@ -434,10 +434,16 @@ def meshFromArrays(elements, elementLabels, vertices, outputdim=1):
     return mesh
 
 def setSolutionLabels(mesh, ansatz="CG", outputdim=1):
+    mesh["ansatz"] = ansatz
+    mesh["outputdim"] = outputdim
     if ansatz == "CG":
         mesh["solutionLabels"] = np.repeat(mesh["vertexLabels"], outputdim)
+        mesh["K"] = mesh["nV"]*outputdim
+        mesh["K_Omega"] = mesh["nV_Omega"]*outputdim
     if ansatz == "DG":
         mesh["solutionLabels"] = np.repeat(mesh["elementLabels"], 3*outputdim)
+        mesh["K"] = 3*mesh["nE"]*outputdim
+        mesh["K_Omega"] = 3*mesh["nE_Omega"]*outputdim
 
 
 def stiffnessMatrix_fromArray(
