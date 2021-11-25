@@ -12,6 +12,5 @@ ADD . nlfem
 RUN cp nlfem/docker/jupyter_notebook_config.py root/.jupyter/
 WORKDIR nlfem
 RUN ${PYTHON} -m pip install -r requirements.txt
-RUN ${PYTHON} -m pip install RISE
 RUN ${PYTHON} setup.py build --force install
 
