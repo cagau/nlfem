@@ -95,7 +95,7 @@ help via the option ``-h``.
 License
 =======
 
-nlfem is published under MIT license. Copyright (c) 2021 Manuel Klar, Christian Vollmann
+nlfem is published under GNU General Public License version 3. Copyright (c) 2021 Manuel Klar, Christian Vollmann
 
 Documentation
 =============
